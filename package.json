@@ -12,7 +12,7 @@
     "dev:minimal": "tsx watch src/minimal.ts",
     "test:sqlite": "tsx src/test-sqlite.ts",
     "test:mysql": "tsx src/test-mysql.ts",
-    "build": "tsc",
+    "build": "tsc --skipLibCheck --allowJs --noEmit false",
     "start": "node dist/server.js",
     "start:server": "tsx src/server.ts",
     "start:machine": "tsx src/machine-server.ts",

@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # 管理服务器
   app:
     build:
       context: .
@@ -28,6 +29,40 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  # 机器实例 1
+  machine-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.machine
+    container_name: playwright-machine-1
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      - NODE_ENV=production
+      - MACHINE_ID=machine-1
+      - MANAGEMENT_SERVER_URL=http://app:3000
+      - STATUS_REPORT_INTERVAL=60000
+    volumes:
+      - ./machine-data-1:/app/data
+
+  # 机器实例 2
+  machine-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.machine
+    container_name: playwright-machine-2
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      - NODE_ENV=production
+      - MACHINE_ID=machine-2
+      - MANAGEMENT_SERVER_URL=http://app:3000
+      - STATUS_REPORT_INTERVAL=60000
+    volumes:
+      - ./machine-data-2:/app/data
 
   # 可选的 MySQL 服务
   # db:

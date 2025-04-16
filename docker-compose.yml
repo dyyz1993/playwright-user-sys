@@ -3,9 +3,7 @@ version: '3.8'
 services:
   # 管理服务器
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: playwright-user-sys:latest
     container_name: playwright-user-sys
     restart: unless-stopped
     ports:
@@ -32,9 +30,7 @@ services:
 
   # 机器实例 1
   machine-1:
-    build:
-      context: .
-      dockerfile: Dockerfile.machine
+    image: playwright-machine:latest
     container_name: playwright-machine-1
     restart: unless-stopped
     depends_on:
@@ -49,9 +45,7 @@ services:
 
   # 机器实例 2
   machine-2:
-    build:
-      context: .
-      dockerfile: Dockerfile.machine
+    image: playwright-machine:latest
     container_name: playwright-machine-2
     restart: unless-stopped
     depends_on:

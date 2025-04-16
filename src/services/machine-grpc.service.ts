@@ -1,0 +1,972 @@
+import * as grpc from '@grpc/grpc-js';
+import * as protoLoader from '@grpc/proto-loader';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { EventEmitter } from 'events';
+import { logger } from '../utils/logger.js';
+import { MachineModel } from '../models/machine.model.js';
+import { SessionModel } from '../models/session.model.js';
+import { UserModel } from '../models/user.model.js';
+import { SessionStatus } from '../types/index.js';
+import { createWebhookEvent } from '../utils/webhook.js';
+import { WebhookEventType } from '../types/index.js';
+
+// 获取当前文件的目录
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 加载 proto 文件
+const protoPath = path.resolve(__dirname, '../protos/machine_service.proto');
+const packageDefinition = protoLoader.loadSync(protoPath, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
+
+const proto = grpc.loadPackageDefinition(packageDefinition).machine as any;
+
+/**
+ * 机器连接管理器
+ * 负责管理与机器的连接
+ */
+class MachineConnectionManager extends EventEmitter {
+  private connections: Map<string, any> = new Map();
+  private pendingRequests: Map<string, { resolve: Function; reject: Function; timer: NodeJS.Timeout }> = new Map();
+  private clients: Map<string, any> = new Map();
+
+  constructor() {
+    super();
+  }
+
+  /**
+   * 添加机器连接
+   */
+  addConnection(machineId: string, call: any): void {
+    // 如果已经有连接，先移除
+    if (this.connections.has(machineId)) {
+      this.removeConnection(machineId);
+    }
+
+    // 添加新连接
+    this.connections.set(machineId, call);
+    logger.info(`机器连接已添加: ${machineId}`);
+
+    // 设置数据处理器
+    call.on('data', (message: any) => {
+      try {
+        this.handleMachineMessage(machineId, message);
+      } catch (error) {
+        logger.error(`处理机器消息时出错 (${machineId}):`, error);
+      }
+    });
+
+    // 设置结束处理器
+    call.on('end', () => {
+      logger.info(`机器连接已结束: ${machineId}`);
+      this.removeConnection(machineId);
+    });
+
+    // 设置错误处理器
+    call.on('error', (error: any) => {
+      logger.error(`机器连接错误 (${machineId}):`, error);
+      this.removeConnection(machineId);
+    });
+
+    // 更新机器状态为在线
+    MachineModel.update(machineId, { status: 'online' })
+      .then(() => {
+        logger.info(`机器状态已更新为在线: ${machineId}`);
+      })
+      .catch((error) => {
+        logger.error(`更新机器状态失败 (${machineId}):`, error);
+      });
+
+    // 发送心跳请求
+    this.sendHeartbeatRequest(machineId);
+  }
+
+  /**
+   * 移除机器连接
+   */
+  async removeConnection(machineId: string): Promise<void> {
+    const call = this.connections.get(machineId);
+    if (call) {
+      try {
+        call.end();
+      } catch (error) {
+        logger.error(`结束机器连接时出错 (${machineId}):`, error);
+      }
+    }
+
+    this.connections.delete(machineId);
+    logger.info(`机器连接已移除: ${machineId}`);
+
+    try {
+      // 更新数据库中的机器状态为离线
+      await MachineModel.update(machineId, { status: 'offline' });
+      logger.info(`机器状态已更新为离线: ${machineId}`);
+
+      // 更新内存存储中的机器状态
+      try {
+        const { memoryStore } = await import('./memory-store.service.js');
+        memoryStore.markMachineOffline(machineId);
+        logger.info(`内存存储中的机器状态已更新为离线: ${machineId}`);
+      } catch (memoryError) {
+        logger.error(`更新内存存储中的机器状态失败 (${machineId}):`, memoryError);
+      }
+    } catch (error) {
+      logger.error(`更新机器状态失败 (${machineId}):`, error);
+    }
+  }
+
+  /**
+   * 检查机器是否已连接
+   */
+  isConnected(machineId: string): boolean {
+    return this.connections.has(machineId);
+  }
+
+  /**
+   * 获取所有已连接的机器 ID
+   */
+  getAllConnectedMachines(): string[] {
+    return Array.from(this.connections.keys());
+  }
+
+  /**
+   * 获取所有活跃连接的机器 ID
+   * 与 getAllConnectedMachines 相同，但命名更符合内存存储服务的使用方式
+   */
+  getActiveConnections(): string[] {
+    return this.getAllConnectedMachines();
+  }
+
+  /**
+   * 获取连接
+   */
+  getConnection(machineId: string) {
+    return this.connections.get(machineId);
+  }
+
+  /**
+   * 获取客户端
+   */
+  async getClient(machineId: string): Promise<any> {
+    // 如果已经有客户端，直接返回
+    if (this.clients.has(machineId)) {
+      return this.clients.get(machineId);
+    }
+
+    try {
+      // 获取机器信息
+      const machine = await MachineModel.findById(machineId);
+      if (!machine) {
+        logger.error(`找不到机器: ${machineId}`);
+        return null;
+      }
+
+      // 创建 gRPC 客户端
+      const address = `${machine.ip}:${machine.grpcPort || 50052}`;
+      logger.info(`创建到机器 ${machineId} 的 gRPC 客户端 (${address})`);
+
+      // 创建带超时和重试的客户端选项
+      const options = {
+        'grpc.keepalive_time_ms': 30000, // 30 秒发送一次心跳
+        'grpc.keepalive_timeout_ms': 10000, // 10 秒超时
+        'grpc.keepalive_permit_without_calls': 1, // 允许在没有调用的情况下发送心跳
+        'grpc.http2.min_time_between_pings_ms': 15000, // 两次心跳之间的最小时间
+        'grpc.http2.max_pings_without_data': 0, // 允许无限次没有数据的 ping
+        'grpc.max_reconnect_backoff_ms': 10000, // 最大重连间隔为 10 秒
+      };
+
+      const client = new proto.MachineService(
+        address,
+        grpc.credentials.createInsecure(),
+        options
+      );
+
+      // 存储客户端
+      this.clients.set(machineId, client);
+
+      return client;
+    } catch (error) {
+      logger.error(`创建 gRPC 客户端失败 (${machineId}):`, error);
+      return null;
+    }
+  }
+
+  /**
+   * 处理来自机器的消息
+   */
+  private async handleMachineMessage(machineId: string, message: any): Promise<void> {
+    try {
+      logger.debug(`收到机器消息 (${machineId}): ${JSON.stringify(message)}`);
+
+      // 处理心跳消息
+      if (message.heartbeat) {
+        await this.handleHeartbeat(machineId, message.heartbeat);
+      }
+      // 处理会话状态更新
+      else if (message.session_status) {
+        await this.handleSessionStatus(machineId, message.session_status);
+      }
+      // 未知消息类型
+      else {
+        logger.warn(`收到未知类型的消息 (${machineId}): ${JSON.stringify(message)}`);
+      }
+    } catch (error) {
+      logger.error(`处理机器消息时出错 (${machineId}):`, error);
+    }
+  }
+
+  /**
+   * 处理心跳消息
+   */
+  private async handleHeartbeat(machineId: string, heartbeat: any): Promise<void> {
+    try {
+      logger.debug(`收到心跳 (${machineId}): ${JSON.stringify(heartbeat)}`);
+
+      // 导入内存存储服务
+      const { memoryStore } = await import('./memory-store.service.js');
+
+      // 获取机器信息
+      const machine = await MachineModel.findById(machineId);
+
+      if (machine) {
+        // 更新内存中的机器状态
+        memoryStore.updateMachineStatus({
+          machine_id: machineId,
+          name: machine.hostname,
+          ip: machine.ip,
+          grpc_port: machine.grpcPort || 50052, // 默认值
+          cpu_usage: heartbeat.cpu_usage,
+          memory_usage: heartbeat.memory_usage,
+          disk_space: heartbeat.disk_space || 0,
+          active_sessions: heartbeat.active_sessions,
+          max_sessions: machine.maxInstances,
+          last_heartbeat: new Date(),
+        });
+      }
+
+      // 同时更新数据库中的机器状态（作为备份）
+      await MachineModel.update(machineId, {
+        cpu_usage: heartbeat.cpu_usage,
+        memory_usage: heartbeat.memory_usage,
+        instance_count: heartbeat.active_sessions,
+        status: 'online',
+      });
+
+      logger.debug(`机器状态已更新 (${machineId})`);
+    } catch (error) {
+      logger.error(`处理心跳时出错 (${machineId}):`, error);
+    }
+  }
+
+  /**
+   * 处理会话状态更新
+   */
+  private async handleSessionStatus(machineId: string, status: any): Promise<void> {
+    try {
+      const { session_id, status: sessionStatus, duration } = status;
+      logger.info(`收到会话状态更新 (${machineId}, ${session_id}): ${sessionStatus}, 持续时间: ${duration}秒`);
+
+      // 获取会话信息
+      const session = await SessionModel.findById(session_id);
+      if (!session) {
+        logger.warn(`会话不存在 (${session_id})`);
+        return;
+      }
+
+      // 根据状态更新会话记录
+      switch (sessionStatus) {
+        case 'connected':
+          // 用户连接到浏览器实例，开始计费
+          await SessionModel.update(session_id, {
+            status: SessionStatus.CONNECTED,
+            start_time: new Date(),
+          });
+
+          // 触发 Webhook 事件
+          await createWebhookEvent(session.user_id, WebhookEventType.SESSION_CONNECTED, {
+            session_id,
+            connected_at: new Date(),
+          });
+
+          logger.info(`用户已连接到会话，开始计费 (${session_id})`);
+          break;
+
+        case 'disconnected':
+          // 用户断开连接，暂停计费
+          await SessionModel.update(session_id, {
+            status: SessionStatus.DISCONNECTED,
+            disconnected_at: new Date(),
+            duration,
+          });
+
+          logger.info(`用户已断开会话连接，暂停计费 (${session_id})`);
+          break;
+
+        case 'active':
+          // 更新会话持续时间
+          await SessionModel.update(session_id, {
+            duration,
+          });
+
+          // 计算已使用的点数
+          const minutes = Math.ceil(duration / 60);
+          const user = await UserModel.findById(session.user_id);
+
+          // 检查用户点数是否足够
+          if (user && user.credits < minutes) {
+            logger.warn(`用户点数不足 (${session.user_id}), 剩余: ${user.credits}, 已使用: ${minutes}点`);
+
+            // 通知机器端关闭浏览器实例
+            this.sendCloseBrowserCommand(machineId, session_id);
+
+            // 触发点数不足事件
+            await createWebhookEvent(session.user_id, WebhookEventType.CREDITS_DEPLETED, {
+              session_id,
+              credits_remaining: user.credits,
+              credits_used: minutes,
+            });
+          } else if (user && user.credits < minutes + 5) {
+            // 点数即将不足，发送警告
+            await createWebhookEvent(session.user_id, WebhookEventType.CREDITS_LOW, {
+              session_id,
+              credits_remaining: user.credits,
+              credits_used: minutes,
+            });
+          }
+
+          logger.info(`会话活动更新 (${session_id}): 连接时长 ${duration}秒, 已使用 ${minutes}点`);
+          break;
+
+        case 'closed':
+          // 浏览器实例已关闭，结束计费
+          await SessionModel.update(session_id, {
+            status: SessionStatus.DISCONNECTED,
+            end_time: new Date(),
+            duration,
+          });
+
+          // 如果会话已分配机器，减少机器的实例计数
+          await MachineModel.decrementInstanceCount(machineId);
+
+          // 扣除用户点数
+          const finalMinutes = Math.ceil(duration / 60);
+          try {
+            await UserModel.deductCredits(session.user_id, finalMinutes);
+            logger.info(`已扣除用户 ${session.user_id} 的点数: ${finalMinutes} 点 (${session_id})`);
+          } catch (error) {
+            logger.error('扣除点数失败:', error);
+          }
+
+          // 触发 Webhook 事件
+          await createWebhookEvent(session.user_id, WebhookEventType.SESSION_DISCONNECTED, {
+            session_id,
+            duration,
+            disconnected_at: new Date(),
+          });
+
+          logger.info(`会话已结束，计费完成 (${session_id}): ${duration}秒, ${finalMinutes}点`);
+          break;
+
+        case 'error':
+          // 浏览器实例出错，结束计费
+          await SessionModel.update(session_id, {
+            status: SessionStatus.ERROR,
+            end_time: new Date(),
+            duration,
+          });
+
+          // 如果会话已分配机器，减少机器的实例计数
+          await MachineModel.decrementInstanceCount(machineId);
+
+          // 扣除用户点数
+          const errorMinutes = Math.ceil(duration / 60);
+          try {
+            await UserModel.deductCredits(session.user_id, errorMinutes);
+          } catch (error) {
+            logger.error('扣除点数失败:', error);
+          }
+
+          // 触发 Webhook 事件
+          await createWebhookEvent(session.user_id, WebhookEventType.SESSION_ERROR, {
+            session_id,
+            duration,
+            error_at: new Date(),
+          });
+
+          logger.info(`会话出错，计费完成 (${session_id}): ${duration}秒, ${errorMinutes}点`);
+          break;
+      }
+    } catch (error) {
+      logger.error(`处理会话状态更新时出错 (${machineId}, ${status.session_id}):`, error);
+    }
+  }
+
+  /**
+   * 发送关闭浏览器命令
+   */
+  sendCloseBrowserCommand(machineId: string, sessionId: string): void {
+    try {
+      const call = this.connections.get(machineId);
+      if (!call) {
+        logger.warn(`无法发送关闭浏览器命令，机器未连接: ${machineId}`);
+        return;
+      }
+
+      // 构造关闭浏览器命令
+      const message = {
+        close_browser: {
+          session_id: sessionId,
+        },
+      };
+
+      // 发送命令
+      call.write(message);
+      logger.info(`已发送关闭浏览器命令 (${machineId}, ${sessionId})`);
+    } catch (error) {
+      logger.error(`发送关闭浏览器命令失败 (${machineId}, ${sessionId}):`, error);
+    }
+  }
+
+  /**
+   * 发送重启命令
+   */
+  sendRestartCommand(machineId: string): void {
+    const call = this.connections.get(machineId);
+    if (!call) {
+      logger.warn(`无法发送重启命令，机器未连接: ${machineId}`);
+      return;
+    }
+
+    try {
+      // 构造重启命令消息
+      const message = {
+        restart: {
+          timestamp: Date.now(),
+        },
+      };
+
+      // 发送消息
+      call.write(message);
+      logger.info(`重启命令已发送 (${machineId})`);
+    } catch (error) {
+      logger.error(`发送重启命令失败 (${machineId}):`, error);
+    }
+  }
+
+  /**
+   * 发送心跳请求
+   */
+  sendHeartbeatRequest(machineId: string): void {
+    const call = this.connections.get(machineId);
+    if (!call) {
+      logger.warn(`无法发送心跳请求，机器未连接: ${machineId}`);
+      return;
+    }
+
+    try {
+      // 构造心跳请求消息
+      const message = {
+        heartbeat_request: {
+          timestamp: Date.now(),
+        },
+      };
+
+      // 发送消息
+      call.write(message);
+      logger.debug(`心跳请求已发送 (${machineId})`);
+    } catch (error) {
+      logger.error(`发送心跳请求失败 (${machineId}):`, error);
+    }
+  }
+
+  /**
+   * 启动浏览器实例
+   */
+  async launchBrowser(machineId: string, sessionId: string, options: any): Promise<any> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        // 检查机器是否连接
+        if (!this.isConnected(machineId)) {
+          reject(new Error(`机器未连接: ${machineId}`));
+          return;
+        }
+
+        // 获取机器对应的 gRPC 客户端
+        const client = await this.getClient(machineId);
+        if (!client) {
+          reject(new Error(`无法获取机器的 gRPC 客户端: ${machineId}`));
+          return;
+        }
+
+        logger.info(`向机器 ${machineId} 发送启动浏览器请求 (sessionId: ${sessionId})`);
+
+        // 构造请求参数
+        const request = {
+          session_id: sessionId,
+          options: options,
+        };
+
+        // 创建 metadata 并设置机器 ID
+        const metadata = new grpc.Metadata();
+        metadata.set('machine_id', machineId);
+
+        // 使用 LaunchBrowser RPC 方法
+        client.LaunchBrowser(request, metadata, (error: any, response: any) => {
+          if (error) {
+            logger.error(`启动浏览器失败 (${machineId}, ${sessionId}):`, error);
+            reject(error);
+            return;
+          }
+
+          logger.info(`浏览器启动成功 (${machineId}, ${sessionId}, port: ${response.port})`);
+          resolve(response);
+        });
+      } catch (error) {
+        logger.error(`启动浏览器过程中出错 (${machineId}, ${sessionId}):`, error);
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * 关闭浏览器实例
+   */
+  async closeBrowser(machineId: string, sessionId: string): Promise<boolean> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        // 检查机器是否连接
+        if (!this.isConnected(machineId)) {
+          reject(new Error(`机器未连接: ${machineId}`));
+          return;
+        }
+
+        // 获取机器对应的 gRPC 客户端
+        const client = await this.getClient(machineId);
+        if (!client) {
+          reject(new Error(`无法获取机器的 gRPC 客户端: ${machineId}`));
+          return;
+        }
+
+        logger.info(`向机器 ${machineId} 发送关闭浏览器请求 (sessionId: ${sessionId})`);
+
+        // 构造请求参数
+        const request = {
+          session_id: sessionId,
+        };
+
+        // 创建 metadata 并设置机器 ID
+        const metadata = new grpc.Metadata();
+        metadata.set('machine_id', machineId);
+
+        // 使用 CloseBrowser RPC 方法
+        client.CloseBrowser(request, metadata, (error: any, response: any) => {
+          if (error) {
+            logger.error(`关闭浏览器失败 (${machineId}, ${sessionId}):`, error);
+            reject(error);
+            return;
+          }
+
+          const success = response.status === 'closed';
+          logger.info(`浏览器关闭${success ? '成功' : '失败'} (${machineId}, ${sessionId})`);
+          resolve(success);
+        });
+      } catch (error) {
+        logger.error(`关闭浏览器过程中出错 (${machineId}, ${sessionId}):`, error);
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * 获取机器状态
+   */
+  async getMachineStatus(machineId: string): Promise<any> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        // 检查机器是否连接
+        if (!this.isConnected(machineId)) {
+          resolve({
+            machine_id: machineId,
+            online: false,
+            cpu_usage: 0,
+            memory_usage: 0,
+            active_sessions: 0,
+            max_sessions: 0,
+            timestamp: Date.now(),
+          });
+          return;
+        }
+
+        // 获取机器对应的 gRPC 客户端
+        const client = await this.getClient(machineId);
+        if (!client) {
+          reject(new Error(`无法获取机器的 gRPC 客户端: ${machineId}`));
+          return;
+        }
+
+        logger.info(`向机器 ${machineId} 发送获取状态请求`);
+
+        // 构造请求参数
+        const request = {
+          machine_id: machineId,
+        };
+
+        // 创建 metadata 并设置机器 ID
+        const metadata = new grpc.Metadata();
+        metadata.set('machine_id', machineId);
+
+        // 使用 GetMachineStatus RPC 方法
+        client.GetMachineStatus(request, metadata, (error: any, response: any) => {
+          if (error) {
+            logger.error(`获取机器状态失败 (${machineId}):`, error);
+            reject(error);
+            return;
+          }
+
+          logger.info(`成功获取机器状态 (${machineId})`);
+          resolve(response);
+        });
+      } catch (error) {
+        logger.error(`获取机器状态过程中出错 (${machineId}):`, error);
+        reject(error);
+      }
+    });
+  }
+}
+
+// gRPC 服务实现
+const serviceImplementation = {
+  // 机器注册
+  Register: async (call: any, callback: any) => {
+    try {
+      const request = call.request;
+      logger.info('收到机器注册请求:', request);
+
+      // 检查机器是否已存在
+      const existingMachine = await MachineModel.findById(request.machine_id);
+
+      if (existingMachine) {
+        // 更新机器信息
+        await MachineModel.update(request.machine_id, {
+          hostname: request.name,
+          ip: request.ip_address,
+          grpcPort: request.grpc_port, // 注意：这里的 grpcPort 将在 MachineModel.update 中被转换为 grpc_port
+          max_instances: request.max_sessions,
+          status: 'online',
+        });
+
+        logger.info(`机器更新数据: ${JSON.stringify({
+          hostname: request.name,
+          ip: request.ip_address,
+          grpcPort: request.grpc_port,
+          max_instances: request.max_sessions,
+        })}`);
+
+        logger.info(`机器已更新: ${request.machine_id}`);
+      } else {
+        // 创建新机器记录
+        await MachineModel.register({
+          id: request.machine_id,
+          hostname: request.name,
+          ip: request.ip_address,
+          grpcPort: request.grpc_port, // 注意：这里的 grpcPort 将在 MachineModel.register 中被转换为 grpc_port
+          max_instances: request.max_sessions,
+        });
+
+        logger.info(`新机器数据: ${JSON.stringify({
+          id: request.machine_id,
+          hostname: request.name,
+          ip: request.ip_address,
+          grpcPort: request.grpc_port,
+          max_instances: request.max_sessions,
+        })}`);
+
+        logger.info(`机器已创建: ${request.machine_id}`);
+      }
+
+      callback(null, { success: true, message: '注册成功' });
+    } catch (error: any) {
+      logger.error('机器注册失败:', error);
+      callback({ code: grpc.status.INTERNAL, message: error.message });
+    }
+  },
+
+  // 双向流通信
+  Connect: (call: any) => {
+    try {
+      logger.info('收到新的 Connect 请求');
+
+      // 测试 call 对象的类型和方法
+      logger.debug(`call 对象类型: ${typeof call}`);
+      try {
+        logger.debug(`call 对象方法: ${Object.getOwnPropertyNames(Object.getPrototypeOf(call)).join(', ')}`);
+      } catch (error) {
+        logger.error(`获取 call 对象方法失败:`, error);
+      }
+
+      // 等待第一条消息以获取机器 ID
+      const dataHandler = (message: any) => {
+        logger.info('收到第一条消息:', message);
+
+        try {
+          logger.debug(`消息类型: ${typeof message}, 字段: ${Object.keys(message).join(', ')}`);
+        } catch (error) {
+          logger.error('解析消息字段失败:', error);
+        }
+
+        const machineId = message.machine_id;
+        logger.info(`提取的机器 ID: ${machineId}`);
+
+        if (!machineId) {
+          logger.warn('收到的消息中缺少机器 ID');
+          try {
+            call.write({ error: { message: '缺少机器 ID' } });
+            logger.info('已发送错误响应');
+          } catch (writeError) {
+            logger.error('发送错误响应失败:', writeError);
+          }
+          call.end();
+          return;
+        }
+
+        // 移除此监听器，后续消息由连接管理器处理
+        logger.info(`移除数据监听器，转由连接管理器处理 (machineId: ${machineId})`);
+        call.removeListener('data', dataHandler);
+
+        // 添加连接
+        logger.info(`添加机器连接: ${machineId}`);
+        connectionManager.addConnection(machineId, call);
+      };
+
+      // 添加数据监听器
+      call.on('data', dataHandler);
+
+      // 处理错误
+      call.on('error', (error: any) => {
+        logger.error('gRPC 连接错误:', error);
+      });
+
+      // 处理结束
+      call.on('end', () => {
+        logger.info('gRPC 连接结束');
+      });
+    } catch (error: any) {
+      logger.error('处理 Connect 请求失败:', error);
+      call.end();
+    }
+  },
+
+  // 启动浏览器实例
+  LaunchBrowser: async (call: any, callback: any) => {
+    try {
+      const request = call.request;
+      logger.info(`收到启动浏览器请求:`, request);
+
+      const { session_id, options } = request;
+
+      // 从 metadata 中获取机器 ID
+      const machineId = call.metadata?.get('machine_id')?.[0] || '';
+
+      if (!machineId) {
+        logger.error(`启动浏览器请求缺少机器 ID`);
+        callback({
+          code: grpc.status.INVALID_ARGUMENT,
+          message: '缺少机器 ID',
+        });
+        return;
+      }
+
+      // 检查机器是否连接
+      if (!connectionManager.isConnected(machineId)) {
+        logger.error(`机器未连接: ${machineId}`);
+        callback({
+          code: grpc.status.FAILED_PRECONDITION,
+          message: `机器未连接: ${machineId}`,
+        });
+        return;
+      }
+
+      // 将请求转发到机器端
+      try {
+        const result = await connectionManager.launchBrowser(machineId, session_id, options);
+        logger.info(`浏览器启动成功 (${machineId}, ${session_id})`);
+        callback(null, result);
+      } catch (error: any) {
+        logger.error(`启动浏览器失败 (${machineId}, ${session_id}):`, error);
+        callback({
+          code: grpc.status.INTERNAL,
+          message: error.message || '启动浏览器失败',
+        });
+      }
+    } catch (error: any) {
+      logger.error('处理启动浏览器请求失败:', error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message || '处理启动浏览器请求失败',
+      });
+    }
+  },
+
+  // 关闭浏览器实例
+  CloseBrowser: async (call: any, callback: any) => {
+    try {
+      const request = call.request;
+      logger.info(`收到关闭浏览器请求:`, request);
+
+      const { session_id } = request;
+
+      // 从 metadata 中获取机器 ID
+      const machineId = call.metadata?.get('machine_id')?.[0] || '';
+
+      if (!machineId) {
+        logger.error(`关闭浏览器请求缺少机器 ID`);
+        callback({
+          code: grpc.status.INVALID_ARGUMENT,
+          message: '缺少机器 ID',
+        });
+        return;
+      }
+
+      // 检查机器是否连接
+      if (!connectionManager.isConnected(machineId)) {
+        logger.error(`机器未连接: ${machineId}`);
+        callback({
+          code: grpc.status.FAILED_PRECONDITION,
+          message: `机器未连接: ${machineId}`,
+        });
+        return;
+      }
+
+      // 将请求转发到机器端
+      try {
+        const success = await connectionManager.closeBrowser(machineId, session_id);
+        logger.info(`浏览器关闭${success ? '成功' : '失败'} (${machineId}, ${session_id})`);
+        callback(null, {
+          session_id,
+          status: success ? 'closed' : 'error',
+          error: success ? '' : '关闭浏览器失败',
+        });
+      } catch (error: any) {
+        logger.error(`关闭浏览器失败 (${machineId}, ${session_id}):`, error);
+        callback({
+          code: grpc.status.INTERNAL,
+          message: error.message || '关闭浏览器失败',
+        });
+      }
+    } catch (error: any) {
+      logger.error('处理关闭浏览器请求失败:', error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message || '处理关闭浏览器请求失败',
+      });
+    }
+  },
+
+  // 获取机器状态
+  GetMachineStatus: async (call: any, callback: any) => {
+    try {
+      const request = call.request;
+      logger.info(`收到获取机器状态请求:`, request);
+
+      const { machine_id } = request;
+
+      if (!machine_id) {
+        logger.error(`获取机器状态请求缺少机器 ID`);
+        callback({
+          code: grpc.status.INVALID_ARGUMENT,
+          message: '缺少机器 ID',
+        });
+        return;
+      }
+
+      // 检查机器是否连接
+      if (!connectionManager.isConnected(machine_id)) {
+        logger.error(`机器未连接: ${machine_id}`);
+        callback(null, {
+          machine_id,
+          online: false,
+          cpu_usage: 0,
+          memory_usage: 0,
+          active_sessions: 0,
+          max_sessions: 0,
+          timestamp: Date.now(),
+        });
+        return;
+      }
+
+      // 获取机器状态
+      try {
+        // 尝试使用心跳请求获取状态
+        const heartbeat = await connectionManager.getMachineStatus(machine_id);
+
+        // 获取机器信息
+        const machine = await MachineModel.findById(machine_id);
+
+        logger.info(`成功获取机器状态 (${machine_id})`);
+        callback(null, {
+          machine_id,
+          online: true,
+          cpu_usage: heartbeat.cpu_usage,
+          memory_usage: heartbeat.memory_usage,
+          active_sessions: heartbeat.active_sessions,
+          max_sessions: machine?.maxInstances || 0,
+          timestamp: heartbeat.timestamp || Date.now(),
+        });
+      } catch (error: any) {
+        logger.error(`获取机器状态失败 (${machine_id}):`, error);
+
+        // 即使心跳请求失败，也返回机器在线状态
+        callback(null, {
+          machine_id,
+          online: true,  // 机器连接存在，所以还是在线的
+          cpu_usage: 0,
+          memory_usage: 0,
+          active_sessions: 0,
+          max_sessions: 0,
+          timestamp: Date.now(),
+          error: error.message || '获取机器状态失败',
+        });
+      }
+    } catch (error: any) {
+      logger.error('处理获取机器状态请求失败:', error);
+      callback({
+        code: grpc.status.INTERNAL,
+        message: error.message || '处理获取机器状态请求失败',
+      });
+    }
+  },
+};
+
+// 创建连接管理器实例
+export const connectionManager = new MachineConnectionManager();
+
+/**
+ * 启动 gRPC 服务器
+ */
+export function startGrpcServer(port: number = 50051): void {
+  const server = new grpc.Server();
+  server.addService(proto.MachineService.service, serviceImplementation);
+
+  // 使用新的 API 启动服务器
+  server.bindAsync(`0.0.0.0:${port}`, grpc.ServerCredentials.createInsecure(), (bindErr) => {
+    if (bindErr) {
+      logger.error('绑定 gRPC 服务器失败:', bindErr);
+      return;
+    }
+
+    // 启动服务器
+    // server.start() 已经被废弃，不需要显式调用
+    logger.info(`gRPC 服务器已启动并绑定到端口 ${port}`);
+  });
+}
+
+export default {
+  connectionManager,
+  startGrpcServer,
+};

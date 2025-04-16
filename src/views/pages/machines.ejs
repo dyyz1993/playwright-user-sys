@@ -1,0 +1,332 @@
+<div class="bg-white rounded-lg shadow">
+  <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+    <h3 class="text-lg font-medium text-gray-700">机器管理</h3>
+    <div class="flex space-x-2">
+      <button id="refresh-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+  </div>
+  
+  <div class="p-6">
+    <!-- 搜索和筛选 -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
+      <div class="flex items-center">
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-search text-gray-400"></i>
+          </div>
+          <input type="text" id="search-machines" placeholder="搜索机器..." 
+            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        </div>
+        <div class="ml-4">
+          <select id="status-filter" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            <option value="">所有状态</option>
+            <option value="online">在线</option>
+            <option value="offline">离线</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 机器卡片视图 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% machines.forEach(machine => { %>
+        <div class="bg-white border rounded-lg shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <div class="flex items-center">
+              <% if (machine.status === 'online') { %>
+                <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+              <% } else { %>
+                <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+              <% } %>
+              <h3 class="text-lg font-medium text-gray-900"><%= machine.name %></h3>
+            </div>
+            <div class="flex items-center">
+              <span class="text-xs font-medium px-2 py-1 rounded-full <%= machine.status === 'online' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                <%= machine.status === 'online' ? '在线' : '离线' %>
+              </span>
+            </div>
+          </div>
+          
+          <div class="px-6 py-4">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <p class="text-sm text-gray-500">IP 地址</p>
+                <p class="text-sm font-medium text-gray-900"><%= machine.ip_address %></p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">最后心跳</p>
+                <p class="text-sm font-medium text-gray-900"><%= new Date(machine.last_heartbeat).toLocaleString() %></p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">活跃会话</p>
+                <p class="text-sm font-medium text-gray-900"><%= machine.active_sessions %></p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">最大会话数</p>
+                <p class="text-sm font-medium text-gray-900"><%= machine.max_sessions %></p>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <div class="flex justify-between mb-1">
+                <span class="text-xs font-medium text-gray-700">负载</span>
+                <span class="text-xs font-medium text-gray-700"><%= machine.load %>%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: <%= machine.load %>%"></div>
+              </div>
+            </div>
+            
+            <div class="flex justify-between">
+              <a href="/admin/machines/<%= machine.id %>" class="text-primary-600 hover:text-primary-900 text-sm font-medium">
+                详情
+              </a>
+              <div class="flex space-x-2">
+                <% if (machine.status === 'online') { %>
+                  <button class="text-yellow-600 hover:text-yellow-900 restart-machine-btn" data-machine-id="<%= machine.id %>">
+                    <i class="fas fa-redo"></i>
+                  </button>
+                <% } %>
+                <button class="text-red-600 hover:text-red-900 delete-machine-btn" data-machine-id="<%= machine.id %>">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+    
+    <!-- 分页 -->
+    <div class="flex items-center justify-between mt-6">
+      <div class="text-sm text-gray-700">
+        显示 <span class="font-medium"><%= (page - 1) * limit + 1 %></span> 到 <span class="font-medium"><%= Math.min(page * limit, totalMachines) %></span> 台，共 <span class="font-medium"><%= totalMachines %></span> 台
+      </div>
+      <div class="flex space-x-2">
+        <% if (page > 1) { %>
+          <a href="/admin/machines?page=<%= page - 1 %>&limit=<%= limit %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            上一页
+          </a>
+        <% } else { %>
+          <button disabled class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed">
+            上一页
+          </button>
+        <% } %>
+        
+        <% if (page * limit < totalMachines) { %>
+          <a href="/admin/machines?page=<%= page + 1 %>&limit=<%= limit %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            下一页
+          </a>
+        <% } else { %>
+          <button disabled class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed">
+            下一页
+          </button>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 重启机器确认模态框 -->
+<div id="restart-machine-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">重启机器</h3>
+      <button id="close-restart-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <p class="text-gray-700 mb-4">确定要重启此机器吗？这将中断所有正在运行的会话。</p>
+      
+      <div class="flex justify-end">
+        <button id="cancel-restart-machine" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
+          取消
+        </button>
+        <button id="confirm-restart-machine" class="bg-yellow-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+          重启
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 删除机器确认模态框 -->
+<div id="delete-machine-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">删除机器</h3>
+      <button id="close-delete-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <p class="text-gray-700 mb-4">确定要删除此机器吗？此操作无法撤销。</p>
+      
+      <div class="flex justify-end">
+        <button id="cancel-delete-machine" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
+          取消
+        </button>
+        <button id="confirm-delete-machine" class="bg-red-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+          删除
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 重启机器模态框
+  const restartMachineButtons = document.querySelectorAll('.restart-machine-btn');
+  const restartMachineModal = document.getElementById('restart-machine-modal');
+  const closeRestartModal = document.getElementById('close-restart-modal');
+  const cancelRestartMachine = document.getElementById('cancel-restart-machine');
+  const confirmRestartMachine = document.getElementById('confirm-restart-machine');
+  let currentMachineId = null;
+  
+  restartMachineButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      currentMachineId = button.getAttribute('data-machine-id');
+      restartMachineModal.classList.remove('hidden');
+    });
+  });
+  
+  closeRestartModal?.addEventListener('click', () => {
+    restartMachineModal.classList.add('hidden');
+  });
+  
+  cancelRestartMachine?.addEventListener('click', () => {
+    restartMachineModal.classList.add('hidden');
+  });
+  
+  confirmRestartMachine?.addEventListener('click', async () => {
+    if (!currentMachineId) return;
+    
+    try {
+      const response = await fetch(`/api/machines/${currentMachineId}/restart`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // 刷新页面
+        window.location.reload();
+      } else {
+        alert('重启机器失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('重启机器失败: ' + error.message);
+    } finally {
+      restartMachineModal.classList.add('hidden');
+    }
+  });
+  
+  // 删除机器模态框
+  const deleteMachineButtons = document.querySelectorAll('.delete-machine-btn');
+  const deleteMachineModal = document.getElementById('delete-machine-modal');
+  const closeDeleteModal = document.getElementById('close-delete-modal');
+  const cancelDeleteMachine = document.getElementById('cancel-delete-machine');
+  const confirmDeleteMachine = document.getElementById('confirm-delete-machine');
+  
+  deleteMachineButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      currentMachineId = button.getAttribute('data-machine-id');
+      deleteMachineModal.classList.remove('hidden');
+    });
+  });
+  
+  closeDeleteModal?.addEventListener('click', () => {
+    deleteMachineModal.classList.add('hidden');
+  });
+  
+  cancelDeleteMachine?.addEventListener('click', () => {
+    deleteMachineModal.classList.add('hidden');
+  });
+  
+  confirmDeleteMachine?.addEventListener('click', async () => {
+    if (!currentMachineId) return;
+    
+    try {
+      const response = await fetch(`/api/machines/${currentMachineId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // 刷新页面
+        window.location.reload();
+      } else {
+        alert('删除机器失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('删除机器失败: ' + error.message);
+    } finally {
+      deleteMachineModal.classList.add('hidden');
+    }
+  });
+  
+  // 点击模态框背景关闭模态框
+  restartMachineModal?.addEventListener('click', (e) => {
+    if (e.target === restartMachineModal) {
+      restartMachineModal.classList.add('hidden');
+    }
+  });
+  
+  deleteMachineModal?.addEventListener('click', (e) => {
+    if (e.target === deleteMachineModal) {
+      deleteMachineModal.classList.add('hidden');
+    }
+  });
+  
+  // 搜索功能
+  const searchInput = document.getElementById('search-machines');
+  searchInput?.addEventListener('input', () => {
+    const searchTerm = searchInput.value.toLowerCase();
+    const cards = document.querySelectorAll('.bg-white.border.rounded-lg');
+    
+    cards.forEach(card => {
+      const machineName = card.querySelector('h3').textContent.toLowerCase();
+      const ipAddress = card.querySelector('.grid-cols-2 div:first-child p:last-child').textContent.toLowerCase();
+      
+      if (machineName.includes(searchTerm) || ipAddress.includes(searchTerm)) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  });
+  
+  // 状态筛选
+  const statusFilter = document.getElementById('status-filter');
+  statusFilter?.addEventListener('change', () => {
+    const selectedStatus = statusFilter.value;
+    const cards = document.querySelectorAll('.bg-white.border.rounded-lg');
+    
+    cards.forEach(card => {
+      const statusBadge = card.querySelector('.px-6.py-4.border-b .flex.items-center span');
+      const status = statusBadge.textContent.trim() === '在线' ? 'online' : 'offline';
+      
+      if (selectedStatus === '' || status === selectedStatus) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  });
+  
+  // 刷新按钮
+  const refreshBtn = document.getElementById('refresh-btn');
+  refreshBtn?.addEventListener('click', () => {
+    window.location.reload();
+  });
+</script>

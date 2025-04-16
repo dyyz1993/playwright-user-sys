@@ -1,0 +1,277 @@
+<div class="bg-white rounded-lg shadow">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h3 class="text-lg font-medium text-gray-700">系统设置</h3>
+  </div>
+  <div class="p-6">
+    <form id="settings-form">
+      <!-- 通知设置 -->
+      <div class="mb-8">
+        <h4 class="text-base font-medium text-gray-900 mb-4">通知设置</h4>
+        <div class="space-y-4">
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input id="email-notifications" name="email-notifications" type="checkbox" checked
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+            </div>
+            <div class="ml-3 text-sm">
+              <label for="email-notifications" class="font-medium text-gray-700">邮件通知</label>
+              <p class="text-gray-500">接收有关账户活动和会话状态的邮件通知</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input id="webhook-notifications" name="webhook-notifications" type="checkbox" checked
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+            </div>
+            <div class="ml-3 text-sm">
+              <label for="webhook-notifications" class="font-medium text-gray-700">Webhook 通知</label>
+              <p class="text-gray-500">当会话状态变更时发送 Webhook 通知</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 会话设置 -->
+      <div class="mb-8">
+        <h4 class="text-base font-medium text-gray-900 mb-4">会话设置</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="session-timeout" class="block text-sm font-medium text-gray-700 mb-1">会话超时时间（分钟）</label>
+            <input type="number" id="session-timeout" name="session-timeout" min="1" value="60"
+              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            <p class="mt-1 text-xs text-gray-500">未活动的会话将在此时间后自动结束</p>
+          </div>
+          
+          <div>
+            <label for="max-sessions" class="block text-sm font-medium text-gray-700 mb-1">每用户最大会话数</label>
+            <input type="number" id="max-sessions" name="max-sessions" min="1" value="5"
+              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            <p class="mt-1 text-xs text-gray-500">每个用户可以同时创建的最大会话数</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 安全设置 -->
+      <div class="mb-8">
+        <h4 class="text-base font-medium text-gray-900 mb-4">安全设置</h4>
+        <div class="space-y-4">
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input id="ip-restriction" name="ip-restriction" type="checkbox"
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+            </div>
+            <div class="ml-3 text-sm">
+              <label for="ip-restriction" class="font-medium text-gray-700">IP 地址限制</label>
+              <p class="text-gray-500">限制只有特定 IP 地址可以访问 API</p>
+            </div>
+          </div>
+          
+          <div id="ip-whitelist-container" class="ml-7 hidden">
+            <label for="ip-whitelist" class="block text-sm font-medium text-gray-700 mb-1">IP 白名单</label>
+            <textarea id="ip-whitelist" name="ip-whitelist" rows="3"
+              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              placeholder="每行输入一个 IP 地址或 CIDR 范围"></textarea>
+            <p class="mt-1 text-xs text-gray-500">例如：192.168.1.1 或 192.168.1.0/24</p>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input id="rate-limiting" name="rate-limiting" type="checkbox" checked
+                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+            </div>
+            <div class="ml-3 text-sm">
+              <label for="rate-limiting" class="font-medium text-gray-700">启用请求速率限制</label>
+              <p class="text-gray-500">限制每个 IP 地址的请求频率</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 系统维护 -->
+      <div>
+        <h4 class="text-base font-medium text-gray-900 mb-4">系统维护</h4>
+        <div class="space-y-4">
+          <div>
+            <button type="button" id="clear-logs-btn" class="inline-flex items-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+              <i class="fas fa-trash-alt mr-2"></i> 清理旧日志
+            </button>
+            <p class="mt-1 text-xs text-gray-500">删除 30 天前的日志记录</p>
+          </div>
+          
+          <div>
+            <button type="button" id="backup-btn" class="inline-flex items-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+              <i class="fas fa-download mr-2"></i> 备份数据库
+            </button>
+            <p class="mt-1 text-xs text-gray-500">创建数据库备份并下载</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-8 border-t border-gray-200 pt-6">
+        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          保存设置
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 清理日志确认模态框 -->
+<div id="clear-logs-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">清理旧日志</h3>
+      <button id="close-logs-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <p class="text-gray-700 mb-4">确定要清理 30 天前的日志记录吗？此操作无法撤销。</p>
+      
+      <div class="flex justify-end">
+        <button id="cancel-clear-logs" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
+          取消
+        </button>
+        <button id="confirm-clear-logs" class="bg-red-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+          清理
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // IP 地址限制切换
+  const ipRestrictionCheckbox = document.getElementById('ip-restriction');
+  const ipWhitelistContainer = document.getElementById('ip-whitelist-container');
+  
+  ipRestrictionCheckbox?.addEventListener('change', () => {
+    if (ipRestrictionCheckbox.checked) {
+      ipWhitelistContainer.classList.remove('hidden');
+    } else {
+      ipWhitelistContainer.classList.add('hidden');
+    }
+  });
+  
+  // 清理日志模态框
+  const clearLogsBtn = document.getElementById('clear-logs-btn');
+  const clearLogsModal = document.getElementById('clear-logs-modal');
+  const closeLogsModal = document.getElementById('close-logs-modal');
+  const cancelClearLogs = document.getElementById('cancel-clear-logs');
+  const confirmClearLogs = document.getElementById('confirm-clear-logs');
+  
+  clearLogsBtn?.addEventListener('click', () => {
+    clearLogsModal.classList.remove('hidden');
+  });
+  
+  closeLogsModal?.addEventListener('click', () => {
+    clearLogsModal.classList.add('hidden');
+  });
+  
+  cancelClearLogs?.addEventListener('click', () => {
+    clearLogsModal.classList.add('hidden');
+  });
+  
+  confirmClearLogs?.addEventListener('click', async () => {
+    try {
+      const response = await fetch('/api/admin/logs/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('旧日志已成功清理');
+        clearLogsModal.classList.add('hidden');
+      } else {
+        alert('清理日志失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('清理日志失败: ' + error.message);
+    }
+  });
+  
+  // 备份数据库
+  const backupBtn = document.getElementById('backup-btn');
+  backupBtn?.addEventListener('click', async () => {
+    try {
+      const response = await fetch('/api/admin/backup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        // 创建一个下载链接
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        
+        // 获取当前日期作为文件名
+        const date = new Date();
+        const fileName = `backup-${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}.sql`;
+        
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } else {
+        const result = await response.json();
+        alert('备份数据库失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('备份数据库失败: ' + error.message);
+    }
+  });
+  
+  // 设置表单提交
+  const settingsForm = document.getElementById('settings-form');
+  settingsForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(settingsForm);
+    const settings = {
+      email_notifications: formData.get('email-notifications') === 'on',
+      webhook_notifications: formData.get('webhook-notifications') === 'on',
+      session_timeout: parseInt(formData.get('session-timeout')),
+      max_sessions: parseInt(formData.get('max-sessions')),
+      ip_restriction: formData.get('ip-restriction') === 'on',
+      ip_whitelist: formData.get('ip-restriction') === 'on' ? formData.get('ip-whitelist') : '',
+      rate_limiting: formData.get('rate-limiting') === 'on'
+    };
+    
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('设置已成功保存');
+      } else {
+        alert('保存设置失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('保存设置失败: ' + error.message);
+    }
+  });
+  
+  // 点击模态框背景关闭模态框
+  clearLogsModal?.addEventListener('click', (e) => {
+    if (e.target === clearLogsModal) {
+      clearLogsModal.classList.add('hidden');
+    }
+  });
+</script>

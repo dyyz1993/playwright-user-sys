@@ -1,0 +1,98 @@
+- 中文回复
+- pnpm 开发
+- typescript
+- fastify 开发
+- 尽量用插件化的思想，比如用插件来扩展功能，而不是直接修改源码
+- 尽量用成熟的第三方库，例如zod zod-to-json-schema等，而不是自己造轮子
+- 尽量用TypeScript，可以获得更好的类型提示和代码提示，并且可以避免一些低级错误, 局部的类型在当前面代码，全局的类型在其他地方
+- 尽量用测试驱动开发，先写测试用例，再写代码，最后再改测试用例，确保代码质量
+
+
+- 数据库 
+    sqlite or mysql 支持 配置用哪个。
+- 打包成docker镜像，方便部署。
+- 接口文档接入swagger,scalar
+
+
+第三方库列表（包括不限于）
+- proxy-chain
+- zod
+- ts-node-dev
+- zod-to-json-schema
+- http-proxy
+@fastify/cors
+@fastify/multipart
+fastify-graceful-shutdown
+fastify-plugin
+@fastify/swagger
+@scalar/fastify-api-reference
+@fastify/sensible
+dotenv
+ejs
+ts-node-dev
+fingerprint-generator
+fingerprint-injector
+playwright 的 chromium 版本
+uuid
+tailwindcss
+
+
+项目需求：
+
+管理后台（简单来搞，有控制就行）：
+    通过区分管理员登录和普通用户登录，用户不允许自己注册，管理员可以注册用户。
+    管理员为用户分配apikey，用户可以通过apikey访问api。
+    每个用户用点数算力，可以用来消耗实例的启动时长，1点数1分钟，消耗完即停止实例，并往用户配置的webhooks发送通知。
+    每个用户可以看到实例的运行市场，运行时间，结束时长，运行chrome的抽帧截图，随机一帧。
+    用户可以自己配置webhooks地址。
+    管理员可以为用户分配算力。
+
+    管理员有操作记录，主要是分配算力的记录。
+    管理员可以看到当前的算力，机器的使用情况。
+    管理员可以看到总体的运行的实例情况，消耗的点数，投放的点数。
+
+    管理端通过 sessionID 来转发连接到指定的机器。
+    如果用主动关闭playwright连接，或者 在1分钟内没有连接到playwright实例，则会自动释放实例，并停止计费。
+
+    用户统一流量都进管理端，管理端再进行转发。
+
+    管理能看到用户的请求和统计连接的状态码，错误状态码会记录日志。
+
+实例机器集群：
+    实例机器集群，可以部署多个实例，每个实例可以运行多个playwright实例。
+    一台机器可以运行多个实例，每个实例可以运行多个playwright实例。
+    每台机器启动的时候，往管理端注册发现，用机器id作为唯一标识 or 配置文件指定机器id。
+
+    实例机器没有自动扩容的概念
+
+playwright实例：
+    每个实例可以运行多个playwright实例，每个实例可以运行多个浏览器实例。
+
+用户端：
+    ```
+    const client = new Client({
+        APIKey: process.env.API_KEY,
+    });
+
+    const session = await client.sessions.create({
+        // 一些参数。useragent,proxy,cookies,localstorage,viewport
+    });
+    const browser = await puppeteer.connect({
+            browserWSEndpoint: `wss://connect.server.dev?apiKey=${process.env.API_KEY}&sessionId=${session.id}`,
+    });
+    await client.sessions.release(session.id);
+```
+用户通过上面的方式创建browser实例和释放示例。
+- 对于用户而言是 创建session的接口，来分配唯一的sessionId，背后是 管理端根据实际的机器的在线实例情况，优先在机器少的机器创建playwright实例，并将该实例的端口和机器的id 绑定到 管理端，并生成sessionId 。
+- 用户可以通过释放的接口释放所有的实例，也可以通过sessionID来释放指定的实例。
+- 用户创建实例了，不管连不连上都会计算点数。
+
+
+
+
+
+
+
+
+
+

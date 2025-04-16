@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>浏览器控制演示</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .log {
+      background-color: #f5f5f5;
+      border: 1px solid #ddd;
+      padding: 10px;
+      height: 300px;
+      overflow-y: auto;
+      margin-top: 20px;
+      font-family: monospace;
+    }
+    .log p {
+      margin: 0;
+      padding: 2px 0;
+    }
+    .log .info {
+      color: #333;
+    }
+    .log .success {
+      color: #4CAF50;
+    }
+    .log .error {
+      color: #f44336;
+    }
+    .screenshot {
+      max-width: 100%;
+      margin-top: 20px;
+      border: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <h1>浏览器控制演示</h1>
+  
+  <div class="form-group">
+    <label for="apiKey">API Key</label>
+    <input type="text" id="apiKey" placeholder="输入您的 API Key">
+  </div>
+  
+  <div class="form-group">
+    <label for="apiUrl">API URL</label>
+    <input type="text" id="apiUrl" value="/api" placeholder="API 基础 URL">
+  </div>
+  
+  <div>
+    <button id="startBtn">启动浏览器</button>
+    <button id="releaseBtn" disabled>释放浏览器</button>
+  </div>
+  
+  <div class="log" id="log"></div>
+  
+  <div id="screenshotContainer"></div>
+  
+  <script>
+    // 日志函数
+    function log(message, type = 'info') {
+      const logElement = document.getElementById('log');
+      const p = document.createElement('p');
+      p.className = type;
+      p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logElement.appendChild(p);
+      logElement.scrollTop = logElement.scrollHeight;
+    }
+    
+    // 全局变量
+    let sessionId = null;
+    let browser = null;
+    let page = null;
+    
+    // 启动浏览器
+    document.getElementById('startBtn').addEventListener('click', async () => {
+      try {
+        const apiKey = document.getElementById('apiKey').value.trim();
+        const apiUrl = document.getElementById('apiUrl').value.trim();
+        
+        if (!apiKey) {
+          log('请输入 API Key', 'error');
+          return;
+        }
+        
+        // 禁用按钮
+        document.getElementById('startBtn').disabled = true;
+        
+        // 步骤 1：创建会话
+        log('步骤 1：创建会话...');
+        const sessionResponse = await fetch(`${apiUrl}/sessions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            viewport: {
+              width: 1280,
+              height: 800,
+            },
+          }),
+        });
+        
+        if (!sessionResponse.ok) {
+          const errorText = await sessionResponse.text();
+          throw new Error(`创建会话失败: ${sessionResponse.status} ${errorText}`);
+        }
+        
+        const sessionData = await sessionResponse.json();
+        log(`会话创建成功: ${JSON.stringify(sessionData.data)}`, 'success');
+        
+        sessionId = sessionData.data.id;
+        const browserWSEndpoint = sessionData.data.browserWSEndpoint;
+        
+        // 步骤 2：连接到浏览器
+        log('步骤 2：连接到浏览器...');
+        
+        // 注意：在浏览器中，我们需要使用 Puppeteer 的 CDN 版本
+        // 这里仅作为演示，实际上浏览器端无法直接连接 WebSocket
+        log('注意：在浏览器中无法直接连接 WebSocket，这里仅作为演示', 'info');
+        log(`WebSocket 端点: ${browserWSEndpoint}`, 'info');
+        
+        // 启用释放按钮
+        document.getElementById('releaseBtn').disabled = false;
+        
+        log('请使用 Node.js 客户端脚本完成实际的浏览器控制', 'info');
+      } catch (error) {
+        log(`错误: ${error.message}`, 'error');
+        document.getElementById('startBtn').disabled = false;
+      }
+    });
+    
+    // 释放浏览器
+    document.getElementById('releaseBtn').addEventListener('click', async () => {
+      try {
+        if (!sessionId) {
+          log('没有活动的会话', 'error');
+          return;
+        }
+        
+        const apiKey = document.getElementById('apiKey').value.trim();
+        const apiUrl = document.getElementById('apiUrl').value.trim();
+        
+        // 禁用按钮
+        document.getElementById('releaseBtn').disabled = true;
+        
+        // 步骤 3：释放会话
+        log('步骤 3：释放会话...');
+        const releaseResponse = await fetch(`${apiUrl}/sessions/${sessionId}/release`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+          },
+        });
+        
+        if (!releaseResponse.ok) {
+          const errorText = await releaseResponse.text();
+          throw new Error(`释放会话失败: ${releaseResponse.status} ${errorText}`);
+        }
+        
+        const releaseData = await releaseResponse.json();
+        log(`会话释放成功: ${JSON.stringify(releaseData.data)}`, 'success');
+        
+        // 重置状态
+        sessionId = null;
+        browser = null;
+        page = null;
+        
+        // 启用启动按钮
+        document.getElementById('startBtn').disabled = false;
+      } catch (error) {
+        log(`错误: ${error.message}`, 'error');
+        document.getElementById('releaseBtn').disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

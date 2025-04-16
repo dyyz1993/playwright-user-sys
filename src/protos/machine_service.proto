@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package machine;
+
+// 机器服务
+service MachineService {
+  // 机器注册到管理端
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // 双向流通信，用于心跳和状态更新
+  rpc Connect(stream MachineMessage) returns (stream ManagerMessage);
+
+  // 启动浏览器实例
+  rpc LaunchBrowser(LaunchBrowserRequest) returns (SessionResponse);
+
+  // 关闭浏览器实例
+  rpc CloseBrowser(CloseBrowserRequest) returns (SessionStatusUpdate);
+
+  // 获取机器状态
+  rpc GetMachineStatus(MachineStatusRequest) returns (MachineStatusResponse);
+}
+
+// 注册请求
+message RegisterRequest {
+  string machine_id = 1;
+  string name = 2;
+  string ip_address = 3;
+  int32 grpc_port = 4;
+  int32 max_sessions = 5;
+  SystemInfo system_info = 6;
+}
+
+// 系统信息
+message SystemInfo {
+  string os = 1;
+  string cpu = 2;
+  int64 memory = 3;
+  int64 disk = 4;
+}
+
+// 注册响应
+message RegisterResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 机器发送给管理端的消息
+message MachineMessage {
+  string machine_id = 1;
+  oneof message {
+    Heartbeat heartbeat = 2;
+    SessionStatusUpdate session_status = 3;
+  }
+}
+
+// 管理端发送给机器的消息
+message ManagerMessage {
+  oneof message {
+    HeartbeatRequest heartbeat_request = 1;
+  }
+}
+
+// 心跳消息
+message Heartbeat {
+  int64 timestamp = 1;
+  double cpu_usage = 2;
+  double memory_usage = 3;
+  int32 active_sessions = 4;
+}
+
+// 心跳请求
+message HeartbeatRequest {
+  int64 timestamp = 1;
+}
+
+// 启动浏览器请求
+message LaunchBrowserRequest {
+  string session_id = 1;
+  BrowserOptions options = 2;
+}
+
+// 浏览器选项
+message BrowserOptions {
+  string user_agent = 1;
+  string proxy = 2;
+  Viewport viewport = 3;
+  repeated string cookies = 4;
+  repeated string args = 5;
+}
+
+// 视口大小
+message Viewport {
+  int32 width = 1;
+  int32 height = 2;
+}
+
+// 关闭浏览器请求
+message CloseBrowserRequest {
+  string session_id = 1;
+}
+
+// 会话响应
+message SessionResponse {
+  string session_id = 1;
+  bool success = 2;
+  string browser_ws_endpoint = 3;
+  int32 port = 4;
+  string error = 5;
+}
+
+// 会话状态更新
+message SessionStatusUpdate {
+  string session_id = 1;
+  string status = 2;
+  string error = 3;
+  int32 duration = 4;
+}
+
+// 获取机器状态请求
+message MachineStatusRequest {
+  string machine_id = 1;
+}
+
+// 机器状态响应
+message MachineStatusResponse {
+  string machine_id = 1;
+  bool online = 2;
+  double cpu_usage = 3;
+  double memory_usage = 4;
+  int32 active_sessions = 5;
+  int32 max_sessions = 6;
+  int64 timestamp = 7;
+}

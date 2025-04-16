@@ -1,0 +1,210 @@
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+  <!-- 活跃会话卡片 -->
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-medium text-gray-700">活跃会话</h3>
+      <div class="p-2 bg-blue-100 rounded-full">
+        <i class="fas fa-desktop text-blue-500"></i>
+      </div>
+    </div>
+    <div class="flex items-end">
+      <span class="text-3xl font-bold text-gray-800"><%= stats.activeSessions %></span>
+      <% if (stats.sessionChange > 0) { %>
+        <span class="ml-2 text-sm text-green-500 flex items-center">
+          <i class="fas fa-arrow-up mr-1"></i><%= stats.sessionChange %>%
+        </span>
+      <% } else if (stats.sessionChange < 0) { %>
+        <span class="ml-2 text-sm text-red-500 flex items-center">
+          <i class="fas fa-arrow-down mr-1"></i><%= Math.abs(stats.sessionChange) %>%
+        </span>
+      <% } else { %>
+        <span class="ml-2 text-sm text-gray-500 flex items-center">
+          <i class="fas fa-minus mr-1"></i>0%
+        </span>
+      <% } %>
+    </div>
+    <p class="text-sm text-gray-500 mt-1">相比昨天</p>
+  </div>
+
+  <!-- 在线机器卡片 -->
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-medium text-gray-700">在线机器</h3>
+      <div class="p-2 bg-green-100 rounded-full">
+        <i class="fas fa-server text-green-500"></i>
+      </div>
+    </div>
+    <div class="flex items-end">
+      <span class="text-3xl font-bold text-gray-800"><%= stats.onlineMachines %></span>
+      <span class="ml-2 text-sm text-gray-500">/ <%= stats.totalMachines %></span>
+    </div>
+    <p class="text-sm text-gray-500 mt-1"><%= Math.round((stats.onlineMachines / stats.totalMachines) * 100) %>% 在线率</p>
+  </div>
+
+  <!-- 总用户数卡片 -->
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-medium text-gray-700">总用户数</h3>
+      <div class="p-2 bg-purple-100 rounded-full">
+        <i class="fas fa-users text-purple-500"></i>
+      </div>
+    </div>
+    <div class="flex items-end">
+      <span class="text-3xl font-bold text-gray-800"><%= stats.totalUsers %></span>
+      <% if (stats.newUsers > 0) { %>
+        <span class="ml-2 text-sm text-green-500 flex items-center">
+          +<%= stats.newUsers %> 新用户
+        </span>
+      <% } else { %>
+        <span class="ml-2 text-sm text-gray-500 flex items-center">
+          +0 新用户
+        </span>
+      <% } %>
+    </div>
+    <p class="text-sm text-gray-500 mt-1">本月</p>
+  </div>
+
+  <!-- 剩余算力卡片 -->
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-medium text-gray-700">剩余算力</h3>
+      <div class="p-2 bg-yellow-100 rounded-full">
+        <i class="fas fa-bolt text-yellow-500"></i>
+      </div>
+    </div>
+    <div class="flex items-end">
+      <span class="text-3xl font-bold text-gray-800"><%= stats.totalCredits %></span>
+      <span class="ml-2 text-sm text-gray-500">点数</span>
+    </div>
+    <p class="text-sm text-gray-500 mt-1">已使用 <%= stats.usedCredits %> 点数</p>
+  </div>
+</div>
+
+<!-- 最近会话和系统状态 -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- 最近会话 -->
+  <div class="lg:col-span-2 bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-medium text-gray-700">最近会话</h3>
+    </div>
+    <div class="p-6">
+      <% if (recentSessions && recentSessions.length > 0) { %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">用户</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">开始时间</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">持续时间</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <% recentSessions.forEach(session => { %>
+                <tr>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"><%= session.id.substring(0, 8) %>...</td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900"><%= session.username %></td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <% if (session.status === 'active') { %>
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        活跃
+                      </span>
+                    <% } else if (session.status === 'ended') { %>
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        已结束
+                      </span>
+                    <% } else { %>
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        <%= session.status %>
+                      </span>
+                    <% } %>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500"><%= new Date(session.created_at).toLocaleString() %></td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500"><%= session.duration %> 分钟</td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-4 text-right">
+          <a href="/admin/sessions" class="text-primary-600 hover:text-primary-800 text-sm font-medium">
+            查看全部 <i class="fas fa-arrow-right ml-1"></i>
+          </a>
+        </div>
+      <% } else { %>
+        <div class="text-center py-8">
+          <i class="fas fa-desktop text-gray-300 text-5xl mb-4"></i>
+          <p class="text-gray-500">暂无会话记录</p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- 系统状态 -->
+  <div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-medium text-gray-700">系统状态</h3>
+    </div>
+    <div class="p-6">
+      <div class="mb-6">
+        <div class="flex justify-between mb-2">
+          <span class="text-sm font-medium text-gray-700">CPU 使用率</span>
+          <span class="text-sm font-medium text-gray-700"><%= stats.cpuUsage %>%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="bg-blue-600 h-2 rounded-full" style="width: <%= stats.cpuUsage %>%"></div>
+        </div>
+      </div>
+      
+      <div class="mb-6">
+        <div class="flex justify-between mb-2">
+          <span class="text-sm font-medium text-gray-700">内存使用率</span>
+          <span class="text-sm font-medium text-gray-700"><%= stats.memoryUsage %>%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="bg-green-600 h-2 rounded-full" style="width: <%= stats.memoryUsage %>%"></div>
+        </div>
+      </div>
+      
+      <div class="mb-6">
+        <div class="flex justify-between mb-2">
+          <span class="text-sm font-medium text-gray-700">磁盘使用率</span>
+          <span class="text-sm font-medium text-gray-700"><%= stats.diskUsage %>%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="bg-yellow-600 h-2 rounded-full" style="width: <%= stats.diskUsage %>%"></div>
+        </div>
+      </div>
+      
+      <div>
+        <h4 class="text-sm font-medium text-gray-700 mb-3">服务状态</h4>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+              <span class="text-sm text-gray-600">API 服务</span>
+            </div>
+            <span class="text-xs text-green-600 font-medium">正常</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+              <span class="text-sm text-gray-600">数据库</span>
+            </div>
+            <span class="text-xs text-green-600 font-medium">正常</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+              <span class="text-sm text-gray-600">Playwright 服务</span>
+            </div>
+            <span class="text-xs text-green-600 font-medium">正常</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

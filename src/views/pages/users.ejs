@@ -1,0 +1,437 @@
+<div class="bg-white rounded-lg shadow">
+  <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+    <h3 class="text-lg font-medium text-gray-700">用户管理</h3>
+    <button id="add-user-btn" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center">
+      <i class="fas fa-plus mr-2"></i> 添加用户
+    </button>
+  </div>
+
+  <div class="p-6">
+    <!-- 搜索和筛选 -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
+      <div class="flex items-center">
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-search text-gray-400"></i>
+          </div>
+          <input type="text" id="search-users" placeholder="搜索用户..."
+            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        </div>
+        <div class="ml-4">
+          <select id="role-filter" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            <option value="">所有角色</option>
+            <option value="admin">管理员</option>
+            <option value="user">普通用户</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button id="refresh-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <div class="relative">
+          <button id="export-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
+            <i class="fas fa-download mr-1"></i> 导出
+          </button>
+          <div id="export-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden">
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">导出为 CSV</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">导出为 Excel</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 用户表格 -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              用户
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              角色
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              算力点数
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              状态
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              注册时间
+            </th>
+            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              操作
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% users.forEach(user => { %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium">
+                    <%= user.username.charAt(0).toUpperCase() %>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900"><%= user.username %></div>
+                    <div class="text-sm text-gray-500"><%= user.email %></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <% if (user.role === 'admin') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                    管理员
+                  </span>
+                <% } else { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    普通用户
+                  </span>
+                <% } %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= user.credits %> 点
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <% if (user.status === 'active') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    活跃
+                  </span>
+                <% } else { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                    禁用
+                  </span>
+                <% } %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= new Date(user.created_at).toLocaleString() %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex justify-end space-x-2">
+                  <button class="text-primary-600 hover:text-primary-900 add-credits-btn" data-user-id="<%= user.id %>">
+                    <i class="fas fa-coins"></i>
+                  </button>
+                  <button class="text-indigo-600 hover:text-indigo-900 edit-user-btn" data-user-id="<%= user.id %>">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="text-red-600 hover:text-red-900 delete-user-btn" data-user-id="<%= user.id %>">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 分页 -->
+    <div class="flex items-center justify-between mt-6">
+      <div class="text-sm text-gray-700">
+        显示 <span class="font-medium"><%= (page - 1) * limit + 1 %></span> 到 <span class="font-medium"><%= Math.min(page * limit, totalUsers) %></span> 条，共 <span class="font-medium"><%= totalUsers %></span> 条
+      </div>
+      <div class="flex space-x-2">
+        <% if (page > 1) { %>
+          <a href="/admin/users?page=<%= page - 1 %>&limit=<%= limit %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            上一页
+          </a>
+        <% } else { %>
+          <button disabled class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed">
+            上一页
+          </button>
+        <% } %>
+
+        <% if (page * limit < totalUsers) { %>
+          <a href="/admin/users?page=<%= page + 1 %>&limit=<%= limit %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            下一页
+          </a>
+        <% } else { %>
+          <button disabled class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed">
+            下一页
+          </button>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 添加用户模态框 -->
+<div id="add-user-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">添加新用户</h3>
+      <button id="close-add-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <form id="add-user-form" class="p-6">
+      <div class="space-y-4">
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700">用户名</label>
+          <input type="text" id="username" name="username" required
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        </div>
+
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">邮箱</label>
+          <input type="email" id="email" name="email" required
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700">密码</label>
+          <input type="password" id="password" name="password" required
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        </div>
+
+        <div>
+          <label for="role" class="block text-sm font-medium text-gray-700">角色</label>
+          <select id="role" name="role" required
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            <option value="user">普通用户</option>
+            <option value="admin">管理员</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="initial-credits" class="block text-sm font-medium text-gray-700">初始算力点数</label>
+          <input type="number" id="initial-credits" name="initial-credits" min="0" value="100"
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button type="button" id="cancel-add-user" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
+          取消
+        </button>
+        <button type="submit" class="bg-primary-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          添加
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 添加算力模态框 -->
+<div id="add-credits-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">添加算力点数</h3>
+      <button id="close-credits-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <form id="add-credits-form" class="p-6">
+      <input type="hidden" id="credits-user-id" name="user-id">
+      <div class="space-y-4">
+        <div>
+          <label for="credits-amount" class="block text-sm font-medium text-gray-700">点数数量</label>
+          <input type="number" id="credits-amount" name="credits-amount" min="1" value="100" required
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        </div>
+
+        <div>
+          <label for="credits-reason" class="block text-sm font-medium text-gray-700">原因</label>
+          <textarea id="credits-reason" name="credits-reason" rows="3"
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+            placeholder="添加算力的原因（可选）"></textarea>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button type="button" id="cancel-add-credits" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
+          取消
+        </button>
+        <button type="submit" class="bg-primary-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          添加
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // 添加用户模态框
+  const addUserBtn = document.getElementById('add-user-btn');
+  const addUserModal = document.getElementById('add-user-modal');
+  const closeAddModal = document.getElementById('close-add-modal');
+  const cancelAddUser = document.getElementById('cancel-add-user');
+  const addUserForm = document.getElementById('add-user-form');
+
+  addUserBtn?.addEventListener('click', () => {
+    addUserModal.classList.remove('hidden');
+  });
+
+  closeAddModal?.addEventListener('click', () => {
+    addUserModal.classList.add('hidden');
+  });
+
+  cancelAddUser?.addEventListener('click', () => {
+    addUserModal.classList.add('hidden');
+  });
+
+  addUserForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(addUserForm);
+    const userData = {
+      username: formData.get('username'),
+      email: formData.get('email'),
+      password: formData.get('password'),
+      role: formData.get('role'),
+      credits: parseInt(formData.get('initial-credits'))
+    };
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // 刷新页面
+        window.location.reload();
+      } else {
+        alert('添加用户失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('添加用户失败: ' + error.message);
+    }
+  });
+
+  // 添加算力模态框
+  const addCreditsButtons = document.querySelectorAll('.add-credits-btn');
+  const addCreditsModal = document.getElementById('add-credits-modal');
+  const closeCreditsModal = document.getElementById('close-credits-modal');
+  const cancelAddCredits = document.getElementById('cancel-add-credits');
+  const addCreditsForm = document.getElementById('add-credits-form');
+  const creditsUserId = document.getElementById('credits-user-id');
+
+  addCreditsButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      creditsUserId.value = button.getAttribute('data-user-id');
+      addCreditsModal.classList.remove('hidden');
+    });
+  });
+
+  closeCreditsModal?.addEventListener('click', () => {
+    addCreditsModal.classList.add('hidden');
+  });
+
+  cancelAddCredits?.addEventListener('click', () => {
+    addCreditsModal.classList.add('hidden');
+  });
+
+  addCreditsForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(addCreditsForm);
+    const creditsData = {
+      userId: formData.get('user-id'),
+      amount: parseInt(formData.get('credits-amount')),
+      reason: formData.get('credits-reason')
+    };
+
+    try {
+      const response = await fetch('/api/admin/users/' + creditsData.userId + '/credits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: creditsData.amount,
+          reason: creditsData.reason
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // 刷新页面
+        window.location.reload();
+      } else {
+        alert('添加算力失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('添加算力失败: ' + error.message);
+    }
+  });
+
+  // 导出菜单
+  const exportBtn = document.getElementById('export-btn');
+  const exportMenu = document.getElementById('export-menu');
+
+  exportBtn?.addEventListener('click', () => {
+    exportMenu.classList.toggle('hidden');
+  });
+
+  // 点击其他地方关闭导出菜单
+  document.addEventListener('click', (e) => {
+    if (!exportBtn?.contains(e.target) && !exportMenu?.contains(e.target)) {
+      exportMenu?.classList.add('hidden');
+    }
+  });
+
+  // 点击模态框背景关闭模态框
+  addUserModal?.addEventListener('click', (e) => {
+    if (e.target === addUserModal) {
+      addUserModal.classList.add('hidden');
+    }
+  });
+
+  addCreditsModal?.addEventListener('click', (e) => {
+    if (e.target === addCreditsModal) {
+      addCreditsModal.classList.add('hidden');
+    }
+  });
+
+  // 搜索功能
+  const searchInput = document.getElementById('search-users');
+  searchInput?.addEventListener('input', () => {
+    const searchTerm = searchInput.value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+      const username = row.querySelector('td:first-child .text-sm.font-medium').textContent.toLowerCase();
+      const email = row.querySelector('td:first-child .text-sm.text-gray-500').textContent.toLowerCase();
+
+      if (username.includes(searchTerm) || email.includes(searchTerm)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+
+  // 角色筛选
+  const roleFilter = document.getElementById('role-filter');
+  roleFilter?.addEventListener('change', () => {
+    const selectedRole = roleFilter.value;
+    const rows = document.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+      const roleCell = row.querySelector('td:nth-child(2) span');
+      const role = roleCell.textContent.trim() === '管理员' ? 'admin' : 'user';
+
+      if (selectedRole === '' || role === selectedRole) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+
+  // 刷新按钮
+  const refreshBtn = document.getElementById('refresh-btn');
+  refreshBtn?.addEventListener('click', () => {
+    window.location.reload();
+  });
+</script>

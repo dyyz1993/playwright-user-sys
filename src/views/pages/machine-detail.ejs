@@ -1,0 +1,594 @@
+<div class="container mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900"><%= title %></h1>
+      <p class="text-gray-600"><%= subtitle %></p>
+    </div>
+    <div class="flex space-x-2">
+      <a href="/admin/machines" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+        <i class="fas fa-arrow-left mr-2"></i>返回
+      </a>
+      <button id="refresh-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+        <i class="fas fa-sync-alt mr-2"></i>刷新
+      </button>
+    </div>
+  </div>
+
+  <% if (flash && flash.error) { %>
+    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+      <p><%= flash.error %></p>
+    </div>
+  <% } %>
+
+  <% if (flash && flash.success) { %>
+    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+      <p><%= flash.success %></p>
+    </div>
+  <% } %>
+
+  <!-- 机器状态卡片 -->
+  <div class="bg-white rounded-lg shadow-md mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <div class="flex items-center">
+        <% if (machine.status === 'online') { %>
+          <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+        <% } else { %>
+          <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+        <% } %>
+        <h2 class="text-xl font-semibold text-gray-900"><%= machine.name %></h2>
+      </div>
+      <div class="flex items-center">
+        <span class="text-sm font-medium px-2 py-1 rounded-full <%= machine.status === 'online' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+          <%= machine.status === 'online' ? '在线' : '离线' %>
+        </span>
+      </div>
+    </div>
+
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-500 mb-1">IP 地址</p>
+          <p class="text-lg font-medium text-gray-900"><%= machine.ip %></p>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-500 mb-1">gRPC 端口</p>
+          <p class="text-lg font-medium text-gray-900"><%= machine.grpcPort || '-' %></p>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-500 mb-1">最后心跳</p>
+          <p class="text-lg font-medium text-gray-900"><%= new Date(machine.lastSeen).toLocaleString() %></p>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-500 mb-1">会话数</p>
+          <p class="text-lg font-medium text-gray-900"><%= machine.activeSessions %> / <%= machine.maxSessions %></p>
+        </div>
+      </div>
+
+      <!-- 资源使用情况 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-sm font-medium text-gray-700">CPU 使用率</span>
+            <span class="text-sm font-medium text-gray-700"><%= machine.cpuUsage %>%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div class="bg-blue-600 h-2.5 rounded-full" style="width: <%= machine.cpuUsage %>%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-sm font-medium text-gray-700">内存使用率</span>
+            <span class="text-sm font-medium text-gray-700"><%= machine.memoryUsage %>%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div class="bg-green-600 h-2.5 rounded-full" style="width: <%= machine.memoryUsage %>%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-sm font-medium text-gray-700">磁盘使用率</span>
+            <span class="text-sm font-medium text-gray-700"><%= machine.diskUsage %>%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div class="bg-yellow-600 h-2.5 rounded-full" style="width: <%= machine.diskUsage %>%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="flex space-x-3 mt-4">
+        <% if (machine.status === 'online') { %>
+          <button id="restart-machine-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+            <i class="fas fa-redo mr-2"></i>重启机器
+          </button>
+        <% } %>
+        <button id="mark-offline-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+          <i class="fas fa-power-off mr-2"></i>标记为离线
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 资源使用历史 -->
+  <div class="bg-white rounded-lg shadow-md mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-medium text-gray-700">资源使用历史</h3>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h4 class="text-md font-medium text-gray-700 mb-4">CPU 使用率</h4>
+          <canvas id="cpuChart" width="400" height="200"></canvas>
+        </div>
+        <div>
+          <h4 class="text-md font-medium text-gray-700 mb-4">内存使用率</h4>
+          <canvas id="memoryChart" width="400" height="200"></canvas>
+        </div>
+        <div>
+          <h4 class="text-md font-medium text-gray-700 mb-4">磁盘使用率</h4>
+          <canvas id="diskChart" width="400" height="200"></canvas>
+        </div>
+        <div>
+          <h4 class="text-md font-medium text-gray-700 mb-4">会话数</h4>
+          <canvas id="sessionsChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 会话列表 -->
+  <div class="bg-white rounded-lg shadow-md">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h3 class="text-lg font-medium text-gray-700">机器会话</h3>
+      <span class="text-sm font-medium px-2 py-1 bg-gray-100 text-gray-800 rounded-full">
+        共 <%= sessions.length %> 个会话
+      </span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              会话 ID
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              状态
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              开始时间
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              结束时间
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              持续时间
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              操作
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% if (sessions.length === 0) { %>
+            <tr>
+              <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+                没有会话记录
+              </td>
+            </tr>
+          <% } else { %>
+            <% sessions.forEach(session => { %>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <%= session.id.substring(0, 8) %>...
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <% if (session.status === 'created') { %>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                      已创建
+                    </span>
+                  <% } else if (session.status === 'connected') { %>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                      已连接
+                    </span>
+                  <% } else if (session.status === 'disconnected') { %>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                      已断开
+                    </span>
+                  <% } else if (session.status === 'closed') { %>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                      已关闭
+                    </span>
+                  <% } else { %>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                      <%= session.status %>
+                    </span>
+                  <% } %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <%= new Date(session.created_at).toLocaleString() %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <%= session.ended_at ? new Date(session.ended_at).toLocaleString() : '-' %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <%= session.duration ? `${session.duration} 分钟` : '-' %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <% if (session.status === 'created' || session.status === 'connected') { %>
+                    <button class="text-red-600 hover:text-red-900 close-session-btn" data-session-id="<%= session.id %>">
+                      <i class="fas fa-times-circle"></i> 关闭
+                    </button>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 重启机器确认模态框 -->
+<div id="restart-machine-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-medium text-gray-900">确认重启机器</h3>
+      <button id="close-restart-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="mb-6">
+      <p class="text-gray-600">您确定要重启此机器吗？这将断开所有当前会话连接。</p>
+    </div>
+    <div class="flex justify-end space-x-3">
+      <button id="cancel-restart-machine" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+        取消
+      </button>
+      <button id="confirm-restart-machine" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+        确认重启
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 标记离线确认模态框 -->
+<div id="mark-offline-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-medium text-gray-900">确认标记为离线</h3>
+      <button id="close-offline-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="mb-6">
+      <p class="text-gray-600">您确定要将此机器标记为离线吗？这将断开所有当前会话连接。</p>
+    </div>
+    <div class="flex justify-end space-x-3">
+      <button id="cancel-mark-offline" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+        取消
+      </button>
+      <button id="confirm-mark-offline" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+        确认标记
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 关闭会话确认模态框 -->
+<div id="close-session-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-medium text-gray-900">确认关闭会话</h3>
+      <button id="close-session-modal-btn" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="mb-6">
+      <p class="text-gray-600">您确定要关闭此会话吗？这将断开用户的连接。</p>
+    </div>
+    <div class="flex justify-end space-x-3">
+      <button id="cancel-close-session" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium">
+        取消
+      </button>
+      <button id="confirm-close-session" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+        确认关闭
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // 图表数据
+  const cpuData = <%- JSON.stringify(historyData.cpu) %>;
+  const memoryData = <%- JSON.stringify(historyData.memory) %>;
+  const diskData = <%- JSON.stringify(historyData.disk) %>;
+  const sessionsData = <%- JSON.stringify(historyData.sessions) %>;
+
+  // 格式化时间
+  const formatTime = (isoString) => {
+    const date = new Date(isoString);
+    return date.getHours() + ':00';
+  };
+
+  // CPU 图表
+  const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+  new Chart(cpuCtx, {
+    type: 'line',
+    data: {
+      labels: cpuData.map(item => formatTime(item.time)),
+      datasets: [{
+        label: 'CPU 使用率 (%)',
+        data: cpuData.map(item => item.value),
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderColor: 'rgba(59, 130, 246, 1)',
+        borderWidth: 2,
+        tension: 0.4
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+
+  // 内存图表
+  const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+  new Chart(memoryCtx, {
+    type: 'line',
+    data: {
+      labels: memoryData.map(item => formatTime(item.time)),
+      datasets: [{
+        label: '内存使用率 (%)',
+        data: memoryData.map(item => item.value),
+        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+        borderColor: 'rgba(16, 185, 129, 1)',
+        borderWidth: 2,
+        tension: 0.4
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+
+  // 磁盘图表
+  const diskCtx = document.getElementById('diskChart').getContext('2d');
+  new Chart(diskCtx, {
+    type: 'line',
+    data: {
+      labels: diskData.map(item => formatTime(item.time)),
+      datasets: [{
+        label: '磁盘使用率 (%)',
+        data: diskData.map(item => item.value),
+        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+        borderColor: 'rgba(245, 158, 11, 1)',
+        borderWidth: 2,
+        tension: 0.4
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+
+  // 会话图表
+  const sessionsCtx = document.getElementById('sessionsChart').getContext('2d');
+  new Chart(sessionsCtx, {
+    type: 'line',
+    data: {
+      labels: sessionsData.map(item => formatTime(item.time)),
+      datasets: [{
+        label: '会话数',
+        data: sessionsData.map(item => item.value),
+        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+        borderColor: 'rgba(139, 92, 246, 1)',
+        borderWidth: 2,
+        tension: 0.4
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: <%= machine.maxSessions %>
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+
+  // 重启机器模态框
+  const restartMachineBtn = document.getElementById('restart-machine-btn');
+  const restartMachineModal = document.getElementById('restart-machine-modal');
+  const closeRestartModal = document.getElementById('close-restart-modal');
+  const cancelRestartMachine = document.getElementById('cancel-restart-machine');
+  const confirmRestartMachine = document.getElementById('confirm-restart-machine');
+
+  if (restartMachineBtn) {
+    restartMachineBtn.addEventListener('click', () => {
+      restartMachineModal.classList.remove('hidden');
+    });
+  }
+
+  closeRestartModal?.addEventListener('click', () => {
+    restartMachineModal.classList.add('hidden');
+  });
+
+  cancelRestartMachine?.addEventListener('click', () => {
+    restartMachineModal.classList.add('hidden');
+  });
+
+  confirmRestartMachine?.addEventListener('click', async () => {
+    try {
+      const response = await fetch(`/api/machines/<%= machine.id %>/restart`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        window.location.reload();
+      } else {
+        alert('重启机器失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('重启机器失败: ' + error.message);
+    } finally {
+      restartMachineModal.classList.add('hidden');
+    }
+  });
+
+  restartMachineModal?.addEventListener('click', (e) => {
+    if (e.target === restartMachineModal) {
+      restartMachineModal.classList.add('hidden');
+    }
+  });
+
+  // 标记离线模态框
+  const markOfflineBtn = document.getElementById('mark-offline-btn');
+  const markOfflineModal = document.getElementById('mark-offline-modal');
+  const closeOfflineModal = document.getElementById('close-offline-modal');
+  const cancelMarkOffline = document.getElementById('cancel-mark-offline');
+  const confirmMarkOffline = document.getElementById('confirm-mark-offline');
+
+  markOfflineBtn?.addEventListener('click', () => {
+    markOfflineModal.classList.remove('hidden');
+  });
+
+  closeOfflineModal?.addEventListener('click', () => {
+    markOfflineModal.classList.add('hidden');
+  });
+
+  cancelMarkOffline?.addEventListener('click', () => {
+    markOfflineModal.classList.add('hidden');
+  });
+
+  confirmMarkOffline?.addEventListener('click', async () => {
+    try {
+      const response = await fetch(`/api/machines/<%= machine.id %>/offline`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        window.location.reload();
+      } else {
+        alert('标记机器离线失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('标记机器离线失败: ' + error.message);
+    } finally {
+      markOfflineModal.classList.add('hidden');
+    }
+  });
+
+  markOfflineModal?.addEventListener('click', (e) => {
+    if (e.target === markOfflineModal) {
+      markOfflineModal.classList.add('hidden');
+    }
+  });
+
+  // 关闭会话模态框
+  const closeSessionBtns = document.querySelectorAll('.close-session-btn');
+  const closeSessionModal = document.getElementById('close-session-modal');
+  const closeSessionModalBtn = document.getElementById('close-session-modal-btn');
+  const cancelCloseSession = document.getElementById('cancel-close-session');
+  const confirmCloseSession = document.getElementById('confirm-close-session');
+  let currentSessionId = null;
+
+  closeSessionBtns.forEach(button => {
+    button.addEventListener('click', () => {
+      currentSessionId = button.getAttribute('data-session-id');
+      closeSessionModal.classList.remove('hidden');
+    });
+  });
+
+  closeSessionModalBtn?.addEventListener('click', () => {
+    closeSessionModal.classList.add('hidden');
+  });
+
+  cancelCloseSession?.addEventListener('click', () => {
+    closeSessionModal.classList.add('hidden');
+  });
+
+  confirmCloseSession?.addEventListener('click', async () => {
+    try {
+      const response = await fetch(`/api/sessions/${currentSessionId}/close`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        window.location.reload();
+      } else {
+        alert('关闭会话失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('关闭会话失败: ' + error.message);
+    } finally {
+      closeSessionModal.classList.add('hidden');
+    }
+  });
+
+  closeSessionModal?.addEventListener('click', (e) => {
+    if (e.target === closeSessionModal) {
+      closeSessionModal.classList.add('hidden');
+    }
+  });
+
+  // 刷新按钮
+  const refreshBtn = document.getElementById('refresh-btn');
+  refreshBtn?.addEventListener('click', () => {
+    window.location.reload();
+  });
+</script>
+
+

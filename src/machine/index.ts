@@ -3,6 +3,7 @@ import { logger } from '../utils/logger.js';
 import { browserService } from './browser.service.js';
 import { proxyService } from './proxy.service.js';
 import grpcService, { grpcClient, startGrpcServer } from './grpc.service.js';
+import retry from 'async-retry';
 
 // 机器端状态枚举
 export enum MachineState {
@@ -23,6 +24,15 @@ class MachineServer {
 
   // 重连定时器
   private reconnectTimer: NodeJS.Timeout | null = null;
+
+  // 冷却定时器
+  private cooldownTimer: NodeJS.Timeout | null = null;
+
+  // 是否处于冷却期
+  private inCooldown: boolean = false;
+
+  // 冷却期时间（毫秒）
+  private readonly COOLDOWN_PERIOD: number = 60000; // 1分钟
 
   /**
    * 获取当前状态
@@ -130,6 +140,12 @@ class MachineServer {
         this.reconnectTimer = null;
       }
 
+      // 清除冷却定时器
+      if (this.cooldownTimer) {
+        clearTimeout(this.cooldownTimer);
+        this.cooldownTimer = null;
+      }
+
       // 关闭所有浏览器实例
       await browserService.closeAllBrowsers();
 
@@ -204,7 +220,13 @@ class MachineServer {
         this.reconnectTimer = null;
       }
 
-      // 尝试重新连接到管理端
+      // 如果在冷却期，不立即重连
+      if (this.inCooldown) {
+        logger.warn('当前处于重连冷却期，等待冷却期结束后自动重试');
+        return;
+      }
+
+      // 使用 async-retry 库进行重试
       this.reconnectTimer = setTimeout(async () => {
         try {
           // 再次检查状态，确保没有在停止中
@@ -213,23 +235,56 @@ class MachineServer {
             return;
           }
 
-          logger.info('尝试重新连接到管理端...');
-          await grpcClient.connect();
-          logger.info('重新连接成功');
+          await retry(async (bail: (error: Error) => void, attemptNumber: number) => {
+            try {
+              // 再次检查状态
+              if (this.state === MachineState.SHUTTING_DOWN || this.state === MachineState.STOPPED) {
+                logger.warn('机器端正在停止或已停止，取消重连');
+                bail(new Error('取消重连'));
+                return;
+              }
 
-          // 重连成功，设置状态为运行中
-          this.setState(MachineState.RUNNING);
-        } catch (reconnectError) {
-          logger.error('重新连接失败:', reconnectError);
+              logger.info(`执行第 ${attemptNumber} 次重连尝试...`);
+              await grpcClient.connect();
+              logger.info('重新连接成功');
 
-          // 如果重连失败，则再次尝试
-          if (this.state === MachineState.RECONNECTING) {
-            this.handleUncaughtException(error); // 递归调用自身重试
-          }
+              // 重连成功，设置状态为运行中
+              this.setState(MachineState.RUNNING);
+            } catch (err) {
+              logger.error(`第 ${attemptNumber} 次重连失败:`, err);
+              throw err; // 抛出错误，触发重试
+            }
+          }, {
+            retries: 10, // 最大重试次数
+            factor: 2,   // 指数退避因子
+            minTimeout: 1000, // 最小重试间隔（毫秒）
+            maxTimeout: 60000, // 最大重试间隔（毫秒）
+            randomize: true,   // 添加随机性，避免集体重试
+            onRetry: (err: Error, attempt: number) => {
+              logger.warn(`重连失败，将进行第 ${attempt} 次重试:`, err);
+            }
+          }).catch((retryError: Error) => {
+            logger.error('重连失败，已达到最大重试次数:', retryError);
+
+            // 进入冷却期
+            this.inCooldown = true;
+            logger.warn(`进入重连冷却期，${this.COOLDOWN_PERIOD/1000} 秒后将再次尝试`);
+
+            // 设置冷却定时器
+            this.cooldownTimer = setTimeout(() => {
+              logger.info('冷却期结束，将再次尝试重连');
+              this.inCooldown = false;
+
+              // 冷却期结束后再次尝试重连
+              setImmediate(() => this.handleUncaughtException(error));
+            }, this.COOLDOWN_PERIOD);
+          });
+        } catch (outerError) {
+          logger.error('重连过程中发生外部错误:', outerError);
         } finally {
           this.reconnectTimer = null;
         }
-      }, 5000); // 5 秒后重试
+      }, 1000); // 等待 1 秒后开始重连
 
       return; // 不停止服务，不退出进程
     }

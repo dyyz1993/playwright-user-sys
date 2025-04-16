@@ -261,7 +261,10 @@ class GrpcClient extends EventEmitter {
                 this.stopHeartbeat();
 
                 this.emit('disconnected');
-                this.reconnect();
+                // 不在这里直接重连，而是抛出一个错误，由上层的错误处理机制统一处理
+                // 这样可以避免多个地方同时触发重连
+                const error = new Error('UNAVAILABLE: Connection closed by server');
+                this.emit('error', error);
               });
 
               // 设置错误处理器
@@ -353,6 +356,9 @@ class GrpcClient extends EventEmitter {
 
   /**
    * 重新连接到管理服务器
+   *
+   * 注意：这个方法不应该直接处理重连逻辑，而是交给 MachineServer 的重连机制处理
+   * 这里只负责执行单次连接尝试，不应该自己调度重连
    */
   async reconnect(): Promise<void> {
     try {
@@ -370,30 +376,12 @@ class GrpcClient extends EventEmitter {
       await this.connect();
       logger.info('重新连接成功');
     } catch (error) {
+      // 只记录错误，不处理重连逻辑
+      // 重连逻辑由 MachineServer 的 handleUncaughtException 方法统一处理
       logger.error('重新连接失败:', error);
 
-      // 检查机器端状态
-      try {
-        const machineServer = await import('./index.js').then(m => m.default);
-        const machineState = machineServer.getState();
-
-        // 如果机器端正在停止或已停止，不再尝试重连
-        if (machineState === 'shutting_down' || machineState === 'stopped') {
-          logger.warn(`机器端当前状态为 ${machineState}，取消后续重连`);
-          return;
-        }
-
-        // 设置定时器，稍后再次尝试重连
-        setTimeout(() => {
-          this.reconnect();
-        }, 10000); // 10 秒后重试
-      } catch (stateError) {
-        logger.error('获取机器端状态失败:', stateError);
-        // 即使无法获取状态，也尝试重连
-        setTimeout(() => {
-          this.reconnect();
-        }, 10000); // 10 秒后重试
-      }
+      // 将错误抛出，由上层调用者处理
+      throw error;
     }
   }
 
@@ -421,12 +409,15 @@ class GrpcClient extends EventEmitter {
             return;
           }
 
-          logger.warn('心跳检测到连接已断开，尝试重新连接');
-          this.reconnect();
-        } catch (error) {
-          logger.error('心跳定时器中获取机器端状态失败:', error);
-          // 即使无法获取状态，也尝试重连
-          this.reconnect();
+          logger.warn('心跳检测到连接已断开');
+          // 不直接重连，而是抛出错误，由上层的错误处理机制统一处理
+          const error = new Error('UNAVAILABLE: Connection detected as closed by heartbeat');
+          this.emit('error', error);
+        } catch (stateError) {
+          logger.error('心跳定时器中获取机器端状态失败:', stateError);
+          // 即使无法获取状态，也抛出错误由上层处理
+          const connectionError = new Error('UNAVAILABLE: Connection detected as closed by heartbeat');
+          this.emit('error', connectionError);
         }
         return;
       }
@@ -497,12 +488,14 @@ class GrpcClient extends EventEmitter {
           return;
         }
 
-        // 尝试重新连接
-        this.reconnect();
+        // 不直接重连，而是抛出错误，由上层的错误处理机制统一处理
+        const reconnectError = new Error('UNAVAILABLE: Connection lost during heartbeat');
+        this.emit('error', reconnectError);
       } catch (stateError) {
         logger.error('心跳发送失败后获取机器端状态失败:', stateError);
-        // 即使无法获取状态，也尝试重连
-        this.reconnect();
+        // 即使无法获取状态，也抛出错误由上层处理
+        const reconnectError = new Error('UNAVAILABLE: Connection lost during heartbeat');
+        this.emit('error', reconnectError);
       }
     }
   }

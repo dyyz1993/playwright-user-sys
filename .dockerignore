@@ -19,3 +19,16 @@ dist
 coverage
 logs
 *.log
+
+# 排除 Docker 相关文件
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# 排除脚本文件
+*.sh
+
+# 不排除预编译的 SQLite3 文件和选择脚本
+!prebuilt/
+!prebuilt-sqlite3/
+!select-platform.js

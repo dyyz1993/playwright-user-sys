@@ -44,3 +44,9 @@ coverage/
 # 临时文件
 tmp/
 temp/
+prebuilt/
+.docker-cache/
+
+# 预编译的 SQLite3 文件
+# 但保留目录结构
+!prebuilt-sqlite3/.gitkeep

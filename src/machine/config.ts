@@ -24,7 +24,7 @@ export const CONFIG = {
   heartbeatInterval: parseInt(env.HEARTBEAT_INTERVAL || '30000', 10), // 30秒
 
   // 断开连接超时（如果用户断开连接后多长时间内没有重连，则关闭浏览器实例）
-  disconnectionTimeout: parseInt(env.DISCONNECTION_TIMEOUT || '60000', 10), // 1分钟
+  disconnectionTimeout: parseInt(env.DISCONNECTION_TIMEOUT || '10000', 10), // 10秒
 
   // 活动报告间隔（多久向管理端报告一次会话活动）
   activityReportInterval: parseInt(env.ACTIVITY_REPORT_INTERVAL || '3000', 10), // 3秒

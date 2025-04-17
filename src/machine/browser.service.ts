@@ -1,9 +1,10 @@
 import puppeteer from 'puppeteer-core';
 import { EventEmitter } from 'events';
-import { Duplex } from 'stream';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { FingerprintInjector } from "fingerprint-injector";
+import { BrowserFingerprintWithHeaders, FingerprintGenerator } from "fingerprint-generator";
 import { CONFIG } from './config.js';
 import { logger } from '../utils/logger.js';
 
@@ -15,6 +16,14 @@ export interface BrowserOptions {
   args?: string[];
   defaultViewport?: { width: number; height: number };
   headless?: boolean;
+  timezone?: string;
+  // 指纹相关选项
+  fingerprintOptions?: {
+    enabled?: boolean; // 是否启用指纹注入
+    devices?: ('desktop' | 'mobile')[];
+    operatingSystems?: ('windows' | 'macos' | 'linux' | 'android' | 'ios')[];
+    browsers?: ('chrome' | 'firefox' | 'safari' | 'edge')[];
+  };
 }
 
 // 浏览器实例接口
@@ -33,11 +42,11 @@ interface SessionInfo {
   lastActivity: number;
   startTime: number;
   screenshotUrl?: string;
+  fingerprint?: BrowserFingerprintWithHeaders; // 存储指纹数据
 }
 
 // 连接信息接口
 interface ConnectionInfo {
-  socket: Duplex;
   connectedAt: number;
   lastActivity: number;
   totalConnectedTime: number;
@@ -108,13 +117,12 @@ class BrowserService extends EventEmitter {
   /**
    * 处理用户连接
    */
-  handleConnection(sessionId: string, socket: Duplex): void {
+  handleConnection(sessionId: string): void {
     const now = Date.now();
     const session = this.sessions.get(sessionId);
 
     if (!session) {
       logger.warn(`会话不存在 (sessionId: ${sessionId})`);
-      socket.end('HTTP/1.1 404 Not Found\r\n\r\n');
       return;
     }
 
@@ -132,7 +140,6 @@ class BrowserService extends EventEmitter {
 
     // 记录连接信息
     this.connections.set(sessionId, {
-      socket,
       connectedAt: now,
       lastActivity: now,
       totalConnectedTime: previousTotalTime
@@ -141,29 +148,55 @@ class BrowserService extends EventEmitter {
     // 发送连接事件
     this.emit('sessionConnected', sessionId);
 
-    // 监听 socket 事件
-    socket.on('message', () => this.handleActivity(sessionId));
-    socket.on('close', () => this.handleDisconnection(sessionId));
-
     logger.info(`用户已连接到会话 (sessionId: ${sessionId})`);
   }
 
   /**
-   * 处理用户活动
+   * 更新用户活动时间
    */
-  private handleActivity(sessionId: string): void {
+  updateActivity(sessionId: string): void {
     const connection = this.connections.get(sessionId);
     if (connection) {
       connection.lastActivity = Date.now();
+      logger.debug(`已更新用户活动时间 (sessionId: ${sessionId})`);
     }
   }
 
   /**
    * 处理用户断开连接
    */
-  private handleDisconnection(sessionId: string): void {
+  handleDisconnection(sessionId: string): void {
+    logger.info(`开始处理用户断开连接 (sessionId: ${sessionId})`);
+
+    if (this.disconnectionTimers.has(sessionId)) {
+      clearTimeout(this.disconnectionTimers.get(sessionId)!);
+      this.disconnectionTimers.delete(sessionId);
+      logger.info(`已清除断开连接计时器 (sessionId: ${sessionId})`);
+    }
     const connection = this.connections.get(sessionId);
-    if (!connection) return;
+    if (!connection) {
+      logger.warn(`找不到连接信息 (sessionId: ${sessionId})`);
+
+      // 即使没有连接信息，也应该设置断开连接计时器
+      logger.info(`设置断开连接计时器 (sessionId: ${sessionId}, 超时时间: ${CONFIG.disconnectionTimeout}ms)`);
+      const timer = setTimeout(() => {
+        logger.info(`会话连接超时，准备关闭浏览器 (sessionId: ${sessionId})`);
+        this.closeBrowser(sessionId)
+          .then(success => {
+            if (success) {
+              logger.info(`已关闭超时会话的浏览器 (sessionId: ${sessionId})`);
+            } else {
+              logger.error(`关闭超时会话的浏览器失败 (sessionId: ${sessionId})`);
+            }
+          })
+          .catch(error => {
+            logger.error(`关闭超时会话的浏览器出错 (sessionId: ${sessionId}):`, error);
+          });
+      }, CONFIG.disconnectionTimeout);
+
+      this.disconnectionTimers.set(sessionId, timer);
+      return;
+    }
 
     const now = Date.now();
 
@@ -179,6 +212,7 @@ class BrowserService extends EventEmitter {
     logger.info(`用户已断开会话连接 (sessionId: ${sessionId}, 本次连接时长: ${connectionDuration}秒, 总连接时长: ${connection.totalConnectedTime}秒)`);
 
     // 设置断开连接计时器（如果一定时间内没有重新连接，则关闭浏览器实例）
+    logger.info(`设置断开连接计时器 (sessionId: ${sessionId}, 超时时间: ${CONFIG.disconnectionTimeout}ms)`);
     const timer = setTimeout(() => {
       logger.info(`会话连接超时，准备关闭浏览器 (sessionId: ${sessionId})`);
       this.closeBrowser(sessionId)
@@ -198,6 +232,35 @@ class BrowserService extends EventEmitter {
   }
 
   /**
+   * 生成浏览器指纹
+   */
+  private generateFingerprint(options: BrowserOptions = {}): BrowserFingerprintWithHeaders | null {
+    try {
+      // 默认启用指纹注入，除非明确指定不启用
+      if (options.fingerprintOptions?.enabled === false) {
+        logger.info('根据配置禁用指纹注入');
+        return null;
+      }
+
+      // 创建指纹生成器
+      const fingerprintGenerator = new FingerprintGenerator({
+        devices: options.fingerprintOptions?.devices || ['desktop'],
+        operatingSystems: options.fingerprintOptions?.operatingSystems || ['windows', 'macos', 'linux'],
+        browsers: options.fingerprintOptions?.browsers || ['chrome', 'firefox', 'safari']
+      });
+
+      // 生成指纹
+      const fingerprint = fingerprintGenerator.getFingerprint();
+      logger.info(`成功生成浏览器指纹: ${fingerprint.fingerprint.navigator.userAgent}`);
+
+      return fingerprint;
+    } catch (error) {
+      logger.error('生成浏览器指纹失败:', error);
+      return null;
+    }
+  }
+
+  /**
    * 启动浏览器实例
    */
   async launchBrowser(sessionId: string, options: BrowserOptions = {}): Promise<BrowserInstance> {
@@ -207,6 +270,26 @@ class BrowserService extends EventEmitter {
 
       // 设置超时时间
       const timeout = 120000; // 2 分钟
+
+      // 生成浏览器指纹
+      // 默认启用指纹注入，除非明确指定不启用
+      if (!options.fingerprintOptions) {
+        options.fingerprintOptions = {
+          enabled: true,
+          devices: ['desktop'],
+          operatingSystems: ['windows', 'macos', 'linux'],
+          browsers: ['chrome', 'firefox', 'safari']
+        };
+        logger.info('使用默认指纹选项');
+      }
+
+      const fingerprint = this.generateFingerprint(options);
+
+      // 如果有指纹并且指纹包含用户代理，使用指纹的用户代理
+      if (fingerprint && !options.userAgent) {
+        options.userAgent = fingerprint.fingerprint.navigator.userAgent;
+        logger.info(`使用指纹的用户代理: ${options.userAgent}`);
+      }
 
       // 转换选项
       const puppeteerOptions = this.convertPuppeteerOptions(options);
@@ -231,9 +314,32 @@ class BrowserService extends EventEmitter {
       // 使用 Promise.race 来实现超时
       const browser = await Promise.race([browserPromise, timeoutPromise]);
 
+      // 如果有指纹，设置事件监听来注入指纹
+      if (fingerprint) {
+        try {
+          // 存储指纹数据到会话信息中，以便后续使用
+          const sessionInfo = this.sessions.get(sessionId);
+          if (sessionInfo) {
+            sessionInfo.fingerprint = fingerprint;
+          }
+
+          // 设置浏览器事件监听，以便在新页面创建时注入指纹
+          browser.on('targetcreated', this.createTargetHandler(sessionId, fingerprint));
+          // browser.on('targetchanged', this.createTargetChangeHandler(sessionId, fingerprint));
+          browser.on('disconnected', this.createDisconnectHandler(sessionId));
+
+          logger.info(`已设置浏览器指纹事件监听 (sessionId: ${sessionId})`);
+          logger.info(`指纹将在用户创建页面时自动注入 (sessionId: ${sessionId})`);
+        } catch (error) {
+          logger.error(`设置指纹事件监听失败 (sessionId: ${sessionId}):`, error);
+          // 即使设置失败，也继续使用浏览器
+        }
+      }
+
       // 获取 WebSocket 端点
       const browserWSEndpoint = browser.wsEndpoint();
       logger.info(`浏览器 WebSocket 端点: ${browserWSEndpoint}`);
+
 
       // 从 WebSocket 端点提取端口和路径
       const wsUrl = new URL(browserWSEndpoint);
@@ -355,7 +461,21 @@ class BrowserService extends EventEmitter {
   convertPuppeteerOptions(options: BrowserOptions = {}): any {
     // 将选项转换为 puppeteer-core 选项
     const result: any = {
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: ['--no-sandbox', '--disable-setuid-sandbox',
+
+        "--remote-allow-origins=*",
+        "--disable-dev-shm-usage",
+        '--disable-responsive-ui',
+        '--force-device-scale-factor=1',
+        "--disable-gpu",
+        '--disable-web-security',
+        "--disable-setuid-sandbox",
+        "--use-angle=disabled",
+        "--disable-blink-features=AutomationControlled",
+        "--webrtc-ip-handling-policy=disable_non_proxied_udp",
+        "--force-webrtc-ip-handling-policy",
+        "--timezone=Asia/Shanghai"
+      ],
       headless: options.headless !== undefined ? options.headless : false,
       executablePath: CONFIG.chromePath
     };
@@ -372,17 +492,26 @@ class BrowserService extends EventEmitter {
       result.args.push(`--proxy-server=${options.proxy}`);
     }
 
+    if(options.viewport){
+      result.args.push(`--window-size=${options.viewport.width},${options.viewport.height}`);
+    }
+    if(options.timezone){
+      result.args.push(`--timezone=${options.timezone}`);
+    }
+
     if (options.defaultViewport) {
       result.defaultViewport = options.defaultViewport;
     } else if (options.viewport) {
       result.defaultViewport = {
         width: options.viewport.width || 1280,
         height: options.viewport.height || 800,
+        deviceScaleFactor: 1,
       };
     } else {
       result.defaultViewport = {
         width: 1280,
         height: 800,
+        deviceScaleFactor: 1,
       };
     }
 
@@ -390,15 +519,95 @@ class BrowserService extends EventEmitter {
   }
 
   /**
-   * 截取浏览器屏幕截图
+   * 创建目标创建处理函数
    */
-  async takeScreenshot(sessionId: string, browser: puppeteer.Browser): Promise<string | undefined> {
-    try {
-      // 创建页面
-      const page = await browser.newPage();
+  private createTargetHandler(sessionId: string, fingerprint: BrowserFingerprintWithHeaders) {
+    return async (target: puppeteer.Target) => {
+      try {
+        // 只处理页面类型的目标
+        if (target.type() !== 'page') return;
 
-      // 导航到空白页
-      await page.goto('about:blank');
+        // 等待页面创建完成
+        const page = await target.page();
+        if (!page) return;
+
+        // 创建指纹注入器
+        const fingerprintInjector = new FingerprintInjector();
+
+        // 注入指纹
+        await fingerprintInjector.attachFingerprintToPuppeteer(page, fingerprint);
+        logger.info(`成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`);
+
+        // 尝试为页面创建截图
+        this.capturePageScreenshot(sessionId, page);
+      } catch (error) {
+        logger.error(`注入指纹到新页面失败 (sessionId: ${sessionId}):`, error);
+      }
+    };
+  }
+
+  /**
+   * 创建目标变化处理函数
+   */
+  private createTargetChangeHandler(sessionId: string, fingerprint: BrowserFingerprintWithHeaders) {
+    return async (target: puppeteer.Target) => {
+      try {
+        // 只处理页面类型的目标
+        if (target.type() !== 'page') return;
+
+        // 等待页面创建完成
+        const page = await target.page();
+        if (!page) return;
+
+        // 创建指纹注入器
+        const fingerprintInjector = new FingerprintInjector();
+
+        // 注入指纹
+        await fingerprintInjector.attachFingerprintToPuppeteer(page, fingerprint);
+        logger.info(`成功注入指纹到变化页面 (sessionId: ${sessionId}, url: ${page.url()})`);
+      } catch (error) {
+        logger.error(`注入指纹到变化页面失败 (sessionId: ${sessionId}):`, error);
+      }
+    };
+  }
+
+  /**
+   * 创建断开连接处理函数
+   */
+  private createDisconnectHandler(sessionId: string) {
+    return () => {
+      logger.info(`浏览器实例已断开连接 (sessionId: ${sessionId})`);
+
+      // 先调用 handleDisconnection 方法，确保用户断开连接的逻辑被正确处理
+      this.handleDisconnection(sessionId);
+
+      // 然后直接关闭浏览器，不等待超时
+      logger.info(`浏览器实例断开连接，直接关闭浏览器 (sessionId: ${sessionId})`);
+      this.closeBrowser(sessionId)
+        .then(success => {
+          if (success) {
+            logger.info(`已关闭断开连接的浏览器 (sessionId: ${sessionId})`);
+          } else {
+            logger.error(`关闭断开连接的浏览器失败 (sessionId: ${sessionId})`);
+          }
+        })
+        .catch(error => {
+          logger.error(`关闭断开连接的浏览器出错 (sessionId: ${sessionId}):`, error);
+        });
+    };
+  }
+
+  /**
+   * 为页面创建截图
+   */
+  private async capturePageScreenshot(sessionId: string, page: puppeteer.Page): Promise<void> {
+    try {
+      // 获取会话信息
+      const session = this.sessions.get(sessionId);
+      if (!session) {
+        logger.warn(`无法为页面创建截图，会话不存在 (sessionId: ${sessionId})`);
+        return;
+      }
 
       // 创建截图目录
       const screenshotDir = path.join(CONFIG.dataDir, 'screenshots');
@@ -411,8 +620,37 @@ class BrowserService extends EventEmitter {
       // 截取屏幕截图
       await page.screenshot({ path: screenshotPath });
 
-      // 关闭页面
-      await page.close();
+      // 构建截图 URL
+      const screenshotUrl = `/screenshots/${filename}`;
+
+      // 更新会话信息
+      session.screenshotUrl = screenshotUrl;
+
+      // 发送截图事件
+      this.emit('sessionScreenshot', sessionId, screenshotUrl);
+
+      logger.info(`已为会话 ${sessionId} 创建页面截图: ${screenshotUrl}`);
+    } catch (error) {
+      logger.error(`为页面创建截图失败 (sessionId: ${sessionId}):`, error);
+    }
+  }
+
+  /**
+   * 截取浏览器屏幕截图
+   * 注意：我们不使用 newPage 方法，而是等待用户创建页面
+   * 因此这里只生成一个默认的截图 URL
+   */
+  async takeScreenshot(sessionId: string, _browser: puppeteer.Browser): Promise<string | undefined> {
+    try {
+      // 创建截图目录
+      const screenshotDir = path.join(CONFIG.dataDir, 'screenshots');
+      await fs.mkdir(screenshotDir, { recursive: true });
+
+      // 生成截图文件名
+      const filename = `${sessionId}-${uuidv4()}.png`;
+      // 构建截图路径（仅用于日志）
+      const screenshotPath = path.join(screenshotDir, filename);
+      logger.info(`预留截图路径: ${screenshotPath}`);
 
       // 构建截图 URL
       const screenshotUrl = `/screenshots/${filename}`;
@@ -426,11 +664,12 @@ class BrowserService extends EventEmitter {
       // 发送截图事件
       this.emit('sessionScreenshot', sessionId, screenshotUrl);
 
-      logger.info(`已为会话 ${sessionId} 创建截图: ${screenshotUrl}`);
+      logger.info(`已为会话 ${sessionId} 创建默认截图 URL: ${screenshotUrl}`);
+      logger.info(`实际截图将在用户创建页面时生成`);
 
       return screenshotUrl;
     } catch (error) {
-      logger.error(`截取屏幕截图失败 (sessionId: ${sessionId}):`, error);
+      logger.error(`创建截图 URL 失败 (sessionId: ${sessionId}):`, error);
       return undefined;
     }
   }

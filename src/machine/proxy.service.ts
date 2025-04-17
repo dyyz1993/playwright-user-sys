@@ -28,8 +28,24 @@ class ProxyService {
     this.server.on('upgrade', this.handleWebSocketUpgrade.bind(this));
 
     // 处理代理错误
-    this.proxy.on('error', (err, _req, res: any) => {
+    this.proxy.on('error', (err, req, res: any) => {
       logger.error('代理错误:', err);
+
+      // 尝试从请求中提取 sessionId
+      try {
+        if (req && req.url) {
+          const url = new URL(req.url, `http://${req.headers?.host || 'localhost'}`);
+          const sessionId = url.searchParams.get('sessionId');
+
+          if (sessionId) {
+            logger.info(`代理错误，尝试处理断开连接 (sessionId: ${sessionId})`);
+            sessionManager.handleDisconnection(sessionId);
+          }
+        }
+      } catch (error) {
+        logger.error('从请求中提取 sessionId 失败:', error);
+      }
+
       if (res && typeof res.writeHead === 'function') {
         res.writeHead(500);
         res.end('Proxy Error');
@@ -116,12 +132,16 @@ class ProxyService {
    * 处理 WebSocket 连接
    */
   private handleWebSocketUpgrade(req: IncomingMessage, socket: Socket, head: Buffer): void {
+    // 声明变量，以便在 catch 块中使用
+    let sessionId: string | null = null;
+    let activityInterval: NodeJS.Timeout | undefined;
+
     try {
       logger.info(`收到 WebSocket 连接请求: ${req.url}`);
 
       // 解析 URL 中的 sessionId
       const url = new URL(req.url || '', `http://${req.headers.host}`);
-      const sessionId = url.searchParams.get('sessionId');
+      sessionId = url.searchParams.get('sessionId');
 
       logger.info(`解析到 sessionId: ${sessionId}`);
 
@@ -144,16 +164,77 @@ class ProxyService {
         return;
       }
 
+      // 通知会话管理器用户已连接
+      logger.info(`通知会话管理器用户已连接 (sessionId: ${sessionId})`);
+      sessionManager.handleConnection(sessionId);
+
+      // 设置活动更新定时器
+      activityInterval = setInterval(() => {
+        if (sessionId) {
+          sessionManager.updateActivity(sessionId);
+        }
+      }, 5000); // 每5秒更新一次
+
+      // 监听原始 socket 的各种事件
+      socket.on('close', () => {
+        logger.info(`用户 WebSocket 连接已关闭 (sessionId: ${sessionId})`);
+        clearInterval(activityInterval); // 清除活动更新定时器
+        // 通知会话管理器用户已断开连接
+        if (sessionId) {
+          sessionManager.handleDisconnection(sessionId);
+        }
+      });
+
+      socket.on('end', () => {
+        logger.info(`用户 WebSocket 连接结束 (sessionId: ${sessionId})`);
+        clearInterval(activityInterval); // 清除活动更新定时器
+        // 通知会话管理器用户已断开连接
+        if (sessionId) {
+          sessionManager.handleDisconnection(sessionId);
+        }
+      });
+
+      socket.on('error', (error) => {
+        logger.error(`用户 WebSocket 连接出错 (sessionId: ${sessionId}):`, error);
+        clearInterval(activityInterval); // 清除活动更新定时器
+        // 出错时也应该通知会话管理器用户已断开连接
+        if (sessionId) {
+          sessionManager.handleDisconnection(sessionId);
+        }
+      });
+
+      // 监听消息事件，更新活动时间
+      socket.on('data', () => {
+        if (sessionId) {
+          sessionManager.updateActivity(sessionId);
+        }
+      });
+
       // 转发 WebSocket 连接
       const target = `ws://localhost:${port}${path || ''}`;
       logger.info(`转发 WebSocket 连接到: ${target}`);
 
       this.proxy.ws(req, socket, head, { target, ws: true }, (err: Error) => {
         logger.error('代理 WebSocket 连接失败:', err);
+        clearInterval(activityInterval); // 清除活动更新定时器
+        if (sessionId) {
+          sessionManager.handleDisconnection(sessionId);
+        }
         socket.destroy();
       });
     } catch (error) {
       logger.error('处理 WebSocket 连接请求失败:', error);
+
+      // 如果定时器已经创建，清除定时器
+      if (typeof activityInterval !== 'undefined') {
+        clearInterval(activityInterval);
+      }
+
+      // 如果 sessionId 已经解析，通知会话管理器用户已断开连接
+      if (sessionId) {
+        sessionManager.handleDisconnection(sessionId);
+      }
+
       socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
       socket.destroy();
     }

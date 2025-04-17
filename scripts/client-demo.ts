@@ -65,7 +65,7 @@ async function main() {
     console.log(`完整 WebSocket 端点: ${wsEndpoint}`);
 
     const browser = await puppeteer.connect({
-      browserWSEndpoint: browserWSEndpoint,
+      browserWSEndpoint: sessionData.data.directUrl,
       defaultViewport: { width: 1280, height: 800 },
     });
 
@@ -75,7 +75,7 @@ async function main() {
     // 步骤 3：打开百度
     console.log('\n步骤 3：打开百度...');
     const page = await browser.newPage();
-    await page.goto('https://www.baidu.com');
+    await page.goto('https://fingerprint-scan.com/canvas');
     console.log('成功打开百度');
 
     // 步骤 4：截图
@@ -86,12 +86,12 @@ async function main() {
 
     // 步骤 5：在百度搜索框中输入内容
     console.log('\n步骤 5：在百度搜索框中输入内容...');
-    await page.type('#kw', 'Playwright 自动化测试');
-    await page.click('#su');
+    // await page.type('#kw', 'Playwright 自动化测试');
+    // await page.click('#su');
     console.log('成功搜索');
 
     // 等待搜索结果加载
-    await page.waitForSelector('.result');
+    // await page.waitForSelector('.result');
 
     // 再次截图
     console.log('\n步骤 6：搜索结果截图...');
@@ -101,7 +101,7 @@ async function main() {
 
     // 等待 20 秒
     console.log('\n等待 20 秒...');
-    await new Promise(resolve => setTimeout(resolve, 20000));
+    await new Promise(resolve => setTimeout(resolve, 60000));
 
     // 步骤 7：释放会话（先释放会话再关闭浏览器）
     console.log('\n步骤 7：释放会话...');

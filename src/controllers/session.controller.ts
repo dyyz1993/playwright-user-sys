@@ -114,7 +114,9 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
 
       // 构建返回给用户的 WebSocket 端点
       // 注意：现在直接返回浏览器的 WebSocket 端点，不再使用代理
-      const directUrl = `ws://${session.machine_id}:${session.port}?sessionId=${session.id}`;
+      const directUrl = `ws://localhost:8082?sessionId=${session.id}`;
+
+      request.log.info(`构建的直接 WebSocket 端点: ${directUrl}`);
 
       return sendCreated(reply, {
         id: session.id,

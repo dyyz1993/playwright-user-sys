@@ -99,23 +99,23 @@ async function main() {
     await page.screenshot({ path: searchResultPath });
     console.log(`搜索结果截图已保存为 ${searchResultPath}`);
 
-    // 等待 5 秒
-    console.log('\n等待 5 秒...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // 等待 20 秒
+    console.log('\n等待 20 秒...');
+    await new Promise(resolve => setTimeout(resolve, 20000));
 
-    // 步骤 7：关闭浏览器
-    console.log('\n步骤 7：关闭浏览器...');
-    await browser.close();
-    console.log('浏览器已关闭');
-
-    // 步骤 8：释放会话
-    console.log('\n步骤 8：释放会话...');
+    // 步骤 7：释放会话（先释放会话再关闭浏览器）
+    console.log('\n步骤 7：释放会话...');
     const releaseResponse = await fetch(`${API_BASE_URL}/sessions/${sessionId}/release`, {
       method: 'POST',
       headers: {
         'x-api-key': API_KEY,
       },
     });
+
+    // 步骤 8：关闭浏览器
+    console.log('\n步骤 8：关闭浏览器...');
+    await browser.close();
+    console.log('浏览器已关闭');
 
     if (!releaseResponse.ok) {
       const errorText = await releaseResponse.text();

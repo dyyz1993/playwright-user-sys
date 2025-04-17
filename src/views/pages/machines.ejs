@@ -7,7 +7,7 @@
       </button>
     </div>
   </div>
-  
+
   <div class="p-6">
     <!-- 搜索和筛选 -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
@@ -16,7 +16,7 @@
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <i class="fas fa-search text-gray-400"></i>
           </div>
-          <input type="text" id="search-machines" placeholder="搜索机器..." 
+          <input type="text" id="search-machines" placeholder="搜索机器..."
             class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
         </div>
         <div class="ml-4">
@@ -28,7 +28,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 机器卡片视图 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <% machines.forEach(machine => { %>
@@ -48,7 +48,7 @@
               </span>
             </div>
           </div>
-          
+
           <div class="px-6 py-4">
             <div class="grid grid-cols-2 gap-4 mb-4">
               <div>
@@ -68,7 +68,7 @@
                 <p class="text-sm font-medium text-gray-900"><%= machine.max_sessions %></p>
               </div>
             </div>
-            
+
             <div class="mb-4">
               <div class="flex justify-between mb-1">
                 <span class="text-xs font-medium text-gray-700">负载</span>
@@ -78,7 +78,7 @@
                 <div class="bg-blue-600 h-2 rounded-full" style="width: <%= machine.load %>%"></div>
               </div>
             </div>
-            
+
             <div class="flex justify-between">
               <a href="/admin/machines/<%= machine.id %>" class="text-primary-600 hover:text-primary-900 text-sm font-medium">
                 详情
@@ -98,7 +98,7 @@
         </div>
       <% }); %>
     </div>
-    
+
     <!-- 分页 -->
     <div class="flex items-center justify-between mt-6">
       <div class="text-sm text-gray-700">
@@ -114,7 +114,7 @@
             上一页
           </button>
         <% } %>
-        
+
         <% if (page * limit < totalMachines) { %>
           <a href="/admin/machines?page=<%= page + 1 %>&limit=<%= limit %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
             下一页
@@ -140,7 +140,7 @@
     </div>
     <div class="p-6">
       <p class="text-gray-700 mb-4">确定要重启此机器吗？这将中断所有正在运行的会话。</p>
-      
+
       <div class="flex justify-end">
         <button id="cancel-restart-machine" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
           取消
@@ -164,7 +164,7 @@
     </div>
     <div class="p-6">
       <p class="text-gray-700 mb-4">确定要删除此机器吗？此操作无法撤销。</p>
-      
+
       <div class="flex justify-end">
         <button id="cancel-delete-machine" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
           取消
@@ -185,25 +185,25 @@
   const cancelRestartMachine = document.getElementById('cancel-restart-machine');
   const confirmRestartMachine = document.getElementById('confirm-restart-machine');
   let currentMachineId = null;
-  
+
   restartMachineButtons.forEach(button => {
     button.addEventListener('click', () => {
       currentMachineId = button.getAttribute('data-machine-id');
       restartMachineModal.classList.remove('hidden');
     });
   });
-  
+
   closeRestartModal?.addEventListener('click', () => {
     restartMachineModal.classList.add('hidden');
   });
-  
+
   cancelRestartMachine?.addEventListener('click', () => {
     restartMachineModal.classList.add('hidden');
   });
-  
+
   confirmRestartMachine?.addEventListener('click', async () => {
     if (!currentMachineId) return;
-    
+
     try {
       const response = await fetch(`/api/machines/${currentMachineId}/restart`, {
         method: 'POST',
@@ -211,9 +211,9 @@
           'Content-Type': 'application/json'
         }
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         // 刷新页面
         window.location.reload();
@@ -226,32 +226,32 @@
       restartMachineModal.classList.add('hidden');
     }
   });
-  
+
   // 删除机器模态框
   const deleteMachineButtons = document.querySelectorAll('.delete-machine-btn');
   const deleteMachineModal = document.getElementById('delete-machine-modal');
   const closeDeleteModal = document.getElementById('close-delete-modal');
   const cancelDeleteMachine = document.getElementById('cancel-delete-machine');
   const confirmDeleteMachine = document.getElementById('confirm-delete-machine');
-  
+
   deleteMachineButtons.forEach(button => {
     button.addEventListener('click', () => {
       currentMachineId = button.getAttribute('data-machine-id');
       deleteMachineModal.classList.remove('hidden');
     });
   });
-  
+
   closeDeleteModal?.addEventListener('click', () => {
     deleteMachineModal.classList.add('hidden');
   });
-  
+
   cancelDeleteMachine?.addEventListener('click', () => {
     deleteMachineModal.classList.add('hidden');
   });
-  
+
   confirmDeleteMachine?.addEventListener('click', async () => {
     if (!currentMachineId) return;
-    
+
     try {
       const response = await fetch(`/api/machines/${currentMachineId}`, {
         method: 'DELETE',
@@ -259,45 +259,46 @@
           'Content-Type': 'application/json'
         }
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         // 刷新页面
         window.location.reload();
       } else {
-        alert('删除机器失败: ' + result.message);
+        alert('删除机器失败: ' + (result.error || result.message || '未知错误'));
       }
     } catch (error) {
-      alert('删除机器失败: ' + error.message);
+      console.error('删除机器失败:', error);
+      alert('删除机器失败: ' + (error.message || '未知错误'));
     } finally {
       deleteMachineModal.classList.add('hidden');
     }
   });
-  
+
   // 点击模态框背景关闭模态框
   restartMachineModal?.addEventListener('click', (e) => {
     if (e.target === restartMachineModal) {
       restartMachineModal.classList.add('hidden');
     }
   });
-  
+
   deleteMachineModal?.addEventListener('click', (e) => {
     if (e.target === deleteMachineModal) {
       deleteMachineModal.classList.add('hidden');
     }
   });
-  
+
   // 搜索功能
   const searchInput = document.getElementById('search-machines');
   searchInput?.addEventListener('input', () => {
     const searchTerm = searchInput.value.toLowerCase();
     const cards = document.querySelectorAll('.bg-white.border.rounded-lg');
-    
+
     cards.forEach(card => {
       const machineName = card.querySelector('h3').textContent.toLowerCase();
       const ipAddress = card.querySelector('.grid-cols-2 div:first-child p:last-child').textContent.toLowerCase();
-      
+
       if (machineName.includes(searchTerm) || ipAddress.includes(searchTerm)) {
         card.style.display = '';
       } else {
@@ -305,17 +306,17 @@
       }
     });
   });
-  
+
   // 状态筛选
   const statusFilter = document.getElementById('status-filter');
   statusFilter?.addEventListener('change', () => {
     const selectedStatus = statusFilter.value;
     const cards = document.querySelectorAll('.bg-white.border.rounded-lg');
-    
+
     cards.forEach(card => {
       const statusBadge = card.querySelector('.px-6.py-4.border-b .flex.items-center span');
       const status = statusBadge.textContent.trim() === '在线' ? 'online' : 'offline';
-      
+
       if (selectedStatus === '' || status === selectedStatus) {
         card.style.display = '';
       } else {
@@ -323,7 +324,7 @@
       }
     });
   });
-  
+
   // 刷新按钮
   const refreshBtn = document.getElementById('refresh-btn');
   refreshBtn?.addEventListener('click', () => {

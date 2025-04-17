@@ -33,47 +33,45 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
       // 查找用户
       const user = await UserModel.findByUsername(username);
       if (!user) {
-        return reply.status(401).send({ success: false, message: '用户名或密码错误' });
+        return reply.status(401).send({ success: false, error: '用户名或密码错误' });
       }
 
       // 验证密码
       const isPasswordValid = await compare(password, user.password);
       if (!isPasswordValid) {
-        return reply.status(401).send({ success: false, message: '用户名或密码错误' });
+        return reply.status(401).send({ success: false, error: '用户名或密码错误' });
       }
 
       // 检查用户状态
       if (user.status !== 'active') {
-        return reply.status(401).send({ success: false, message: '账户已被禁用' });
+        return reply.status(401).send({ success: false, error: '账户已被禁用' });
       }
 
       // 检查用户角色
       if (user.role !== UserRole.ADMIN) {
-        return reply.status(403).send({ success: false, message: '需要管理员权限' });
+        return reply.status(403).send({ success: false, error: '需要管理员权限' });
       }
 
       // 生成 JWT 令牌
       const token = jwt.sign(
         { id: user.id, username: user.username, role: user.role },
-        process.env.JWT_SECRET || 'your-secret-key',
+        'your-secret-key',
         { expiresIn: '7d' }
       );
 
-      // 记录登录操作
-      try {
-        await OperationLogModel.create({
-          admin_id: user.id,
-          action: 'login',
-          details: {
-            username: user.username,
-            role: user.role,
-            ip: request.ip
-          }
-        });
-      } catch (logError) {
+      // 记录登录操作 - 异步处理
+      OperationLogModel.create({
+        admin_id: user.id,
+        action: 'login',
+        details: {
+          username: user.username,
+          role: user.role,
+          ip: request.ip
+        }
+      }).catch(logError => {
         request.log.warn('记录登录操作失败:', logError);
         // 不影响登录流程
-      }
+      });
 
       return reply.send({
         success: true,
@@ -87,7 +85,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
       });
     } catch (error: any) {
       request.log.error('登录失败:', error);
-      return reply.status(500).send({ success: false, message: '登录失败: ' + error.message });
+      return reply.status(500).send({ success: false, error: '登录失败: ' + error.message });
     }
   });
 
@@ -101,10 +99,29 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
       },
       tags: ['admin'],
     },
-    preHandler: [(request, reply, done) => {
-      // 这里应该是验证管理员的中间件
-      // 简化处理，直接放行
-      done();
+    preHandler: [async (request, reply) => {
+      try {
+        // 使用 fastify 的 JWT 验证中间件
+        await fastify.verifyJWT(request, reply);
+
+        // 如果返回已经发送，直接返回
+        if (reply.sent) return;
+
+        // 验证管理员权限
+        if (!request.user) {
+          return reply.status(401).send({ success: false, error: '未授权' });
+        }
+
+        if (request.user.role !== UserRole.ADMIN) {
+          return reply.status(403).send({ success: false, error: '需要管理员权限' });
+        }
+      } catch (error) {
+        // 如果返回已经发送，不再发送新的响应
+        if (reply.sent) return;
+
+        request.log.error('认证失败:', error);
+        return reply.status(401).send({ success: false, error: '认证失败' });
+      }
     }]
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -166,7 +183,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
       });
     } catch (error: any) {
       request.log.error('获取仪表盘统计数据失败:', error);
-      return reply.status(500).send({ success: false, message: '获取仪表盘统计数据失败: ' + error.message });
+      return reply.status(500).send({ success: false, error: '获取仪表盘统计数据失败: ' + error.message });
     }
   });
 }

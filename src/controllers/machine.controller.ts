@@ -337,6 +337,80 @@ export async function restartMachine(request: FastifyRequest, reply: FastifyRepl
   }
 }
 
+// 删除机器
+export async function deleteMachine(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const machineId = (request.params as any).id;
+    request.log.info(`开始删除机器: ${machineId}`);
+
+    // 检查机器是否存在
+    const machine = await MachineModel.findById(machineId);
+    if (!machine) {
+      request.log.warn(`机器不存在: ${machineId}`);
+      return reply.status(404).send({
+        success: false,
+        error: '机器不存在'
+      });
+    }
+
+    // 如果机器在线，先发送关闭命令并断开连接
+    if (machine.status === 'online') {
+      try {
+        const { connectionManager } = await import('../services/machine-grpc.service.js');
+        if (connectionManager.isConnected(machineId)) {
+          // 先发送永久关闭命令，告诉机器端不要重连
+          request.log.info(`发送永久关闭命令: ${machineId}`);
+          connectionManager.sendShutdownCommand(machineId);
+
+          // 等待一小段时间，确保命令被发送
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // 然后断开连接
+          request.log.info(`断开机器连接: ${machineId}`);
+          await connectionManager.removeConnection(machineId);
+        }
+      } catch (error) {
+        request.log.error(`断开机器连接失败 (${machineId}):`, error);
+        // 继续删除操作，即使断开连接失败
+      }
+    }
+
+    // 删除机器
+    request.log.info(`从数据库删除机器: ${machineId}`);
+    const success = await MachineModel.delete(machineId);
+    if (!success) {
+      request.log.error(`从数据库删除机器失败: ${machineId}`);
+      return reply.status(500).send({
+        success: false,
+        error: '删除机器失败'
+      });
+    }
+
+    // 从内存存储中移除机器
+    try {
+      const { memoryStore } = await import('../services/memory-store.service.js');
+      request.log.info(`从内存存储中移除机器: ${machineId}`);
+      memoryStore.removeMachine(machineId);
+    } catch (error) {
+      request.log.error(`从内存存储中移除机器失败 (${machineId}):`, error);
+      // 继续返回成功响应，因为数据库中的机器已经删除
+    }
+
+    request.log.info(`机器删除成功: ${machineId}`);
+    return reply.status(200).send({
+      success: true,
+      message: '机器删除成功',
+      id: machineId
+    });
+  } catch (error) {
+    request.log.error('删除机器失败:', error);
+    return reply.status(500).send({
+      success: false,
+      error: '删除机器失败'
+    });
+  }
+}
+
 export default {
   registerMachine,
   updateMachineStatus,
@@ -347,4 +421,5 @@ export default {
   refreshMachineStatus,
   cleanupOldMachines,
   restartMachine,
+  deleteMachine,
 };

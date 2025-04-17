@@ -1,6 +1,9 @@
 import puppeteer from 'puppeteer-core';
 import { EventEmitter } from 'events';
 import { Duplex } from 'stream';
+import fs from 'fs/promises';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import { CONFIG } from './config.js';
 import { logger } from '../utils/logger.js';
 
@@ -19,6 +22,7 @@ export interface BrowserInstance {
   browserWSEndpoint: string;
   port: number;
   path: string;
+  screenshotUrl?: string;
 }
 
 // 会话信息接口
@@ -28,6 +32,7 @@ interface SessionInfo {
   path: string;
   lastActivity: number;
   startTime: number;
+  screenshotUrl?: string;
 }
 
 // 连接信息接口
@@ -58,13 +63,23 @@ class BrowserService extends EventEmitter {
    * 启动活动报告
    */
   private startActivityReporting() {
-    // 每分钟报告一次会话活动
+    // 每隔一段时间报告一次会话活动（默认3秒）
     this.activityReportInterval = setInterval(() => {
+      const now = Date.now();
+
       for (const [sessionId, connection] of this.connections.entries()) {
         // 只报告活跃连接（没有断开连接计时器的连接）
         if (!this.disconnectionTimers.has(sessionId)) {
-          this.emit('sessionActivity', sessionId, connection.totalConnectedTime);
-          logger.debug(`发送会话活动报告 (sessionId: ${sessionId}, 总连接时长: ${connection.totalConnectedTime}秒)`);
+          // 检查上次活动时间，如果超过超时时间，则视为断开连接
+          if (now - connection.lastActivity > CONFIG.sessionActivityTimeout) {
+            logger.warn(`会话活动超时 (sessionId: ${sessionId}, 上次活动: ${new Date(connection.lastActivity).toISOString()})`);
+            // 处理断开连接
+            this.handleDisconnection(sessionId);
+          } else {
+            // 发送活动报告
+            this.emit('sessionActivity', sessionId, connection.totalConnectedTime);
+            logger.debug(`发送会话活动报告 (sessionId: ${sessionId}, 总连接时长: ${connection.totalConnectedTime}秒)`);
+          }
         }
       }
     }, CONFIG.activityReportInterval);
@@ -238,7 +253,10 @@ class BrowserService extends EventEmitter {
 
       logger.info(`浏览器已启动 (sessionId: ${sessionId}, port: ${port}, path: ${path})`);
 
-      return { browserWSEndpoint, port, path };
+      // 截取屏幕截图
+      const screenshotUrl = await this.takeScreenshot(sessionId, browser);
+
+      return { browserWSEndpoint, port, path, screenshotUrl };
     } catch (error) {
       logger.error(`启动浏览器失败 (sessionId: ${sessionId}):`, error);
       throw error;
@@ -258,7 +276,14 @@ class BrowserService extends EventEmitter {
 
       // 获取连接信息
       const connection = this.connections.get(sessionId);
-      const totalConnectedTime = connection ? connection.totalConnectedTime : 0;
+      let totalConnectedTime = connection ? connection.totalConnectedTime : 0;
+
+      // 如果没有连接信息，根据会话的开始时间计算持续时间
+      if (totalConnectedTime === 0 && session.startTime) {
+        const now = Date.now();
+        totalConnectedTime = Math.floor((now - session.startTime) / 1000);
+        logger.info(`根据会话开始时间计算持续时间 (sessionId: ${sessionId}): 开始时间=${new Date(session.startTime).toISOString()}, 当前时间=${new Date(now).toISOString()}, 持续时间=${totalConnectedTime}秒`);
+      }
 
       // 关闭浏览器
       await session.browser.close();
@@ -362,6 +387,52 @@ class BrowserService extends EventEmitter {
     }
 
     return result;
+  }
+
+  /**
+   * 截取浏览器屏幕截图
+   */
+  async takeScreenshot(sessionId: string, browser: puppeteer.Browser): Promise<string | undefined> {
+    try {
+      // 创建页面
+      const page = await browser.newPage();
+
+      // 导航到空白页
+      await page.goto('about:blank');
+
+      // 创建截图目录
+      const screenshotDir = path.join(CONFIG.dataDir, 'screenshots');
+      await fs.mkdir(screenshotDir, { recursive: true });
+
+      // 生成截图文件名
+      const filename = `${sessionId}-${uuidv4()}.png`;
+      const screenshotPath = path.join(screenshotDir, filename);
+
+      // 截取屏幕截图
+      await page.screenshot({ path: screenshotPath });
+
+      // 关闭页面
+      await page.close();
+
+      // 构建截图 URL
+      const screenshotUrl = `/screenshots/${filename}`;
+
+      // 更新会话信息
+      const session = this.sessions.get(sessionId);
+      if (session) {
+        session.screenshotUrl = screenshotUrl;
+      }
+
+      // 发送截图事件
+      this.emit('sessionScreenshot', sessionId, screenshotUrl);
+
+      logger.info(`已为会话 ${sessionId} 创建截图: ${screenshotUrl}`);
+
+      return screenshotUrl;
+    } catch (error) {
+      logger.error(`截取屏幕截图失败 (sessionId: ${sessionId}):`, error);
+      return undefined;
+    }
   }
 }
 

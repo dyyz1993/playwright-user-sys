@@ -84,22 +84,17 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         maxAge: 60 * 60 * 24 * 7 // 7 天
       });
 
-      // 记录登录操作
-      try {
-        // 模拟记录登录操作
-        console.log('记录登录操作:', {
-          admin_id: user.id,
-          action: 'login',
-          details: {
-            username: user.username,
-            role: user.role,
-            ip: request.ip
-          }
-        });
-      } catch (logError) {
-        request.log.warn('记录登录操作失败:', logError);
-        // 不影响登录流程
-      }
+      // 记录登录操作 - 异步处理
+      // 模拟记录登录操作
+      console.log('记录登录操作:', {
+        admin_id: user.id,
+        action: 'login',
+        details: {
+          username: user.username,
+          role: user.role,
+          ip: request.ip
+        }
+      });
 
       // 重定向到仪表盘
       return reply.redirect('/admin');
@@ -235,10 +230,18 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         request.log.info('获取总点数成功', { result: creditsResult });
         totalCredits = creditsResult ? Number(creditsResult.total) : 0;
 
-        // 计算已使用的点数（通过会话时长）
-        const sessionsResult = await db('sessions').sum('duration as total').first();
+        // 计算已使用的点数（优先使用 credits_used 字段）
+        const sessionsResult = await db('sessions').sum('credits_used as total').first();
         request.log.info('获取已使用点数成功', { result: sessionsResult });
         usedCredits = sessionsResult ? Number(sessionsResult.total) : 0;
+
+        // 如果 credits_used 字段的总和为 0，则使用会话时长计算
+        if (usedCredits === 0) {
+          const durationResult = await db('sessions').sum('duration as total').first();
+          request.log.info('使用会话时长计算已使用点数', { result: durationResult });
+          const totalDuration = durationResult ? Number(durationResult.total) : 0;
+          usedCredits = totalDuration > 0 ? Math.ceil(totalDuration / 60) : 0;
+        }
 
         // 计算会话变化率（与昨天相比）
         const yesterday = new Date();
@@ -279,14 +282,21 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         }
 
         // 格式化会话数据
-        recentSessions = recentSessionsData.items.map(session => ({
-          id: session.id,
-          status: session.status,
-          created_at: session.created_at,
-          ended_at: session.end_time,
-          username: usersMap[session.user_id] || `用户 ${session.user_id}`,
-          duration: session.duration || 0
-        }));
+        recentSessions = recentSessionsData.items.map(session => {
+          // 使用数据库中的 credits_used 字段，如果没有则计算
+          // 即使会话只运行了几秒钟，也至少消耗 1 点
+          const creditsUsed = session.credits_used || (session.duration > 0 ? Math.max(1, Math.ceil(session.duration / 60)) : 0);
+
+          return {
+            id: session.id,
+            status: session.status,
+            created_at: session.created_at,
+            ended_at: session.end_time,
+            username: usersMap[session.user_id] || `用户 ${session.user_id}`,
+            duration: session.duration || 0,
+            credits_used: creditsUsed
+          };
+        });
       } catch (err: any) {
         request.log.error('获取其他数据失败', { error: err.message, stack: err.stack });
       }
@@ -358,42 +368,29 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       const page = parseInt(query.page || '1');
       const limit = parseInt(query.limit || '10');
 
-      // 模拟用户数据
-      const users = [
-        {
-          id: 1,
-          username: 'admin',
-          email: 'admin@example.com',
-          role: 'admin',
-          status: 'active',
-          credits: 1000,
-          used_credits: 200,
-          created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        },
-        {
-          id: 2,
-          username: 'user1',
-          email: 'user1@example.com',
-          role: 'user',
-          status: 'active',
-          credits: 500,
-          used_credits: 100,
-          created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
-        },
-        {
-          id: 3,
-          username: 'user2',
-          email: 'user2@example.com',
-          role: 'user',
-          status: 'active',
-          credits: 300,
-          used_credits: 50,
-          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-        }
-      ];
+      // 从数据库获取用户数据
+      const { UserModel } = await import('../models/user.model.js');
+      const usersData = await UserModel.findAll({
+        page,
+        limit,
+        sort: 'created_at',
+        order: 'desc'
+      });
 
-      // 模拟用户总数
-      const totalUsers = users.length;
+      // 格式化用户数据
+      const users = usersData.items.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email || '',
+        role: user.role,
+        status: user.status,
+        credits: user.credits,
+        used_credits: 0, // 可以从会话表中计算，或者添加一个方法来获取
+        created_at: user.created_at
+      }));
+
+      // 用户总数
+      const totalUsers = usersData.total;
 
       return reply.view('pages/users', {
         title: '用户管理',
@@ -475,15 +472,22 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       }
 
       // 格式化会话数据
-      const sessions = sessionsData.items.map(session => ({
-        id: session.id,
-        status: session.status,
-        created_at: session.created_at,
-        ended_at: session.end_time,
-        username: usersMap[session.user_id] || `用户 ${session.user_id}`,
-        machine_name: session.machine_id ? (machinesMap[session.machine_id] || session.machine_id) : '-',
-        duration: session.duration || 0
-      }));
+      const sessions = sessionsData.items.map(session => {
+        // 使用数据库中的 credits_used 字段，如果没有则计算
+        // 即使会话只运行了几秒钟，也至少消耗 1 点
+        const creditsUsed = session.credits_used || (session.duration > 0 ? Math.max(1, Math.ceil(session.duration / 60)) : 0);
+
+        return {
+          id: session.id,
+          status: session.status,
+          created_at: session.created_at,
+          ended_at: session.end_time,
+          username: usersMap[session.user_id] || `用户 ${session.user_id}`,
+          machine_name: session.machine_id ? (machinesMap[session.machine_id] || session.machine_id) : '-',
+          duration: session.duration || 0,
+          credits_used: creditsUsed
+        };
+      });
 
       return reply.view('pages/sessions', {
         title: '会话管理',
@@ -507,6 +511,78 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         totalSessions: 0,
         flash: { error: '获取会话列表失败: ' + error.message }
       });
+    }
+  });
+
+  // 会话详情页面
+  fastify.get('/admin/sessions/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const sessionId = (request.params as any).id;
+
+      // 从数据库获取会话数据
+      const { SessionModel } = await import('../models/session.model.js');
+      const { UserModel } = await import('../models/user.model.js');
+      const { MachineModel } = await import('../models/machine.model.js');
+
+      // 获取会话详情
+      const session = await SessionModel.findById(sessionId);
+      if (!session) {
+        request.flash('error', '找不到指定的会话');
+        return reply.redirect('/admin/sessions');
+      }
+
+      // 获取用户信息
+      const user = await UserModel.findById(session.user_id);
+
+      // 获取机器信息
+      let machine = null;
+      if (session.machine_id) {
+        machine = await MachineModel.findById(session.machine_id);
+      }
+
+      // 使用数据库中的 credits_used 字段，如果没有则计算
+      // 即使会话只运行了几秒钟，也至少消耗 1 点
+      const creditsUsed = session.credits_used || (session.duration > 0 ? Math.max(1, Math.ceil(session.duration / 60)) : 0);
+
+      // 格式化会话数据
+      const sessionData = {
+        id: session.id,
+        status: session.status,
+        created_at: session.created_at,
+        start_time: session.start_time,
+        end_time: session.end_time,
+        duration: session.duration || 0,
+        credits_used: creditsUsed,
+        port: session.port,
+        screenshot_url: session.screenshot_url,
+        options: session.options,
+        error_message: session.error_message,
+        last_activity: session.last_activity,
+        user: user ? {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          credits: user.credits
+        } : { username: `用户 ${session.user_id}` },
+        machine: machine ? {
+          id: machine.id,
+          name: machine.hostname,
+          ip: machine.ip,
+          status: machine.status
+        } : null
+      };
+
+      return reply.view('pages/session-detail', {
+        title: `会话详情: ${session.id}`,
+        subtitle: '查看会话详细信息',
+        user: request.user,
+        session: sessionData,
+        flash: request.flash
+      });
+    } catch (error: any) {
+      request.log.error('获取会话详情失败:', error);
+      request.flash('error', '获取会话详情失败: ' + error.message);
+      return reply.redirect('/admin/sessions');
     }
   });
 
@@ -570,13 +646,14 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       // 获取该机器上的会话
       const sessions = await SessionModel.findByMachineId(machineId);
 
-      // 获取历史数据（这里需要实现一个新的方法来获取历史数据）
-      // 暂时使用模拟数据
+      // 从数据库获取历史数据
+      // 注意：这里需要实现一个新的方法来获取历史数据
+      // 如果没有实现该方法，可以返回空数据
       const historyData = {
-        cpu: generateMockHistoryData(24, machineData.cpuUsage),
-        memory: generateMockHistoryData(24, machineData.memoryUsage),
-        disk: generateMockHistoryData(24, machineData.diskUsage),
-        sessions: generateMockHistoryData(24, machineData.activeSessions, machineData.maxSessions),
+        cpu: [],
+        memory: [],
+        disk: [],
+        sessions: [],
       };
 
       return reply.view('pages/machine-detail', {
@@ -594,24 +671,6 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       return reply.redirect('/admin/machines');
     }
   });
-
-  // 生成模拟历史数据的辅助函数
-  function generateMockHistoryData(hours: number, currentValue: number, maxValue?: number) {
-    const data = [];
-    const now = new Date();
-
-    for (let i = hours - 1; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-      // 生成一个围绕当前值波动的随机值
-      const value = Math.max(0, currentValue + (Math.random() - 0.5) * 20);
-      data.push({
-        time: time.toISOString(),
-        value: Math.min(value, maxValue || 100),
-      });
-    }
-
-    return data;
-  }
 
 
   // 机器管理页面
@@ -696,42 +755,73 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       const page = parseInt(query.page || '1');
       const limit = parseInt(query.limit || '10');
 
-      // 模拟日志数据
-      const logs = [
-        {
-          id: 1,
-          admin_id: 1,
-          username: 'admin',
-          role: 'admin',
-          action: 'login',
-          details: '管理员登录系统',
-          ip_address: '192.168.1.100',
-          created_at: new Date(Date.now() - 30 * 60000)
-        },
-        {
-          id: 2,
-          admin_id: 1,
-          username: 'admin',
-          role: 'admin',
-          action: 'add_credits',
-          details: '为用户 user1 添加 100 点算力',
-          ip_address: '192.168.1.100',
-          created_at: new Date(Date.now() - 60 * 60000)
-        },
-        {
-          id: 3,
-          admin_id: 1,
-          username: 'admin',
-          role: 'admin',
-          action: 'create_user',
-          details: '创建新用户 user2',
-          ip_address: '192.168.1.100',
-          created_at: new Date(Date.now() - 120 * 60000)
-        }
-      ];
+      // 从数据库获取日志数据
+      const { OperationLogModel } = await import('../models/operation-log.model.js');
+      const { UserModel } = await import('../models/user.model.js');
 
-      // 模拟日志总数
-      const totalLogs = logs.length;
+      // 获取日志数据
+      const logsData = await OperationLogModel.findAll({
+        page,
+        limit,
+        sort: 'created_at',
+        order: 'desc'
+      });
+
+      // 获取管理员用户名映射
+      const adminIds = logsData.items.map(log => log.admin_id);
+      const adminsMap = {};
+
+      if (adminIds.length > 0) {
+        const admins = await Promise.all(
+          [...new Set(adminIds)].map(id => UserModel.findById(id))
+        );
+
+        admins.forEach(admin => {
+          if (admin) {
+            adminsMap[admin.id] = {
+              username: admin.username,
+              role: admin.role
+            };
+          }
+        });
+      }
+
+      // 格式化日志数据
+      const logs = logsData.items.map(log => {
+        const admin = adminsMap[log.admin_id] || { username: `用户 ${log.admin_id}`, role: 'unknown' };
+
+        // 确保 details 是有效的 JSON 字符串
+        let detailsStr = '';
+        try {
+          if (log.details === null || log.details === undefined) {
+            detailsStr = '';
+          } else if (typeof log.details === 'string') {
+            // 如果已经是字符串，尝试解析确保是有效的 JSON
+            JSON.parse(log.details);
+            detailsStr = log.details;
+          } else {
+            // 如果是对象，转换为 JSON 字符串
+            detailsStr = JSON.stringify(log.details);
+          }
+        } catch (e) {
+          // 如果解析失败，提供一个有效的 JSON 字符串
+          detailsStr = JSON.stringify({ error: '无效的数据格式', raw: String(log.details) });
+        }
+
+        return {
+          id: log.id,
+          admin_id: log.admin_id,
+          username: admin.username,
+          role: admin.role,
+          action: log.action,
+          details: detailsStr,
+          ip_address: log.ip || '0.0.0.0',
+          created_at: log.created_at
+        };
+      });
+
+      // 日志总数
+      const totalLogs = logsData.total;
 
       return reply.view('pages/logs', {
         title: '操作日志',
@@ -761,39 +851,72 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   // 个人资料页面
   fastify.get('/admin/profile', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // 模拟用户信息
+      // 从数据库获取用户信息
+      const { UserModel } = await import('../models/user.model.js');
+      const { OperationLogModel } = await import('../models/operation-log.model.js');
+      const { SessionModel } = await import('../models/session.model.js');
+
+      if (!request.user?.id) {
+        return reply.redirect('/admin/login');
+      }
+
+      // 获取完整的用户信息
+      const userData = await UserModel.findById(request.user.id);
+      if (!userData) {
+        request.flash('error', '无法获取用户信息');
+        return reply.redirect('/admin/login');
+      }
+
+      // 计算已使用的点数
+      const sessions = await SessionModel.getAllByUserId(userData.id);
+      const usedCredits = sessions.reduce((total, session) => {
+        // 如果有持续时间，则按分钟计算（向上取整）
+        if (session.duration) {
+          return total + Math.ceil(session.duration / 60);
+        }
+        return total;
+      }, 0);
+
       const user = {
-        id: request.user?.id,
-        username: request.user?.username,
-        email: 'admin@example.com',
-        role: request.user?.role,
-        status: 'active',
-        api_key: 'api_key_' + request.user?.id,
-        credits: 1000,
-        used_credits: 200,
-        webhook_url: 'https://webhook.example.com/callback',
-        created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        id: userData.id,
+        username: userData.username,
+        email: userData.email || '',
+        role: userData.role,
+        status: userData.status,
+        api_key: userData.api_key || '',
+        credits: userData.credits,
+        used_credits: usedCredits,
+        webhook_url: userData.webhook_url || '',
+        created_at: userData.created_at
       };
 
-      // 点数使用记录（模拟数据）
-      const creditHistory = [
-        {
-          id: 1,
-          user_id: user.id,
-          amount: 100,
-          action: 'add',
-          reason: '管理员分配',
-          created_at: new Date(Date.now() - 86400000 * 2) // 2 天前
-        },
-        {
-          id: 2,
-          user_id: user.id,
-          amount: -30,
-          action: 'use',
-          reason: '使用会话',
-          created_at: new Date(Date.now() - 86400000) // 1 天前
-        }
-      ];
+      // 获取点数操作历史
+      const logs = await OperationLogModel.findByTargetUserId(userData.id, {
+        limit: 10,
+        sort: 'created_at',
+        order: 'desc'
+      });
+
+      // 格式化点数历史记录
+      let creditHistory = [];
+
+      // 确保 logs 是数组并且有数据
+      if (Array.isArray(logs) && logs.length > 0) {
+        creditHistory = logs
+          .filter(log => log && (log.action === '添加点数' || log.action === '扣除点数'))
+          .map(log => ({
+            id: log.id,
+            user_id: log.target_user_id,
+            amount: log.action === '添加点数' ?
+              (log.details && log.details.amount ? Number(log.details.amount) : 0) :
+              (log.details && log.details.amount ? -Number(log.details.amount) : 0),
+            action: log.action === '添加点数' ? 'add' : 'use',
+            reason: log.details && log.details.reason ? log.details.reason : log.action,
+            created_at: log.created_at
+          }));
+      } else {
+        request.log.warn(`用户 ${userData.id} 的日志数据不是数组或为空: ${JSON.stringify(logs)}`);
+      }
 
       return reply.view('pages/profile', {
         title: '个人资料',

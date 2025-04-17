@@ -29,7 +29,9 @@
     "test:credits": "node tests/test-credits.js",
     "test:all": "node tests/run-all-tests.js",
     "verify-credits": "tsx scripts/verify-credits-deduction.ts",
-    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.integration.config.mjs"
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.integration.config.mjs",
+    "test:sdk": "tsx scripts/test-sdk.ts",
+    "test:sdk:vitest": "vitest run src/tests/sdk/client.test.ts"
   },
   "keywords": [],
   "author": "xuyingzhou",
@@ -57,6 +59,7 @@
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
+    "vitest": "^3.1.1",
     "ws": "^8.18.1"
   },
   "dependencies": {

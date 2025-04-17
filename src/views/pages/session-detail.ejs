@@ -1,0 +1,282 @@
+<div class="bg-white rounded-lg shadow">
+  <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+    <h3 class="text-lg font-medium text-gray-700">会话详情</h3>
+    <div class="flex space-x-2">
+      <a href="/admin/sessions" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
+        <i class="fas fa-arrow-left mr-1"></i> 返回
+      </a>
+      <% if (session.status === 'active') { %>
+        <button id="end-session-btn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm font-medium">
+          <i class="fas fa-stop-circle mr-1"></i> 结束会话
+        </button>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="p-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- 会话基本信息 -->
+      <div class="md:col-span-2">
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+          <h4 class="text-md font-medium text-gray-700 mb-4">基本信息</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">会话 ID</p>
+              <p class="text-sm font-medium"><%= session.id %></p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">状态</p>
+              <p class="text-sm">
+                <% if (session.status === 'active') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    活跃
+                  </span>
+                <% } else if (session.status === 'ended') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                    已结束
+                  </span>
+                <% } else { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    <%= session.status %>
+                  </span>
+                <% } %>
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">创建时间</p>
+              <p class="text-sm font-medium"><%= new Date(session.created_at).toLocaleString() %></p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">开始时间</p>
+              <p class="text-sm font-medium"><%= session.start_time ? new Date(session.start_time).toLocaleString() : '未开始' %></p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">结束时间</p>
+              <p class="text-sm font-medium"><%= session.end_time ? new Date(session.end_time).toLocaleString() : '未结束' %></p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">持续时间</p>
+              <p class="text-sm font-medium">
+                <% if (session.duration) { %>
+                  <%
+                    const minutes = Math.floor(session.duration / 60);
+                    const seconds = session.duration % 60;
+                    if (minutes > 0) {
+                  %>
+                    <%= minutes %> 分 <%= seconds %> 秒
+                  <% } else { %>
+                    <%= seconds %> 秒
+                  <% } %>
+                <% } else { %>
+                  0 秒
+                <% } %>
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">消耗点数</p>
+              <p class="text-sm font-medium">
+                <%= session.credits_used || 0 %> 点
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">端口</p>
+              <p class="text-sm font-medium"><%= session.port || '未分配' %></p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">最后活动时间</p>
+              <p class="text-sm font-medium"><%= session.last_activity ? new Date(session.last_activity).toLocaleString() : '无活动' %></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 用户信息 -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+          <h4 class="text-md font-medium text-gray-700 mb-4">用户信息</h4>
+          <div class="flex items-center mb-4">
+            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium">
+              <%= session.user.username ? session.user.username.charAt(0).toUpperCase() : '?' %>
+            </div>
+            <div class="ml-4">
+              <h5 class="text-sm font-medium text-gray-900"><%= session.user.username %></h5>
+              <p class="text-sm text-gray-500"><%= session.user.email || '' %></p>
+            </div>
+            <div class="ml-auto">
+              <a href="/admin/users/<%= session.user.id %>" class="text-primary-600 hover:text-primary-900 text-sm">
+                查看用户详情
+              </a>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">用户 ID</p>
+              <p class="text-sm font-medium"><%= session.user.id %></p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">剩余点数</p>
+              <p class="text-sm font-medium"><%= session.user.credits || 0 %></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 机器信息 -->
+        <% if (session.machine) { %>
+          <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <h4 class="text-md font-medium text-gray-700 mb-4">机器信息</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p class="text-sm text-gray-500">机器 ID</p>
+                <p class="text-sm font-medium"><%= session.machine.id %></p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">机器名称</p>
+                <p class="text-sm font-medium"><%= session.machine.name %></p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">IP 地址</p>
+                <p class="text-sm font-medium"><%= session.machine.ip %></p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">状态</p>
+                <p class="text-sm">
+                  <% if (session.machine.status === 'online') { %>
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      在线
+                    </span>
+                  <% } else { %>
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                      离线
+                    </span>
+                  <% } %>
+                </p>
+              </div>
+            </div>
+            <div class="mt-4">
+              <a href="/admin/machines/<%= session.machine.id %>" class="text-primary-600 hover:text-primary-900 text-sm">
+                查看机器详情
+              </a>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <h4 class="text-md font-medium text-gray-700 mb-4">机器信息</h4>
+            <p class="text-sm text-gray-500">未分配机器</p>
+          </div>
+        <% } %>
+
+        <!-- 错误信息 -->
+        <% if (session.error_message) { %>
+          <div class="bg-red-50 rounded-lg p-4 mb-6">
+            <h4 class="text-md font-medium text-red-700 mb-2">错误信息</h4>
+            <p class="text-sm text-red-600"><%= session.error_message %></p>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- 会话选项和截图 -->
+      <div>
+        <!-- 会话选项 -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+          <h4 class="text-md font-medium text-gray-700 mb-4">会话选项</h4>
+          <% if (session.options) { %>
+            <div class="overflow-auto max-h-60">
+              <pre class="text-xs text-gray-700 bg-gray-100 p-3 rounded"><%= JSON.stringify(session.options, null, 2) %></pre>
+            </div>
+          <% } else { %>
+            <p class="text-sm text-gray-500">无选项</p>
+          <% } %>
+        </div>
+
+        <!-- 截图 -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-md font-medium text-gray-700 mb-4">浏览器截图</h4>
+          <% if (session.screenshot_url) { %>
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+              <img src="<%= session.screenshot_url %>" alt="会话截图" class="w-full h-auto">
+            </div>
+          <% } else { %>
+            <div class="border border-gray-200 rounded-lg p-8 flex items-center justify-center">
+              <p class="text-sm text-gray-500">无截图</p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 结束会话确认模态框 -->
+<div id="end-session-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">结束会话</h3>
+      <button id="close-end-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <p class="text-gray-700 mb-4">确定要结束此会话吗？这将立即停止浏览器实例并释放资源。</p>
+
+      <div class="flex justify-end">
+        <button id="cancel-end-session" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
+          取消
+        </button>
+        <button id="confirm-end-session" class="bg-red-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+          结束会话
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 结束会话模态框
+  const endSessionBtn = document.getElementById('end-session-btn');
+  const endSessionModal = document.getElementById('end-session-modal');
+  const closeEndModal = document.getElementById('close-end-modal');
+  const cancelEndSession = document.getElementById('cancel-end-session');
+  const confirmEndSession = document.getElementById('confirm-end-session');
+  const sessionId = '<%= session.id %>';
+
+  endSessionBtn?.addEventListener('click', () => {
+    endSessionModal.classList.remove('hidden');
+  });
+
+  closeEndModal?.addEventListener('click', () => {
+    endSessionModal.classList.add('hidden');
+  });
+
+  cancelEndSession?.addEventListener('click', () => {
+    endSessionModal.classList.add('hidden');
+  });
+
+  confirmEndSession?.addEventListener('click', async () => {
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/release`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // 重定向到会话列表页
+        window.location.href = '/admin/sessions';
+      } else {
+        alert('结束会话失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('结束会话失败: ' + error.message);
+    } finally {
+      endSessionModal.classList.add('hidden');
+    }
+  });
+
+  // 点击模态框背景关闭模态框
+  endSessionModal?.addEventListener('click', (e) => {
+    if (e.target === endSessionModal) {
+      endSessionModal.classList.add('hidden');
+    }
+  });
+</script>

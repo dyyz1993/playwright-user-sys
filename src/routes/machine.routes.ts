@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import machineController from '../controllers/machine.controller.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import {
@@ -168,4 +168,34 @@ export default async function machineRoutes(fastify: FastifyInstance): Promise<v
       tags: ['machines', 'admin'],
     },
   }, machineController.cleanupOldMachines);
+
+  // 删除机器（管理员）
+  fastify.delete('/:id', {
+    onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
+    schema: {
+      params: zodToJsonSchema(idParamSchema),
+      body: {
+        type: 'object',
+        properties: {},
+        additionalProperties: true,
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+            id: { type: 'string' },
+          },
+          required: ['success'],
+        },
+        400: zodToJsonSchema(errorResponseSchema),
+        401: zodToJsonSchema(errorResponseSchema),
+        403: zodToJsonSchema(errorResponseSchema),
+        404: zodToJsonSchema(errorResponseSchema),
+        500: zodToJsonSchema(errorResponseSchema),
+      },
+      tags: ['machines', 'admin'],
+    },
+  }, machineController.deleteMachine);
 }

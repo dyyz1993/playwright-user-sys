@@ -125,6 +125,11 @@ class GrpcClient extends EventEmitter {
     browserService.on('sessionClosed', (sessionId: string, duration: number) => {
       this.sendSessionStatus(sessionId, 'closed', duration);
     });
+
+    // 监听截图事件
+    browserService.on('sessionScreenshot', (sessionId: string, screenshotUrl: string) => {
+      this.sendSessionScreenshot(sessionId, screenshotUrl);
+    });
   }
 
   /**
@@ -510,13 +515,28 @@ class GrpcClient extends EventEmitter {
     }
 
     try {
+      // 如果持续时间为0，尝试从浏览器服务获取会话信息并计算持续时间
+      let finalDuration = duration;
+
+      if (finalDuration === 0 && status === 'closed') {
+        // 尝试从浏览器服务获取会话信息
+        const sessions = browserService['sessions'];
+        const session = sessions.get(sessionId);
+
+        if (session && session.startTime) {
+          const now = Date.now();
+          finalDuration = Math.floor((now - session.startTime) / 1000);
+          logger.info(`发送会话状态更新时计算持续时间 (sessionId: ${sessionId}): 开始时间=${new Date(session.startTime).toISOString()}, 当前时间=${new Date(now).toISOString()}, 持续时间=${finalDuration}秒`);
+        }
+      }
+
       // 构造会话状态消息
       const message = {
         machine_id: CONFIG.machineId,
         session_status: {
           session_id: sessionId,
           status: status,
-          duration: duration,
+          duration: finalDuration,
         },
       };
 
@@ -525,10 +545,41 @@ class GrpcClient extends EventEmitter {
       if (writeResult === false) {
         logger.warn(`发送状态更新缓冲区已满，等待排空`);
       } else {
-        logger.info(`已发送会话状态更新 (sessionId: ${sessionId}, status: ${status}, duration: ${duration}s)`);
+        logger.info(`已发送会话状态更新 (sessionId: ${sessionId}, status: ${status}, duration: ${finalDuration}s)`);
       }
     } catch (error) {
       logger.error(`发送会话状态更新失败:`, error);
+    }
+  }
+
+  /**
+   * 发送会话截图更新
+   */
+  sendSessionScreenshot(sessionId: string, screenshotUrl: string): void {
+    if (!this.connected || !this.call) {
+      logger.warn(`无法发送会话截图更新，未连接到管理服务器`);
+      return;
+    }
+
+    try {
+      // 构造会话截图消息
+      const message = {
+        machine_id: CONFIG.machineId,
+        session_screenshot: {
+          session_id: sessionId,
+          screenshot_url: screenshotUrl,
+        },
+      };
+
+      // 发送消息
+      const writeResult = this.call.write(message);
+      if (writeResult === false) {
+        logger.warn(`发送截图更新缓冲区已满，等待排空`);
+      } else {
+        logger.info(`已发送会话截图更新 (sessionId: ${sessionId}, screenshotUrl: ${screenshotUrl})`);
+      }
+    } catch (error) {
+      logger.error(`发送会话截图更新失败:`, error);
     }
   }
 
@@ -579,6 +630,43 @@ class GrpcClient extends EventEmitter {
           logger.info(`机器服务重启指令已发送`);
         } catch (error) {
           logger.error(`重启机器服务失败:`, error);
+        }
+        return;
+      }
+
+      // 处理永久关闭命令
+      if (message.shutdown && message.shutdown.permanent) {
+        logger.info(`收到永久关闭命令，准备停止机器服务并退出`);
+
+        try {
+          // 先关闭所有浏览器实例
+          await browserService.closeAllBrowsers();
+          logger.info(`已关闭所有浏览器实例`);
+
+          // 引入机器服务
+          const machineServer = await import('./index.js').then(m => m.default);
+
+          // 停止机器服务
+          logger.info(`开始停止机器服务...`);
+          await machineServer.stop();
+          logger.info(`机器服务已停止，准备退出进程`);
+
+          // 创建一个标记文件，表示这个机器已被删除
+          try {
+            const fs = await import('fs/promises');
+            await fs.writeFile('.machine_deleted', 'true');
+            logger.info(`已创建机器删除标记文件`);
+          } catch (fsError) {
+            logger.error(`创建机器删除标记文件失败:`, fsError);
+          }
+
+          // 延迟一秒后退出进程，给日志足够的时间写入
+          setTimeout(() => {
+            logger.info(`收到永久关闭命令，进程即将退出`);
+            process.exit(0);
+          }, 1000);
+        } catch (error) {
+          logger.error(`处理永久关闭命令失败:`, error);
         }
         return;
       }

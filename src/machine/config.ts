@@ -27,7 +27,13 @@ export const CONFIG = {
   disconnectionTimeout: parseInt(env.DISCONNECTION_TIMEOUT || '60000', 10), // 1分钟
 
   // 活动报告间隔（多久向管理端报告一次会话活动）
-  activityReportInterval: parseInt(env.ACTIVITY_REPORT_INTERVAL || '60000', 10), // 1分钟
+  activityReportInterval: parseInt(env.ACTIVITY_REPORT_INTERVAL || '3000', 10), // 3秒
+
+  // 会话活动超时（如果超过这个时间没有收到活动，则认为会话已断开）
+  sessionActivityTimeout: parseInt(env.SESSION_ACTIVITY_TIMEOUT || '10000', 10), // 10秒
+
+  // 数据目录
+  dataDir: env.DATA_DIR || process.cwd() + '/data'
 };
 
 export default CONFIG;

@@ -163,6 +163,18 @@ class MemoryStoreService extends EventEmitter {
   }
 
   /**
+   * 从内存中移除机器
+   */
+  removeMachine(machineId: string): void {
+    const status = this.machines.get(machineId);
+    if (status) {
+      this.machines.delete(machineId);
+      this.emit('machine:removed', { machineId });
+      console.log(`从内存中移除机器: ${machineId}`);
+    }
+  }
+
+  /**
    * 获取所有机器状态
    */
   getAllMachines(): MachineRealTimeStatus[] {

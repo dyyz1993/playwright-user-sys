@@ -20,20 +20,38 @@ import {
 
 
 export default async function adminApiRoutes(fastify: FastifyInstance): Promise<void> {
-  // 验证管理员中间件
-  const verifyAdmin = async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.user) {
-      return reply.status(401).send({ success: false, message: '未授权' });
-    }
+  // 使用全局验证中间件
+  const authenticate = async (request: FastifyRequest, reply: FastifyReply) => {
+    // 如果请求已经被处理，直接返回
+    if (reply.sent) return;
 
-    if (request.user.role !== UserRole.ADMIN) {
-      return reply.status(403).send({ success: false, message: '需要管理员权限' });
+    try {
+      // 使用 fastify 的 JWT 验证中间件
+      await fastify.verifyJWT(request, reply);
+
+      // 如果返回已经发送，直接返回
+      if (reply.sent) return;
+
+      // 验证管理员权限
+      if (!request.user) {
+        return reply.status(401).send({ success: false, error: '未授权' });
+      }
+
+      if (request.user.role !== UserRole.ADMIN) {
+        return reply.status(403).send({ success: false, error: '需要管理员权限' });
+      }
+    } catch (error) {
+      // 如果返回已经发送，不再发送新的响应
+      if (reply.sent) return;
+
+      request.log.error('认证失败:', error);
+      return reply.status(401).send({ success: false, error: '认证失败' });
     }
   };
 
   // 创建用户
   fastify.post('/api/admin/users', {
-    preHandler: [verifyAdmin],
+    preHandler: [authenticate],
     schema: {
       body: zodToJsonSchema(adminCreateUserRequestSchema),
       response: {
@@ -52,13 +70,13 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
 
       // 验证输入
       if (!body.username || !body.password) {
-        return reply.status(400).send({ success: false, message: '用户名和密码不能为空' });
+        return reply.status(400).send({ success: false, error: '用户名和密码不能为空' });
       }
 
       // 检查用户名是否已存在
       const existingUser = await UserModel.findByUsername(body.username);
       if (existingUser) {
-        return reply.status(409).send({ success: false, message: '用户名已存在' });
+        return reply.status(409).send({ success: false, error: '用户名已存在' });
       }
 
       // 创建用户
@@ -74,11 +92,11 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
 
       const user = await UserModel.create(userData);
       if (!user) {
-        return reply.status(500).send({ success: false, message: '创建用户失败' });
+        return reply.status(500).send({ success: false, error: '创建用户失败' });
       }
 
-      // 记录操作日志
-      await OperationLogModel.create({
+      // 记录操作日志 - 异步处理
+      OperationLogModel.create({
         admin_id: adminId || 0,
         action: '创建用户',
         details: {
@@ -87,6 +105,8 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           credits: userData.credits,
         },
         target_user_id: user.id,
+      }).catch(logError => {
+        request.log.error('记录操作日志失败:', logError);
       });
 
       return reply.status(201).send({
@@ -104,13 +124,13 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       });
     } catch (error: any) {
       request.log.error('创建用户失败:', error);
-      return reply.status(500).send({ success: false, message: '创建用户失败: ' + error.message });
+      return reply.status(500).send({ success: false, error: '创建用户失败: ' + error.message });
     }
   });
 
   // 获取单个用户
   fastify.get('/api/admin/users/:id', {
-    preHandler: [verifyAdmin],
+    preHandler: [authenticate],
     schema: {
       params: zodToJsonSchema(idParamSchema),
       response: {
@@ -128,12 +148,12 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       const userId = parseInt(params.id, 10);
 
       if (isNaN(userId)) {
-        return reply.status(400).send({ success: false, message: '无效的用户 ID' });
+        return reply.status(400).send({ success: false, error: '无效的用户 ID' });
       }
 
       const user = await UserModel.findById(userId);
       if (!user) {
-        return reply.status(404).send({ success: false, message: '用户不存在' });
+        return reply.status(404).send({ success: false, error: '用户不存在' });
       }
 
       return reply.send({
@@ -151,13 +171,13 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       });
     } catch (error: any) {
       request.log.error('获取用户信息失败:', error);
-      return reply.status(500).send({ success: false, message: '获取用户信息失败: ' + error.message });
+      return reply.status(500).send({ success: false, error: '获取用户信息失败: ' + error.message });
     }
   });
 
   // 更新用户
   fastify.put('/api/admin/users/:id', {
-    preHandler: [verifyAdmin],
+    preHandler: [authenticate],
     schema: {
       params: zodToJsonSchema(idParamSchema),
       body: zodToJsonSchema(adminUpdateUserRequestSchema),
@@ -178,13 +198,13 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       const body = request.body as any;
 
       if (isNaN(userId)) {
-        return reply.status(400).send({ success: false, message: '无效的用户 ID' });
+        return reply.status(400).send({ success: false, error: '无效的用户 ID' });
       }
 
       // 检查用户是否存在
       const existingUser = await UserModel.findById(userId);
       if (!existingUser) {
-        return reply.status(404).send({ success: false, message: '用户不存在' });
+        return reply.status(404).send({ success: false, error: '用户不存在' });
       }
 
       // 准备更新数据
@@ -199,11 +219,11 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       // 更新用户
       const updatedUser = await UserModel.update(userId, updateData);
       if (!updatedUser) {
-        return reply.status(500).send({ success: false, message: '更新用户失败' });
+        return reply.status(500).send({ success: false, error: '更新用户失败' });
       }
 
-      // 记录操作日志
-      await OperationLogModel.create({
+      // 记录操作日志 - 异步处理
+      OperationLogModel.create({
         admin_id: adminId || 0,
         action: '更新用户',
         details: {
@@ -211,6 +231,8 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           password: body.password ? '已更新' : undefined,
         },
         target_user_id: userId,
+      }).catch(logError => {
+        request.log.error('记录操作日志失败:', logError);
       });
 
       return reply.send({
@@ -228,13 +250,13 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       });
     } catch (error: any) {
       request.log.error('更新用户失败:', error);
-      return reply.status(500).send({ success: false, message: '更新用户失败: ' + error.message });
+      return reply.status(500).send({ success: false, error: '更新用户失败: ' + error.message });
     }
   });
 
   // 删除用户
   fastify.delete('/api/admin/users/:id', {
-    preHandler: [verifyAdmin],
+    preHandler: [authenticate],
     schema: {
       params: zodToJsonSchema(idParamSchema),
       response: {
@@ -253,29 +275,31 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       const userId = parseInt(params.id, 10);
 
       if (isNaN(userId)) {
-        return reply.status(400).send({ success: false, message: '无效的用户 ID' });
+        return reply.status(400).send({ success: false, error: '无效的用户 ID' });
       }
 
       // 检查用户是否存在
       const existingUser = await UserModel.findById(userId);
       if (!existingUser) {
-        return reply.status(404).send({ success: false, message: '用户不存在' });
+        return reply.status(404).send({ success: false, error: '用户不存在' });
       }
 
       // 不允许删除管理员
       if (existingUser.role === UserRole.ADMIN) {
-        return reply.status(403).send({ success: false, message: '不允许删除管理员账号' });
+        return reply.status(403).send({ success: false, error: '不允许删除管理员账号' });
       }
 
       // 删除用户
       await UserModel.delete(userId);
 
-      // 记录操作日志
-      await OperationLogModel.create({
+      // 记录操作日志 - 异步处理
+      OperationLogModel.create({
         admin_id: adminId || 0,
         action: '删除用户',
         details: { username: existingUser.username },
         target_user_id: userId,
+      }).catch(logError => {
+        request.log.error('记录操作日志失败:', logError);
       });
 
       return reply.send({
@@ -284,13 +308,13 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       });
     } catch (error: any) {
       request.log.error('删除用户失败:', error);
-      return reply.status(500).send({ success: false, message: '删除用户失败: ' + error.message });
+      return reply.status(500).send({ success: false, error: '删除用户失败: ' + error.message });
     }
   });
 
   // 添加点数
   fastify.post('/api/admin/users/:id/credits', {
-    preHandler: [verifyAdmin],
+    preHandler: [authenticate],
     schema: {
       params: zodToJsonSchema(idParamSchema),
       body: zodToJsonSchema(adminAddCreditsRequestSchema),
@@ -311,28 +335,29 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       const body = request.body as any;
 
       if (isNaN(userId)) {
-        return reply.status(400).send({ success: false, message: '无效的用户 ID' });
+        return reply.status(400).send({ success: false, error: '无效的用户 ID' });
       }
 
       const amount = parseInt(body.amount);
       if (isNaN(amount) || amount <= 0) {
-        return reply.status(400).send({ success: false, message: '无效的点数金额' });
+        return reply.status(400).send({ success: false, error: '无效的点数金额' });
       }
 
       // 检查用户是否存在
       const existingUser = await UserModel.findById(userId);
       if (!existingUser) {
-        return reply.status(404).send({ success: false, message: '用户不存在' });
+        return reply.status(404).send({ success: false, error: '用户不存在' });
       }
 
       // 添加点数
       const updatedUser = await UserModel.addCredits(userId, amount);
       if (!updatedUser) {
-        return reply.status(500).send({ success: false, message: '添加点数失败' });
+        return reply.status(500).send({ success: false, error: '添加点数失败' });
       }
 
-      // 记录操作日志
-      await OperationLogModel.create({
+      // 记录操作日志 - 异步处理，不阻塞主流程
+      // 使用 Promise.catch 捕获错误，避免影响主流程
+      OperationLogModel.create({
         admin_id: adminId || 0,
         action: '添加点数',
         details: {
@@ -341,6 +366,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           username: existingUser.username
         },
         target_user_id: userId,
+      }).catch(logError => {
+        request.log.error('记录操作日志失败:', logError);
+        // 错误已捕获，不影响主流程
       });
 
       return reply.send({
@@ -354,7 +382,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       });
     } catch (error: any) {
       request.log.error('添加点数失败:', error);
-      return reply.status(500).send({ success: false, message: '添加点数失败: ' + error.message });
+      return reply.status(500).send({ success: false, error: '添加点数失败: ' + error.message });
     }
   });
 

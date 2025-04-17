@@ -16,7 +16,7 @@
       </div>
     </div>
   </div>
-  
+
   <div class="p-6">
     <!-- 搜索和筛选 -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
@@ -25,7 +25,7 @@
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <i class="fas fa-search text-gray-400"></i>
           </div>
-          <input type="text" id="search-logs" placeholder="搜索日志..." 
+          <input type="text" id="search-logs" placeholder="搜索日志..."
             class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
         </div>
         <div class="ml-4">
@@ -39,7 +39,7 @@
           </select>
         </div>
       </div>
-      
+
       <div class="flex items-center space-x-4">
         <div>
           <label for="date-range" class="block text-sm font-medium text-gray-700 mb-1">日期范围</label>
@@ -53,7 +53,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 日志表格 -->
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
@@ -121,7 +121,22 @@
                 <% } %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= log.details %>
+                <% try { %>
+                  <% if (log.details) { %>
+                    <% const detailsObj = JSON.parse(log.details); %>
+                    <% if (typeof detailsObj === 'object' && detailsObj !== null) { %>
+                      <% Object.entries(detailsObj).forEach(([key, value]) => { %>
+                        <div><strong><%= key %>:</strong> <%= typeof value === 'object' ? JSON.stringify(value) : value %></div>
+                      <% }); %>
+                    <% } else { %>
+                      <%= log.details %>
+                    <% } %>
+                  <% } else { %>
+                    -
+                  <% } %>
+                <% } catch (e) { %>
+                  <%= log.details || '-' %>
+                <% } %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <%= log.ip_address %>
@@ -131,7 +146,7 @@
         </tbody>
       </table>
     </div>
-    
+
     <!-- 分页 -->
     <div class="flex items-center justify-between mt-6">
       <div class="text-sm text-gray-700">
@@ -147,7 +162,7 @@
             上一页
           </button>
         <% } %>
-        
+
         <% if (page * limit < totalLogs) { %>
           <a href="/admin/logs?page=<%= page + 1 %>&limit=<%= limit %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
             下一页
@@ -166,29 +181,29 @@
   // 导出菜单
   const exportBtn = document.getElementById('export-btn');
   const exportMenu = document.getElementById('export-menu');
-  
+
   exportBtn?.addEventListener('click', () => {
     exportMenu.classList.toggle('hidden');
   });
-  
+
   // 点击其他地方关闭导出菜单
   document.addEventListener('click', (e) => {
     if (!exportBtn?.contains(e.target) && !exportMenu?.contains(e.target)) {
       exportMenu?.classList.add('hidden');
     }
   });
-  
+
   // 搜索功能
   const searchInput = document.getElementById('search-logs');
   searchInput?.addEventListener('input', () => {
     const searchTerm = searchInput.value.toLowerCase();
     const rows = document.querySelectorAll('tbody tr');
-    
+
     rows.forEach(row => {
       const username = row.querySelector('td:nth-child(2) .text-sm.font-medium').textContent.toLowerCase();
       const action = row.querySelector('td:nth-child(3) span').textContent.trim().toLowerCase();
       const details = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
-      
+
       if (username.includes(searchTerm) || action.includes(searchTerm) || details.includes(searchTerm)) {
         row.style.display = '';
       } else {
@@ -196,23 +211,23 @@
       }
     });
   });
-  
+
   // 操作筛选
   const actionFilter = document.getElementById('action-filter');
   actionFilter?.addEventListener('change', () => {
     const selectedAction = actionFilter.value;
     const rows = document.querySelectorAll('tbody tr');
-    
+
     rows.forEach(row => {
       const actionCell = row.querySelector('td:nth-child(3) span');
       let action = '';
-      
+
       if (actionCell.textContent.trim() === '登录') action = 'login';
       else if (actionCell.textContent.trim() === '创建用户') action = 'create_user';
       else if (actionCell.textContent.trim() === '添加算力') action = 'add_credits';
       else if (actionCell.textContent.trim() === '创建会话') action = 'create_session';
       else if (actionCell.textContent.trim() === '结束会话') action = 'end_session';
-      
+
       if (selectedAction === '' || action === selectedAction) {
         row.style.display = '';
       } else {
@@ -220,36 +235,36 @@
       }
     });
   });
-  
+
   // 日期范围筛选
   const dateRangeFilter = document.getElementById('date-range');
   dateRangeFilter?.addEventListener('change', () => {
     const selectedRange = dateRangeFilter.value;
     const rows = document.querySelectorAll('tbody tr');
-    
+
     if (selectedRange === 'all') {
       rows.forEach(row => {
         row.style.display = '';
       });
       return;
     }
-    
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());
-    
+
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
     rows.forEach(row => {
       const dateCell = row.querySelector('td:first-child').textContent;
       const logDate = new Date(dateCell);
-      
+
       let show = false;
-      
+
       switch (selectedRange) {
         case 'today':
           show = logDate >= today;
@@ -264,11 +279,11 @@
           show = logDate >= startOfMonth;
           break;
       }
-      
+
       row.style.display = show ? '' : 'none';
     });
   });
-  
+
   // 刷新按钮
   const refreshBtn = document.getElementById('refresh-btn');
   refreshBtn?.addEventListener('click', () => {

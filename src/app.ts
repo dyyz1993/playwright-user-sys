@@ -74,20 +74,25 @@ export async function start() {
     const grpcPort = parseInt(env.GRPC_PORT+'' || '50051', 10);
     startGrpcServer(grpcPort);
 
-    // 启动代理服务
-    const { proxyService } = await import('./services/proxy.service.js');
-    const proxyPort = parseInt(env.PROXY_PORT+'' || '8083', 10);
-    proxyService.start(proxyPort);
+    // 注意: 代理服务已移除，使用 SLB 或直接连接机器替代
 
     // 启动机器监控服务
     const { startMachineMonitor } = await import('./services/machine-monitor.service.js');
     const monitorInterval = parseInt(env.MACHINE_MONITOR_INTERVAL+'' || '30000', 10);
     const machineMonitorTimer = await startMachineMonitor(monitorInterval);
 
+    // 启动点数监控服务
+    const { startCreditsMonitor } = await import('./services/credits-monitor.service.js');
+    const creditsMonitorTimer = startCreditsMonitor(5000); // 每5秒检查一次
+    logger.info('✅ 点数监控服务已启动，检查间隔: 5秒');
+
     // 在应用关闭时停止监控服务
     fastify.addHook('onClose', async () => {
       const { stopMachineMonitor } = await import('./services/machine-monitor.service.js');
       stopMachineMonitor(machineMonitorTimer);
+
+      const { stopCreditsMonitor } = await import('./services/credits-monitor.service.js');
+      stopCreditsMonitor(creditsMonitorTimer);
     });
 
     // 启动 HTTP 服务器
@@ -95,7 +100,6 @@ export async function start() {
 
     logger.info(`✅ HTTP 服务器已启动: http://${env.HOST}:${env.PORT}`);
     logger.info(`✅ gRPC 服务器已启动: ${env.HOST}:${grpcPort}`);
-    logger.info(`✅ 代理服务器已启动: ${env.HOST}:${proxyPort}`);
     logger.info(`📚 API 文档: http://${env.HOST}:${env.PORT}/docs`);
   } catch (error) {
     logger.error('❌ 启动服务器失败:', error);

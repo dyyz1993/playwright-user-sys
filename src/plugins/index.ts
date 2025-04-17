@@ -11,8 +11,9 @@ import session from '@fastify/session';
 import flash from '@fastify/flash';
 import formbody from '@fastify/formbody';
 import swaggerPlugin from './swagger.plugin.js';
-import wsProxyPlugin from './ws-proxy.plugin.js';
 import authPlugin from './auth.plugin.js';
+import errorHandlerPlugin from './error-handler.plugin.js';
+import contentTypeParserPlugin from './content-type-parser.plugin.js';
 import requestLoggerMiddleware from '../middlewares/request-logger.middleware.js';
 import ejs from 'ejs';
 import path from 'path';
@@ -38,6 +39,12 @@ export default fp(async function (fastify: FastifyInstance) {
   // 注册优雅关闭插件
   await fastify.register(gracefulShutdown);
 
+  // 注册内容类型解析器插件
+  await fastify.register(contentTypeParserPlugin);
+
+  // 注册错误处理插件
+  await fastify.register(errorHandlerPlugin);
+
   // 注册认证插件
   await fastify.register(authPlugin);
 
@@ -46,9 +53,6 @@ export default fp(async function (fastify: FastifyInstance) {
 
   // 注册 Swagger 插件
   await fastify.register(swaggerPlugin);
-
-  // 注册 WebSocket 代理插件
-  await fastify.register(wsProxyPlugin);
 
   // 获取当前文件的目录路径
   const __filename = fileURLToPath(import.meta.url);
@@ -87,5 +91,12 @@ export default fp(async function (fastify: FastifyInstance) {
   await fastify.register(staticFiles, {
     root: path.join(rootDir, 'src/public'),
     prefix: '/public/'
+  });
+
+  // 注册截图静态文件插件
+  await fastify.register(staticFiles, {
+    root: path.join(rootDir, 'data/screenshots'),
+    prefix: '/screenshots/',
+    decorateReply: false // 避免与上面的静态文件插件冲突
   });
 });

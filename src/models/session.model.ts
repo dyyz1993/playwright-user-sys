@@ -13,6 +13,7 @@ export interface Session {
   end_time: Date | null;
   disconnected_at: Date | null;
   duration: number;
+  credits_used: number;
   screenshot_url: string | null;
   last_activity: Date | null;
   error_message: string | null;
@@ -35,6 +36,7 @@ export interface UpdateSessionInput {
   end_time?: Date;
   disconnected_at?: Date;
   duration?: number;
+  credits_used?: number;
   screenshot_url?: string;
   last_activity?: Date;
   error_message?: string;
@@ -115,22 +117,100 @@ export class SessionModel {
 
   // 标记会话已断开
   static async markDisconnected(id: string, duration: number): Promise<Session | null> {
-    await db('sessions').where({ id }).update({
-      status: SessionStatus.DISCONNECTED,
-      end_time: new Date(),
-      duration,
-      updated_at: new Date(),
-    });
+    // 使用 logger 而不是 console.log
+    const { logger } = await import('../utils/logger.js');
 
-    return this.findById(id);
+    // 如果提供的持续时间为0，尝试根据开始时间计算
+    let finalDuration = duration;
+
+    // 先检查会话是否存在
+    const session = await this.findById(id);
+    if (!session) {
+      logger.error(`标记会话已断开失败: 会话不存在 (${id})`);
+      return null;
+    }
+
+    // 如果提供的持续时间为0且会话有开始时间，尝试计算持续时间
+    if (finalDuration === 0 && session.start_time) {
+      const now = new Date();
+      const startTime = new Date(session.start_time);
+      finalDuration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+      logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
+    }
+
+    // 计算消耗的点数（每分钟1点）
+    // 即使会话只运行了几秒钟，也至少消耗 1 点
+    const creditsUsed = finalDuration > 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
+
+    logger.info(`标记会话已断开 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 数据源: 会话模型`);
+
+    try {
+
+      // 打印会话当前状态
+      logger.info(`会话当前状态 (${id}): 状态=${session.status}, 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
+
+      // 更新会话状态
+      // 如果已有持续时间和消耗点数，取最大值
+      if (session.duration > 0 || session.credits_used > 0) {
+        // 取最大值，确保不会减少
+        const newDuration = Math.max(session.duration, duration);
+        const newCreditsUsed = Math.max(session.credits_used, creditsUsed);
+
+        logger.info(`会话已有持续时间和消耗点数，取最大值 (${id}): 原持续时间=${session.duration}秒, 新持续时间=${newDuration}秒, 原消耗点数=${session.credits_used}点, 新消耗点数=${newCreditsUsed}点`);
+
+        await db('sessions').where({ id }).update({
+          status: SessionStatus.DISCONNECTED,
+          end_time: new Date(),
+          duration: newDuration,
+          credits_used: newCreditsUsed,
+          updated_at: new Date(),
+        });
+
+        logger.info(`更新会话状态，使用最大值 (${id}): 持续时间=${newDuration}秒, 消耗点数=${newCreditsUsed}点`);
+      } else {
+        // 如果没有持续时间和消耗点数，直接更新
+        logger.info(`会话没有持续时间和消耗点数，直接更新 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点`);
+
+        await db('sessions').where({ id }).update({
+          status: SessionStatus.DISCONNECTED,
+          end_time: new Date(),
+          duration: finalDuration,
+          credits_used: creditsUsed,
+          updated_at: new Date(),
+        });
+
+        logger.info(`更新会话状态，直接更新 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点`);
+      }
+
+      // 更新会话状态结果日志
+      logger.info(`更新会话状态完成 (${id})`);
+
+      // 检查更新后的会话状态
+      const updatedSession = await this.findById(id);
+      if (updatedSession) {
+        logger.info(`更新后的会话状态 (${id}): 状态=${updatedSession.status}, 持续时间=${updatedSession.duration}秒, 消耗点数=${updatedSession.credits_used}点`);
+      } else {
+        logger.error(`更新后无法获取会话 (${id})`);
+      }
+
+      return updatedSession;
+    } catch (error) {
+      logger.error(`标记会话已断开失败 (${id}):`, error);
+      return null;
+    }
   }
 
   // 标记会话已过期
   static async markExpired(id: string, duration: number): Promise<Session | null> {
+    // 计算消耗的点数（每分钟1点）
+    // 即使会话只运行了几秒钟，也至少消耗 1 点
+    const creditsUsed = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+
     await db('sessions').where({ id }).update({
       status: SessionStatus.EXPIRED,
       end_time: new Date(),
       duration,
+      credits_used: creditsUsed,
       updated_at: new Date(),
     });
 
@@ -138,10 +218,16 @@ export class SessionModel {
   }
 
   // 标记会话错误
-  static async markError(id: string): Promise<Session | null> {
+  static async markError(id: string, duration: number = 0): Promise<Session | null> {
+    // 计算消耗的点数（每分钟1点）
+    // 即使会话只运行了几秒钟，也至少消耗 1 点
+    const creditsUsed = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+
     await db('sessions').where({ id }).update({
       status: SessionStatus.ERROR,
       end_time: new Date(),
+      duration,
+      credits_used: creditsUsed,
       updated_at: new Date(),
     });
 
@@ -225,6 +311,33 @@ export class SessionModel {
       });
     } catch (error) {
       console.error('查询活跃会话失败:', error);
+      return [];
+    }
+  }
+
+  // 获取用户的所有会话（不分页）
+  static async getAllByUserId(userId: number): Promise<Session[]> {
+    try {
+      console.log(`开始查询用户 ${userId} 的所有会话`);
+      const sessions = await db('sessions').where({ user_id: userId });
+      console.log(`找到用户 ${userId} 的 ${sessions.length} 个会话`);
+
+      return sessions.map((session: any) => {
+        try {
+          return {
+            ...session,
+            options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+          };
+        } catch (error) {
+          console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
+          return {
+            ...session,
+            options: null,
+          };
+        }
+      });
+    } catch (error) {
+      console.error(`获取用户所有会话失败 (userId: ${userId}):`, error);
       return [];
     }
   }

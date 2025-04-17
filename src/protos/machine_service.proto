@@ -50,6 +50,7 @@ message MachineMessage {
   oneof message {
     Heartbeat heartbeat = 2;
     SessionStatusUpdate session_status = 3;
+    SessionScreenshot session_screenshot = 4;
   }
 }
 
@@ -57,6 +58,8 @@ message MachineMessage {
 message ManagerMessage {
   oneof message {
     HeartbeatRequest heartbeat_request = 1;
+    CloseBrowserCommand close_browser = 2;
+    RestartCommand restart = 3;
   }
 }
 
@@ -114,6 +117,22 @@ message SessionStatusUpdate {
   string status = 2;
   string error = 3;
   int32 duration = 4;
+}
+
+// 会话截图更新
+message SessionScreenshot {
+  string session_id = 1;
+  string screenshot_url = 2;
+}
+
+// 关闭浏览器命令
+message CloseBrowserCommand {
+  string session_id = 1;
+}
+
+// 重启命令
+message RestartCommand {
+  int64 timestamp = 1;
 }
 
 // 获取机器状态请求

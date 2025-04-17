@@ -14,26 +14,39 @@ export default fp(async function (fastify: FastifyInstance) {
       const authHeader = request.headers.authorization;
       if (authHeader && authHeader.startsWith('Bearer ')) {
         token = authHeader.split(' ')[1];
+        request.log.info('从 Authorization 头中获取到令牌');
       }
 
       // 如果没有从头中获取到令牌，尝试从 cookie 中获取
-      if (!token && request.cookies.token) {
+      if (!token && request.cookies && request.cookies.token) {
         token = request.cookies.token;
+        request.log.info('从 cookie 中获取到令牌');
       }
 
       // 如果仍然没有令牌，返回错误
       if (!token) {
+        request.log.warn('未提供授权令牌');
         return sendError(reply, '未提供授权令牌', 401);
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as { id: number };
+      // 输出所有 cookie 信息以便调试
+      request.log.info('请求中的 cookie:', request.cookies);
+
+      // 使用配置中的 JWT 密钥
+      const jwtSecret = 'your-secret-key';
+      request.log.info('使用 JWT 密钥验证令牌');
+
+      const decoded = jwt.verify(token, jwtSecret) as { id: number };
+      request.log.info('令牌验证成功，用户 ID:', decoded.id);
 
       const user = await UserModel.findById(decoded.id);
       if (!user) {
+        request.log.warn('找不到用户:', decoded.id);
         return sendError(reply, '无效的用户', 401);
       }
 
       if (user.status !== UserStatus.ACTIVE) {
+        request.log.warn('用户已被禁用或暂停:', user.username);
         return sendError(reply, '用户已被禁用或暂停', 403);
       }
 
@@ -43,7 +56,10 @@ export default fp(async function (fastify: FastifyInstance) {
         username: user.username,
         role: user.role as 'admin' | 'user',
       };
-    } catch (error) {
+
+      request.log.info('用户认证成功:', user.username, '角色:', user.role);
+    } catch (error: any) {
+      request.log.error('令牌验证失败:', error.message);
       return sendError(reply, '无效的令牌', 401);
     }
   });

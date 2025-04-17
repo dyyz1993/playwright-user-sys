@@ -31,8 +31,8 @@ export async function createUser(request: AuthenticatedRequest, reply: FastifyRe
       return sendError(reply, '创建用户失败', 500);
     }
 
-    // 记录操作日志
-    await OperationLogModel.create({
+    // 记录操作日志 - 异步处理
+    OperationLogModel.create({
       admin_id: adminId,
       action: '创建用户',
       details: {
@@ -41,6 +41,8 @@ export async function createUser(request: AuthenticatedRequest, reply: FastifyRe
         credits: userData.credits || 0,
       },
       target_user_id: user.id,
+    }).catch(logError => {
+      request.log.error('记录操作日志失败:', logError);
     });
 
     return sendCreated(reply, {
@@ -145,12 +147,14 @@ export async function updateUser(request: AuthenticatedRequestWithParams<IdParam
       return sendError(reply, '更新用户失败', 500);
     }
 
-    // 记录操作日志
-    await OperationLogModel.create({
+    // 记录操作日志 - 异步处理
+    OperationLogModel.create({
       admin_id: adminId,
       action: '更新用户',
       details: userData,
       target_user_id: userId,
+    }).catch(logError => {
+      request.log.error('记录操作日志失败:', logError);
     });
 
     return sendSuccess(reply, {
@@ -190,11 +194,13 @@ export async function resetApiKey(request: AuthenticatedRequestWithParams<IdPara
     // 重置 API Key
     const apiKey = await UserModel.resetApiKey(userId);
 
-    // 记录操作日志
-    await OperationLogModel.create({
+    // 记录操作日志 - 异步处理
+    OperationLogModel.create({
       admin_id: adminId,
       action: '重置用户 API Key',
       target_user_id: userId,
+    }).catch(logError => {
+      request.log.error('记录操作日志失败:', logError);
     });
 
     return sendSuccess(reply, { api_key: apiKey });
@@ -239,12 +245,14 @@ export async function deleteUser(request: AuthenticatedRequestWithParams<IdParam
     // 删除用户
     await UserModel.delete(userId);
 
-    // 记录操作日志
-    await OperationLogModel.create({
+    // 记录操作日志 - 异步处理
+    OperationLogModel.create({
       admin_id: adminId,
       action: '删除用户',
       details: { username: existingUser.username },
       target_user_id: userId,
+    }).catch(logError => {
+      request.log.error('记录操作日志失败:', logError);
     });
 
     return sendNoContent(reply);

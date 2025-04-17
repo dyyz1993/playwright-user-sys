@@ -212,6 +212,10 @@ class MachineConnectionManager extends EventEmitter {
       else if (message.session_status) {
         await this.handleSessionStatus(machineId, message.session_status);
       }
+      // 处理会话截图更新
+      else if (message.session_screenshot) {
+        await this.handleSessionScreenshot(machineId, message.session_screenshot);
+      }
       // 未知消息类型
       else {
         logger.warn(`收到未知类型的消息 (${machineId}): ${JSON.stringify(message)}`);
@@ -265,12 +269,40 @@ class MachineConnectionManager extends EventEmitter {
   }
 
   /**
+   * 处理会话截图更新
+   */
+  private async handleSessionScreenshot(machineId: string, screenshot: any): Promise<void> {
+    try {
+      const { session_id, screenshot_url } = screenshot;
+      logger.info(`收到会话截图更新 (${machineId}, ${session_id}): ${screenshot_url}`);
+
+      // 获取会话信息
+      const session = await SessionModel.findById(session_id);
+      if (!session) {
+        logger.warn(`会话不存在 (${session_id})`);
+        return;
+      }
+
+      // 更新会话截图 URL
+      await SessionModel.update(session_id, {
+        screenshot_url,
+      });
+
+      logger.info(`会话截图已更新 (${session_id}): ${screenshot_url}`);
+    } catch (error) {
+      logger.error(`处理会话截图更新时出错 (${machineId}, ${screenshot.session_id}):`, error);
+    }
+  }
+
+  /**
    * 处理会话状态更新
    */
   private async handleSessionStatus(machineId: string, status: any): Promise<void> {
     try {
-      const { session_id, status: sessionStatus, duration } = status;
-      logger.info(`收到会话状态更新 (${machineId}, ${session_id}): ${sessionStatus}, 持续时间: ${duration}秒`);
+      const { session_id, status: sessionStatus, duration: reportedDuration } = status;
+      // 使用可变变量存储持续时间，以便后续可以修改
+      let duration = reportedDuration;
+      logger.info(`收到会话状态更新 (${machineId}, ${session_id}): ${sessionStatus}, 持续时间: ${duration}秒, 数据源: 机器端`);
 
       // 获取会话信息
       const session = await SessionModel.findById(session_id);
@@ -280,13 +312,36 @@ class MachineConnectionManager extends EventEmitter {
       }
 
       // 根据状态更新会话记录
+      // 如果持续时间为0，尝试根据开始时间计算
+      if (duration === 0 && session.start_time) {
+        const now = new Date();
+        const startTime = new Date(session.start_time);
+        const calculatedDuration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+
+        if (calculatedDuration > 0) {
+          duration = calculatedDuration;
+          logger.info(`会话状态更新: 根据开始时间计算持续时间 (${session_id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${duration}秒`);
+        }
+      }
+
       switch (sessionStatus) {
         case 'connected':
           // 用户连接到浏览器实例，开始计费
-          await SessionModel.update(session_id, {
-            status: SessionStatus.CONNECTED,
-            start_time: new Date(),
-          });
+          const now = new Date();
+
+          // 如果会话已有开始时间，不覆盖
+          if (session.start_time) {
+            await SessionModel.update(session_id, {
+              status: SessionStatus.CONNECTED,
+            });
+            logger.info(`会话已有开始时间，不覆盖 (${session_id}): ${new Date(session.start_time).toISOString()}`);
+          } else {
+            await SessionModel.update(session_id, {
+              status: SessionStatus.CONNECTED,
+              start_time: now,
+            });
+            logger.info(`会话设置开始时间 (${session_id}): ${now.toISOString()}`);
+          }
 
           // 触发 Webhook 事件
           await createWebhookEvent(session.user_id, WebhookEventType.SESSION_CONNECTED, {
@@ -298,24 +353,60 @@ class MachineConnectionManager extends EventEmitter {
           break;
 
         case 'disconnected':
-          // 用户断开连接，暂停计费
-          await SessionModel.update(session_id, {
-            status: SessionStatus.DISCONNECTED,
-            disconnected_at: new Date(),
-            duration,
-          });
+          // 计算消耗的点数（每分钟1点）
+          // 即使会话只运行了几秒钟，也至少消耗 1 点
+          const disconnectMinutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+
+          // 检查会话是否已经有持续时间和消耗点数
+          if (session.duration > 0 || session.credits_used > 0) {
+            // 如果已经有持续时间和消耗点数，只更新状态和断开时间
+            await SessionModel.update(session_id, {
+              status: SessionStatus.DISCONNECTED,
+              disconnected_at: new Date(),
+            });
+            logger.info(`会话已有持续时间和消耗点数，只更新状态和断开时间 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
+          } else {
+            // 如果没有持续时间和消耗点数，更新所有字段
+            await SessionModel.update(session_id, {
+              status: SessionStatus.DISCONNECTED,
+              disconnected_at: new Date(),
+              duration,
+              credits_used: disconnectMinutes,
+            });
+            logger.info(`会话没有持续时间和消耗点数，更新所有字段 (${session_id}): 持续时间=${duration}秒, 消耗点数=${disconnectMinutes}点`);
+          }
 
           logger.info(`用户已断开会话连接，暂停计费 (${session_id})`);
           break;
 
         case 'active':
-          // 更新会话持续时间
-          await SessionModel.update(session_id, {
-            duration,
-          });
+          // 计算已使用的点数（每分钟1点）
+          // 即使会话只运行了几秒钟，也至少消耗 1 点
+          const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
 
-          // 计算已使用的点数
-          const minutes = Math.ceil(duration / 60);
+          // 更新会话持续时间和消耗点数
+          // 如果已有值，只更新当前值大于已有值的情况
+          if (session.duration > 0 || session.credits_used > 0) {
+            // 取最大值，确保不会减少
+            const newDuration = Math.max(session.duration, duration);
+            const newCreditsUsed = Math.max(session.credits_used, minutes);
+
+            await SessionModel.update(session_id, {
+              duration: newDuration,
+              credits_used: newCreditsUsed,
+            });
+
+            logger.info(`会话活动更新，保留最大值 (${session_id}): 持续时间=${newDuration}秒, 消耗点数=${newCreditsUsed}点`);
+          } else {
+            // 如果没有值，直接更新
+            await SessionModel.update(session_id, {
+              duration,
+              credits_used: minutes,
+            });
+
+            logger.info(`会话活动更新 (${session_id}): 持续时间=${duration}秒, 消耗点数=${minutes}点`);
+          }
+
           const user = await UserModel.findById(session.user_id);
 
           // 检查用户点数是否足够
@@ -344,23 +435,42 @@ class MachineConnectionManager extends EventEmitter {
           break;
 
         case 'closed':
-          // 浏览器实例已关闭，结束计费
-          await SessionModel.update(session_id, {
-            status: SessionStatus.DISCONNECTED,
-            end_time: new Date(),
-            duration,
-          });
+          // 计算消耗的点数（每分钟1点）
+          // 即使会话只运行了几秒钟，也至少消耗 1 点
+          const finalMinutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+
+          // 检查会话是否已经有持续时间和消耗点数
+          if (session.duration > 0 || session.credits_used > 0) {
+            // 如果已经有持续时间和消耗点数，只更新状态和结束时间
+            await SessionModel.update(session_id, {
+              status: SessionStatus.DISCONNECTED,
+              end_time: new Date(),
+            });
+            logger.info(`会话已有持续时间和消耗点数，只更新状态和结束时间 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
+          } else {
+            // 如果没有持续时间和消耗点数，更新所有字段
+            await SessionModel.update(session_id, {
+              status: SessionStatus.DISCONNECTED,
+              end_time: new Date(),
+              duration,
+              credits_used: finalMinutes,
+            });
+            logger.info(`会话没有持续时间和消耗点数，更新所有字段 (${session_id}): 持续时间=${duration}秒, 消耗点数=${finalMinutes}点`);
+          }
 
           // 如果会话已分配机器，减少机器的实例计数
           await MachineModel.decrementInstanceCount(machineId);
 
-          // 扣除用户点数
-          const finalMinutes = Math.ceil(duration / 60);
-          try {
-            await UserModel.deductCredits(session.user_id, finalMinutes);
-            logger.info(`已扣除用户 ${session.user_id} 的点数: ${finalMinutes} 点 (${session_id})`);
-          } catch (error) {
-            logger.error('扣除点数失败:', error);
+          // 只有在会话没有持续时间和消耗点数时才扣除点数
+          if (!(session.duration > 0 || session.credits_used > 0)) {
+            try {
+              await UserModel.deductCredits(session.user_id, finalMinutes);
+              logger.info(`已扣除用户 ${session.user_id} 的点数: ${finalMinutes} 点 (${session_id})`);
+            } catch (error) {
+              logger.error('扣除点数失败:', error);
+            }
+          } else {
+            logger.info(`会话已有持续时间和消耗点数，不重复扣除点数 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
           }
 
           // 触发 Webhook 事件
@@ -374,22 +484,42 @@ class MachineConnectionManager extends EventEmitter {
           break;
 
         case 'error':
-          // 浏览器实例出错，结束计费
-          await SessionModel.update(session_id, {
-            status: SessionStatus.ERROR,
-            end_time: new Date(),
-            duration,
-          });
+          // 计算消耗的点数（每分钟1点）
+          // 即使会话只运行了几秒钟，也至少消耗 1 点
+          const errorMinutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+
+          // 检查会话是否已经有持续时间和消耗点数
+          if (session.duration > 0 || session.credits_used > 0) {
+            // 如果已经有持续时间和消耗点数，只更新状态和结束时间
+            await SessionModel.update(session_id, {
+              status: SessionStatus.ERROR,
+              end_time: new Date(),
+            });
+            logger.info(`会话已有持续时间和消耗点数，只更新状态和结束时间 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
+          } else {
+            // 如果没有持续时间和消耗点数，更新所有字段
+            await SessionModel.update(session_id, {
+              status: SessionStatus.ERROR,
+              end_time: new Date(),
+              duration,
+              credits_used: errorMinutes,
+            });
+            logger.info(`会话没有持续时间和消耗点数，更新所有字段 (${session_id}): 持续时间=${duration}秒, 消耗点数=${errorMinutes}点`);
+          }
 
           // 如果会话已分配机器，减少机器的实例计数
           await MachineModel.decrementInstanceCount(machineId);
 
-          // 扣除用户点数
-          const errorMinutes = Math.ceil(duration / 60);
-          try {
-            await UserModel.deductCredits(session.user_id, errorMinutes);
-          } catch (error) {
-            logger.error('扣除点数失败:', error);
+          // 只有在会话没有持续时间和消耗点数时才扣除点数
+          if (!(session.duration > 0 || session.credits_used > 0)) {
+            try {
+              await UserModel.deductCredits(session.user_id, errorMinutes);
+              logger.info(`已扣除用户 ${session.user_id} 的点数: ${errorMinutes} 点 (${session_id})`);
+            } catch (error) {
+              logger.error('扣除点数失败:', error);
+            }
+          } else {
+            logger.info(`会话已有持续时间和消耗点数，不重复扣除点数 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
           }
 
           // 触发 Webhook 事件
@@ -456,6 +586,34 @@ class MachineConnectionManager extends EventEmitter {
       logger.info(`重启命令已发送 (${machineId})`);
     } catch (error) {
       logger.error(`发送重启命令失败 (${machineId}):`, error);
+    }
+  }
+
+  /**
+   * 发送关闭命令
+   * 用于通知机器端永久关闭，不要尝试重新连接
+   */
+  sendShutdownCommand(machineId: string): void {
+    const call = this.connections.get(machineId);
+    if (!call) {
+      logger.warn(`无法发送关闭命令，机器未连接: ${machineId}`);
+      return;
+    }
+
+    try {
+      // 构造关闭命令消息
+      const message = {
+        shutdown: {
+          timestamp: Date.now(),
+          permanent: true,
+        },
+      };
+
+      // 发送消息
+      call.write(message);
+      logger.info(`永久关闭命令已发送 (${machineId})`);
+    } catch (error) {
+      logger.error(`发送永久关闭命令失败 (${machineId}):`, error);
     }
   }
 

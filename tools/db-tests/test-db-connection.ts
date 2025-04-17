@@ -1,6 +1,6 @@
-import { db, initDatabase } from './database/index.js';
-import { logger } from './utils/logger.js';
-import { config } from './config/index.js';
+import { db, initDatabase } from '../../src/database/index.js';
+import { logger } from '../../src/utils/logger.js';
+import { config } from '../../src/config/index.js';
 
 async function testDatabaseConnection() {
   try {

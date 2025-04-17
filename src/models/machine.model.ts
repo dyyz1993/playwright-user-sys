@@ -294,6 +294,21 @@ export class MachineModel {
       return 0;
     }
   }
+
+  // 删除指定ID的机器
+  static async delete(id: string): Promise<boolean> {
+    try {
+      // 删除机器记录
+      const result = await db('machines')
+        .where({ id })
+        .delete();
+
+      return result > 0;
+    } catch (error) {
+      console.error(`删除机器失败 (${id}):`, error);
+      return false;
+    }
+  }
 }
 
 export default MachineModel;

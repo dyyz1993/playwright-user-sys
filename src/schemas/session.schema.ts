@@ -49,7 +49,7 @@ export const createSessionResponseSchema = successResponseSchema(
   sessionBaseSchema.extend({
     created_at: timestampSchema,
     browserWSEndpoint: z.string(),
-    proxyUrl: z.string(),
+    directUrl: z.string(),
   })
 );
 
@@ -85,4 +85,11 @@ export const getAllSessionsResponseSchema = successResponseSchema(
 // 获取会话响应模式
 export const getSessionResponseSchema = successResponseSchema(
   sessionDetailSchema
+);
+
+// 获取会话截图响应模式
+export const getSessionScreenshotResponseSchema = successResponseSchema(
+  z.object({
+    screenshot_url: z.string()
+  })
 );

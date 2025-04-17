@@ -106,11 +106,12 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
         });
 
         // 同时在数据库中标记会话为错误状态
-        await SessionModel.markError(sessionId);
+        await SessionModel.markError(sessionId, duration);
         logger.info(`标记会话为错误状态 (sessionId: ${sessionId}, machineId: ${machineId})`);
 
-        // 扣除用户点数
-        const minutes = Math.ceil(duration / 60);
+        // 扣除用户点数（每分钟1点）
+        // 即使会话只运行了几秒钟，也至少消耗 1 点
+        const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
         const userId = typeof session.user_id === 'number' ? session.user_id : parseInt(session.user_id as string, 10);
 
         try {
@@ -151,9 +152,20 @@ async function handleOfflineMachineSessionsV2(machineId: string): Promise<void> 
 
     // 将所有活跃会话标记为错误状态
     for (const session of activeSessions) {
+      // 计算会话持续时间
+      const now = new Date();
+      const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
+      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+
+      // 计算消耗的点数（每分钟1点）
+      // 即使会话只运行了几秒钟，也至少消耗 1 点
+      const creditsUsed = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+
       await SessionModel.update(session.id, {
         status: SessionStatus.ERROR,
         end_time: new Date(),
+        duration,
+        credits_used: creditsUsed,
         error_message: '机器意外离线',
       });
 

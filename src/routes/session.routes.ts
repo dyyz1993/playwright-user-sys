@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import sessionController from '../controllers/session.controller.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import {
@@ -9,7 +9,8 @@ import {
   releaseSessionResponseSchema,
   getAllSessionsResponseSchema,
   errorResponseSchema,
-  idParamSchema
+  idParamSchema,
+  getSessionScreenshotResponseSchema
 } from '../schemas/index.js';
 
 
@@ -100,4 +101,19 @@ export default async function sessionRoutes(fastify: FastifyInstance): Promise<v
       tags: ['sessions', 'admin'],
     },
   }, sessionController.getAllSessions);
+
+  // 获取会话截图
+  fastify.get('/:id/screenshot', {
+    onRequest: [fastify.verifyApiKey],
+    schema: {
+      params: zodToJsonSchema(idParamSchema),
+      response: {
+        200: zodToJsonSchema(getSessionScreenshotResponseSchema),
+        401: zodToJsonSchema(errorResponseSchema),
+        403: zodToJsonSchema(errorResponseSchema),
+        404: zodToJsonSchema(errorResponseSchema),
+      },
+      tags: ['sessions'],
+    },
+  }, sessionController.getSessionScreenshot);
 }

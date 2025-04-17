@@ -4,7 +4,7 @@ import { UserModel } from '../models/user.model.js';
 import { generateToken, comparePassword } from '../utils/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { UserStatus } from '../types/index.js';
-import { adminLoginRequestSchema } from '@/schemas/admin.schema.js';
+import { adminLoginRequestSchema } from '../schemas/admin.schema.js';
 
 
 // 登录控制器

@@ -53,6 +53,7 @@ export async function createUser(request: AuthenticatedRequest, reply: FastifyRe
       status: user.status,
       credits: user.credits,
       api_key: user.api_key,
+      webhook_url: user.webhook_url,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

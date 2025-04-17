@@ -14,21 +14,13 @@ const createDatabaseConfig = () => {
     console.log(`使用 SQLite 数据库: ${dbPath}`);
 
     return {
-      client: 'sqlite3',
+      client: 'better-sqlite3',
       connection: {
         filename: dbPath
       },
       useNullAsDefault: true,
-      pool: {
-        min: 2,
-        max: 10,
-        // 空闲超时，单位毫秒
-        idleTimeoutMillis: 30000,
-        // 连接超时，单位毫秒
-        acquireTimeoutMillis: 30000,
-        // 创建连接的错误将被记录并抛出
-        propagateCreateError: false,
-      },
+      // SQLite 不需要连接池，移除这些设置
+      acquireConnectionTimeout: 120000,
     };
   } else {
     // MySQL 配置

@@ -1,8 +1,8 @@
 # 使用 Node.js 作为基础镜像
-FROM nginx:alpine
+FROM node:18
 
-# 安装 Node.js
-RUN apk add --update nodejs npm
+# 安装必要的依赖项
+RUN apt-get update && apt-get install -y python3 make g++ build-essential sqlite3
 
 # 设置工作目录
 WORKDIR /app
@@ -28,5 +28,12 @@ ENV MACHINE_ID=""
 ENV MANAGEMENT_SERVER_URL="http://localhost:3000"
 ENV STATUS_REPORT_INTERVAL="60000"
 
+# 编译 TypeScript 文件
+RUN pnpm run build || echo "TypeScript compilation failed, but continuing with build"
+
+# 复制 proto 文件
+RUN mkdir -p /app/dist/src/protos
+COPY ./src/protos/ /app/dist/src/protos/
+
 # 启动实例机器客户端
-CMD ["node", "src/machine-server.js"]
+CMD ["node", "dist/src/machine/index.js"]

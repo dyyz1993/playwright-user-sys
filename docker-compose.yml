@@ -8,6 +8,7 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+      - "50051:50051"
     volumes:
       - ./data:/app/data
     environment:
@@ -15,7 +16,7 @@ services:
       - PORT=3000
       - HOST=0.0.0.0
       - DB_TYPE=sqlite
-      - DB_PATH=/app/data/db.sqlite
+      - DB_PATH=/app/data/database.sqlite
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
       - JWT_EXPIRES_IN=1d
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
@@ -40,6 +41,8 @@ services:
       - MACHINE_ID=machine-1
       - MANAGEMENT_SERVER_URL=http://app:3000
       - STATUS_REPORT_INTERVAL=60000
+      - MANAGER_HOST=app:50051
+      - MACHINE_IP=192.168.107.4
     volumes:
       - ./machine-data-1:/app/data
 
@@ -55,6 +58,8 @@ services:
       - MACHINE_ID=machine-2
       - MANAGEMENT_SERVER_URL=http://app:3000
       - STATUS_REPORT_INTERVAL=60000
+      - MANAGER_HOST=app:50051
+      - MACHINE_IP=192.168.107.5
     volumes:
       - ./machine-data-2:/app/data
 

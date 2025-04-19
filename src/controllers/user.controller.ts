@@ -117,6 +117,7 @@ export async function getUserById(request: AuthenticatedRequestWithParams<IdPara
       status: user.status,
       credits: user.credits,
       webhook_url: user.webhook_url,
+      api_key: user.api_key,
       created_at: user.created_at,
     });
   } catch (error) {
@@ -263,6 +264,31 @@ export async function deleteUser(request: AuthenticatedRequestWithParams<IdParam
   }
 }
 
+// 获取用户的会话消耗统计
+export async function getUserSessionStats(request: AuthenticatedRequestWithParams<IdParams>, reply: FastifyReply) {
+  try {
+    const userId = parseInt(request.params.id, 10);
+    if (isNaN(userId)) {
+      return sendError(reply, '无效的用户 ID', 400);
+    }
+
+    // 检查用户是否存在
+    const existingUser = await UserModel.findById(userId);
+    if (!existingUser) {
+      return sendError(reply, '用户不存在', 404);
+    }
+
+    // 获取用户的会话消耗统计
+    const { SessionModel } = await import('../models/session.model.js');
+    const stats = await SessionModel.getUserSessionStats(userId);
+
+    return sendSuccess(reply, stats);
+  } catch (error) {
+    request.log.error(error);
+    return sendError(reply, '获取用户会话消耗统计失败', 500);
+  }
+}
+
 export default {
   createUser,
   getAllUsers,
@@ -271,4 +297,5 @@ export default {
   resetApiKey,
   addCredits,
   deleteUser,
+  getUserSessionStats,
 };

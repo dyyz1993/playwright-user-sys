@@ -34,6 +34,7 @@ export async function createTables() {
       table.string('hostname').notNullable();
       table.string('ip').notNullable();
       table.integer('grpc_port').nullable();
+      table.integer('proxy_port').nullable();
       table.float('cpu_usage').defaultTo(0);
       table.float('memory_usage').defaultTo(0);
       table.float('disk_usage').defaultTo(0);

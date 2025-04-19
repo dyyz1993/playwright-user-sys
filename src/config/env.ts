@@ -47,6 +47,10 @@ const envSchema = z.object({
 
   // 监控配置
   MACHINE_MONITOR_INTERVAL: z.string().default('30000'),
+
+  // 公共访问的机器端点，如果设置，将使用这个域名或IP代替机器的实际IP
+  // 例如：'example.com:8082' 或 '192.168.1.100:8082'
+  PUBLIC_MACHINE_ENDPOINT: z.string().optional(),
 });
 
 // 验证环境变量

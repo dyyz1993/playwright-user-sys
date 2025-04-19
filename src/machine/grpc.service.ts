@@ -171,6 +171,7 @@ class GrpcClient extends EventEmitter {
         name: CONFIG.machineName,
         ip_address: this.getLocalIpAddress(),
         grpc_port: CONFIG.grpcPort,
+        proxy_port: CONFIG.proxyPort,
         max_sessions: CONFIG.maxSessions,
         system_info: systemInfo,
       };
@@ -203,6 +204,7 @@ class GrpcClient extends EventEmitter {
           name: CONFIG.machineName,
           ip_address: this.getLocalIpAddress(),
           grpc_port: CONFIG.grpcPort,
+          proxy_port: CONFIG.proxyPort,
           max_sessions: CONFIG.maxSessions,
           system_info: systemInfo,
         };

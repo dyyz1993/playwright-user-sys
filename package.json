@@ -7,8 +7,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "dev:env": "dotenv -e .env.dev -- tsx watch src/server.ts",
-    "dev:server": "tsx watch src/server.ts",
-    "dev:machine": "tsx watch src/machine/index.ts",
+    "dev:server": "export NODE_ENV=development && dotenv -e .env.dev -- tsx watch src/server.ts",
+    "dev:machine": "export NODE_ENV=development && dotenv -e .env.dev -- tsx watch src/machine/index.ts",
     "dev:minimal": "tsx watch src/minimal.ts",
     "test:sqlite": "tsx src/test-sqlite.ts",
     "test:mysql": "tsx src/test-mysql.ts",
@@ -20,6 +20,7 @@
     "create-test-user": "tsx scripts/create-test-user.ts",
     "client-demo": "tsx scripts/client-demo.ts",
     "migrate": "tsx scripts/run-migrations.js",
+    "migrate:proxy-port": "tsx scripts/run-proxy-port-migration.js",
     "test": "jest --config=jest.config.cjs",
     "test:watch": "jest --watch",
     "lint": "eslint . --ext .ts",

@@ -5,6 +5,7 @@ import { UserRole, UserStatus } from '../types/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import { hash } from 'bcryptjs';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import { z } from 'zod';
 import {
   adminCreateUserRequestSchema,
   adminCreateUserResponseSchema,
@@ -166,6 +167,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           status: user.status,
           credits: user.credits,
           webhook_url: user.webhook_url,
+          api_key: user.api_key,
           created_at: user.created_at,
         },
       });
@@ -386,5 +388,112 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
     }
   });
 
+  // 重置用户 API Key
+  fastify.post('/api/admin/users/:id/reset-api-key', {
+    preHandler: [authenticate],
+    schema: {
+      params: zodToJsonSchema(idParamSchema),
+      response: {
+        200: zodToJsonSchema(z.object({
+          success: z.boolean(),
+          data: z.object({
+            api_key: z.string()
+          })
+        })),
+        400: zodToJsonSchema(errorResponseSchema),
+        401: zodToJsonSchema(errorResponseSchema),
+        403: zodToJsonSchema(errorResponseSchema),
+        404: zodToJsonSchema(errorResponseSchema),
+      },
+      tags: ['admin'],
+    },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const adminId = request.user?.id;
+      const params = request.params as { id: string };
+      const userId = parseInt(params.id, 10);
+
+      if (isNaN(userId)) {
+        return reply.status(400).send({ success: false, error: '无效的用户 ID' });
+      }
+
+      // 检查用户是否存在
+      const existingUser = await UserModel.findById(userId);
+      if (!existingUser) {
+        return reply.status(404).send({ success: false, error: '用户不存在' });
+      }
+
+      // 重置 API Key
+      const apiKey = await UserModel.resetApiKey(userId);
+
+      // 记录操作日志 - 异步处理
+      OperationLogModel.create({
+        admin_id: adminId || 0,
+        action: '重置用户 API Key',
+        target_user_id: userId,
+      }).catch(logError => {
+        request.log.error('记录操作日志失败:', logError);
+      });
+
+      return reply.send({
+        success: true,
+        data: { api_key: apiKey }
+      });
+    } catch (error: any) {
+      request.log.error('重置 API Key 失败:', error);
+      return reply.status(500).send({ success: false, error: '重置 API Key 失败: ' + error.message });
+    }
+  });
+
   // 注意: 已删除用户路由兼容的添加点数接口，只保留管理员路由
+
+  // 获取用户的会话消耗统计
+  fastify.get('/api/admin/users/:id/session-stats', {
+    preHandler: [authenticate],
+    schema: {
+      params: zodToJsonSchema(idParamSchema),
+      response: {
+        200: zodToJsonSchema(z.object({
+          success: z.boolean(),
+          data: z.object({
+            total_sessions: z.number(),
+            total_duration: z.number(),
+            total_credits_used: z.number()
+          })
+        })),
+        400: zodToJsonSchema(errorResponseSchema),
+        401: zodToJsonSchema(errorResponseSchema),
+        403: zodToJsonSchema(errorResponseSchema),
+        404: zodToJsonSchema(errorResponseSchema),
+      },
+      tags: ['admin'],
+    },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const params = request.params as { id: string };
+      const userId = parseInt(params.id, 10);
+
+      if (isNaN(userId)) {
+        return reply.status(400).send({ success: false, error: '无效的用户 ID' });
+      }
+
+      // 检查用户是否存在
+      const existingUser = await UserModel.findById(userId);
+      if (!existingUser) {
+        return reply.status(404).send({ success: false, error: '用户不存在' });
+      }
+
+      // 获取用户的会话消耗统计
+      const { SessionModel } = await import('../models/session.model.js');
+      const stats = await SessionModel.getUserSessionStats(userId);
+
+      return reply.send({
+        success: true,
+        data: stats
+      });
+    } catch (error: any) {
+      request.log.error('获取用户会话消耗统计失败:', error);
+      return reply.status(500).send({ success: false, error: '获取用户会话消耗统计失败: ' + error.message });
+    }
+  });
 }

@@ -2,7 +2,9 @@
 FROM node:18-slim AS builder
 
 # 安装必要的依赖项
-RUN apt-get update && apt-get install -y \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
@@ -33,9 +35,44 @@ RUN pnpm run build || echo "TypeScript compilation failed, but continuing with b
 # 第二阶段：创建最终镜像
 FROM node:18-slim
 
-# 安装运行时必要的依赖
-RUN apt-get update && apt-get install -y \
-    sqlite3
+# 设置环境变量
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    CHROME_BIN=/usr/bin/google-chrome-stable \
+    CHROME_PATH=/usr/bin/google-chrome-stable
+
+
+
+# 安装运行时必要的依赖和 Chrome
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,target=/tmp/chrome-download,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    sqlite3 \
+    wget \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libxss1 \
+    xdg-utils \
+    curl && \
+    # 安装 Chrome
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
+    apt-get update && \
+    apt-get install -y google-chrome-stable && \
+    # 清理不必要的文件以减小镜像大小
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/chrome-download/*
 
 WORKDIR /app
 
@@ -56,6 +93,9 @@ ENV NODE_ENV=production
 ENV MACHINE_ID=""
 ENV MANAGEMENT_SERVER_URL="http://localhost:3000"
 ENV STATUS_REPORT_INTERVAL="60000"
+
+# 创建数据目录
+RUN mkdir -p /app/dist/data/screenshots
 
 # 启动实例机器客户端
 CMD ["node", "dist/src/machine/index.js"]

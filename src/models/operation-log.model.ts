@@ -44,9 +44,11 @@ export class OperationLogModel {
       if (!log) return null;
 
       try {
+        // 如果 details 是字符串，尝试解析为 JSON 对象
+        // 如果已经是对象，直接使用
         return {
           ...log,
-          details: log.details ? JSON.parse(log.details) : null,
+          details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
         };
       } catch (parseError) {
         console.error(`解析日志详情失败 (ID: ${id}):`, parseError);
@@ -82,9 +84,11 @@ export class OperationLogModel {
       return {
         items: logs.map((log: any) => {
           try {
+            // 如果 details 是字符串，尝试解析为 JSON 对象
+            // 如果已经是对象，直接使用
             return {
               ...log,
-              details: log.details ? JSON.parse(log.details) : null,
+              details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
             };
           } catch (error) {
             console.error(`解析管理员日志详情失败 (ID: ${log.id}):`, error);
@@ -132,9 +136,11 @@ export class OperationLogModel {
       return {
         items: logs.map((log: any) => {
           try {
+            // 如果 details 是字符串，尝试解析为 JSON 对象
+            // 如果已经是对象，直接使用
             return {
               ...log,
-              details: log.details ? JSON.parse(log.details) : null,
+              details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
             };
           } catch (error) {
             console.error(`解析用户日志详情失败 (ID: ${log.id}):`, error);
@@ -181,13 +187,15 @@ export class OperationLogModel {
       return {
         items: logs.map((log: any) => {
           try {
+            // 如果 details 是字符串，尝试解析为 JSON 对象
+            // 如果已经是对象，直接使用
             return {
               ...log,
-              details: log.details ? JSON.parse(log.details) : null,
+              details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
             };
           } catch (error) {
             console.error(`解析日志详情失败 (ID: ${log.id}):`, error);
-            // 如果解析失败，返回原始字符串
+            // 如果解析失败，返回错误对象
             return {
               ...log,
               details: { error: '无法解析的数据', raw: log.details },

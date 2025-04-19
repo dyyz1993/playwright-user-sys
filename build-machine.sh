@@ -4,6 +4,7 @@
 USE_CACHE=${USE_CACHE:-"true"}
 CLEAN_CACHE=${CLEAN_CACHE:-"false"}
 PLATFORM=${PLATFORM:-"linux/amd64"}
+TAG=${TAG:-"latest"}
 
 # 创建缓存目录
 mkdir -p ./.docker-cache
@@ -12,7 +13,7 @@ mkdir -p ./.docker-cache
 if [ -d "./.docker-cache" ]; then
     CACHE_SIZE=$(du -sh ./.docker-cache 2>/dev/null | cut -f1)
     echo "Current cache size: $CACHE_SIZE"
-
+    
     # 如果需要清理缓存
     if [ "$CLEAN_CACHE" = "true" ]; then
         echo "Cleaning cache..."
@@ -22,8 +23,8 @@ if [ -d "./.docker-cache" ]; then
     fi
 fi
 
-# 构建所有镜像
-echo "Building all images..."
+# 构建机器镜像
+echo "Building machine image..."
 CACHE_OPT=""
 if [ "$USE_CACHE" = "false" ]; then
     CACHE_OPT="--no-cache"
@@ -35,29 +36,19 @@ docker buildx build \
   $CACHE_OPT \
   --cache-from type=local,src=./.docker-cache \
   --cache-to type=local,dest=./.docker-cache \
-  -t playwright-user-sys:latest \
-  --load .
-
-docker buildx build \
-  --platform $PLATFORM \
-  $CACHE_OPT \
-  --cache-from type=local,src=./.docker-cache \
-  --cache-to type=local,dest=./.docker-cache \
-  -t playwright-machine:latest \
+  -t playwright-machine:$TAG \
   --load -f Dockerfile.machine .
 
-# 启动容器
-echo "Starting containers..."
-docker-compose up -d
-
-echo "System started successfully!"
-echo "Management server is available at http://localhost:3000"
+echo "Machine image built successfully!"
 echo ""
 echo "To build without cache, run:"
-echo "USE_CACHE=false ./start.sh"
+echo "USE_CACHE=false ./build-machine.sh"
 echo ""
 echo "To clean cache before building, run:"
-echo "CLEAN_CACHE=true ./start.sh"
+echo "CLEAN_CACHE=true ./build-machine.sh"
 echo ""
 echo "To specify a different platform, run:"
-echo "PLATFORM=linux/arm64 ./start.sh"
+echo "PLATFORM=linux/arm64 ./build-machine.sh"
+echo ""
+echo "To specify a different tag, run:"
+echo "TAG=dev ./build-machine.sh"

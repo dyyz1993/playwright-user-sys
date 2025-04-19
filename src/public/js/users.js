@@ -51,12 +51,25 @@ function initUserManagement() {
 
   // 绑定编辑用户按钮事件
   const editUserButtons = document.querySelectorAll('.edit-user-btn');
+  console.log('找到编辑按钮数量:', editUserButtons.length);
 
   editUserButtons.forEach(button => {
+    console.log('绑定编辑按钮事件:', button);
     button.addEventListener('click', function() {
       const userId = this.getAttribute('data-user-id');
+      console.log('点击编辑按钮, userId:', userId);
       openEditUserModal(userId);
     });
+  });
+
+  // 直接在文档上绑定委托事件
+  document.addEventListener('click', function(e) {
+    const button = e.target.closest('.edit-user-btn');
+    if (button) {
+      const userId = button.getAttribute('data-user-id');
+      console.log('通过委托点击编辑按钮, userId:', userId);
+      openEditUserModal(userId);
+    }
   });
 
   // 绑定编辑用户表单提交事件
@@ -246,6 +259,23 @@ function openEditUserModal(userId) {
               <p class="mt-1 text-xs text-gray-500">当会话结束时，系统将发送通知到此 URL</p>
             </div>
 
+            <div>
+              <label for="edit-api-key" class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+              <div class="flex">
+                <input type="text" id="edit-api-key" value="${user.api_key || ''}" readonly
+                  class="block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm bg-gray-50 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                <button type="button" class="copy-api-key bg-gray-100 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md text-gray-700 hover:bg-gray-200">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              <p class="mt-1 text-xs text-gray-500">用户的 API Key，用于调用 API</p>
+              <div class="mt-2">
+                <button type="button" class="reset-api-key text-sm text-primary-600 hover:text-primary-800" data-user-id="${user.id}">
+                  <i class="fas fa-sync-alt mr-1"></i> 重置 API Key
+                </button>
+              </div>
+            </div>
+
             <div class="flex justify-end pt-4">
               <button type="button" class="close-modal bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
                 取消
@@ -271,6 +301,52 @@ function openEditUserModal(userId) {
             modal.classList.add('hidden');
           });
         });
+
+        // 绑定复制 API Key 按钮
+        const copyApiKeyBtn = modalBody.querySelector('.copy-api-key');
+        const apiKeyInput = modalBody.querySelector('#edit-api-key');
+
+        if (copyApiKeyBtn && apiKeyInput) {
+          copyApiKeyBtn.addEventListener('click', function() {
+            // 选择输入框内容
+            apiKeyInput.select();
+
+            // 复制到剪贴板
+            try {
+              document.execCommand('copy');
+
+              // 显示复制成功提示
+              const originalText = copyApiKeyBtn.innerHTML;
+              copyApiKeyBtn.innerHTML = '<i class="fas fa-check"></i>';
+              copyApiKeyBtn.classList.add('bg-green-100', 'text-green-700');
+
+              setTimeout(() => {
+                copyApiKeyBtn.innerHTML = originalText;
+                copyApiKeyBtn.classList.remove('bg-green-100', 'text-green-700');
+              }, 2000);
+
+              // 显示成功通知
+              window.appUtils.showNotification('API Key 已复制到剪贴板', 'success');
+            } catch (err) {
+              // 显示错误通知
+              window.appUtils.showNotification('复制失败，请手动复制', 'error');
+            }
+          });
+        }
+
+        // 绑定重置 API Key 按钮
+        const resetApiKeyBtn = modalBody.querySelector('.reset-api-key');
+
+        if (resetApiKeyBtn) {
+          resetApiKeyBtn.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+
+            // 确认重置
+            window.appUtils.confirmAction('确定要重置此用户的 API Key 吗？这将使当前的 API Key 失效。', function() {
+              resetApiKey(userId, apiKeyInput);
+            });
+          });
+        }
       } else {
         modalBody.innerHTML = `
           <div class="text-center py-8">
@@ -436,6 +512,56 @@ function openAddCreditsModal(userId, username) {
   usernameSpan.textContent = username;
 
   modal.classList.remove('hidden');
+}
+
+// 重置 API Key
+function resetApiKey(userId, apiKeyInput) {
+  // 显示加载状态
+  const resetButton = document.querySelector(`.reset-api-key[data-user-id="${userId}"]`);
+  const originalText = resetButton.innerHTML;
+  resetButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
+  resetButton.disabled = true;
+
+  console.log('重置 API Key, userId:', userId);
+
+  // 发送请求重置 API Key
+  fetch(`/api/admin/users/${userId}/reset-api-key`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    },
+    credentials: 'same-origin'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // 更新输入框中的 API Key
+      apiKeyInput.value = data.data.api_key;
+
+      // 显示成功通知
+      window.appUtils.showNotification('API Key 已成功重置', 'success');
+
+      // 恢复按钮状态
+      resetButton.innerHTML = originalText;
+      resetButton.disabled = false;
+    } else {
+      // 恢复按钮状态
+      resetButton.innerHTML = originalText;
+      resetButton.disabled = false;
+
+      // 显示错误通知
+      window.appUtils.showNotification(`重置 API Key 失败: ${data.message}`, 'error');
+    }
+  })
+  .catch(error => {
+    // 恢复按钮状态
+    resetButton.innerHTML = originalText;
+    resetButton.disabled = false;
+
+    // 显示错误通知
+    window.appUtils.showNotification(`重置 API Key 失败: ${error.message}`, 'error');
+  });
 }
 
 // 添加点数

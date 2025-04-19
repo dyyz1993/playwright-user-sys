@@ -7,7 +7,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   fastify.get('/admin/login', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.view('pages/login-new', {
       title: '登录',
-      flash: request.flash
+      flash: request.flash,
+      path: request.url
     });
   });
 
@@ -306,6 +307,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '仪表盘',
         subtitle: '系统概览',
         user: request.user,
+        path: request.url,
         stats: {
           activeSessions,
           totalMachines,
@@ -355,6 +357,62 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     }
   });
 
+  // 用户编辑页面
+  fastify.get('/admin/users/:id/edit', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      // 检查是否是管理员
+      if (request.user?.role !== 'admin') {
+        return reply.redirect('/admin');
+      }
+
+      const params = request.params as { id: string };
+      const userId = parseInt(params.id, 10);
+
+      if (isNaN(userId)) {
+        request.flash('error', '无效的用户 ID');
+        return reply.redirect('/admin/users');
+      }
+
+      // 从数据库获取用户数据
+      const { UserModel } = await import('../models/user.model.js');
+      const { SessionModel } = await import('../models/session.model.js');
+
+      // 获取用户详情
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        request.flash('error', '用户不存在');
+        return reply.redirect('/admin/users');
+      }
+
+      // 获取用户的会话消耗统计
+      const stats = await SessionModel.getUserSessionStats(userId);
+
+      return reply.view('pages/user-edit', {
+        title: `编辑用户: ${user.username}`,
+        subtitle: '编辑用户信息',
+        user: request.user,
+        path: request.url,
+        userData: {
+          id: user.id,
+          username: user.username,
+          email: user.email || '',
+          role: user.role,
+          status: user.status,
+          credits: user.credits,
+          api_key: user.api_key || '',
+          webhook_url: user.webhook_url || '',
+          created_at: user.created_at
+        },
+        stats,
+        flash: request.flash
+      });
+    } catch (error: any) {
+      request.log.error('获取用户详情失败:', error);
+      request.flash('error', '获取用户详情失败: ' + error.message);
+      return reply.redirect('/admin/users');
+    }
+  });
+
   // 用户管理页面
   fastify.get('/admin/users', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -396,6 +454,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '用户管理',
         subtitle: '管理系统用户',
         user: request.user,
+        path: request.url,
         users,
         page,
         limit,
@@ -408,6 +467,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '用户管理',
         subtitle: '管理系统用户',
         user: request.user,
+        path: request.url,
         users: [],
         page: 1,
         limit: 10,
@@ -493,6 +553,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '会话管理',
         subtitle: '管理 Playwright 会话',
         user: request.user,
+        path: request.url,
         sessions,
         page,
         limit,
@@ -505,6 +566,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '会话管理',
         subtitle: '管理 Playwright 会话',
         user: request.user,
+        path: request.url,
         sessions: [],
         page: 1,
         limit: 10,
@@ -576,6 +638,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: `会话详情: ${session.id}`,
         subtitle: '查看会话详细信息',
         user: request.user,
+        path: request.url,
         session: sessionData,
         flash: request.flash
       });
@@ -660,6 +723,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: `机器详情: ${machineData.name}`,
         subtitle: '查看和管理机器详细信息',
         user: request.user,
+        path: request.url,
         machine: machineData,
         sessions,
         historyData,
@@ -721,6 +785,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '机器管理',
         subtitle: '管理 Playwright 实例机器',
         user: request.user,
+        path: request.url,
         machines,
         page,
         limit,
@@ -733,6 +798,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '机器管理',
         subtitle: '管理 Playwright 实例机器',
         user: request.user,
+        path: request.url,
         machines: [],
         page: 1,
         limit: 10,
@@ -790,23 +856,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       const logs = logsData.items.map(log => {
         const admin = adminsMap[log.admin_id] || { username: `用户 ${log.admin_id}`, role: 'unknown' };
 
-        // 确保 details 是有效的 JSON 字符串
-        let detailsStr = '';
-        try {
-          if (log.details === null || log.details === undefined) {
-            detailsStr = '';
-          } else if (typeof log.details === 'string') {
-            // 如果已经是字符串，尝试解析确保是有效的 JSON
-            JSON.parse(log.details);
-            detailsStr = log.details;
-          } else {
-            // 如果是对象，转换为 JSON 字符串
-            detailsStr = JSON.stringify(log.details);
-          }
-        } catch (e) {
-          // 如果解析失败，提供一个有效的 JSON 字符串
-          detailsStr = JSON.stringify({ error: '无效的数据格式', raw: String(log.details) });
-        }
+        // 直接传递details对象，不进行额外的字符串转换
+        // 模板中会根据类型进行适当处理
 
         return {
           id: log.id,
@@ -814,7 +865,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           username: admin.username,
           role: admin.role,
           action: log.action,
-          details: detailsStr,
+          details: log.details,
           ip_address: log.ip || '0.0.0.0',
           created_at: log.created_at
         };
@@ -827,6 +878,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '操作日志',
         subtitle: '查看系统操作记录',
         user: request.user,
+        path: request.url,
         logs,
         page,
         limit,
@@ -839,6 +891,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '操作日志',
         subtitle: '查看系统操作记录',
         user: request.user,
+        path: request.url,
         logs: [],
         page: 1,
         limit: 10,
@@ -922,6 +975,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '个人资料',
         subtitle: '管理您的账户信息',
         user,
+        path: request.url,
         creditHistory,
         flash: request.flash
       });
@@ -931,6 +985,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '个人资料',
         subtitle: '管理您的账户信息',
         user: request.user,
+        path: request.url,
         creditHistory: [],
         flash: { error: '获取个人资料失败: ' + error.message }
       });
@@ -944,6 +999,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '系统设置',
         subtitle: '配置系统参数',
         user: request.user,
+        path: request.url,
         flash: request.flash
       });
     } catch (error: any) {
@@ -952,6 +1008,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         title: '系统设置',
         subtitle: '配置系统参数',
         user: request.user,
+        path: request.url,
         flash: { error: '获取设置页面失败: ' + error.message }
       });
     }

@@ -26,8 +26,9 @@ message RegisterRequest {
   string name = 2;
   string ip_address = 3;
   int32 grpc_port = 4;
-  int32 max_sessions = 5;
-  SystemInfo system_info = 6;
+  int32 proxy_port = 5;
+  int32 max_sessions = 6;
+  SystemInfo system_info = 7;
 }
 
 // 系统信息

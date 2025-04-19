@@ -111,13 +111,13 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex justify-end space-x-2">
-                  <button class="text-primary-600 hover:text-primary-900 add-credits-btn" data-user-id="<%= user.id %>">
+                  <button class="text-primary-600 hover:text-primary-900 add-credits-btn" data-user-id="<%= user.id %>" data-username="<%= user.username %>">
                     <i class="fas fa-coins"></i>
                   </button>
-                  <button class="text-indigo-600 hover:text-indigo-900 edit-user-btn" data-user-id="<%= user.id %>">
+                  <a href="/admin/users/<%= user.id %>/edit" class="text-indigo-600 hover:text-indigo-900">
                     <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="text-red-600 hover:text-red-900 delete-user-btn" data-user-id="<%= user.id %>">
+                  </a>
+                  <button class="text-red-600 hover:text-red-900 delete-user-btn" data-user-id="<%= user.id %>" data-username="<%= user.username %>">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
@@ -215,6 +215,25 @@
   </div>
 </div>
 
+<!-- 编辑用户模态框 -->
+<div id="edit-user-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">编辑用户</h3>
+      <button class="close-modal text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body p-6">
+      <!-- 内容将通过JavaScript动态加载 -->
+      <div class="flex justify-center items-center py-8">
+        <div class="spinner mr-3"></div>
+        <span>加载用户信息...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 添加算力模态框 -->
 <div id="add-credits-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
@@ -306,6 +325,385 @@
       alert('添加用户失败: ' + error.message);
     }
   });
+
+  // 编辑用户模态框
+  const editUserButtons = document.querySelectorAll('.edit-user-btn');
+  const editUserModal = document.getElementById('edit-user-modal');
+  const editUserModalBody = editUserModal?.querySelector('.modal-body');
+  const closeEditModalButtons = editUserModal?.querySelectorAll('.close-modal');
+
+  editUserButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const userId = button.getAttribute('data-user-id');
+      openEditUserModal(userId);
+    });
+  });
+
+  closeEditModalButtons?.forEach(button => {
+    button.addEventListener('click', () => {
+      editUserModal.classList.add('hidden');
+    });
+  });
+
+  // 打开编辑用户模态框
+  function openEditUserModal(userId) {
+    // 显示加载状态
+    editUserModalBody.innerHTML = `
+      <div class="flex justify-center items-center py-8">
+        <div class="spinner mr-3"></div>
+        <span>加载用户信息...</span>
+      </div>
+    `;
+
+    // 显示模态框
+    editUserModal.classList.remove('hidden');
+
+    // 获取用户信息
+    fetch(`/api/admin/users/${userId}`, {
+      credentials: 'same-origin',
+      headers: {
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          const user = data.data;
+
+          // 获取用户的会话消耗统计
+          fetch(`/api/admin/users/${user.id}/session-stats`, {
+            credentials: 'same-origin',
+            headers: {
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+          })
+            .then(response => response.json())
+            .then(statsData => {
+              const stats = statsData.success ? statsData.data : { total_sessions: 0, total_duration: 0, total_credits_used: 0 };
+
+              // 格式化持续时间
+              const formatDuration = (seconds) => {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const remainingSeconds = seconds % 60;
+
+                let result = '';
+                if (hours > 0) result += `${hours} 小时 `;
+                if (minutes > 0) result += `${minutes} 分钟 `;
+                if (remainingSeconds > 0 || (hours === 0 && minutes === 0)) result += `${remainingSeconds} 秒`;
+
+                return result.trim();
+              };
+
+              // 更新模态框内容
+              editUserModalBody.innerHTML = `
+                <form id="edit-user-form" class="space-y-4">
+                  <input type="hidden" name="user_id" value="${user.id}">
+
+                  <div>
+                    <label for="edit-username" class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                    <input type="text" id="edit-username" name="username" value="${user.username}" readonly
+                      class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                    <p class="mt-1 text-xs text-gray-500">用户名不可更改</p>
+                  </div>
+
+                  <!-- 用户消耗统计 -->
+                  <div class="bg-gray-50 p-4 rounded-md">
+                    <h4 class="text-sm font-medium text-gray-700 mb-2">用户消耗统计</h4>
+                    <div class="grid grid-cols-3 gap-4">
+                      <div>
+                        <p class="text-xs text-gray-500">总会话数</p>
+                        <p class="text-sm font-medium">${stats.total_sessions} 个</p>
+                      </div>
+                      <div>
+                        <p class="text-xs text-gray-500">总使用时长</p>
+                        <p class="text-sm font-medium">${formatDuration(stats.total_duration)}</p>
+                      </div>
+                      <div>
+                        <p class="text-xs text-gray-500">总消耗点数</p>
+                        <p class="text-sm font-medium">${stats.total_credits_used} 点</p>
+                      </div>
+                    </div>
+                  </div>
+
+              <div>
+                <label for="edit-email" class="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+                <input type="email" id="edit-email" name="email" value="${user.email || ''}" required
+                  class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+              </div>
+
+              <div>
+                <label for="edit-role" class="block text-sm font-medium text-gray-700 mb-1">角色</label>
+                <select id="edit-role" name="role" required
+                  class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                  <option value="user" ${user.role === 'user' ? 'selected' : ''}>普通用户</option>
+                  <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>管理员</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="edit-status" class="block text-sm font-medium text-gray-700 mb-1">状态</label>
+                <select id="edit-status" name="status" required
+                  class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                  <option value="active" ${user.status === 'active' ? 'selected' : ''}>活跃</option>
+                  <option value="inactive" ${user.status === 'inactive' ? 'selected' : ''}>禁用</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="edit-password" class="block text-sm font-medium text-gray-700 mb-1">新密码</label>
+                <input type="password" id="edit-password" name="password"
+                  class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                <p class="mt-1 text-xs text-gray-500">留空表示不修改密码</p>
+              </div>
+
+              <div>
+                <label for="edit-webhook-url" class="block text-sm font-medium text-gray-700 mb-1">Webhook URL</label>
+                <input type="url" id="edit-webhook-url" name="webhook_url" value="${user.webhook_url || ''}"
+                  class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="https://example.com/webhook">
+                <p class="mt-1 text-xs text-gray-500">当会话结束时，系统将发送通知到此 URL</p>
+              </div>
+
+              <div>
+                <label for="edit-api-key" class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                <div class="flex">
+                  <input type="text" id="edit-api-key" value="${user.api_key || ''}" readonly
+                    class="block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm bg-gray-50 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                  <button type="button" class="copy-api-key bg-gray-100 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md text-gray-700 hover:bg-gray-200">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">用户的 API Key，用于调用 API</p>
+                <div class="mt-2">
+                  <button type="button" class="reset-api-key text-sm text-primary-600 hover:text-primary-800" data-user-id="${user.id}">
+                    <i class="fas fa-sync-alt mr-1"></i> 重置 API Key
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex justify-end pt-4">
+                <button type="button" class="close-modal bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
+                  取消
+                </button>
+                <button type="submit" class="bg-primary-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                  保存更改
+                </button>
+              </div>
+            </form>
+          `;
+
+          // 重新绑定事件
+          const editUserForm = document.getElementById('edit-user-form');
+          editUserForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateUser(this);
+          });
+
+          const closeModalButtons = editUserModalBody.querySelectorAll('.close-modal');
+          closeModalButtons.forEach(button => {
+            button.addEventListener('click', function() {
+              editUserModal.classList.add('hidden');
+            });
+          });
+
+          // 绑定复制 API Key 按钮
+          const copyApiKeyBtn = editUserModalBody.querySelector('.copy-api-key');
+          const apiKeyInput = editUserModalBody.querySelector('#edit-api-key');
+
+          if (copyApiKeyBtn && apiKeyInput) {
+            copyApiKeyBtn.addEventListener('click', function() {
+              // 选择输入框内容
+              apiKeyInput.select();
+
+              // 复制到剪贴板
+              try {
+                document.execCommand('copy');
+
+                // 显示复制成功提示
+                const originalText = copyApiKeyBtn.innerHTML;
+                copyApiKeyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                copyApiKeyBtn.classList.add('bg-green-100', 'text-green-700');
+
+                setTimeout(() => {
+                  copyApiKeyBtn.innerHTML = originalText;
+                  copyApiKeyBtn.classList.remove('bg-green-100', 'text-green-700');
+                }, 2000);
+
+                // 显示成功通知
+                alert('API Key 已复制到剪贴板');
+              } catch (err) {
+                // 显示错误通知
+                alert('复制失败，请手动复制');
+              }
+            });
+          }
+
+          // 绑定重置 API Key 按钮
+          const resetApiKeyBtn = editUserModalBody.querySelector('.reset-api-key');
+
+          if (resetApiKeyBtn) {
+            resetApiKeyBtn.addEventListener('click', function() {
+              const userId = this.getAttribute('data-user-id');
+
+              // 确认重置
+              if (confirm('确定要重置此用户的 API Key 吗？这将使当前的 API Key 失效。')) {
+                resetApiKey(userId, apiKeyInput);
+              }
+            });
+          }
+        } else {
+          editUserModalBody.innerHTML = `
+            <div class="text-center py-8">
+              <i class="fas fa-exclamation-circle text-red-500 text-4xl mb-4"></i>
+              <p class="text-gray-700">获取用户信息失败: ${data.error}</p>
+              <button type="button" class="close-modal mt-4 bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                关闭
+              </button>
+            </div>
+          `;
+
+          const closeModalButtons = editUserModalBody.querySelectorAll('.close-modal');
+          closeModalButtons.forEach(button => {
+            button.addEventListener('click', function() {
+              editUserModal.classList.add('hidden');
+            });
+          });
+        }
+      })
+      .catch(error => {
+        editUserModalBody.innerHTML = `
+          <div class="text-center py-8">
+            <i class="fas fa-exclamation-circle text-red-500 text-4xl mb-4"></i>
+            <p class="text-gray-700">获取用户信息失败: ${error.message}</p>
+            <button type="button" class="close-modal mt-4 bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+              关闭
+            </button>
+          </div>
+        `;
+
+        const closeModalButtons = editUserModalBody.querySelectorAll('.close-modal');
+        closeModalButtons.forEach(button => {
+          button.addEventListener('click', function() {
+            editUserModal.classList.add('hidden');
+          });
+        });
+      });
+  }
+
+  // 更新用户
+  function updateUser(form) {
+    // 获取表单数据
+    const formData = new FormData(form);
+    const userId = formData.get('user_id');
+    const userData = {
+      email: formData.get('email'),
+      role: formData.get('role'),
+      status: formData.get('status'),
+      webhook_url: formData.get('webhook_url')
+    };
+
+    // 如果提供了密码，则添加到请求数据中
+    const password = formData.get('password');
+    if (password) {
+      userData.password = password;
+    }
+
+    // 显示加载状态
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
+    submitButton.disabled = true;
+
+    // 发送请求更新用户
+    fetch(`/api/admin/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      body: JSON.stringify(userData),
+      credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // 关闭模态框
+        editUserModal.classList.add('hidden');
+
+        // 显示成功通知
+        alert('用户信息已成功更新');
+
+        // 重新加载页面以显示更新后的用户信息
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        // 恢复按钮状态
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
+
+        // 显示错误通知
+        alert(`更新用户失败: ${data.error}`);
+      }
+    })
+    .catch(error => {
+      // 恢复按钮状态
+      submitButton.innerHTML = originalText;
+      submitButton.disabled = false;
+
+      // 显示错误通知
+      alert(`更新用户失败: ${error.message}`);
+    });
+  }
+
+  // 重置 API Key
+  function resetApiKey(userId, apiKeyInput) {
+    // 显示加载状态
+    const resetButton = document.querySelector(`.reset-api-key[data-user-id="${userId}"]`);
+    const originalText = resetButton.innerHTML;
+    resetButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
+    resetButton.disabled = true;
+
+    // 发送请求重置 API Key
+    fetch(`/api/admin/users/${userId}/reset-api-key`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // 更新输入框中的 API Key
+        apiKeyInput.value = data.data.api_key;
+
+        // 显示成功通知
+        alert('API Key 已成功重置');
+
+        // 恢复按钮状态
+        resetButton.innerHTML = originalText;
+        resetButton.disabled = false;
+      } else {
+        // 恢复按钮状态
+        resetButton.innerHTML = originalText;
+        resetButton.disabled = false;
+
+        // 显示错误通知
+        alert(`重置 API Key 失败: ${data.error}`);
+      }
+    })
+    .catch(error => {
+      // 恢复按钮状态
+      resetButton.innerHTML = originalText;
+      resetButton.disabled = false;
+
+      // 显示错误通知
+      alert(`重置 API Key 失败: ${error.message}`);
+    });
+  }
 
   // 添加算力模态框
   const addCreditsButtons = document.querySelectorAll('.add-credits-btn');
@@ -435,3 +833,19 @@
     window.location.reload();
   });
 </script>
+
+<style>
+  .spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: #0ea5e9;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>

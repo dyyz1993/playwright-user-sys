@@ -1,0 +1,425 @@
+<!-- 用户编辑页面 -->
+<div class="container mx-auto px-4 py-8">
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">编辑用户: <%= userData.username %></h2>
+      <a href="/admin/users" class="text-indigo-600 hover:text-indigo-800">
+        <i class="fas fa-arrow-left mr-1"></i> 返回用户列表
+      </a>
+    </div>
+
+    <!-- 用户消耗统计 -->
+    <div class="bg-gray-50 p-4 rounded-md mb-6">
+      <h3 class="text-lg font-medium text-gray-700 mb-3">用户消耗统计</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded shadow-sm">
+          <p class="text-sm text-gray-500">总会话数</p>
+          <p class="text-xl font-medium"><%= stats.total_sessions %> 个</p>
+        </div>
+        <div class="bg-white p-4 rounded shadow-sm">
+          <p class="text-sm text-gray-500">总使用时长</p>
+          <p class="text-xl font-medium">
+            <% 
+              const hours = Math.floor(stats.total_duration / 3600);
+              const minutes = Math.floor((stats.total_duration % 3600) / 60);
+              const seconds = stats.total_duration % 60;
+              
+              let durationText = '';
+              if (hours > 0) durationText += `${hours} 小时 `;
+              if (minutes > 0) durationText += `${minutes} 分钟 `;
+              if (seconds > 0 || (hours === 0 && minutes === 0)) durationText += `${seconds} 秒`;
+            %>
+            <%= durationText.trim() %>
+          </p>
+        </div>
+        <div class="bg-white p-4 rounded shadow-sm">
+          <p class="text-sm text-gray-500">总消耗点数</p>
+          <p class="text-xl font-medium"><%= stats.total_credits_used %> 点</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 用户信息表单 -->
+    <form id="edit-user-form" class="space-y-6">
+      <input type="hidden" name="user_id" value="<%= userData.id %>">
+
+      <!-- 用户名 -->
+      <div>
+        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+        <input type="text" id="username" name="username" value="<%= userData.username %>" readonly
+          class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        <p class="mt-1 text-xs text-gray-500">用户名不可更改</p>
+      </div>
+
+      <!-- 电子邮件 -->
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">电子邮件</label>
+        <input type="email" id="email" name="email" value="<%= userData.email %>"
+          class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+      </div>
+
+      <!-- 角色 -->
+      <div>
+        <label for="role" class="block text-sm font-medium text-gray-700 mb-1">角色</label>
+        <select id="role" name="role"
+          class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+          <option value="user" <%= userData.role === 'user' ? 'selected' : '' %>>普通用户</option>
+          <option value="admin" <%= userData.role === 'admin' ? 'selected' : '' %>>管理员</option>
+        </select>
+      </div>
+
+      <!-- 状态 -->
+      <div>
+        <label for="status" class="block text-sm font-medium text-gray-700 mb-1">状态</label>
+        <select id="status" name="status"
+          class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+          <option value="active" <%= userData.status === 'active' ? 'selected' : '' %>>活跃</option>
+          <option value="inactive" <%= userData.status === 'inactive' ? 'selected' : '' %>>禁用</option>
+        </select>
+      </div>
+
+      <!-- 算力点数 -->
+      <div>
+        <label for="credits" class="block text-sm font-medium text-gray-700 mb-1">算力点数</label>
+        <div class="flex items-center">
+          <input type="number" id="credits" name="credits" value="<%= userData.credits %>" readonly
+            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+          <button type="button" id="add-credits-btn" data-user-id="<%= userData.id %>"
+            class="ml-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            <i class="fas fa-plus mr-1"></i> 添加点数
+          </button>
+        </div>
+        <p class="mt-1 text-xs text-gray-500">点数只能通过添加点数按钮增加</p>
+      </div>
+
+      <!-- API Key -->
+      <div>
+        <label for="api_key" class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+        <div class="flex items-center">
+          <input type="text" id="api_key" name="api_key" value="<%= userData.api_key %>" readonly
+            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+          <button type="button" id="reset-api-key-btn" data-user-id="<%= userData.id %>"
+            class="ml-2 px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+            <i class="fas fa-sync-alt mr-1"></i> 重置
+          </button>
+        </div>
+      </div>
+
+      <!-- Webhook URL -->
+      <div>
+        <label for="webhook_url" class="block text-sm font-medium text-gray-700 mb-1">Webhook URL</label>
+        <input type="url" id="webhook_url" name="webhook_url" value="<%= userData.webhook_url %>"
+          class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        <p class="mt-1 text-xs text-gray-500">当会话结束时，系统将发送通知到此 URL</p>
+      </div>
+
+      <!-- 密码 -->
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+        <input type="password" id="password" name="password" placeholder="输入新密码以更改"
+          class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        <p class="mt-1 text-xs text-gray-500">留空表示不更改密码</p>
+      </div>
+
+      <!-- 提交按钮 -->
+      <div class="flex justify-end space-x-3">
+        <a href="/admin/users"
+          class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          取消
+        </a>
+        <button type="submit"
+          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          保存更改
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 添加点数模态框 -->
+<div id="add-credits-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+      <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+    </div>
+    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+    <div
+      class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+      <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+        <div class="sm:flex sm:items-start">
+          <div
+            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+            <i class="fas fa-coins text-green-600"></i>
+          </div>
+          <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+            <h3 class="text-lg leading-6 font-medium text-gray-900" id="add-credits-title">
+              为用户添加点数
+            </h3>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500" id="add-credits-description">
+                请输入要添加的点数数量。
+              </p>
+            </div>
+            <div class="mt-4">
+              <input type="number" id="credits-amount" name="credits-amount" min="1" value="100"
+                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+        <button type="button" id="confirm-add-credits"
+          class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm">
+          确认添加
+        </button>
+        <button type="button" id="cancel-add-credits"
+          class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+          取消
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // 表单提交处理
+    const form = document.getElementById('edit-user-form');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      
+      const userId = document.querySelector('input[name="user_id"]').value;
+      const formData = {
+        email: document.getElementById('email').value,
+        role: document.getElementById('role').value,
+        status: document.getElementById('status').value,
+        webhook_url: document.getElementById('webhook_url').value,
+      };
+
+      // 如果密码字段不为空，则添加密码
+      const password = document.getElementById('password').value;
+      if (password) {
+        formData.password = password;
+      }
+
+      // 显示加载状态
+      const submitButton = form.querySelector('button[type="submit"]');
+      const originalText = submitButton.innerHTML;
+      submitButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 保存中...';
+      submitButton.disabled = true;
+
+      // 发送更新请求
+      fetch(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
+        body: JSON.stringify(formData)
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // 显示成功消息
+            showToast('用户信息已更新', 'success');
+            
+            // 如果更新了密码，清空密码字段
+            if (password) {
+              document.getElementById('password').value = '';
+            }
+          } else {
+            // 显示错误消息
+            showToast(data.error || '更新失败', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('更新用户失败:', error);
+          showToast('更新用户失败: ' + error.message, 'error');
+        })
+        .finally(() => {
+          // 恢复按钮状态
+          submitButton.innerHTML = originalText;
+          submitButton.disabled = false;
+        });
+    });
+
+    // 重置 API Key 按钮
+    const resetApiKeyBtn = document.getElementById('reset-api-key-btn');
+    resetApiKeyBtn.addEventListener('click', function () {
+      const userId = this.getAttribute('data-user-id');
+      const apiKeyInput = document.getElementById('api_key');
+      
+      // 显示加载状态
+      const originalText = this.innerHTML;
+      this.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
+      this.disabled = true;
+
+      // 发送请求重置 API Key
+      fetch(`/api/admin/users/${userId}/reset-api-key`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // 更新 API Key 输入框
+            apiKeyInput.value = data.data.api_key;
+            showToast('API Key 已重置', 'success');
+          } else {
+            showToast(data.error || '重置 API Key 失败', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('重置 API Key 失败:', error);
+          showToast('重置 API Key 失败: ' + error.message, 'error');
+        })
+        .finally(() => {
+          // 恢复按钮状态
+          this.innerHTML = originalText;
+          this.disabled = false;
+        });
+    });
+
+    // 添加点数按钮
+    const addCreditsBtn = document.getElementById('add-credits-btn');
+    const addCreditsModal = document.getElementById('add-credits-modal');
+    const cancelAddCredits = document.getElementById('cancel-add-credits');
+    const confirmAddCredits = document.getElementById('confirm-add-credits');
+    let currentUserId = null;
+
+    // 打开添加点数模态框
+    addCreditsBtn.addEventListener('click', function () {
+      currentUserId = this.getAttribute('data-user-id');
+      const username = document.getElementById('username').value;
+      
+      // 更新模态框标题
+      document.getElementById('add-credits-title').textContent = `为 ${username} 添加点数`;
+      
+      // 显示模态框
+      addCreditsModal.classList.remove('hidden');
+    });
+
+    // 关闭添加点数模态框
+    cancelAddCredits.addEventListener('click', function () {
+      addCreditsModal.classList.add('hidden');
+      currentUserId = null;
+    });
+
+    // 确认添加点数
+    confirmAddCredits.addEventListener('click', function () {
+      if (!currentUserId) return;
+      
+      const amount = parseInt(document.getElementById('credits-amount').value, 10);
+      if (isNaN(amount) || amount <= 0) {
+        showToast('请输入有效的点数数量', 'error');
+        return;
+      }
+
+      // 显示加载状态
+      const originalText = this.innerHTML;
+      this.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
+      this.disabled = true;
+      cancelAddCredits.disabled = true;
+
+      // 发送添加点数请求
+      fetch(`/api/admin/users/${currentUserId}/credits`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
+        body: JSON.stringify({ amount })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // 更新点数显示
+            document.getElementById('credits').value = data.data.credits;
+            showToast(`成功添加 ${amount} 点数`, 'success');
+            
+            // 关闭模态框
+            addCreditsModal.classList.add('hidden');
+          } else {
+            showToast(data.error || '添加点数失败', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('添加点数失败:', error);
+          showToast('添加点数失败: ' + error.message, 'error');
+        })
+        .finally(() => {
+          // 恢复按钮状态
+          this.innerHTML = originalText;
+          this.disabled = false;
+          cancelAddCredits.disabled = false;
+          currentUserId = null;
+        });
+    });
+
+    // 显示提示消息
+    function showToast(message, type = 'info') {
+      // 检查是否已有 toast 容器
+      let toastContainer = document.getElementById('toast-container');
+      if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'fixed bottom-4 right-4 z-50';
+        document.body.appendChild(toastContainer);
+      }
+
+      // 创建 toast 元素
+      const toast = document.createElement('div');
+      toast.className = `mb-3 p-4 rounded-md shadow-md flex items-center transition-all transform translate-x-0 max-w-md`;
+      
+      // 根据类型设置样式
+      switch (type) {
+        case 'success':
+          toast.classList.add('bg-green-50', 'border-l-4', 'border-green-500', 'text-green-700');
+          toast.innerHTML = `<i class="fas fa-check-circle mr-3 text-green-500"></i>`;
+          break;
+        case 'error':
+          toast.classList.add('bg-red-50', 'border-l-4', 'border-red-500', 'text-red-700');
+          toast.innerHTML = `<i class="fas fa-exclamation-circle mr-3 text-red-500"></i>`;
+          break;
+        default:
+          toast.classList.add('bg-blue-50', 'border-l-4', 'border-blue-500', 'text-blue-700');
+          toast.innerHTML = `<i class="fas fa-info-circle mr-3 text-blue-500"></i>`;
+      }
+
+      // 添加消息文本
+      const messageSpan = document.createElement('span');
+      messageSpan.textContent = message;
+      toast.appendChild(messageSpan);
+
+      // 添加关闭按钮
+      const closeButton = document.createElement('button');
+      closeButton.className = 'ml-auto text-gray-400 hover:text-gray-600 focus:outline-none';
+      closeButton.innerHTML = `<i class="fas fa-times"></i>`;
+      closeButton.onclick = () => {
+        toast.classList.add('opacity-0', 'translate-x-full');
+        setTimeout(() => {
+          toastContainer.removeChild(toast);
+        }, 300);
+      };
+      toast.appendChild(closeButton);
+
+      // 添加到容器
+      toastContainer.appendChild(toast);
+
+      // 自动关闭
+      setTimeout(() => {
+        if (toast.parentNode === toastContainer) {
+          toast.classList.add('opacity-0', 'translate-x-full');
+          setTimeout(() => {
+            if (toast.parentNode === toastContainer) {
+              toastContainer.removeChild(toast);
+            }
+          }, 300);
+        }
+      }, 5000);
+    }
+  });
+</script>

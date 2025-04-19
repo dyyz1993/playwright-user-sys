@@ -11,8 +11,7 @@ export const CONFIG = {
 
   // 网络配置
   managerHost: env.MANAGER_HOST || 'localhost:50051', // 管理端的地址
-  grpcPort: parseInt(env.GRPC_PORT || '50052', 10),  // 机器端的 gRPC 端口
-  httpPort: parseInt(env.HTTP_PORT || '8082', 10),    // 机器端的 HTTP 端口
+  grpcPort: parseInt(env.MACHINE_GRPC_PORT || '50052', 10),  // 机器端的 gRPC 端口
   proxyPort: parseInt(env.PROXY_PORT || env.HTTP_PORT || '8082', 10), // 代理服务器端口
 
   // 浏览器配置

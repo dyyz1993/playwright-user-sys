@@ -123,11 +123,21 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <% try { %>
                   <% if (log.details) { %>
-                    <% const detailsObj = JSON.parse(log.details); %>
+                    <% let detailsObj; %>
+                    <% if (typeof log.details === 'string') { %>
+                      <% detailsObj = JSON.parse(log.details); %>
+                    <% } else { %>
+                      <% detailsObj = log.details; %>
+                    <% } %>
                     <% if (typeof detailsObj === 'object' && detailsObj !== null) { %>
-                      <% Object.entries(detailsObj).forEach(([key, value]) => { %>
-                        <div><strong><%= key %>:</strong> <%= typeof value === 'object' ? JSON.stringify(value) : value %></div>
-                      <% }); %>
+                      <% if (detailsObj.error && detailsObj.raw) { %>
+                        <div class="text-red-500"><%= detailsObj.error %></div>
+                        <div class="text-xs text-gray-400 mt-1"><%= detailsObj.raw %></div>
+                      <% } else { %>
+                        <% Object.entries(detailsObj).forEach(([key, value]) => { %>
+                          <div><strong><%= key %>:</strong> <%= typeof value === 'object' ? JSON.stringify(value) : value %></div>
+                        <% }); %>
+                      <% } %>
                     <% } else { %>
                       <%= log.details %>
                     <% } %>

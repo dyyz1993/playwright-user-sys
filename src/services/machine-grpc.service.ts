@@ -815,6 +815,7 @@ const serviceImplementation = {
           hostname: request.name,
           ip: request.ip_address,
           grpcPort: request.grpc_port, // 注意：这里的 grpcPort 将在 MachineModel.update 中被转换为 grpc_port
+          proxyPort: request.proxy_port, // 注意：这里的 proxyPort 将在 MachineModel.update 中被转换为 proxy_port
           max_instances: request.max_sessions,
           status: 'online',
         });
@@ -823,6 +824,7 @@ const serviceImplementation = {
           hostname: request.name,
           ip: request.ip_address,
           grpcPort: request.grpc_port,
+          proxyPort: request.proxy_port,
           max_instances: request.max_sessions,
         })}`);
 
@@ -834,6 +836,7 @@ const serviceImplementation = {
           hostname: request.name,
           ip: request.ip_address,
           grpcPort: request.grpc_port, // 注意：这里的 grpcPort 将在 MachineModel.register 中被转换为 grpc_port
+          proxyPort: request.proxy_port, // 注意：这里的 proxyPort 将在 MachineModel.register 中被转换为 proxy_port
           max_instances: request.max_sessions,
         });
 
@@ -842,6 +845,7 @@ const serviceImplementation = {
           hostname: request.name,
           ip: request.ip_address,
           grpcPort: request.grpc_port,
+          proxyPort: request.proxy_port,
           max_instances: request.max_sessions,
         })}`);
 

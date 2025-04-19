@@ -7,6 +7,7 @@ import { sendSuccess, sendError, sendCreated } from '../utils/response.js';
 import { SessionStatus, SessionCreateOptions, PaginationQuery, WebhookEventType } from '../types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { createSessionRequestSchema, paginationQuerySchema } from '../schemas/index.js';
+import { env } from '../config/env.js';
 // URL 导入已移除，因为不再需要解析 URL
 
 // 会话控制器中使用的类型定义
@@ -113,8 +114,20 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
       request.log.info(`原始 WebSocket 端点: ${result.browser_ws_endpoint}`);
 
       // 构建返回给用户的 WebSocket 端点
-      // 注意：现在直接返回浏览器的 WebSocket 端点，不再使用代理
-      const directUrl = `ws://localhost:8082?sessionId=${session.id}`;
+      let directUrl;
+
+      // 如果配置了公共访问的机器端点，优先使用该端点
+      if (env.PUBLIC_MACHINE_ENDPOINT) {
+        directUrl = `ws://${env.PUBLIC_MACHINE_ENDPOINT}?sessionId=${session.id}`;
+        request.log.info(`使用公共端点构建 WebSocket 端点: ${directUrl}`);
+      } else {
+        // 否则使用机器的实际IP地址和端口
+        const machineIp = machine.ip || 'localhost';
+        // 使用机器的实际代理端口，如果没有则使用默认值8082
+        const proxyPort = machine.proxyPort || 8082;
+        directUrl = `ws://${machineIp}:${proxyPort}?sessionId=${session.id}`;
+        request.log.info(`使用机器IP构建 WebSocket 端点: ${directUrl}`);
+      }
 
       request.log.info(`构建的直接 WebSocket 端点: ${directUrl}`);
 

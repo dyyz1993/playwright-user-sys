@@ -6,6 +6,7 @@ export interface CreateMachineInput {
   hostname: string;
   ip: string;
   grpcPort?: number;
+  proxyPort?: number;
   max_instances?: number;
 }
 
@@ -13,6 +14,7 @@ export interface UpdateMachineInput {
   hostname?: string;
   ip?: string;
   grpcPort?: number;
+  proxyPort?: number;
   cpu_usage?: number;
   memory_usage?: number;
   disk_usage?: number;
@@ -32,6 +34,7 @@ export class MachineModel {
         hostname: data.hostname,
         ip: data.ip,
         grpc_port: data.grpcPort,
+        proxy_port: data.proxyPort,
         status: 'online',
         last_seen: db.fn.now(),
         updated_at: new Date(),
@@ -43,6 +46,7 @@ export class MachineModel {
         hostname: data.hostname,
         ip: data.ip,
         grpc_port: data.grpcPort,
+        proxy_port: data.proxyPort,
         max_instances: data.max_instances || 10,
         status: 'online',
         last_seen: db.fn.now(),
@@ -63,6 +67,8 @@ export class MachineModel {
       id: machine.id,
       hostname: machine.hostname,
       ip: machine.ip,
+      grpcPort: machine.grpc_port,
+      proxyPort: machine.proxy_port,
       cpuUsage: machine.cpu_usage,
       memoryUsage: machine.memory_usage,
       diskUsage: machine.disk_usage,
@@ -92,6 +98,11 @@ export class MachineModel {
     // 处理 grpcPort 字段
     if (data.grpcPort !== undefined) {
       updateData.grpc_port = data.grpcPort;
+    }
+
+    // 处理 proxyPort 字段
+    if (data.proxyPort !== undefined) {
+      updateData.proxy_port = data.proxyPort;
     }
 
     // 输出调试信息
@@ -134,6 +145,7 @@ export class MachineModel {
           hostname: machine.hostname,
           ip: machine.ip,
           grpcPort: machine.grpc_port,
+          proxyPort: machine.proxy_port,
           cpuUsage: machine.cpu_usage,
           memoryUsage: machine.memory_usage,
           diskUsage: machine.disk_usage,
@@ -198,6 +210,7 @@ export class MachineModel {
         hostname: machine.hostname,
         ip: machine.ip,
         grpcPort: machine.grpc_port,
+        proxyPort: machine.proxy_port,
         cpuUsage: machine.cpu_usage,
         memoryUsage: machine.memory_usage,
         diskUsage: machine.disk_usage,
@@ -254,6 +267,7 @@ export class MachineModel {
           hostname: machine.hostname,
           ip: machine.ip,
           grpcPort: machine.grpc_port,
+          proxyPort: machine.proxy_port,
           cpuUsage: machine.cpu_usage,
           memoryUsage: machine.memory_usage,
           diskUsage: machine.disk_usage,

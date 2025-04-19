@@ -64,6 +64,41 @@ export default async function userRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // 重新生成当前用户的 API Key
+  fastify.post('/me/apikey/regenerate', {
+    onRequest: [fastify.verifyJWT],
+    schema: {
+      response: {
+        200: zodToJsonSchema(resetApiKeyResponseSchema),
+        401: zodToJsonSchema(errorResponseSchema),
+        404: zodToJsonSchema(errorResponseSchema),
+      },
+      tags: ['users'],
+    },
+  }, async (request, reply) => {
+    try {
+      const userId = request.user?.id;
+      if (!userId) {
+        return sendError(reply, '用户未认证', 401);
+      }
+
+      // 查找用户
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return sendError(reply, '用户不存在', 404);
+      }
+
+      // 重置 API Key
+      const apiKey = await UserModel.resetApiKey(userId);
+
+      // 返回新的 API Key
+      return sendSuccess(reply, { api_key: apiKey });
+    } catch (error) {
+      request.log.error(error);
+      return sendError(reply, '重新生成 API Key 失败', 500);
+    }
+  });
+
   // 创建用户（仅管理员）
   fastify.post('/', {
     onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
@@ -77,7 +112,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         409: zodToJsonSchema(errorResponseSchema),
       },
       tags: ['users'],
-      
+
       security: [{ bearerAuth: [] }],
     },
   }, userController.createUser);

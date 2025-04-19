@@ -115,6 +115,7 @@ export interface MachineInfo {
   hostname: string;
   ip: string;
   grpcPort?: number;
+  proxyPort?: number;
   cpuUsage: number;
   memoryUsage: number;
   diskUsage: number;

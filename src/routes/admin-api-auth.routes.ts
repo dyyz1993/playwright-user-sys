@@ -47,10 +47,8 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
         return reply.status(401).send({ success: false, error: '账户已被禁用' });
       }
 
-      // 检查用户角色
-      if (user.role !== UserRole.ADMIN) {
-        return reply.status(403).send({ success: false, error: '需要管理员权限' });
-      }
+      // 检查用户角色 - 允许普通用户登录
+      // 不再限制只有管理员可以登录
 
       // 生成 JWT 令牌
       const token = jwt.sign(

@@ -440,6 +440,40 @@ export class SessionModel {
     return this.findById(id);
   }
 
+  // 获取用户的会话消耗统计
+  static async getUserSessionStats(userId: number): Promise<{ total_sessions: number; total_duration: number; total_credits_used: number }> {
+    try {
+      console.log(`开始查询用户 ${userId} 的会话消耗统计`);
+
+      // 查询用户的所有会话数量
+      const totalResult = await db('sessions').where({ user_id: userId }).count('id as count').first();
+      const total_sessions = totalResult ? Number(totalResult.count) : 0;
+
+      // 查询用户的总持续时间
+      const durationResult = await db('sessions').where({ user_id: userId }).sum('duration as total').first();
+      const total_duration = durationResult && durationResult.total ? Number(durationResult.total) : 0;
+
+      // 查询用户的总消耗点数
+      const creditsResult = await db('sessions').where({ user_id: userId }).sum('credits_used as total').first();
+      const total_credits_used = creditsResult && creditsResult.total ? Number(creditsResult.total) : 0;
+
+      console.log(`用户 ${userId} 的会话统计: 总会话数=${total_sessions}, 总时长=${total_duration}秒, 总消耗点数=${total_credits_used}点`);
+
+      return {
+        total_sessions,
+        total_duration,
+        total_credits_used
+      };
+    } catch (error) {
+      console.error(`获取用户会话统计失败 (userId: ${userId}):`, error);
+      return {
+        total_sessions: 0,
+        total_duration: 0,
+        total_credits_used: 0
+      };
+    }
+  }
+
   // 获取指定机器上的活跃会话
   static async findActiveSessionsByMachineId(machineId: string): Promise<Session[]> {
     try {

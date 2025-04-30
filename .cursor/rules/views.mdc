@@ -1,0 +1,13 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# views 目录规则
+
+- 该目录用于存放视图模板文件，本项目使用 EJS 作为模板引擎。
+- 子目录结构：
+  - [pages/](mdc:src/views/pages)：存放完整的页面模板，如 `dashboard.ejs`、`users.ejs`。
+  - [partials/](mdc:src/views/partials)：存放可重用的局部模板，如 `header.ejs`、`sidebar.ejs`。
+  - [layouts/](mdc:src/views/layouts)：存放页面布局模板，如 `main.ejs`，定义整体页面结构。
+- 模板文件负责渲染动态数据并生成最终的 HTML 页面。

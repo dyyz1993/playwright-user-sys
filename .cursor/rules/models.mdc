@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# models 目录规则
+
+- 该目录用于存放数据模型文件，每个模型对应数据库中的一张表或一类数据结构。
+- 命名规范为 `xxx.model.ts`，如 `user.model.ts`、`session.model.ts`。
+- 模型文件通常包含：
+  - 数据表结构定义（如字段、类型、索引等）
+  - 数据库操作方法（如 CRUD、查询、聚合等）
+  - 与 ORM 框架（如 Sequelize、TypeORM、Knex 等）的集成代码
+- 模型应只关注数据结构和数据操作，不包含业务逻辑。
+- 复杂业务逻辑应放在 service 层实现。

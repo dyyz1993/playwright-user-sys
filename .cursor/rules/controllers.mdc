@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# controllers 目录规则
+
+- 该目录用于存放控制器文件，每个控制器负责处理一类资源的路由请求和业务逻辑。
+- 命名规范为 `xxx.controller.ts`，如 `user.controller.ts`、`session.controller.ts`。
+- 控制器通常包含：
+  - 路由处理函数（如 create、update、delete、list、detail 等）
+  - 参数校验与解析
+  - 调用 service 层处理具体业务
+  - 返回标准化响应
+- 控制器应避免直接操作数据库，数据操作应通过 models 或 services 层完成。
+- 控制器应保持单一职责，便于维护和测试。

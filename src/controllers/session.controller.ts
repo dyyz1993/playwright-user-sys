@@ -131,11 +131,23 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
 
       request.log.info(`构建的直接 WebSocket 端点: ${directUrl}`);
 
+      // !! 新增：构建前端 Viewer URL !!
+      // 尝试从环境变量 VITE_FRONTEND_URL 获取前端地址，否则使用默认值
+      // 注意：需要确保 VITE_FRONTEND_URL 已在环境或 .env 文件中定义，并正确加载到 env 对象中
+      // 或者直接在此处硬编码前端地址
+      const frontendBaseUrl = (env as any).VITE_FRONTEND_URL || 'http://localhost:5173'; // 使用类型断言或硬编码
+      const viewerUrl = `${frontendBaseUrl}/viewer?sessionId=${session.id}`;
+      request.log.info(`构建的前端 Viewer URL: ${viewerUrl}`);
+
+      // 更新数据库中的会话记录，包含 directUrl 和 viewerUrl (可选，如果需要持久化)
+      // await SessionModel.update(session.id, { direct_url: directUrl, viewer_url: viewerUrl });
+
       return sendCreated(reply, {
         id: session.id,
-        status: SessionStatus.CONNECTED,
-        browserWSEndpoint: result.browser_ws_endpoint,
-        directUrl: directUrl,
+        status: SessionStatus.CREATED, // 建议返回 CREATED 状态，表示会话已创建但等待连接
+        browserWSEndpoint: result.browser_ws_endpoint, // 原生 CDP 端点
+        directUrl: directUrl, // 指向代理 WebSocket 的 URL (支持 CDP fallback)
+        viewerUrl: viewerUrl, // !! 新增：指向前端应用的 URL !!
         created_at: session.created_at,
         updated_at: session.updated_at,
       });

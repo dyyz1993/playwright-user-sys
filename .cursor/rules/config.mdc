@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# config 目录规则
+
+- 该目录用于存放项目配置文件，如环境变量、数据库连接、服务器设置等。
+- 命名规范通常为 `xxx.ts` 或 `index.ts`，如 `env.ts`、`database.ts`、`server.ts`。
+- 配置文件应集中管理，便于修改和部署。
+- 敏感信息（如 API 密钥、密码）应通过环境变量加载，避免硬编码在代码中。
+- [env.ts](mdc:src/config/env.ts) 负责加载和校验环境变量。
+- [database.ts](mdc:src/config/database.ts) 负责数据库连接配置。
+- [server.ts](mdc:src/config/server.ts) 负责服务器相关配置。
+- [index.ts](mdc:src/config/index.ts) 可能用于导出所有配置。

@@ -5,6 +5,13 @@ import { CONFIG } from './config.js';
 import { sessionManager } from './browser.service.js';
 import { logger } from '../utils/logger.js';
 
+// !! 导入新的处理器函数 !!
+import { handleEventsConnection } from './session_handlers/events.handler.js';
+import { handleStreamConnection } from './session_handlers/stream.handler.js';
+
+// !! 导入 WebSocketServer 和 WebSocket !!
+import { WebSocketServer, WebSocket } from 'ws';
+
 /**
  * 代理服务
  * 负责处理 HTTP 和 WebSocket 请求，并将它们转发到相应的浏览器实例
@@ -12,6 +19,8 @@ import { logger } from '../utils/logger.js';
 class ProxyService {
   private server: Server;
   private proxy: httpProxy;
+  // !! 添加 wss 实例变量 !!
+  private wss: WebSocketServer;
 
   constructor() {
     // 创建 HTTP 代理
@@ -23,6 +32,10 @@ class ProxyService {
 
     // 创建 HTTP 服务器
     this.server = createServer(this.handleHttpRequest.bind(this));
+
+    // !! 创建 WebSocket 服务器实例，但不监听端口 !!
+    // 我们将使用 HTTP 服务器的 'upgrade' 事件来处理连接
+    this.wss = new WebSocketServer({ noServer: true });
 
     // 处理 WebSocket 连接
     this.server.on('upgrade', this.handleWebSocketUpgrade.bind(this));
@@ -129,21 +142,20 @@ class ProxyService {
   }
 
   /**
-   * 处理 WebSocket 连接
+   * 处理 WebSocket 连接升级请求
    */
   private handleWebSocketUpgrade(req: IncomingMessage, socket: Socket, head: Buffer): void {
-    // 声明变量，以便在 catch 块中使用
     let sessionId: string | null = null;
+    // !! activityInterval 仅用于 fallback 路径 !!
     let activityInterval: NodeJS.Timeout | undefined;
 
     try {
-      logger.info(`收到 WebSocket 连接请求: ${req.url}`);
-
-      // 解析 URL 中的 sessionId
+      logger.info(`收到 WebSocket 升级请求: ${req.url}`);
       const url = new URL(req.url || '', `http://${req.headers.host}`);
       sessionId = url.searchParams.get('sessionId');
+      const pathname = url.pathname;
 
-      logger.info(`解析到 sessionId: ${sessionId}`);
+      logger.info(`解析到 sessionId: ${sessionId}, pathname: ${pathname}`);
 
       if (!sessionId) {
         logger.error('缺少 sessionId 参数');
@@ -152,91 +164,114 @@ class ProxyService {
         return;
       }
 
-      // 获取会话端口和路径
+      // !! 路径路由 !!
+      if (pathname.startsWith('/ws/') && pathname.endsWith('/events')) {
+          logger.info(`路由到 Events Handler (sessionId: ${sessionId})`);
+          this.wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
+              handleEventsConnection(ws, sessionId!); // 交给处理器
+          });
+          return; // !! 处理 /events 后返回 !!
+      } else if (pathname.startsWith('/ws/') && pathname.endsWith('/stream')) {
+          logger.info(`路由到 Stream Handler (sessionId: ${sessionId})`);
+          this.wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
+              handleStreamConnection(ws, sessionId!); // 交给处理器
+          });
+          return; // !! 处理 /stream 后返回 !!
+      }
+
+      // !! Fallback: 路径不匹配，执行原始代理逻辑 !!
+      logger.info(`路径 ${pathname} 不匹配特定处理器，执行默认 WebSocket 代理 (sessionId: ${sessionId})`);
+
+      // !! 恢复原始逻辑：获取 port 和 path !!
       const port = sessionManager.getPort(sessionId);
       const path = sessionManager.getPath(sessionId);
-      logger.info(`获取到端口: ${port}, 路径: ${path}`);
+      logger.info(`获取到端口: ${port}, 路径: ${path} 用于 CDP 代理`);
 
-      if (!port) {
-        logger.error(`会话不存在: ${sessionId}`);
+      if (!port || path === null) { // 检查 port 和 path
+        logger.error(`CDP 代理失败: 会话 ${sessionId} 不存在或缺少路径信息。`);
         socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
         socket.destroy();
         return;
       }
 
-      // 通知会话管理器用户已连接
-      logger.info(`通知会话管理器用户已连接 (sessionId: ${sessionId})`);
-      sessionManager.handleConnection(sessionId);
-
-      // 设置活动更新定时器
+      // !! 恢复原始逻辑：为 CDP 代理连接设置活动监控 !!
+      logger.info(`为 CDP 代理连接设置活动监控 (sessionId: ${sessionId})`);
+      sessionManager.handleConnection(sessionId); // 通知连接
       activityInterval = setInterval(() => {
         if (sessionId) {
           sessionManager.updateActivity(sessionId);
         }
-      }, 5000); // 每5秒更新一次
+      }, 5000);
 
-      // 监听原始 socket 的各种事件
+      const cleanupProxyListeners = () => {
+          if (activityInterval) clearInterval(activityInterval);
+          socket.removeAllListeners('close');
+          socket.removeAllListeners('end');
+          socket.removeAllListeners('error');
+          socket.removeAllListeners('data');
+          logger.debug(`Cleaned up CDP proxy listeners for session ${sessionId}`);
+      };
+
       socket.on('close', () => {
-        logger.info(`用户 WebSocket 连接已关闭 (sessionId: ${sessionId})`);
-        clearInterval(activityInterval); // 清除活动更新定时器
-        // 通知会话管理器用户已断开连接
+        logger.info(`用户 WebSocket (CDP 代理) 连接已关闭 (sessionId: ${sessionId})`);
+        cleanupProxyListeners();
         if (sessionId) {
           sessionManager.handleDisconnection(sessionId);
         }
       });
-
       socket.on('end', () => {
-        logger.info(`用户 WebSocket 连接结束 (sessionId: ${sessionId})`);
-        clearInterval(activityInterval); // 清除活动更新定时器
-        // 通知会话管理器用户已断开连接
+        logger.info(`用户 WebSocket (CDP 代理) 连接结束 (sessionId: ${sessionId})`);
+        cleanupProxyListeners();
         if (sessionId) {
           sessionManager.handleDisconnection(sessionId);
         }
       });
-
       socket.on('error', (error) => {
-        logger.error(`用户 WebSocket 连接出错 (sessionId: ${sessionId}):`, error);
-        clearInterval(activityInterval); // 清除活动更新定时器
-        // 出错时也应该通知会话管理器用户已断开连接
+        logger.error(`用户 WebSocket (CDP 代理) 连接出错 (sessionId: ${sessionId}):`, error);
+        cleanupProxyListeners();
         if (sessionId) {
           sessionManager.handleDisconnection(sessionId);
         }
       });
-
-      // 监听消息事件，更新活动时间
       socket.on('data', () => {
         if (sessionId) {
           sessionManager.updateActivity(sessionId);
         }
       });
 
-      // 转发 WebSocket 连接
-      const target = `ws://localhost:${port}${path || ''}`;
-      logger.info(`转发 WebSocket 连接到: ${target}`);
-
+      // !! 恢复原始逻辑：转发 WebSocket 连接到 CDP 端点 !!
+      const target = `ws://localhost:${port}${path}`;
+      logger.info(`转发 WebSocket (CDP) 连接到: ${target}`);
       this.proxy.ws(req, socket, head, { target, ws: true }, (err: Error) => {
-        logger.error('代理 WebSocket 连接失败:', err);
-        clearInterval(activityInterval); // 清除活动更新定时器
+        logger.error(`代理 WebSocket (CDP) 连接失败 (sessionId: ${sessionId}):`, err);
+        cleanupProxyListeners(); // 清理监听器
         if (sessionId) {
-          sessionManager.handleDisconnection(sessionId);
+          sessionManager.handleDisconnection(sessionId); // 尝试通知断开
         }
-        socket.destroy();
+        // 不需要手动 destroy socket, proxy.ws 在出错时会处理
       });
-    } catch (error) {
-      logger.error('处理 WebSocket 连接请求失败:', error);
 
-      // 如果定时器已经创建，清除定时器
-      if (typeof activityInterval !== 'undefined') {
+    } catch (error) {
+      logger.error('处理 WebSocket 升级请求失败:', error);
+      if (activityInterval) {
         clearInterval(activityInterval);
       }
-
-      // 如果 sessionId 已经解析，通知会话管理器用户已断开连接
-      if (sessionId) {
-        sessionManager.handleDisconnection(sessionId);
+      // 避免在已知错误（如找不到会话）时重复通知断开
+      if (sessionId && !(error instanceof Error && error.message.includes('Session not found'))) {
+         try {
+             sessionManager.handleDisconnection(sessionId);
+         } catch (disconnectError) {
+             logger.error(`Error calling handleDisconnection for ${sessionId} during upgrade error:`, disconnectError);
+         }
       }
-
-      socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-      socket.destroy();
+      if (!socket.destroyed) {
+          try {
+            socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+          } catch (writeError) {
+              logger.warn("Failed to write error to socket during upgrade error handling:", writeError);
+          }
+          socket.destroy();
+      }
     }
   }
 }

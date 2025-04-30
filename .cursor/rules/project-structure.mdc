@@ -1,0 +1,26 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 项目结构说明
+
+本项目的主要源码位于 [src/](mdc:src) 目录下，包含以下关键子目录：
+
+- [controllers/](mdc:src/controllers)：控制器，处理路由请求的业务逻辑。
+- [models/](mdc:src/models)：数据模型，定义数据库结构与操作。
+- [routes/](mdc:src/routes)：路由定义，负责 API 路由分发。
+- [services/](mdc:src/services)：服务层，封装复杂业务逻辑和第三方服务调用。
+- [utils/](mdc:src/utils)：工具函数和通用方法。
+- [middlewares/](mdc:src/middlewares)：中间件，处理请求生命周期中的通用逻辑。
+- [config/](mdc:src/config)：配置文件，如数据库、环境变量等。
+- [schemas/](mdc:src/schemas)：数据校验和结构定义。
+- [plugins/](mdc:src/plugins)：插件机制相关代码。
+- [modules/](mdc:src/modules)：功能模块划分，便于扩展和维护。
+- [public/](mdc:src/public)：静态资源，如 JS、CSS、图片等。
+- [views/](mdc:src/views)：视图模板，包含页面、布局和局部模板。
+- [protos/](mdc:src/protos)：gRPC/ProtoBuf 协议文件。
+- [sdk/](mdc:src/sdk)：客户端 SDK 相关代码。
+- [types/](mdc:src/types)：TypeScript 类型定义。
+
+主入口为 [app.ts](mdc:src/app.ts) 和 [server.ts](mdc:src/server.ts)。

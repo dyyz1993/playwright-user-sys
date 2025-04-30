@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# services 目录规则
+
+- 该目录用于存放服务层代码，封装复杂的业务逻辑和第三方服务调用。
+- 命名规范为 `xxx.service.ts`，如 `machine-grpc.service.ts`、`memory-store.service.ts`。
+- 服务文件通常包含：
+  - 业务逻辑实现（如数据处理、事务、聚合等）
+  - 对模型层的调用
+  - 与外部服务（如 gRPC、缓存、消息队列等）的集成
+- 服务层应避免直接处理 HTTP 请求和响应，这部分应由控制器负责。
+- 服务应保持高内聚、低耦合，便于单元测试和复用。

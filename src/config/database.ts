@@ -82,7 +82,7 @@ export async function initDatabase() {
 
 // 创建数据库连接
 console.log('正在创建数据库连接...');
-let dbInstance;
+let dbInstance :knex.Knex<any, unknown[]>;
 
 try {
   dbInstance = knex(createDatabaseConfig());

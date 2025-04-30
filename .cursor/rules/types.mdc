@@ -1,5 +1,10 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# types 目录规则
+
+- 该目录用于存放 TypeScript 类型定义文件。
+- [index.ts](mdc:src/types/index.ts) 通常用于定义或导出项目中共享的接口 (interface) 和类型别名 (type)。
+- 类型定义有助于提高代码的可读性、可维护性，并利用 TypeScript 的静态类型检查功能。

@@ -111,16 +111,73 @@ export class UserModel {
   }
 
   // 扣除点数
-  static async deductCredits(id: number, amount: number): Promise<User | null> {
+  static async deductCredits(id: number, amount: number, trx?: any): Promise<User | null> {
     const user = await this.findById(id);
     if (!user) return null;
 
     if (user.credits < amount) {
       throw new Error('点数不足');
     }
+    console.log(`🔴 扣除点数: ${amount} 点, 用户 ${id} 剩余 ${user.credits - amount} 点`);
 
-    await db('users').where({ id }).decrement('credits', amount);
-    return this.findById(id);
+    const queryBuilder = trx || db;
+    await queryBuilder('users').where({ id }).decrement('credits', amount);
+
+    return trx ? user : this.findById(id);
+  }
+
+  /**
+   * 批量扣除用户点数
+   * @param userCredits 用户ID和点数映射
+   * @param trx 事务对象（可选）
+   * @returns 成功扣除点数的用户数量
+   */
+  static async batchDeductCredits(
+    userCredits: Map<number, number>,
+    trx?: any
+  ): Promise<number> {
+    try {
+      let successCount = 0;
+      const queryBuilder = trx || db;
+
+      // 获取所有用户信息
+      const userIds = Array.from(userCredits.keys());
+      const users = await queryBuilder('users').whereIn('id', userIds);
+
+      // 创建用户ID到用户对象的映射
+      const userMap = new Map<number, User>();
+      for (const user of users) {
+        userMap.set(user.id, user);
+      }
+
+      // 检查并扣除点数
+      for (const [userId, amount] of userCredits.entries()) {
+        const user = userMap.get(userId);
+
+        if (!user) {
+          console.warn(`用户 ${userId} 不存在，跳过扣除点数`);
+          continue;
+        }
+
+        if (user.credits < amount) {
+          console.warn(`用户 ${userId} 点数不足，剩余: ${user.credits}，需要: ${amount}，跳过扣除点数`);
+          continue;
+        }
+
+        // 扣除点数
+        await queryBuilder('users')
+          .where('id', userId)
+          .decrement('credits', amount);
+
+        console.log(`批量扣除: 用户 ${userId} 扣除 ${amount} 点，剩余 ${user.credits - amount} 点`);
+        successCount++;
+      }
+
+      return successCount;
+    } catch (error) {
+      console.error('批量扣除用户点数失败:', error);
+      throw error;
+    }
   }
 
   // 获取所有用户（分页）

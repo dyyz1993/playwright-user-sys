@@ -387,7 +387,7 @@ class MemoryStoreService extends EventEmitter {
               status: dbSession.status as SessionStatus,
               start_time: new Date(dbSession.start_time || Date.now()),
               last_activity: new Date(dbSession.last_activity || Date.now()),
-              browser_ws_endpoint: dbSession.browser_ws_endpoint || undefined,
+              // browser_ws_endpoint: dbSession.browser_ws_endpoint || undefined,
               port: dbSession.port || undefined,
             });
           }
@@ -517,7 +517,7 @@ class MemoryStoreService extends EventEmitter {
           status: session.status as SessionStatus,
           start_time: new Date(session.start_time || Date.now()),
           last_activity: new Date(session.last_activity || Date.now()),
-          browser_ws_endpoint: session.browser_ws_endpoint || undefined,
+          // browser_ws_endpoint: session.browser_ws_endpoint || undefined,
           port: session.port || undefined,
         });
       }

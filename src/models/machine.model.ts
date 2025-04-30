@@ -1,6 +1,6 @@
 import { db } from '../config/database.js';
-import { MachineInfo, PaginationQuery, PaginatedResponse } from '../types/index.js';
-
+import { MachineInfo, PaginationQuery, PaginatedResponse, SessionStatus } from '../types/index.js';
+import { logger } from '../utils/logger.js';
 export interface CreateMachineInput {
   id: string;
   hostname: string;
@@ -114,6 +114,14 @@ export class MachineModel {
         delete updateData[key];
       }
     });
+    if (updateData.status === 'offline') {
+      await db('sessions').where({ machine_id: id }).update({
+        status: SessionStatus.DISCONNECTED,
+        disconnected_at: new Date(),
+        updated_at: new Date(),
+      });
+      logger.info(`❌ 机器 ${id} 已离线，已关闭所有会话`);
+    }
 
     await db('machines').where({ id }).update(updateData);
     return this.findById(id);

@@ -461,17 +461,17 @@ class MachineConnectionManager extends EventEmitter {
           // 如果会话已分配机器，减少机器的实例计数
           await MachineModel.decrementInstanceCount(machineId);
 
-          // 只有在会话没有持续时间和消耗点数时才扣除点数
-          if (!(session.duration > 0 || session.credits_used > 0)) {
-            try {
-              await UserModel.deductCredits(session.user_id, finalMinutes);
-              logger.info(`已扣除用户 ${session.user_id} 的点数: ${finalMinutes} 点 (${session_id})`);
-            } catch (error) {
-              logger.error('扣除点数失败:', error);
-            }
-          } else {
-            logger.info(`会话已有持续时间和消耗点数，不重复扣除点数 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
-          }
+          // // 只有在会话没有持续时间和消耗点数时才扣除点数
+          // if (!(session.duration > 0 || session.credits_used > 0)) {
+          //   try {
+          //     await UserModel.deductCredits(session.user_id, finalMinutes);
+          //     logger.info(`已扣除用户 ${session.user_id} 的点数: ${finalMinutes} 点 (${session_id})`);
+          //   } catch (error) {
+          //     logger.error('扣除点数失败:', error);
+          //   }
+          // } else {
+          //   logger.info(`会话已有持续时间和消耗点数，不重复扣除点数 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
+          // }
 
           // 触发 Webhook 事件
           await createWebhookEvent(session.user_id, WebhookEventType.SESSION_DISCONNECTED, {
@@ -480,7 +480,7 @@ class MachineConnectionManager extends EventEmitter {
             disconnected_at: new Date(),
           });
 
-          logger.info(`会话已结束，计费完成 (${session_id}): ${duration}秒, ${finalMinutes}点`);
+          // logger.info(`会话已结束，计费完成 (${session_id}): ${duration}秒, ${finalMinutes}点`);
           break;
 
         case 'error':
@@ -510,17 +510,17 @@ class MachineConnectionManager extends EventEmitter {
           // 如果会话已分配机器，减少机器的实例计数
           await MachineModel.decrementInstanceCount(machineId);
 
-          // 只有在会话没有持续时间和消耗点数时才扣除点数
-          if (!(session.duration > 0 || session.credits_used > 0)) {
-            try {
-              await UserModel.deductCredits(session.user_id, errorMinutes);
-              logger.info(`已扣除用户 ${session.user_id} 的点数: ${errorMinutes} 点 (${session_id})`);
-            } catch (error) {
-              logger.error('扣除点数失败:', error);
-            }
-          } else {
-            logger.info(`会话已有持续时间和消耗点数，不重复扣除点数 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
-          }
+          // // 只有在会话没有持续时间和消耗点数时才扣除点数
+          // if (!(session.duration > 0 || session.credits_used > 0)) {
+          //   try {
+          //     await UserModel.deductCredits(session.user_id, errorMinutes);
+          //     logger.info(`已扣除用户 ${session.user_id} 的点数: ${errorMinutes} 点 (${session_id})`);
+          //   } catch (error) {
+          //     logger.error('扣除点数失败:', error);
+          //   }
+          // } else {
+          //   logger.info(`会话已有持续时间和消耗点数，不重复扣除点数 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
+          // }
 
           // 触发 Webhook 事件
           await createWebhookEvent(session.user_id, WebhookEventType.SESSION_ERROR, {

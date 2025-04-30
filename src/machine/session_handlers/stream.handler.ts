@@ -7,7 +7,7 @@ import { logger } from '../../utils/logger.js';
 interface StreamInfo {
     page: Page;
     sessionId: string;
-    intervalId: NodeJS.Timeout | null;
+    timerId: NodeJS.Timeout | null; // 使用 timerId 存储 setTimeout 的 ID
     currentFps: number;
     ws: WebSocket; // 保留 WebSocket 引用用于清理
 }
@@ -26,19 +26,39 @@ async function captureAndSend(ws: WebSocket, page: Page, sessionId: string): Pro
     try {
         const currentConfig = browserService.getSessionConfig(sessionId);
         const screenshotOptions: ScreenshotOptions = {
-            type: 'jpeg',
-            quality: 80,
+            type: 'webp',
+            quality: 60,
             encoding: 'binary',
+            
             clip: currentConfig?.clip, // 实时获取 clip
         };
-        const screenshotBuffer = await page.screenshot(screenshotOptions);
-
-        ws.send(screenshotBuffer, { binary: true }, (err) => {
-            if (err) {
-                logger.error(`Failed to send screenshot for session ${sessionId}:`, err);
-                // 发送失败时，让调用者处理清理
-            }
+        console.log('screenshotOptions',screenshotOptions);
+        const newCDPSession = await page.createCDPSession();
+       const screenshotBufferLike = await newCDPSession.send("Page.captureScreenshot", {
+            format: 'webp',
+            quality: 60,
+            optimizeForSpeed: true,
+            captureBeyondViewport: false,
+            // clip: {
+            //     ...currentConfig?.clip,
+            //     scale: 1,
+            // },
         });
+
+        const screenshotBuffer = Buffer.from(screenshotBufferLike.data,'base64');
+        // const screenshotBuffer = await context.send("Page.captureScreenshot", screenshotOptions);
+        // context.emit("Page.captureScreenshot", screenshotOptions);
+
+        // const screenshotBuffer = await page.screenshot(screenshotOptions);
+
+        if(ws.readyState === WebSocket.OPEN) {
+            ws.send(screenshotBuffer, { binary: true }, (err) => {
+                if (err) {
+                    logger.error(`Failed to send screenshot for session ${sessionId}:`, err);
+                    // 发送失败时，让调用者处理清理
+                }
+            });
+        }
         return true; // 表示成功
     } catch (error: any) {
         if (error.message.includes('Target closed') || error.message.includes('Session closed')) {
@@ -53,25 +73,41 @@ async function captureAndSend(ws: WebSocket, page: Page, sessionId: string): Pro
     }
 }
 
-// --- 启动/重启截图定时器 --- 
-function startStreamInterval(streamInfo: StreamInfo) {
+// --- 启动/重启截图循环 (使用 setTimeout) ---
+function startStreamLoop(streamInfo: StreamInfo) {
     const { ws, page, sessionId, currentFps } = streamInfo;
     const intervalMs = 1000 / currentFps;
 
-    logger.info(`Starting/Restarting stream interval for ${sessionId} at ${currentFps} FPS`);
+    logger.info(`Starting/Restarting stream loop for ${sessionId} at ${currentFps} FPS`);
 
     // 先清除可能存在的旧定时器
-    if (streamInfo.intervalId) {
-        clearInterval(streamInfo.intervalId);
-        streamInfo.intervalId = null;
+    if (streamInfo.timerId) {
+        clearTimeout(streamInfo.timerId); // 改为 clearTimeout
+        streamInfo.timerId = null;
     }
 
-    streamInfo.intervalId = setInterval(async () => {
-        const success = await captureAndSend(ws, page, sessionId);
-        if (!success) {
-            cleanupStreamConnection(ws); // 如果截图或发送失败，清理连接
+    // 定义递归函数
+    const scheduleNextCapture = async () => {
+        // 在执行前检查连接是否仍然活跃
+        if (!activeStreams.has(ws)) {
+             logger.debug(`Stream loop stopped for ${sessionId} because connection is no longer active.`);
+             return;
         }
-    }, intervalMs);
+
+        const success = await captureAndSend(ws, page, sessionId);
+
+        if (success && activeStreams.has(ws)) { // 再次检查，因为 captureAndSend 可能耗时
+            // 如果成功，安排下一次执行
+             streamInfo.timerId = setTimeout(scheduleNextCapture, intervalMs);
+        } else {
+            // 如果失败或连接已关闭，则清理
+            logger.warn(`Stopping stream loop for ${sessionId} due to capture/send failure or connection closed.`);
+            cleanupStreamConnection(ws);
+        }
+    };
+
+    // 立即开始第一次截图
+    scheduleNextCapture();
 }
 
 export async function handleStreamConnection(ws: WebSocket, sessionId: string): Promise<void> {
@@ -94,14 +130,14 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
     const streamInfo: StreamInfo = {
         page,
         sessionId,
-        intervalId: null,
+        timerId: null,
         currentFps: initialFps,
         ws: ws,
     };
     activeStreams.set(ws, streamInfo);
 
     // !! 启动初始截图流 !!
-    startStreamInterval(streamInfo);
+    startStreamLoop(streamInfo);
     logger.info(`Initial screenshot stream started for session ${sessionId} at ${initialFps} FPS.`);
 
     // --- Page 和 WebSocket 事件监听器 --- 
@@ -120,7 +156,7 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
                 if (currentStreamInfo.currentFps !== newFps) {
                     logger.info(`FPS changed for ${sessionId} from ${currentStreamInfo.currentFps} to ${newFps}. Restarting stream interval.`);
                     currentStreamInfo.currentFps = newFps;
-                    startStreamInterval(currentStreamInfo);
+                    // startStreamLoop(currentStreamInfo);
                 } else {
                     logger.debug(`FPS unchanged for ${sessionId}, no stream interval restart needed.`);
                 }
@@ -162,8 +198,8 @@ function handlePageCloseOrCrash(ws: WebSocket, sessionId: string, reason: string
 function cleanupStreamConnection(ws: WebSocket): void {
   const streamInfo = activeStreams.get(ws);
   if (streamInfo) {
-    if (streamInfo.intervalId) {
-        clearInterval(streamInfo.intervalId);
+    if (streamInfo.timerId) {
+        clearTimeout(streamInfo.timerId);
     }
     activeStreams.delete(ws);
     logger.debug(`Cleaned up \'/stream\' connection for session ${streamInfo.sessionId}.`);

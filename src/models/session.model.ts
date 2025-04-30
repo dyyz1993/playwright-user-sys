@@ -61,6 +61,23 @@ export class SessionModel {
 
     return this.findById(sessionId);
   }
+  static async markMachineSessionsAsDisconnected(machineId: string): Promise<number> {
+    logger.info(`数据库层面：标记机器 ${machineId} 的所有活跃会话为 DISCONNECTED`);
+    try {
+      const result = await this.query()
+        .where('machine_id', machineId)
+        .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED])
+        .patch({
+          status: SessionStatus.DISCONNECTED,
+          updated_at: new Date() // 自动更新时间戳
+        });
+      logger.info(`数据库层面：机器 ${machineId} 有 ${result} 个会话被标记为 DISCONNECTED`);
+      return result; // 返回更新的行数
+    } catch (error) {
+      logger.error(`数据库层面：标记机器 ${machineId} 会话为 DISCONNECTED 时出错:`, error);
+      throw error; // 或者根据你的错误处理策略返回 0
+    }
+  }
 
   // 通过 ID 查找会话
   static async findById(id: string): Promise<Session | null> {
@@ -104,6 +121,41 @@ export class SessionModel {
     await db('sessions').where({ id }).update(updateData);
     return this.findById(id);
   }
+
+  /**
+   * 批量更新会话
+   * @param updates 会话更新数据数组
+   * @param trx 事务对象（可选）
+   * @returns 更新的会话数量
+   */
+  static async batchUpdate(
+    updates: Array<{ id: string; duration: number; credits_used: number }>,
+    trx?: any
+  ): Promise<number> {
+    try {
+      let count = 0;
+      const queryBuilder = trx || db;
+
+      for (const update of updates) {
+        await queryBuilder('sessions')
+          .where('id', update.id)
+          .update({
+            duration: update.duration,
+            credits_used: update.credits_used,
+            updated_at: new Date()
+          });
+        count++;
+      }
+
+      return count;
+    } catch (error) {
+      console.error('批量更新会话失败:', error);
+      throw error;
+    }
+  }
+
+
+
 
   // 标记会话已连接
   static async markConnected(id: string): Promise<Session | null> {

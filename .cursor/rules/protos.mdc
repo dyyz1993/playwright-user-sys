@@ -1,5 +1,10 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# protos 目录规则
+
+- 该目录用于存放 Protocol Buffer (.proto) 文件，定义 gRPC 服务和消息结构。
+- [machine_service.proto](mdc:src/protos/machine_service.proto) 定义了与 Machine 服务相关的 gRPC 接口和数据类型。
+- Proto 文件用于生成客户端和服务端代码，实现跨语言的 RPC 通信。

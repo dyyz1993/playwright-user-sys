@@ -52,6 +52,7 @@ async function main() {
 
     const sessionId = sessionData.data.id;
     const browserWSEndpoint = sessionData.data.browserWSEndpoint;
+    console.log('http://REDACTED_PROXY_HOST:3001/?sessionId='+sessionId+'&domain='+'REDACTED_PROXY_HOST:8082')
 
     // 步骤 2：连接到浏览器
     console.log('\n步骤 2：连接到浏览器...');
@@ -74,14 +75,22 @@ async function main() {
 
     // 步骤 3：打开百度
     console.log('\n步骤 3：打开百度...');
+    // const page = (await browser.pages())[0];
     const page = await browser.newPage();
-    await page.goto('https://fingerprint-scan.com/canvas');
-    console.log('成功打开百度');
+    // await page.goto('https://xiaohongshu.com/');
+    // await page.goto('https://fingerprintjs.github.io/BotD/main/');
+    // await page.goto('https://www.w3schools.com/tags/tryit.asp?filename=tryhtml5_input_type_file');
+    await page.goto('https://www.aliyun.com/product/list?spm=a2c4g.11186623.J_4VYgf18xNlTAyFFbOuOQe.d_menu_1.abb6104dqjyHuP');
+
+
+    // const page2 = await browser.newPage();
+    // await page2.goto('https://xiaohongshu.com/explore');
+    // console.log('成功打开百度');
 
     // 步骤 4：截图
     console.log('\n步骤 4：截图...');
     const screenshotPath = path.resolve(process.cwd(), 'baidu.png');
-    await page.screenshot({ path: screenshotPath });
+    // await page.screenshot({ path: screenshotPath });
     console.log(`截图已保存为 ${screenshotPath}`);
 
     // 步骤 5：在百度搜索框中输入内容
@@ -96,12 +105,12 @@ async function main() {
     // 再次截图
     console.log('\n步骤 6：搜索结果截图...');
     const searchResultPath = path.resolve(process.cwd(), 'baidu-search.png');
-    await page.screenshot({ path: searchResultPath });
+    // await page.screenshot({ path: searchResultPath });
     console.log(`搜索结果截图已保存为 ${searchResultPath}`);
 
     // 等待 20 秒
     console.log('\n等待 20 秒...');
-    await new Promise(resolve => setTimeout(resolve, 60000));
+    await new Promise(resolve => setTimeout(resolve, 6000000));
 
     // 步骤 7：释放会话（先释放会话再关闭浏览器）
     console.log('\n步骤 7：释放会话...');

@@ -152,13 +152,25 @@ class ProxyService {
     try {
       logger.info(`收到 WebSocket 升级请求: ${req.url}`);
       const url = new URL(req.url || '', `http://${req.headers.host}`);
-      sessionId = url.searchParams.get('sessionId');
       const pathname = url.pathname;
 
-      logger.info(`解析到 sessionId: ${sessionId}, pathname: ${pathname}`);
+      // 优先从查询参数获取 sessionId
+      sessionId = url.searchParams.get('sessionId');
+
+      // 如果查询参数中没有，尝试从路径中提取
+      if (!sessionId && pathname.startsWith('/ws/')) {
+        const pathSegments = pathname.split('/');
+        // 预期路径格式: ['', 'ws', '<sessionId>', 'events|stream|...']
+        if (pathSegments.length >= 3 && pathSegments[2]) {
+          sessionId = pathSegments[2];
+          logger.info(`从路径中提取到 sessionId: ${sessionId}`);
+        }
+      }
+
+      logger.info(`最终 sessionId: ${sessionId}, pathname: ${pathname}`);
 
       if (!sessionId) {
-        logger.error('缺少 sessionId 参数');
+        logger.error('无法确定 sessionId (查询参数或路径中均未找到)');
         socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
         socket.destroy();
         return;
@@ -201,7 +213,7 @@ class ProxyService {
         if (sessionId) {
           sessionManager.updateActivity(sessionId);
         }
-      }, 5000);
+      }, 1000);
 
       const cleanupProxyListeners = () => {
           if (activityInterval) clearInterval(activityInterval);

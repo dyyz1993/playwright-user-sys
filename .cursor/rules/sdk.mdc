@@ -1,5 +1,10 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# sdk 目录规则
+
+- 该目录用于存放客户端 SDK 相关代码。
+- [client.ts](mdc:src/sdk/client.ts) 可能包含用于与后端 API 或 gRPC 服务交互的客户端实现。
+- SDK 封装了 API 调用细节，方便其他项目或前端集成。

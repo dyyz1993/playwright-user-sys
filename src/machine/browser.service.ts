@@ -27,7 +27,7 @@ import puppeteerStealth from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
 const puppeteer = puppeteerStealth.default;
-puppeteer.use(StealthPlugin());
+// puppeteer.use(StealthPlugin());
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 declare global {
@@ -322,13 +322,6 @@ class BrowserService extends EventEmitter {
         ...DEFAULT_SESSION_CONFIG,
         ...(options.sessionConfig || {}),
       };
-      if (!initialConfig.touchMode) {
-        initialConfig.touchMode =
-          initialConfig.interactionMode === "captcha_slider" ||
-          initialConfig.interactionMode === "touch"
-            ? "touch"
-            : "touchpad";
-      }
       logger.info(
         `Initial session config for ${sessionId}: ${JSON.stringify(
           initialConfig
@@ -542,6 +535,7 @@ class BrowserService extends EventEmitter {
         "--webrtc-ip-handling-policy=disable_non_proxied_udp",
         "--force-webrtc-ip-handling-policy",
         "--timezone=Asia/Shanghai",
+        "--remote-debugging-address=0.0.0.0",
       ],
       // headless: options.headless !== undefined ? options.headless : false,
       headless: true,

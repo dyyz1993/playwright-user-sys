@@ -1,7 +1,7 @@
 # 依赖
 node_modules/
 .pnpm-store/
-
+node_modules_prod/
 # 构建输出
 dist/
 build/

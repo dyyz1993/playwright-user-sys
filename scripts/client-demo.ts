@@ -80,8 +80,9 @@ async function main() {
     // await page.goto('https://xiaohongshu.com/');
     // await page.goto('https://fingerprintjs.github.io/BotD/main/');
     // await page.goto('https://www.w3schools.com/tags/tryit.asp?filename=tryhtml5_input_type_file');
-    await page.goto('https://www.aliyun.com/product/list?spm=a2c4g.11186623.J_4VYgf18xNlTAyFFbOuOQe.d_menu_1.abb6104dqjyHuP');
-
+    // await page.goto('https://www.aliyun.com/product/list?spm=a2c4g.11186623.J_4VYgf18xNlTAyFFbOuOQe.d_menu_1.abb6104dqjyHuP');
+    await page.goto('https://xcancel.com/Starlink');
+    // await page.goto('https://demo.fingerprint.com/playground');
 
     // const page2 = await browser.newPage();
     // await page2.goto('https://xiaohongshu.com/explore');

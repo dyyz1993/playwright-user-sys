@@ -66,10 +66,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     xdg-utils \
     curl && \
     # 安装 Chrome
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
-    apt-get update && \
-    apt-get install -y google-chrome-stable && \
+    && CHROME_DEB="google-chrome-stable_128.0.6613.119-1_amd64.deb" \
+    && wget -q "https://mirror.cs.uchicago.edu/google-chrome/pool/main/g/google-chrome-stable/${CHROME_DEB}" \
+    && apt-get install -y ./google-chrome-stable_*.deb \
+    && rm google-chrome-stable_*.deb \
     # 清理不必要的文件以减小镜像大小
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/chrome-download/*
@@ -92,7 +92,10 @@ COPY --from=builder /app/src/protos/ /app/dist/src/protos/
 ENV NODE_ENV=production
 ENV MACHINE_ID=""
 ENV MANAGEMENT_SERVER_URL="http://localhost:3000"
+ENV MANAGER_HOST="localhost:50051"
 ENV STATUS_REPORT_INTERVAL="60000"
+
+EXPOSE 8082 50052
 
 # 创建数据目录
 RUN mkdir -p /app/dist/data/screenshots

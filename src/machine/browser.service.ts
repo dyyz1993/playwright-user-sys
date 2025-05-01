@@ -28,7 +28,7 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
 const puppeteer = puppeteerStealth.default;
 // puppeteer.use(StealthPlugin());
-puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
+puppeteer.use(AdblockerPlugin.default({ blockTrackers: true }));
 
 declare global {
   interface Window {

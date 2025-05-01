@@ -524,6 +524,7 @@ class BrowserService extends EventEmitter {
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--remote-allow-origins=*",
+        "--remote-debugging-port=0",
         "--disable-dev-shm-usage",
         "--disable-responsive-ui",
         "--force-device-scale-factor=1",

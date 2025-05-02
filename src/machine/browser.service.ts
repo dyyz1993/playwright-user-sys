@@ -23,12 +23,13 @@ import { CONFIG } from "./config.js";
 import { logger } from "../utils/logger.js";
 import { Buffer } from "buffer";
 import { sessionFocusEmitter } from "./utils.js";
-import puppeteerStealth from "puppeteer-extra";
+import puppeteerStealth from "puppeteer-extra"
+// imp;
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
 const puppeteer = puppeteerStealth.default;
 // puppeteer.use(StealthPlugin());
-puppeteer.use(AdblockerPlugin.default({ blockTrackers: true }));
+// puppeteer.use(AdblockerPlugin.default({ blockTrackers: true }));
 
 declare global {
   interface Window {

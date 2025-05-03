@@ -736,6 +736,10 @@ class BrowserService extends EventEmitter {
           `新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`
         );
       
+        // 禁止修改客户端 console.debug 行为
+        await page.evaluateOnNewDocument(() => {
+          console.debug = () => {};
+        });
         await this.injectMouseTrackingScript(page);
         await this.injectFocusinScript(sessionId, page);
         // 这里注入 focusin 事件监听器 ？

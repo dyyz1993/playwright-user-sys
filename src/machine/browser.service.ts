@@ -29,7 +29,7 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
 const puppeteer = puppeteerStealth.default;
 // puppeteer.use(StealthPlugin());
-// puppeteer.use(AdblockerPlugin.default({ blockTrackers: true }));
+puppeteer.use(AdblockerPlugin.default({ blockTrackers: true }));
 
 declare global {
   interface Window {
@@ -530,7 +530,7 @@ class BrowserService extends EventEmitter {
         "--disable-responsive-ui",
         "--force-device-scale-factor=1",
         "--disable-gpu",
-        "--disable-web-security",
+        // "--disable-web-security",
         "--disable-setuid-sandbox",
         "--use-angle=disabled",
         "--disable-blink-features=AutomationControlled",

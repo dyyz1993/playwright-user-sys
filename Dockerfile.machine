@@ -89,7 +89,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get clean \
     && mkdir -p /tmp/chrome-download \
     # 安装 Chrome
-    && CHROME_DEB="google-chrome-stable_135.0.7049.114-1_amd64.deb" \
+    && CHROME_DEB="google-chrome-stable_128.0.6613.119-1_amd64.deb" \
     && CHROME_URL="http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/${CHROME_DEB}" \
     && echo "Attempting to download Chrome from ${CHROME_URL}" \
     && wget -q -P /tmp/chrome-download "${CHROME_URL}" \

@@ -89,9 +89,16 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get clean \
     && mkdir -p /tmp/chrome-download \
     # 安装 Chrome
-    && CHROME_DEB="google-chrome-stable_128.0.6613.119-1_amd64.deb" \
-    && wget -q -P /tmp/chrome-download "https://mirror.cs.uchicago.edu/google-chrome/pool/main/g/google-chrome-stable/${CHROME_DEB}" \
+    && CHROME_DEB="google-chrome-stable_135.0.7049.114-1_amd64.deb" \
+    && CHROME_URL="http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/${CHROME_DEB}" \
+    && echo "Attempting to download Chrome from ${CHROME_URL}" \
+    && wget -q -P /tmp/chrome-download "${CHROME_URL}" \
+    && echo "Download complete. Installing Chrome..." \
+    && apt-get update -qq \
     && apt-get install -y /tmp/chrome-download/google-chrome-stable_*.deb \
+    && echo "Chrome installation complete." \
+    # 打印 Chrome 版本以确认
+    && google-chrome-stable --version \
 
     # 清理不必要的文件以减小镜像大小
     && apt-get clean \

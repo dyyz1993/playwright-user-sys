@@ -29,7 +29,7 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
 const puppeteer = puppeteerStealth.default;
 // puppeteer.use(StealthPlugin());
-// puppeteer.use(AdblockerPlugin.default({ blockTrackers: true }));
+puppeteer.use(AdblockerPlugin.default({ blockTrackers: true }));
 
 declare global {
   interface Window {
@@ -540,6 +540,7 @@ class BrowserService extends EventEmitter {
         "--remote-debugging-address=0.0.0.0",
       ],
       // headless: options.headless !== undefined ? options.headless : false,
+      // headless: false,
       headless: true,
       executablePath: CONFIG.chromePath,
       protocolTimeout: 60000,
@@ -736,12 +737,13 @@ class BrowserService extends EventEmitter {
           `新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`
         );
       
+      
+        await this.injectMouseTrackingScript(page);
+        await this.injectFocusinScript(sessionId, page);
         // 禁止修改客户端 console.debug 行为
         await page.evaluateOnNewDocument(() => {
           console.debug = () => {};
         });
-        await this.injectMouseTrackingScript(page);
-        await this.injectFocusinScript(sessionId, page);
         // 这里注入 focusin 事件监听器 ？
         logger.info(
           `成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`

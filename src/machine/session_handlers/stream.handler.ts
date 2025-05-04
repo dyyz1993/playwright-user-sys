@@ -32,24 +32,24 @@ async function captureAndSend(ws: WebSocket, page: Page, sessionId: string): Pro
             
             clip: currentConfig?.clip, // 实时获取 clip
         };
-        console.log('screenshotOptions',screenshotOptions);
-        const newCDPSession = await page.createCDPSession();
-       const screenshotBufferLike = await newCDPSession.send("Page.captureScreenshot", {
-            format: 'webp',
-            quality: 60,
-            optimizeForSpeed: true,
-            captureBeyondViewport: false,
-            // clip: {
-            //     ...currentConfig?.clip,
-            //     scale: 1,
-            // },
-        });
+        // console.log('screenshotOptions',screenshotOptions);
+        // const newCDPSession = await page.createCDPSession();
+    //    const screenshotBufferLike = await newCDPSession.send("Page.captureScreenshot", {
+    //         format: 'webp',
+    //         quality: 60,
+    //         optimizeForSpeed: true,
+    //         captureBeyondViewport: false,
+    //         // clip: {
+    //         //     ...currentConfig?.clip,
+    //         //     scale: 1,
+    //         // },
+    //     });
 
-        const screenshotBuffer = Buffer.from(screenshotBufferLike.data,'base64');
+        // const screenshotBuffer = Buffer.from(screenshotBufferLike.data,'base64');
         // const screenshotBuffer = await context.send("Page.captureScreenshot", screenshotOptions);
         // context.emit("Page.captureScreenshot", screenshotOptions);
 
-        // const screenshotBuffer = await page.screenshot(screenshotOptions);
+        const screenshotBuffer = await page.screenshot(screenshotOptions);
 
         if(ws.readyState === WebSocket.OPEN) {
             ws.send(screenshotBuffer, { binary: true }, (err) => {

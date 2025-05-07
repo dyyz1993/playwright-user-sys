@@ -11,7 +11,7 @@ import {
   dashboardStatsResponseSchema,
   errorResponseSchema
 } from '../schemas/index.js';
-import { config } from '@/config/index.js';
+import { config } from '../config/index.js';
 
 // 管理后台 API 路由
 export default async function adminApiAuthRoutes(fastify: FastifyInstance): Promise<void> {

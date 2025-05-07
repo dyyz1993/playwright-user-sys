@@ -1,4 +1,5 @@
-import  {
+// import puppeteer from "puppeteer-core";
+import {
   Page,
   Browser,
   Frame,
@@ -24,7 +25,7 @@ import { logger } from "../utils/logger.js";
 import { Buffer } from "buffer";
 import { sessionFocusEmitter } from "./utils.js";
 import puppeteerStealth from "puppeteer-extra"
-// imp;
+import ProxyChain from "proxy-chain";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
 const puppeteer = puppeteerStealth.default;
@@ -328,7 +329,12 @@ class BrowserService extends EventEmitter {
           initialConfig
         )}`
       );
-      const puppeteerOptions = this.convertPuppeteerOptions(options);
+      if(options.proxy){
+        const newProxyUrl = await ProxyChain.anonymizeProxy(options.proxy);
+        options.proxy = newProxyUrl;
+      }
+
+      const puppeteerOptions = await this.convertPuppeteerOptions(options);
       const browserPromise = puppeteer.launch(puppeteerOptions);
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(
@@ -350,8 +356,7 @@ class BrowserService extends EventEmitter {
             "targetchanged",
             this.handleTargetChangeHandler(sessionId)
           );
-          // browser.on()
-          browser.on("disconnected", this.createDisconnectHandler(sessionId));
+          browser.on("disconnected", this.createDisconnectHandler(sessionId,options.proxy));
           logger.info(`已设置浏览器事件监听 (sessionId: ${sessionId})`);
         } catch (error) {
           logger.error(
@@ -360,7 +365,7 @@ class BrowserService extends EventEmitter {
           );
         }
       } else {
-        browser.on("disconnected", this.createDisconnectHandler(sessionId));
+        browser.on("disconnected", this.createDisconnectHandler(sessionId,options.proxy));
       }
       console.log("primaryPage", primaryPage);
       // if (primaryPage) {
@@ -518,7 +523,7 @@ class BrowserService extends EventEmitter {
   /**
    * 转换浏览器选项
    */
-  convertPuppeteerOptions(options: BrowserOptions = {}): any {
+  async convertPuppeteerOptions(options: BrowserOptions = {}): Promise<any> {
     // 将选项转换为 puppeteer-core 选项
     const result: LaunchOptions = {
       args: [
@@ -530,6 +535,7 @@ class BrowserService extends EventEmitter {
         "--disable-responsive-ui",
         "--force-device-scale-factor=1",
         "--disable-gpu",
+        "--headless=new",
         // "--disable-web-security",
         "--disable-setuid-sandbox",
         "--use-angle=disabled",
@@ -731,7 +737,7 @@ class BrowserService extends EventEmitter {
         //   await fileChooser.cancel();
         // });
         
-        if (!page || page.isClosed() || page.url().startsWith("devtools://"))
+        if (!page || page.isClosed() || page.url().startsWith("devtools://") || page.url().startsWith("file://"))
           return;
         logger.debug(
           `新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`
@@ -779,9 +785,17 @@ class BrowserService extends EventEmitter {
   /**
    * 创建浏览器断开连接处理函数
    */
-  private createDisconnectHandler(sessionId: string) {
+  private createDisconnectHandler(sessionId: string,proxy:string) {
     return () => {
       logger.warn(`浏览器实例已断开连接，将关闭会话 (sessionId: ${sessionId})`);
+      if(proxy){
+        ProxyChain.closeAnonymizedProxy(proxy, true).catch((error) =>
+          logger.error(
+            `关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`,
+            error
+          )
+        );
+      }
       this.closeBrowser(sessionId).catch((error) =>
         logger.error(
           `关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`,
@@ -833,7 +847,10 @@ class BrowserService extends EventEmitter {
         (p) =>
           !p.isClosed() &&
           !p.url().startsWith("about:blank") &&
-          !p.url().startsWith("devtools://")
+          !p.url().startsWith("devtools://") &&
+          !p.url().startsWith("chrome-error://") &&
+          !p.url().startsWith("chrome://") &&
+          !p.url().startsWith("file://")
       );
       if (!mainPage && pages.length > 0) {
         return pages.find((p) => !p.isClosed()) || null;

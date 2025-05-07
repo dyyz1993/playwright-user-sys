@@ -11,6 +11,7 @@ import {
   dashboardStatsResponseSchema,
   errorResponseSchema
 } from '../schemas/index.js';
+import { config } from '@/config/index.js';
 
 // 管理后台 API 路由
 export default async function adminApiAuthRoutes(fastify: FastifyInstance): Promise<void> {
@@ -53,8 +54,8 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
       // 生成 JWT 令牌
       const token = jwt.sign(
         { id: user.id, username: user.username, role: user.role },
-        'your-secret-key',
-        { expiresIn: '7d' }
+        config.jwt.secret,
+        { expiresIn:  config.jwt.expiresIn  }
       );
 
       // 记录登录操作 - 异步处理

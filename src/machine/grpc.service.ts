@@ -814,7 +814,7 @@ const serviceImplementation = {
 
       // 调用浏览器服务启动浏览器
       try {
-        const result = await browserService.launchBrowser(session_id, browserService.convertPuppeteerOptions(options));
+        const result = await browserService.launchBrowser(session_id, options);
         logger.info(`浏览器启动成功 (sessionId: ${session_id}, port: ${result.port})`);
 
         // 构造响应

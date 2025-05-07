@@ -72,7 +72,7 @@ class ProxyService {
    * 启动代理服务器
    */
   start(): void {
-    this.server.listen(CONFIG.proxyPort, () => {
+    this.server.listen(CONFIG.proxyPort,'0.0.0.0', () => {
       logger.info(`代理服务器运行在端口 ${CONFIG.proxyPort}`);
     });
   }

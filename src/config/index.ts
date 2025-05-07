@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { SignOptions } from 'jsonwebtoken';
 
 // 加载环境变量
 dotenv.config();
@@ -29,7 +30,7 @@ export const config = {
   // JWT 配置
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key',
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'],
   },
 
   // 会话配置

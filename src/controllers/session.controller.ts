@@ -8,6 +8,7 @@ import { SessionStatus, SessionCreateOptions, PaginationQuery, WebhookEventType 
 import { createWebhookEvent } from '../utils/webhook.js';
 import { createSessionRequestSchema, paginationQuerySchema } from '../schemas/index.js';
 import { env } from '../config/env.js';
+import { createBrowserSession } from '../services/session.service.js';
 // URL 导入已移除，因为不再需要解析 URL
 
 // 会话控制器中使用的类型定义
@@ -42,125 +43,27 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
       // 使用默认空对象
     }
 
-    // 确保至少有一个默认的 viewport
-    if (!options.viewport) {
-      options.viewport = {
-        width: 1280,
-        height: 800,
-      };
-    }
-
     request.log.info(`创建会话的选项: ${JSON.stringify(options)}`);
 
-    // 检查用户是否存在
-    const user = await UserModel.findById(userId);
-    if (!user) {
-      return sendError(reply, '用户不存在', 404);
-    }
-
-    // 检查用户点数是否足够
-    if (user.credits <= 0) {
-      return sendError(reply, '点数不足，请联系管理员充值', 402);
-    }
-
-    // 查找可用的实例机器
-    request.log.info('开始查找可用的实例机器');
-    const machine = await MachineModel.findAvailable();
-    if (!machine) {
-      request.log.error('没有找到可用的实例机器');
-      return sendError(reply, '当前没有可用的实例机器，请稍后再试', 503);
-    }
-
-    request.log.info(`找到可用的实例机器: ${machine.id}`);
-
-    // 获取 connectionManager
-    const { connectionManager } = await import('../services/machine-grpc.service.js');
-
-    // 创建会话记录
-    const session = await SessionModel.create({
-      user_id: userId,
-      options,
-    });
-
-    if (!session) {
-      return sendError(reply, '创建会话失败', 500);
-    }
-
     try {
-      // 向机器发送启动浏览器实例的请求
-      request.log.info(`向机器 ${machine.id} 发送启动浏览器请求 (sessionId: ${session.id})`);
-
-      const result = await connectionManager.launchBrowser(machine.id, session.id, options);
-
-      request.log.info('启动浏览器结果: '+JSON.stringify(result));
-
-      // 更新会话记录
-      const now = new Date();
-      await SessionModel.update(session.id, {
-        machine_id: machine.id,
-        port: result.port,
-        status: SessionStatus.CREATED, // 创建状态，而不是连接状态，等待用户连接
-        start_time: now, // 设置开始时间，确保持续时间计算正确
-      });
-
-      request.log.info(`会话已创建并设置开始时间 (${session.id}): ${now.toISOString()}`);
-
-      // 触发 Webhook 事件
-      await createWebhookEvent(userId, WebhookEventType.SESSION_CREATED, {
-        session_id: session.id,
-        created_at: session.created_at,
-      });
-
-      request.log.info(`原始 WebSocket 端点: ${result.browser_ws_endpoint}`);
-
-      // 构建返回给用户的 WebSocket 端点
-      let directUrl;
-
-      // 如果配置了公共访问的机器端点，优先使用该端点
-      if (env.PUBLIC_MACHINE_ENDPOINT) {
-        directUrl = `ws://${env.PUBLIC_MACHINE_ENDPOINT}?sessionId=${session.id}`;
-        request.log.info(`使用公共端点构建 WebSocket 端点: ${directUrl}`);
-      } else {
-        // 否则使用机器的实际IP地址和端口
-        const machineIp = machine.ip || 'localhost';
-        // 使用机器的实际代理端口，如果没有则使用默认值8082
-        const proxyPort = machine.proxyPort || 8082;
-        directUrl = `ws://${machineIp}:${proxyPort}?sessionId=${session.id}`;
-        request.log.info(`使用机器IP构建 WebSocket 端点: ${directUrl}`);
-      }
-
-      request.log.info(`构建的直接 WebSocket 端点: ${directUrl}`);
-
-      // !! 新增：构建前端 Viewer URL !!
-      // 尝试从环境变量 VITE_FRONTEND_URL 获取前端地址，否则使用默认值
-      // 注意：需要确保 VITE_FRONTEND_URL 已在环境或 .env 文件中定义，并正确加载到 env 对象中
-      // 或者直接在此处硬编码前端地址
-      const frontendBaseUrl = (env as any).VITE_FRONTEND_URL || 'http://localhost:5173'; // 使用类型断言或硬编码
-      const viewerUrl = `${frontendBaseUrl}/viewer?sessionId=${session.id}`;
+      // 使用共享服务创建会话
+      const sessionResult = await createBrowserSession(userId, options);
+      
+      // 构建前端 Viewer URL
+      const frontendBaseUrl = (env as any).VITE_FRONTEND_URL || 'http://localhost:5173';
+      const viewerUrl = `${frontendBaseUrl}/viewer?sessionId=${sessionResult.sessionId}`;
       request.log.info(`构建的前端 Viewer URL: ${viewerUrl}`);
 
-      // 更新数据库中的会话记录，包含 directUrl 和 viewerUrl (可选，如果需要持久化)
-      // await SessionModel.update(session.id, { direct_url: directUrl, viewer_url: viewerUrl });
-
       return sendCreated(reply, {
-        id: session.id,
-        status: SessionStatus.CREATED, // 建议返回 CREATED 状态，表示会话已创建但等待连接
-        browserWSEndpoint: result.browser_ws_endpoint, // 原生 CDP 端点
-        directUrl: directUrl, // 指向代理 WebSocket 的 URL (支持 CDP fallback)
-        viewerUrl: viewerUrl, // !! 新增：指向前端应用的 URL !!
-        created_at: session.created_at,
-        updated_at: session.updated_at,
+        id: sessionResult.sessionId,
+        status: sessionResult.status,
+        browserWSEndpoint: sessionResult.browserWSEndpoint,
+        directUrl: sessionResult.directUrl,
+        viewerUrl: viewerUrl,
+        created_at: sessionResult.created_at,
       });
     } catch (machineError: any) {
-      // 如果与机器通信失败，更新会话状态为失败
-      await SessionModel.update(session.id, {
-        status: SessionStatus.ERROR,
-      });
-
-      // 记录错误信息
-      request.log.error(`会话错误信息: ${machineError.message}`);
-
-      request.log.error(`启动浏览器实例失败 (sessionId: ${session.id}):`, machineError);
+      request.log.error(`启动浏览器实例失败:`, machineError);
       return sendError(reply, '启动浏览器实例失败: ' + machineError.message, 500);
     }
   } catch (error: any) {

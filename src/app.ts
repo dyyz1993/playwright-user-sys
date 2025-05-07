@@ -5,6 +5,7 @@ import { runMigrations } from './models/migrations.js';
 import routes from './routes/index.js';
 import plugins from './plugins/index.js';
 import { logger } from './utils/logger.js';
+import { NativeWebSocketProxyService } from './services/native-websocket-proxy.service.js';
 
 /**
  * 重置所有机器状态
@@ -19,6 +20,9 @@ async function resetAllMachineStatus(): Promise<void> {
     logger.error('重置机器状态失败:', error);
   }
 }
+
+// 保存服务实例以便于优雅关闭
+let wsProxyService: NativeWebSocketProxyService;
 
 // 构建应用但不启动
 export async function build(): Promise<FastifyInstance> {
@@ -40,9 +44,28 @@ export async function build(): Promise<FastifyInstance> {
     await initDatabase();
   }
 
-  // 注册插件和路由
+  // 在注册任何路由之前，初始化原生WebSocket代理服务
+  wsProxyService = new NativeWebSocketProxyService(app.server);
+  logger.info('✅ 原生WebSocket代理服务已初始化');
+
+  // 注册插件
+  logger.info('开始注册插件...');
   await app.register(plugins);
+  logger.info('插件注册完成');
+
+  // 注册路由
+  logger.info('开始注册路由...');
   await app.register(routes);
+  logger.info('路由注册完成');
+
+  // 注册关闭钩子
+  app.addHook('onClose', async () => {
+    // 关闭WebSocket代理服务
+    if (wsProxyService) {
+      logger.info('正在关闭WebSocket代理服务...');
+      wsProxyService.close();
+    }
+  });
 
   return app;
 }
@@ -96,7 +119,7 @@ export async function start() {
     });
 
     // 启动 HTTP 服务器
-    await fastify.listen({ port: env.PORT, host: env.HOST });
+    await fastify.listen({ port: env.PORT, host: '0.0.0.0' });
 
     logger.info(`✅ HTTP 服务器已启动: http://${env.HOST}:${env.PORT}`);
     logger.info(`✅ gRPC 服务器已启动: ${env.HOST}:${grpcPort}`);

@@ -10,7 +10,7 @@ import cookie from '@fastify/cookie';
 import session from '@fastify/session';
 import flash from '@fastify/flash';
 import formbody from '@fastify/formbody';
-import swaggerPlugin from './swagger.plugin.js';
+import swagger from './swagger.plugin.js';
 import authPlugin from './auth.plugin.js';
 import errorHandlerPlugin from './error-handler.plugin.js';
 import contentTypeParserPlugin from './content-type-parser.plugin.js';
@@ -19,8 +19,13 @@ import ejs from 'ejs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../config/index.js';
+import { logger } from '../utils/logger.js';
 
 export default fp(async function (fastify: FastifyInstance) {
+  logger.info('开始注册所有插件...');
+  
+
+  
   // 注册 CORS 插件
   await fastify.register(cors, {
     origin: true,
@@ -52,7 +57,7 @@ export default fp(async function (fastify: FastifyInstance) {
   await fastify.register(requestLoggerMiddleware);
 
   // 注册 Swagger 插件
-  await fastify.register(swaggerPlugin);
+  await fastify.register(swagger);
 
   // 获取当前文件的目录路径
   const __filename = fileURLToPath(import.meta.url);
@@ -100,4 +105,6 @@ export default fp(async function (fastify: FastifyInstance) {
     prefix: '/screenshots/',
     decorateReply: false // 避免与上面的静态文件插件冲突
   });
+  
+  logger.info('所有插件注册完成');
 });

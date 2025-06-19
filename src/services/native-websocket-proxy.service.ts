@@ -14,6 +14,9 @@ const wsConnectQuerySchema = z.object({
   width: z.coerce.number().optional(),
   height: z.coerce.number().optional(),
   proxy: z.string().optional(),
+  userAgent: z.string().optional(),
+  cookies: z.record(z.string(), z.string()).optional(),
+  localStorage: z.record(z.string(), z.string()).optional(),
 });
 
 export class NativeWebSocketProxyService {
@@ -126,10 +129,13 @@ export class NativeWebSocketProxyService {
       
       // 创建会话
       const sessionOptions = {
+        userAgent: validatedParams.userAgent,
+        proxy: validatedParams.proxy,
+        cookies: validatedParams.cookies,
+        localStorage: validatedParams.localStorage,
         viewport: validatedParams.width && validatedParams.height ? 
           { width: validatedParams.width, height: validatedParams.height } : 
-          undefined,
-        proxy: validatedParams.proxy
+          undefined
       };
 
       logger.info(`为用户 ${userId} 创建浏览器会话`);
@@ -260,4 +266,4 @@ export class NativeWebSocketProxyService {
     
     logger.info('WebSocket代理服务已关闭');
   }
-} 
+}

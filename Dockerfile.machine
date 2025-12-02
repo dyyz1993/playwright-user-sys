@@ -87,20 +87,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     dbus \
     dbus-x11 \
     && apt-get clean \
-    # 添加 Google Chrome 仓库
-    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update -qq \
-    # 安装 Chrome
-    && echo "Installing Google Chrome..." \
-    && apt-get install -y google-chrome-stable \
-    && echo "Chrome installation complete." \
-    # 打印 Chrome 版本以确认
-    && google-chrome-stable --version \
-
     # 清理不必要的文件以减小镜像大小
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/chrome-download/*
+    && rm -rf /var/lib/apt/lists/*
 
 # 创建文件目录
 RUN mkdir -p /files
@@ -124,6 +112,19 @@ RUN mkdir -p /app/dist/data/screenshots
 
 # 创建启动脚本
 RUN echo '#!/bin/bash\n\
+# 检查 Chrome 文件是否存在\n\
+if [ ! -d "/opt/chrome" ] || [ ! -f "/opt/chrome/chrome" ]; then\n\
+    echo "警告: 未找到 Chrome 浏览器文件！"\n\
+    echo "请通过卷映射将 Chrome 文件挂载到 /opt/chrome 目录"\n\
+    echo "例如: docker run -v /path/to/your/chrome:/opt/chrome ..."\n\
+    echo "容器将在 30 秒后退出..."\n\
+    sleep 30\n\
+    exit 1\n\
+fi\n\
+\n\
+# 设置 Chrome 可执行权限\n\
+chmod +x /opt/chrome/chrome\n\
+\n\
 # 启动 Xvfb\n\
 Xvfb :10 -screen 0 1920x1080x8 -ac &\n\
 # 等待 Xvfb 启动\n\

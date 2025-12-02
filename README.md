@@ -103,6 +103,46 @@ docker-compose up -d
 docker-compose -f docker-compose.full.yml up -d
 ```
 
+### Chrome 文件配置
+
+对于实例机器（Dockerfile.machine），需要提供Chrome浏览器文件。有两种方式：
+
+1. **使用卷映射（推荐）**：
+
+```bash
+# 准备Chrome文件目录
+mkdir -p ./chrome
+# 将Chrome浏览器文件复制到chrome目录，确保包含chrome可执行文件
+
+# 运行容器时映射Chrome目录
+docker run -d \
+  --name playwright-machine \
+  -v /path/to/your/chrome:/opt/chrome \
+  -e MANAGEMENT_SERVER_URL=http://your-management-server:3000 \
+  -p 8082:8082 \
+  your-registry/playwright-user-sys:machine
+```
+
+2. **使用Docker Compose**：
+
+```yaml
+version: '3.8'
+services:
+  machine:
+    image: your-registry/playwright-user-sys:machine
+    volumes:
+      - ./chrome:/opt/chrome:ro  # 只读映射Chrome目录
+    environment:
+      - MANAGEMENT_SERVER_URL=http://manager:3000
+    ports:
+      - "8082:8082"
+```
+
+**注意**：
+- Chrome目录必须包含名为`chrome`的可执行文件
+- 如果没有提供Chrome文件，容器启动时会显示警告并在30秒后退出
+- 推荐使用官方Chrome或Chromium浏览器的稳定版本
+
 ## API 文档
 
 启动服务器后，可以通过以下地址访问 API 文档：

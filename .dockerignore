@@ -1,34 +1,71 @@
+# Dependencies
 node_modules
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-.git
-.github
-.gitignore
-.vscode
-.idea
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist
+build
+*.tsbuildinfo
+
+# Environment variables
 .env
 .env.local
-.env.development
-.env.test
-.env.production
-*.md
-!README.md
-data
-dist
-coverage
-logs
-*.log
+.env.development.local
+.env.test.local
+.env.production.local
 
-# 排除 Docker 相关文件
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docker
 Dockerfile*
 docker-compose*
 .dockerignore
 
-# 排除脚本文件
-*.sh
+# CI/CD
+.github
 
-# 不排除预编译的 SQLite3 文件和选择脚本
-!prebuilt/
-!prebuilt-sqlite3/
-!select-platform.js
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# Temporary folders
+tmp
+temp
+
+# Data directories
+data
+screenshots
+
+# Cache
+.cache
+.parcel-cache
+
+# Testing
+.nyc_output
+test-results
+playwright-report

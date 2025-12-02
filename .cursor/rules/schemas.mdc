@@ -3,3 +3,10 @@ description:
 globs:
 alwaysApply: false
 ---
+# schemas 目录规则
+
+- 该目录用于存放数据校验 Schema，通常使用如 Zod、Joi 等库定义请求体、查询参数等的结构和类型。
+- 命名规范为 `xxx.schema.ts`，如 `user.schema.ts`、`session.schema.ts`。
+- Schema 用于在控制器或路由层面对输入数据进行校验，确保数据格式的正确性。
+- [common.schema.ts](mdc:src/schemas/common.schema.ts) 可能包含通用的 Schema 定义。
+- [index.ts](mdc:src/schemas/index.ts) 可能用于导出所有 Schema。

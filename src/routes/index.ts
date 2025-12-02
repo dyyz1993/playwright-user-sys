@@ -6,6 +6,7 @@ import machineRoutes from './machine.routes.js';
 import adminRoutes from './admin.routes.js';
 import adminApiRoutes from './admin-api.routes.js';
 import adminApiAuthRoutes from './admin-api-auth.routes.js';
+import fileRoutes from './file.routes.js';
 
 export default async function routes(fastify: FastifyInstance) {
   // 注册所有路由
@@ -13,6 +14,7 @@ export default async function routes(fastify: FastifyInstance) {
   fastify.register(userRoutes, { prefix: '/api/users' });
   fastify.register(sessionRoutes, { prefix: '/api/sessions' });
   fastify.register(machineRoutes, { prefix: '/api/machines' });
+  fastify.register(fileRoutes);
   
   
   // 注册管理后台路由

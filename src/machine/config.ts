@@ -1,8 +1,22 @@
 import { v4 as uuidv4 } from 'uuid';
 import os from 'os';
+import path from 'path';
+import fs from 'fs';
 
 // 加载环境变量
 const env = process.env;
+
+// 确保数据目录存在
+const dataDir = env.DATA_DIR || path.join(process.cwd(), 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// 确保临时文件目录存在
+const tempDir = path.join(dataDir, 'temp');
+if (!fs.existsSync(tempDir)) {
+  fs.mkdirSync(tempDir, { recursive: true });
+}
 
 export const CONFIG = {
   // 机器标识
@@ -33,7 +47,10 @@ export const CONFIG = {
   sessionActivityTimeout: parseInt(env.SESSION_ACTIVITY_TIMEOUT || '10000', 10), // 10秒
 
   // 数据目录
-  dataDir: env.DATA_DIR || process.cwd() + '/data'
+  dataDir: dataDir,
+  
+  // 临时文件目录（用于文件上传）
+  tempDir: tempDir
 };
 
 export default CONFIG;

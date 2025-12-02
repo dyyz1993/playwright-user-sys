@@ -29,6 +29,9 @@
 - API 文档（Swagger 和 Scalar）
 - Docker 部署支持
 - SQLite/MySQL 数据库支持
+- 文件上传和管理功能
+- CDP 文件上传支持
+- 分布式文件上传支持
 
 ## 技术栈
 
@@ -107,6 +110,112 @@ docker-compose -f docker-compose.full.yml up -d
 - Swagger UI: http://localhost:3000/docs
 - Scalar API 参考: http://localhost:3000/reference
 
+## 文件上传功能
+
+系统支持文件上传功能，管理员可以通过以下方式上传和管理文件：
+
+### 通过管理界面上传
+
+1. 登录管理后台
+2. 点击左侧菜单的"文件上传"
+3. 选择要上传的文件
+4. 点击"上传文件"按钮
+
+### 通过 API 上传
+
+```bash
+# 使用 curl 上传文件
+curl -X POST http://localhost:3000/api/files/upload \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -F "file=@/path/to/your/file.txt"
+```
+
+### 访问上传的文件
+
+上传的文件可以通过以下 URL 访问：
+```
+http://localhost:3000/uploads/filename.ext
+```
+
+## CDP 文件上传支持
+
+当在云端部署浏览器实例时，本地文件上传需要特殊处理。系统提供了专门的机制来支持通过 Chrome DevTools Protocol (CDP) 进行文件上传：
+
+### 工作原理
+
+1. **文件上传**：本地文件首先通过 API 上传到云端服务器的临时目录
+2. **路径映射**：服务器返回文件在云端的绝对路径
+3. **CDP 操作**：使用 CDP 的 `DOM.setFileInputFiles` 方法设置文件输入
+4. **文件访问**：云端浏览器可以直接访问服务器上的文件
+
+### 使用示例
+
+```javascript
+// 1. 上传本地文件到服务器
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+
+const uploadResponse = await fetch('/api/files/upload-temp', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+  },
+  body: formData,
+});
+
+const uploadData = await uploadResponse.json();
+const serverFilePath = uploadData.data.filepath;
+
+// 2. 使用 CDP 设置文件输入
+const cdp = await page.target().createCDPSession();
+await cdp.send('DOM.setFileInputFiles', {
+  objectId: fileInputElementId,
+  files: [serverFilePath]  // 服务器上的文件路径
+});
+```
+
+### API 端点
+
+- `POST /api/files/upload-temp` - 上传临时文件用于 CDP 操作
+- `POST /api/files/cleanup-temp` - 清理临时文件
+
+## 分布式文件上传支持
+
+在分布式架构中，管理端和机器端运行在不同的物理机器上。传统的文件上传方式在这种架构下无法正常工作，因为文件存储在管理端机器上，机器端无法直接访问。
+
+系统提供了通过 WebSocket 直接将文件从客户端传输到机器端的解决方案：
+
+### 工作原理
+
+1. **直接传输**：客户端通过 WebSocket 将文件直接传输到机器端
+2. **本地存储**：机器端将文件存储在本地临时目录
+3. **CDP 操作**：使用 CDP 的 `DOM.setFileInputFiles` 方法设置文件输入
+4. **无需管理端**：完全绕过管理端的文件存储
+
+### 使用示例
+
+```javascript
+import DistributedFileUploader from './examples/complete-distributed-file-upload.js';
+
+// 1. 连接到机器端
+const uploader = new DistributedFileUploader('ws://machine-endpoint:8082');
+await uploader.connect();
+
+// 2. 创建会话
+await uploader.createSession();
+
+// 3. 上传文件（直接传输到机器端）
+const uploadResult = await uploader.uploadFile('./local-file.txt', 'remote-file.txt');
+
+// 4. 设置文件输入（可选）
+await uploader.setFileInput('input[type="file"]', uploadResult.filepath);
+
+// 5. 关闭会话
+await uploader.closeSession();
+```
+
+详细文档请参考 [分布式文件上传文档](./docs/distributed-file-upload.md)
+
 ## 测试
 
 系统包含了一系列测试脚本，位于 `tests` 目录下：
@@ -127,70 +236,3 @@ pnpm test:api
 # 运行所有测试
 pnpm test:all
 ```
-
-测试结果将保存在 `logs` 目录中。更多测试相关信息请参考 [tests/TEST-README.md](tests/TEST-README.md)。
-
-## 配置
-
-通过 `.env` 文件配置系统：
-
-```
-# 服务器配置
-PORT=3000
-HOST=localhost
-NODE_ENV=development
-
-# 数据库配置
-DB_TYPE=sqlite # 或 mysql
-DB_NAME=playwright_user_sys
-DB_PATH=./data/db.sqlite # 仅 SQLite 使用
-
-# MySQL 配置 (仅在 DB_TYPE=mysql 时使用)
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=password
-
-# JWT 配置
-JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=1d
-
-# 管理员初始账号
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=REDACTED_ADMIN_PASS
-
-# 实例配置
-INSTANCE_TIMEOUT=60000 # 毫秒，实例超时时间
-```
-
-## 用户端 SDK 使用示例
-
-```javascript
-const client = new Client({
-    APIKey: process.env.API_KEY,
-});
-
-// 创建会话
-const session = await client.sessions.create({
-    // 可选参数
-    userAgent: 'Mozilla/5.0 ...',
-    proxy: 'http://proxy.example.com:8080',
-    cookies: { key: 'value' },
-    localStorage: { key: 'value' },
-    viewport: { width: 1920, height: 1080 }
-});
-
-// 连接到浏览器
-const browser = await puppeteer.connect({
-    browserWSEndpoint: `wss://connect.server.dev?apiKey=${process.env.API_KEY}&sessionId=${session.id}`,
-});
-
-// 使用浏览器...
-
-// 释放会话
-await client.sessions.release(session.id);
-```
-
-## 许可证
-
-ISC

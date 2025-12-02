@@ -106,5 +106,19 @@ export default fp(async function (fastify: FastifyInstance) {
     decorateReply: false // 避免与上面的静态文件插件冲突
   });
   
+  // 注册上传文件静态文件插件
+  await fastify.register(staticFiles, {
+    root: path.join(rootDir, 'data/uploads'),
+    prefix: '/uploads/',
+    decorateReply: false // 避免与其他静态文件插件冲突
+  });
+  
+  // 注册临时文件静态文件插件
+  await fastify.register(staticFiles, {
+    root: path.join(rootDir, 'data/temp'),
+    prefix: '/temp/',
+    decorateReply: false // 避免与其他静态文件插件冲突
+  });
+  
   logger.info('所有插件注册完成');
 });

@@ -3,6 +3,9 @@ import { browserService, SessionConfig } from "../browser.service.js";
 import { Page, Frame } from "puppeteer-core";
 import { logger } from "../../utils/logger.js";
 import { sessionFocusEmitter } from "../utils.js";
+import fs from "fs";
+import path from "path";
+import { CONFIG } from "../config.js";
 
 // !! 扩展 Window 接口以包含自定义函数 !!
 declare global {
@@ -184,6 +187,117 @@ export async function handleEventsConnection(
   }
 }
 
+// --- 文件上传处理函数 ---
+async function handleFileUploadStart(
+  ws: WebSocket,
+  sessionId: string,
+  data: any
+): Promise<void> {
+  try {
+    logger.info(`Starting file upload for session ${sessionId}: ${data.filename}`);
+    
+    // 确保会话临时目录存在
+    const sessionTempDir = path.join(CONFIG.tempDir, sessionId);
+    if (!fs.existsSync(sessionTempDir)) {
+      fs.mkdirSync(sessionTempDir, { recursive: true });
+    }
+    
+    // 生成唯一文件名
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const fileName = uniqueSuffix + '-' + data.filename;
+    const filePath = path.join(sessionTempDir, fileName);
+    
+    // 存储上传状态
+    const uploadState = {
+      filePath: filePath,
+      fileName: data.filename,
+      totalChunks: data.totalChunks,
+      receivedChunks: 0,
+      fileSize: data.size
+    };
+    
+    // 将上传状态存储在连接信息中
+    const connectionInfo = activeEventConnections.get(ws);
+    if (connectionInfo) {
+      if (!connectionInfo.config.uploadStates) {
+        connectionInfo.config.uploadStates = {};
+      }
+      connectionInfo.config.uploadStates[fileName] = uploadState;
+    }
+    
+    logger.info(`File upload started for session ${sessionId}: ${filePath}`);
+    
+    // 发送响应
+    sendResponse(ws, 'fileUploadStart', {
+      success: true,
+      filepath: filePath,
+      filename: data.filename,
+      size: data.size
+    });
+  } catch (error) {
+    logger.error(`Failed to start file upload for session ${sessionId}:`, error);
+    sendResponse(ws, 'fileUploadStart', {
+      success: false,
+      error: (error as Error).message
+    });
+  }
+}
+
+async function handleFileUploadChunk(
+  ws: WebSocket,
+  sessionId: string,
+  data: any
+): Promise<void> {
+  try {
+    logger.info(`Receiving file chunk ${data.chunkIndex} for session ${sessionId}`);
+    
+    const connectionInfo = activeEventConnections.get(ws);
+    if (!connectionInfo) {
+      throw new Error('Connection info not found');
+    }
+    
+    // 查找正在进行的上传
+    const uploadStates = connectionInfo.config.uploadStates;
+    if (!uploadStates) {
+      throw new Error('No active file upload');
+    }
+    
+    // 获取文件名（从上传状态中获取第一个）
+    const fileName = Object.keys(uploadStates)[0];
+    if (!fileName) {
+      throw new Error('No active file upload');
+    }
+    
+    const uploadState = uploadStates[fileName];
+    
+    // 将块数据追加到文件
+    const chunkBuffer = Buffer.from(data.chunk, 'base64');
+    fs.appendFileSync(uploadState.filePath, chunkBuffer);
+    
+    uploadState.receivedChunks++;
+    
+    logger.info(`Received chunk ${data.chunkIndex + 1}/${uploadState.totalChunks} for session ${sessionId}`);
+    
+    // 如果是最后一个块，清理上传状态
+    if (data.isLast) {
+      delete uploadStates[fileName];
+      logger.info(`File upload completed for session ${sessionId}: ${uploadState.filePath}`);
+    }
+    
+    // 发送响应
+    sendResponse(ws, 'fileUploadChunk', {
+      success: true,
+      chunkIndex: data.chunkIndex
+    });
+  } catch (error) {
+    logger.error(`Failed to handle file chunk for session ${sessionId}:`, error);
+    sendResponse(ws, 'fileUploadChunk', {
+      success: false,
+      error: (error as Error).message
+    });
+  }
+}
+
 // --- 页面内 Focus 监听器辅助函数 (确保幂等性) ---
 async function handleRawFocusEvent(
   page: Page,
@@ -275,6 +389,15 @@ async function handleIncomingEventMessage(
     logger.debug(`Received event from session ${sessionId}:`, eventType, data);
 
     switch (eventType) {
+      // --- 文件上传 ---
+      case "fileUploadStart":
+        await handleFileUploadStart(ws, sessionId, data);
+        break;
+        
+      case "fileUploadChunk":
+        await handleFileUploadChunk(ws, sessionId, data);
+        break;
+        
       // --- 配置更新 ---
       case "updateClip":
       // --- 程序化接口 ---

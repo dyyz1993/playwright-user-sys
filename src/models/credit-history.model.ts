@@ -1,4 +1,4 @@
-import { db } from '../database/index.js';
+import { db } from '../config/database.js';
 
 // 点数历史记录模型
 export interface CreditHistory {

@@ -54,6 +54,17 @@ export interface SessionConfig {
     | "form_input"
     | string;
   touchMode?: "touchpad" | "touch";
+  
+  // 文件上传状态
+  uploadStates?: {
+    [filename: string]: {
+      filePath: string;
+      fileName: string;
+      totalChunks: number;
+      receivedChunks: number;
+      fileSize: number;
+    }
+  };
 }
 
 // 浏览器选项接口

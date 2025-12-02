@@ -3,3 +3,12 @@ description:
 globs:
 alwaysApply: false
 ---
+# plugins 目录规则
+
+- 该目录用于存放 Fastify 插件，用于扩展 Fastify 框架的功能。
+- 命名规范通常为 `xxx.plugin.ts`，如 `auth.plugin.ts`、`swagger.plugin.ts`。
+- 插件可以封装认证、日志、错误处理、文档生成等横切关注点。
+- [index.ts](mdc:src/plugins/index.ts) 通常用于注册和管理所有插件。
+- [auth.plugin.ts](mdc:src/plugins/auth.plugin.ts) 实现了认证逻辑。
+- [error-handler.plugin.ts](mdc:src/plugins/error-handler.plugin.ts) 负责统一错误处理。
+- [swagger.plugin.ts](mdc:src/plugins/swagger.plugin.ts) 用于集成 Swagger API 文档。

@@ -3,3 +3,9 @@ description:
 globs:
 alwaysApply: false
 ---
+# modules 目录规则
+
+- 该目录旨在按功能模块组织代码，提升项目的可维护性和扩展性。
+- 每个子目录代表一个独立的业务模块，如 `admin`、`auth`、`user` 等。
+- 模块内部可以包含自己的 controllers、services、routes、models 等。
+- 目前该目录下的子目录为空，但提供了未来按模块划分代码的基础结构。

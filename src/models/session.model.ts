@@ -1,6 +1,7 @@
 import { db } from '../config/database.js';
 import { v4 as uuidv4 } from 'uuid';
 import { SessionStatus, SessionCreateOptions, PaginationQuery, PaginatedResponse } from '../types/index.js';
+import { logger } from '../utils/logger.js';
 
 export interface Session {
   id: string;
@@ -64,10 +65,10 @@ export class SessionModel {
   static async markMachineSessionsAsDisconnected(machineId: string): Promise<number> {
     logger.info(`数据库层面：标记机器 ${machineId} 的所有活跃会话为 DISCONNECTED`);
     try {
-      const result = await this.query()
+      const result = await db('sessions')
         .where('machine_id', machineId)
         .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED])
-        .patch({
+        .update({
           status: SessionStatus.DISCONNECTED,
           updated_at: new Date() // 自动更新时间戳
         });

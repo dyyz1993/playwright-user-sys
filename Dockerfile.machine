@@ -87,15 +87,13 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     dbus \
     dbus-x11 \
     && apt-get clean \
-    && mkdir -p /tmp/chrome-download \
-    # 安装 Chrome
-    && CHROME_DEB="google-chrome-stable_135.0.7049.114-1_amd64.deb" \
-    && CHROME_URL="http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/${CHROME_DEB}" \
-    && echo "Attempting to download Chrome from ${CHROME_URL}" \
-    && wget -q -P /tmp/chrome-download "${CHROME_URL}" \
-    && echo "Download complete. Installing Chrome..." \
+    # 添加 Google Chrome 仓库
+    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update -qq \
-    && apt-get install -y /tmp/chrome-download/google-chrome-stable_*.deb \
+    # 安装 Chrome
+    && echo "Installing Google Chrome..." \
+    && apt-get install -y google-chrome-stable \
     && echo "Chrome installation complete." \
     # 打印 Chrome 版本以确认
     && google-chrome-stable --version \

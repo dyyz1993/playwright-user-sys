@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import fp from 'fastify-plugin';
 import { verifyToken, extractTokenFromHeader } from '../utils/auth.js';
 import { UserModel } from '../models/user.model.js';
-import { UserRole, UserStatus } from '../types/index.js';
+import { UserRole, UserStatus } from '@shared/types/index.js';
 
 // 验证 JWT Token 中间件
 export const verifyJWT = async (request: FastifyRequest, reply: FastifyReply) => {

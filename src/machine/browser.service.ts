@@ -21,7 +21,7 @@ import {
   FingerprintGenerator,
 } from "fingerprint-generator";
 import { CONFIG } from "./config.js";
-import { logger } from "../utils/logger.js";
+import { logger } from '@shared/utils/logger.js';
 import { Buffer } from "buffer";
 import { sessionFocusEmitter } from "./utils.js";
 import puppeteerStealth from "puppeteer-extra"

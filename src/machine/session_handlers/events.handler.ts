@@ -1,7 +1,7 @@
 import { WebSocket, RawData } from "ws";
 import { browserService, SessionConfig } from "../browser.service.js";
 import { Page, Frame } from "puppeteer-core";
-import { logger } from "../../utils/logger.js";
+import { logger } from '@shared/utils/logger.js';
 import { sessionFocusEmitter } from "../utils.js";
 import fs from "fs";
 import path from "path";

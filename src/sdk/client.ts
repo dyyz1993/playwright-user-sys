@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { SessionCreateOptions, SessionStatus } from '../types/index.js';
+import { SessionCreateOptions, SessionStatus } from '@shared/types/index.js';
 
 /**
  * 会话对象接口

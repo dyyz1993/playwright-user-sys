@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { PaginationQuery, PaginatedResponse } from '../types/index.js';
+import { PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
 
 export interface OperationLog {
   id: number;

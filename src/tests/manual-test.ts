@@ -1,6 +1,6 @@
 import { UserModel } from '../models/user.model.js';
 import { generateToken, hashPassword } from '../utils/auth.js';
-import { UserRole, UserStatus } from '../types/index.js';
+import { UserRole, UserStatus } from '@shared/types/index.js';
 
 async function testAdminAuth() {
   try {

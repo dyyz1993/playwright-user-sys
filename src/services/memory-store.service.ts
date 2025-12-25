@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { MachineStatus, SessionStatus } from '../types/index.js';
+import { MachineStatus, SessionStatus } from '@shared/types/index.js';
 
 /**
  * 机器实时状态

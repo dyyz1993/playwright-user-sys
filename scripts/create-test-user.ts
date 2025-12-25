@@ -1,7 +1,7 @@
 // 使用相对路径导入
 import { db } from '../src/config/database.js';
 import { UserModel } from '../src/models/user.model.js';
-import { UserRole } from '../src/types/index.js';
+import { UserRole } from '@shared/types/index.js';
 
 // 打印当前工作目录，帮助调试
 console.log('当前工作目录:', process.cwd());

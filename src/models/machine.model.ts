@@ -1,6 +1,6 @@
 import { db } from '../config/database.js';
-import { MachineInfo, PaginationQuery, PaginatedResponse, SessionStatus } from '../types/index.js';
-import { logger } from '../utils/logger.js';
+import { MachineInfo, PaginationQuery, PaginatedResponse, SessionStatus } from '@shared/types/index.js';
+import { logger } from '@shared/utils/logger.js';
 export interface CreateMachineInput {
   id: string;
   hostname: string;

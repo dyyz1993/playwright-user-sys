@@ -15,7 +15,10 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@shared/*": ["src/shared/*"],
+      "@manager/*": ["src/manager/*"],
+      "@machine/*": ["src/machine/*"]
     }
   },
 

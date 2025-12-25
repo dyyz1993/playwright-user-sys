@@ -1,5 +1,5 @@
 import { FastifyReply } from 'fastify';
-import { ApiResponse, PaginatedResponse } from '../types/index.js';
+import { ApiResponse, PaginatedResponse } from '@shared/types/index.js';
 
 // 成功响应
 export function success<T>(data: T, message?: string): ApiResponse<T> {

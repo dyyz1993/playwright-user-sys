@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
 import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
-import { SessionStatus } from '../../types/index.js';
+import { SessionStatus } from '@shared/types/index.js';
 import { checkSessionCredits } from '../../services/credits-monitor.service.js';
 
 // 模拟 connectionManager

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { UserModel, CreateUserInput, UpdateUserInput } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { sendSuccess, sendError, sendCreated, sendNoContent, sendPaginated } from '../utils/response.js';
-import { UserRole, PaginationQuery, IdParams, AuthenticatedRequest, AuthenticatedRequestWithParams } from '../types/index.js';
+import { UserRole, PaginationQuery, IdParams, AuthenticatedRequest, AuthenticatedRequestWithParams } from '@shared/types/index.js';
 import {
   createUserRequestSchema,
   updateUserRequestSchema,

@@ -3,7 +3,7 @@ import { build } from '../helpers/app.js';
 import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
 import { generateToken, hashPassword } from '../../utils/auth.js';
-import { UserRole, UserStatus } from '../../types/index.js';
+import { UserRole, UserStatus } from '@shared/types/index.js';
 import { v4 as uuidv4 } from 'uuid';
 
 describe('管理员会话管理功能测试', () => {

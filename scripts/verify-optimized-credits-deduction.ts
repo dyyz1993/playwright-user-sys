@@ -7,9 +7,9 @@
 
 import { UserModel } from '../src/models/user.model.js';
 import { SessionModel } from '../src/models/session.model.js';
-import { SessionStatus } from '../src/types/index.js';
+import { SessionStatus } from '@shared/types/index.js';
 import { db } from '../src/config/database.js';
-import { WebhookEventType } from '../src/types/index.js';
+import { WebhookEventType } from '@shared/types/index.js';
 
 // 模拟模块
 import * as machineGrpcService from '../src/services/machine-grpc.service.js';

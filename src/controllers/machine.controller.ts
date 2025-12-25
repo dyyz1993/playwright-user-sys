@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { MachineModel } from '../models/machine.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { sendSuccess, sendError, sendCreated, sendPaginated } from '../utils/response.js';
-import { PaginationQuery } from '../types/index.js';
+import { PaginationQuery } from '@shared/types/index.js';
 import { registerMachineRequestSchema, updateMachineStatusRequestSchema, paginationQuerySchema } from '../schemas/index.js';
 
 

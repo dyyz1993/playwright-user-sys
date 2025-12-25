@@ -3,7 +3,7 @@ import { build } from '../helpers/app.js';
 import { UserModel } from '../../models/user.model.js';
 import { MachineModel } from '../../models/machine.model.js';
 import { generateToken, hashPassword } from '../../utils/auth.js';
-import { UserRole, UserStatus } from '../../types/index.js';
+import { UserRole, UserStatus } from '@shared/types/index.js';
 import { v4 as uuidv4 } from 'uuid';
 
 describe('管理员机器管理功能测试', () => {

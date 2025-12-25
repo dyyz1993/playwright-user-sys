@@ -1,8 +1,8 @@
 import { SessionModel } from '../models/session.model.js';
 import { MachineModel } from '../models/machine.model.js';
 import { UserModel } from '../models/user.model.js';
-import { SessionStatus, SessionCreateOptions, WebhookEventType } from '../types/index.js';
-import { logger } from '../utils/logger.js';
+import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/types/index.js';
+import { logger } from '@shared/utils/logger.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { env } from '../config/env.js';
 

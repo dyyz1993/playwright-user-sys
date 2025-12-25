@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { WebhookEventType, PaginationQuery, PaginatedResponse } from '../types/index.js';
+import { WebhookEventType, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
 
 export interface WebhookEvent {
   id: number;

@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { UserModel } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
-import { UserRole } from '../types/index.js';
+import { UserRole } from '@shared/types/index.js';
 import { compare } from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { zodToJsonSchema } from 'zod-to-json-schema';

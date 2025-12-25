@@ -1,7 +1,7 @@
 import { db } from '../config/database.js';
 import { v4 as uuidv4 } from 'uuid';
-import { SessionStatus, SessionCreateOptions, PaginationQuery, PaginatedResponse } from '../types/index.js';
-import { logger } from '../utils/logger.js';
+import { SessionStatus, SessionCreateOptions, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
+import { logger } from '@shared/utils/logger.js';
 
 export interface Session {
   id: string;
@@ -171,7 +171,7 @@ export class SessionModel {
   // 标记会话已断开
   static async markDisconnected(id: string, duration: number): Promise<Session | null> {
     // 使用 logger 而不是 console.log
-    const { logger } = await import('../utils/logger.js');
+    const { logger } = await import('@shared/utils/logger.js');
 
     // 如果提供的持续时间为0，尝试根据开始时间计算
     let finalDuration = duration;
@@ -595,7 +595,7 @@ export class SessionModel {
 
             // 触发 Webhook 事件
             const { createWebhookEvent } = await import('../utils/webhook.js');
-            const { WebhookEventType } = await import('../types/index.js');
+            const { WebhookEventType } = await import('@shared/types/index.js');
             await createWebhookEvent(session.user_id, WebhookEventType.SESSION_EXPIRED, {
               session_id: session.id,
               duration,

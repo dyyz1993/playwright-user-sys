@@ -1,9 +1,9 @@
 import { MachineModel } from '../models/machine.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { UserModel } from '../models/user.model.js';
-import { SessionStatus, WebhookEventType } from '../types/index.js';
+import { SessionStatus, WebhookEventType } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@shared/utils/logger.js';
 import { connectionManager } from './machine-grpc.service.js';
 import { memoryStore } from './memory-store.service.js';
 

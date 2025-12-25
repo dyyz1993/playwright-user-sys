@@ -4,7 +4,7 @@ import { db, initDatabase } from './config/database.js';
 import { runMigrations } from './models/migrations.js';
 import routes from './routes/index.js';
 import plugins from './plugins/index.js';
-import { logger } from './utils/logger.js';
+import { logger } from '@shared/utils/logger.js';
 import { NativeWebSocketProxyService } from './services/native-websocket-proxy.service.js';
 
 /**

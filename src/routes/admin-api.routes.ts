@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { UserModel } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
-import { UserRole, UserStatus } from '../types/index.js';
+import { UserRole, UserStatus } from '@shared/types/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import { hash } from 'bcryptjs';
 import { zodToJsonSchema } from 'zod-to-json-schema';

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserRole, UserStatus } from '../types/index.js';
+import { UserRole, UserStatus } from '@shared/types/index.js';
 import { successResponseSchema } from './common.schema.js';
 
 // 管理员登录请求模式

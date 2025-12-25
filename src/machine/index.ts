@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@shared/utils/logger.js';
 import { browserService } from './browser.service.js';
 import { proxyService } from './proxy.service.js';
 import grpcService, { grpcClient, startGrpcServer } from './grpc.service.js';

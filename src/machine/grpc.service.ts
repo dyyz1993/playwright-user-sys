@@ -8,7 +8,7 @@ import retry from 'async-retry';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { browserService } from './browser.service.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@shared/utils/logger.js';
 
 // 存储上一次CPU使用情况，用于计算使用率
 let lastCpuInfo: { idle: number; total: number } | null = null;

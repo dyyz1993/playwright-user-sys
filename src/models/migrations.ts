@@ -1,6 +1,6 @@
 import { db } from '../config/database.js';
 import { env } from '../config/env.js';
-import { UserRole, UserStatus } from '../types/index.js';
+import { UserRole, UserStatus } from '@shared/types/index.js';
 import { hashPassword } from '../utils/auth.js';
 
 // 创建数据库表

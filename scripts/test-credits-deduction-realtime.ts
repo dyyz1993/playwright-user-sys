@@ -7,7 +7,7 @@
 
 import { UserModel } from '../src/models/user.model.js';
 import { SessionModel } from '../src/models/session.model.js';
-import { SessionStatus } from '../src/types/index.js';
+import { SessionStatus } from '@shared/types/index.js';
 
 // 模拟 machine-grpc.service.js 模块
 jest.mock('../src/services/machine-grpc.service.js', () => ({

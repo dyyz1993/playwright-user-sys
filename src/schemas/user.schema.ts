@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserRole, UserStatus } from '../types/index.js';
+import { UserRole, UserStatus } from '@shared/types/index.js';
 import { successResponseSchema, timestampSchema } from './common.schema.js';
 
 // 用户基本信息模式

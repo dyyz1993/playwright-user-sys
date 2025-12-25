@@ -6,7 +6,7 @@
 
 import { UserModel } from '../src/models/user.model.js';
 import { SessionModel } from '../src/models/session.model.js';
-import { SessionStatus } from '../src/types/index.js';
+import { SessionStatus } from '@shared/types/index.js';
 import { db } from '../src/config/database.js';
 
 async function sleep(ms: number): Promise<void> {

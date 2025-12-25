@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { UserRole, UserStatus, PaginationQuery, PaginatedResponse } from '../types/index.js';
+import { UserRole, UserStatus, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import { hashPassword, comparePassword } from '../utils/auth.js';
 

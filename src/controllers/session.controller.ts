@@ -4,7 +4,7 @@ import { SessionModel } from '../models/session.model.js';
 import { MachineModel } from '../models/machine.model.js';
 import { UserModel } from '../models/user.model.js';
 import { sendSuccess, sendError, sendCreated } from '../utils/response.js';
-import { SessionStatus, SessionCreateOptions, PaginationQuery, WebhookEventType } from '../types/index.js';
+import { SessionStatus, SessionCreateOptions, PaginationQuery, WebhookEventType } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { createSessionRequestSchema, paginationQuerySchema } from '../schemas/index.js';
 import { env } from '../config/env.js';

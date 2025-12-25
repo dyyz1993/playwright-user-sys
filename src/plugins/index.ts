@@ -19,7 +19,7 @@ import ejs from 'ejs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../config/index.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@shared/utils/logger.js';
 
 export default fp(async function (fastify: FastifyInstance) {
   logger.info('开始注册所有插件...');

@@ -3,7 +3,7 @@ import { build } from '../../app.js';
 import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
 import { v4 as uuidv4 } from 'uuid';
-import { SessionStatus } from '../../types/index.js';
+import { SessionStatus } from '@shared/types/index.js';
 
 describe('点数扣除集成测试', () => {
   let app: any;

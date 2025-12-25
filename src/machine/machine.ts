@@ -1,5 +1,5 @@
 import machineServer from './index.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@shared/utils/logger.js';
 import { existsSync } from 'fs';
 
 // 处理未捕获的异常

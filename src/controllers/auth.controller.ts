@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { UserModel } from '../models/user.model.js';
 import { generateToken, comparePassword } from '../utils/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
-import { UserStatus } from '../types/index.js';
+import { UserStatus } from '@shared/types/index.js';
 import { adminLoginRequestSchema } from '../schemas/admin.schema.js';
 
 

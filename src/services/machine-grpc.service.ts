@@ -3,13 +3,13 @@ import * as protoLoader from '@grpc/proto-loader';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@shared/utils/logger.js';
 import { MachineModel } from '../models/machine.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { UserModel } from '../models/user.model.js';
-import { SessionStatus } from '../types/index.js';
+import { SessionStatus } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
-import { WebhookEventType } from '../types/index.js';
+import { WebhookEventType } from '@shared/types/index.js';
 
 // 获取当前文件的目录
 const __filename = fileURLToPath(import.meta.url);

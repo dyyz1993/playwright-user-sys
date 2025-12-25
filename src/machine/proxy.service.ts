@@ -3,7 +3,7 @@ import httpProxy from 'http-proxy';
 import { Socket } from 'net';
 import { CONFIG } from './config.js';
 import { sessionManager } from './browser.service.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@shared/utils/logger.js';
 
 // !! 导入新的处理器函数 !!
 import { handleEventsConnection } from './session_handlers/events.handler.js';

@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws';
 import { browserService, SessionConfig } from '../browser.service.js';
 import { Page, ScreenshotOptions } from 'puppeteer-core';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@shared/utils/logger.js';
 
 // !! 存储活跃的流连接、Page、定时器以及本地缓存的配置 !!
 interface StreamInfo {

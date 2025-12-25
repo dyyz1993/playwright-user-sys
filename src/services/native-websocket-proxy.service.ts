@@ -4,7 +4,7 @@ import { WebSocket } from 'ws';
 import { z } from 'zod';
 import httpProxy from 'http-proxy';
 import { UserModel } from '../models/user.model.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@shared/utils/logger.js';
 import { createBrowserSession, handleSessionDisconnect } from './session.service.js';
 import { memoryStore } from './memory-store.service.js';
 

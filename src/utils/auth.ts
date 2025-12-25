@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { env } from '../config/env.js';
 import * as jwt from 'jsonwebtoken';
-import { UserRole } from '../types/index.js';
+import { UserRole } from '@shared/types/index.js';
 
 // 哈希密码
 export async function hashPassword(password: string): Promise<string> {

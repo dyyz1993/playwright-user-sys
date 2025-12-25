@@ -17,15 +17,16 @@ describe('点数扣除集成测试', () => {
 
     // 创建测试用户
     const username = `test_user_${Date.now()}`;
-    apiKey = uuidv4();
 
     testUser = await UserModel.create({
       username,
       password: 'password123',
       email: `${username}@example.com`,
       credits: 100,
-      api_key: apiKey,
     });
+
+    // api_key is auto-generated, get it from the created user
+    apiKey = testUser?.api_key || uuidv4();
 
     expect(testUser).toBeTruthy();
     expect(testUser.credits).toBe(100);

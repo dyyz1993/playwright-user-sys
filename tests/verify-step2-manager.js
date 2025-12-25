@@ -211,13 +211,9 @@ describe('Step 2: Manager Entry Point Refactor', () => {
   });
 });
 
-// 如果直接运行此文件
+// 如果直接运行此文件，测试会自动运行
+// node:test 会自动执行所有 describe/test 块
 if (import.meta.url === `file://${process.argv[1]}`) {
   console.log('Running Step 2 Manager Verification...\n');
-  run().then(() => {
-    console.log('\n✅ All verification tests passed!');
-  }).catch((err) => {
-    console.error('\n❌ Verification failed:', err);
-    process.exit(1);
-  });
+  console.log('Note: Tests will run automatically via node:test framework\n');
 }

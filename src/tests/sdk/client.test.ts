@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app';
 import { Client } from '../../sdk/client';
 import { UserModel } from '../../models/user.model';
 import { SessionModel } from '../../models/session.model';
 import { v4 as uuidv4 } from 'uuid';
-import { SessionStatus } from '../../types';
+import { SessionStatus, UserRole, UserStatus } from '@shared/types/index.js';
 
 describe('SDK 客户端集成测试', () => {
   let app: FastifyInstance;
@@ -34,8 +34,8 @@ describe('SDK 客户端集成测试', () => {
         username: 'test_user',
         password: 'test_password',
         email: 'test@example.com',
-        role: 'user',
-        status: 'active',
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
         credits: 100,
       });
 

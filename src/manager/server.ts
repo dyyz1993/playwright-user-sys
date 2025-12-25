@@ -1,4 +1,4 @@
-import { startManager } from './manager/app.js';
+import { startManager } from './app.js';
 
 // 处理未捕获的异常
 process.on('uncaughtException', (error) => {
@@ -11,5 +11,5 @@ process.on('unhandledRejection', (reason) => {
   console.error('❌ 未处理的 Promise 拒绝:', reason);
 });
 
-// 启动管理端服务 (向后兼容，指向新的管理端入口)
+// 启动管理端服务
 startManager();

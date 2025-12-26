@@ -38,6 +38,17 @@ export interface UpdateUserInput {
 export class UserModel {
   // 创建用户
   static async create(data: CreateUserInput): Promise<User | null> {
+    // 检查用户名是否为空
+    if (!data.username || data.username.trim() === '') {
+      throw new Error('用户名不能为空');
+    }
+
+    // 检查用户名是否已存在
+    const existing = await this.findByUsername(data.username);
+    if (existing) {
+      throw new Error(`用户名 "${data.username}" 已存在`);
+    }
+
     const hashedPassword = await hashPassword(data.password);
     const apiKey = uuidv4();
 
@@ -59,17 +70,20 @@ export class UserModel {
 
   // 通过 ID 查找用户
   static async findById(id: number): Promise<User | null> {
-    return db('users').where({ id }).first() || null;
+    const result = await db('users').where({ id }).first();
+    return result ?? null;
   }
 
   // 通过用户名查找用户
   static async findByUsername(username: string): Promise<User | null> {
-    return db('users').where({ username }).first() || null;
+    const result = await db('users').where({ username }).first();
+    return result ?? null;
   }
 
   // 通过 API Key 查找用户
   static async findByApiKey(apiKey: string): Promise<User | null> {
-    return db('users').where({ api_key: apiKey }).first() || null;
+    const result = await db('users').where({ api_key: apiKey }).first();
+    return result ?? null;
   }
 
   // 更新用户
@@ -101,6 +115,9 @@ export class UserModel {
 
   // 验证用户密码
   static async verifyPassword(user: User, password: string): Promise<boolean> {
+    if (!user) {
+      return false;
+    }
     return comparePassword(password, user.password);
   }
 

@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // 加载 proto 文件
-const protoPath = path.resolve(__dirname, '../protos/machine_service.proto');
+const protoPath = path.resolve(__dirname, '../shared/protos/machine_service.proto');
 const packageDefinition = protoLoader.loadSync(protoPath, {
   keepCase: true,
   longs: String,

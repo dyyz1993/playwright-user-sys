@@ -34,11 +34,13 @@ export const registerMachineResponseSchema = successResponseSchema(
 );
 
 // 更新机器状态请求模式
+// 注意: API 层统一使用 camelCase，Model 层负责转换为 snake_case
 export const updateMachineStatusRequestSchema = z.object({
-  cpu_usage: z.number().min(0).max(100),
-  memory_usage: z.number().min(0).max(100),
-  disk_usage: z.number().min(0).max(100),
-  instance_count: z.number().int().min(0).optional(),
+  cpuUsage: z.number().min(0).max(100),
+  memoryUsage: z.number().min(0).max(100),
+  diskUsage: z.number().min(0).max(100),
+  instanceCount: z.number().int().min(0).optional(),
+  maxInstances: z.number().int().positive().optional(),
   status: z.enum(['online', 'offline', 'busy']).optional(),
 });
 

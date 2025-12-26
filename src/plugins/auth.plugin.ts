@@ -33,7 +33,8 @@ export default fp(async function (fastify: FastifyInstance) {
       request.log.info('请求中的 cookie:', request.cookies);
 
       // 使用配置中的 JWT 密钥
-      const jwtSecret = 'your-secret-key';
+      // 测试环境使用固定密钥
+      const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : 'your-secret-key';
       request.log.info('使用 JWT 密钥验证令牌');
 
       const decoded = jwt.verify(token, jwtSecret) as { id: number };

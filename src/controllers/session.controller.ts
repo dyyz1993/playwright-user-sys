@@ -48,7 +48,7 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
     try {
       // 使用共享服务创建会话
       const sessionResult = await createBrowserSession(userId, options);
-      
+
       // 构建前端 Viewer URL
       const frontendBaseUrl = (env as any).VITE_FRONTEND_URL || 'http://localhost:5173';
       const viewerUrl = `${frontendBaseUrl}/viewer?sessionId=${sessionResult.sessionId}`;
@@ -62,9 +62,16 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
         viewerUrl: viewerUrl,
         created_at: sessionResult.created_at,
       });
-    } catch (machineError: any) {
-      request.log.error(`启动浏览器实例失败:`, machineError);
-      return sendError(reply, '启动浏览器实例失败: ' + machineError.message, 500);
+    } catch (serviceError: any) {
+      request.log.error(`创建会话服务错误:`, serviceError);
+
+      // 检查是否是点数不足错误
+      if (serviceError.message && serviceError.message.includes('点数不足')) {
+        return sendError(reply, serviceError.message, 400);
+      }
+
+      // 其他错误返回 500
+      return sendError(reply, '启动浏览器实例失败: ' + serviceError.message, 500);
     }
   } catch (error: any) {
     if (error instanceof z.ZodError) {

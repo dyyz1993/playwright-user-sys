@@ -39,6 +39,14 @@
     "test:watch": "jest --watch",
     "test:unit": "vitest run src/tests/unit",
     "test:unit:watch": "vitest src/tests/unit",
+    "test:models": "vitest run src/tests/unit/models",
+    "test:model:user": "vitest run src/tests/unit/models/user.model.test.ts",
+    "test:model:session": "vitest run src/tests/unit/models/session.model.test.ts",
+    "test:model:machine": "vitest run src/tests/unit/models/machine.model.test.ts",
+    "test:services": "vitest run src/tests/unit/services",
+    "test:controllers": "vitest run src/tests/unit/controllers",
+    "test:routes": "vitest run src/tests/integration/routes",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext .ts",
     "test:api": "node tests/test-api.js",
     "test:login": "node tests/test-login.js",
@@ -84,7 +92,7 @@
     "tslib": "^2.8.1",
     "tsx": "^4.21.0",
     "typescript": "^5.8.3",
-    "vitest": "^3.1.1",
+    "vitest": "^3.2.4",
     "ws": "^8.18.1"
   },
   "dependencies": {

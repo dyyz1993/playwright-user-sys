@@ -138,7 +138,7 @@ class MemoryStoreService extends EventEmitter {
       disk_space: status.disk_space || 0,
       active_sessions: status.active_sessions,
       max_sessions: status.max_sessions,
-      last_heartbeat: new Date(),
+      last_heartbeat: existingStatus?.last_heartbeat || new Date(),
     };
 
     // 更新状态
@@ -542,5 +542,8 @@ class MemoryStoreService extends EventEmitter {
 
 // 导出单例实例
 export const memoryStore = MemoryStoreService.getInstance();
+
+// 导出类
+export { MemoryStoreService };
 
 export default memoryStore;

@@ -48,13 +48,25 @@ export class SessionModel {
   static async create(data: CreateSessionInput): Promise<Session | null> {
     const sessionId = uuidv4();
 
+    let optionsJson = null;
+    if (data.options) {
+      // Validate that options can be serialized to JSON
+      try {
+        optionsJson = JSON.stringify(data.options);
+        // Verify it can be parsed back
+        JSON.parse(optionsJson);
+      } catch (error) {
+        throw new Error('Invalid options format: must be valid JSON');
+      }
+    }
+
     await db('sessions').insert({
       id: sessionId,
       user_id: data.user_id,
       machine_id: data.machine_id || null,
       port: data.port || null,
       status: SessionStatus.CREATED,
-      options: data.options ? JSON.stringify(data.options) : null,
+      options: optionsJson,
       start_time: new Date(),
       created_at: new Date(),
       updated_at: new Date(),

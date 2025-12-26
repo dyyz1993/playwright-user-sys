@@ -8,6 +8,7 @@ export interface CreateMachineInput {
   grpcPort?: number;
   proxyPort?: number;
   max_instances?: number;
+  instanceCount?: number;
 }
 
 export interface UpdateMachineInput {
@@ -15,12 +16,14 @@ export interface UpdateMachineInput {
   ip?: string;
   grpcPort?: number;
   proxyPort?: number;
-  cpu_usage?: number;
-  memory_usage?: number;
-  disk_usage?: number;
-  instance_count?: number;
-  max_instances?: number;
+  // 统一使用 camelCase，Model 层负责转换为 snake_case
+  cpuUsage?: number;
+  memoryUsage?: number;
+  diskUsage?: number;
+  instanceCount?: number;
+  maxInstances?: number;
   status?: 'online' | 'offline' | 'busy';
+  lastSeen?: Date;
 }
 
 export class MachineModel {
@@ -47,6 +50,7 @@ export class MachineModel {
         ip: data.ip,
         grpc_port: data.grpcPort,
         proxy_port: data.proxyPort,
+        instance_count: data.instanceCount || 0,
         max_instances: data.max_instances || 10,
         status: 'online',
         last_seen: db.fn.now(),
@@ -81,26 +85,25 @@ export class MachineModel {
 
   // 更新机器状态
   static async update(id: string, data: UpdateMachineInput): Promise<MachineInfo | null> {
-    // 创建更新数据对象
+    // 将 camelCase (API 层) 转换为 snake_case (数据库层)
     const updateData: any = {
       hostname: data.hostname,
       ip: data.ip,
-      cpu_usage: data.cpu_usage,
-      memory_usage: data.memory_usage,
-      disk_usage: data.disk_usage,
-      instance_count: data.instance_count,
-      max_instances: data.max_instances,
+      // camelCase → snake_case 转换
+      cpu_usage: data.cpuUsage,
+      memory_usage: data.memoryUsage,
+      disk_usage: data.diskUsage,
+      instance_count: data.instanceCount,
+      max_instances: data.maxInstances,
       status: data.status,
-      last_seen: new Date(),
+      last_seen: data.lastSeen || new Date(),
       updated_at: new Date(),
     };
 
-    // 处理 grpcPort 字段
+    // 处理可选的 port 字段
     if (data.grpcPort !== undefined) {
       updateData.grpc_port = data.grpcPort;
     }
-
-    // 处理 proxyPort 字段
     if (data.proxyPort !== undefined) {
       updateData.proxy_port = data.proxyPort;
     }
@@ -253,9 +256,10 @@ export class MachineModel {
 
   // 检查并标记超时的机器为离线
   static async checkOfflineMachines(timeoutMinutes: number = 5): Promise<number> {
+    const cutoffDate = new Date(Date.now() - timeoutMinutes * 60 * 1000);
     const result = await db('machines')
       .where('status', 'online')
-      .whereRaw(`last_seen < datetime('now', '-${timeoutMinutes} minutes')`)
+      .where('last_seen', '<', cutoffDate)
       .update({
         status: 'offline',
         updated_at: new Date(),

@@ -571,6 +571,35 @@ export class SessionModel {
     }
   }
 
+  // 获取最近的会话（用于仪表盘显示）
+  static async getRecentSessions(limit: number = 10): Promise<Array<Session & { username: string }>> {
+    try {
+      const sessions = await db('sessions')
+        .select('sessions.*', 'users.username')
+        .join('users', 'sessions.user_id', 'users.id')
+        .orderBy('sessions.created_at', 'desc')
+        .limit(limit);
+
+      return sessions.map((session: any) => {
+        try {
+          return {
+            ...session,
+            options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+          };
+        } catch (error) {
+          console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
+          return {
+            ...session,
+            options: null,
+          };
+        }
+      });
+    } catch (error) {
+      console.error('获取最近会话失败:', error);
+      return [];
+    }
+  }
+
   // 检查并标记超时的会话
   static async checkExpiredSessions(timeoutMs: number): Promise<number> {
     try {
@@ -623,6 +652,80 @@ export class SessionModel {
     } catch (error) {
       console.error('检查超时会话失败:', error);
       return 0;
+    }
+  }
+
+  // 统计活跃会话数
+  static async countActiveSessions(): Promise<number> {
+    try {
+      const result = await db('sessions')
+        .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED])
+        .count('id as count')
+        .first();
+      return result ? Number(result.count) : 0;
+    } catch (error) {
+      console.error('统计活跃会话数失败:', error);
+      return 0;
+    }
+  }
+
+  // 计算已使用点数
+  static async sumUsedCredits(): Promise<number> {
+    try {
+      const result = await db('sessions')
+        .sum('credits_used as total')
+        .first();
+      return result && result.total ? Number(result.total) : 0;
+    } catch (error) {
+      console.error('计算已使用点数失败:', error);
+      return 0;
+    }
+  }
+
+  // 分页查询会话
+  static async paginate(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Session & { username?: string }>> {
+    try {
+      const offset = (page - 1) * limit;
+
+      const [sessions, total] = await Promise.all([
+        db('sessions')
+          .select('sessions.*', 'users.username')
+          .leftJoin('users', 'sessions.user_id', 'users.id')
+          .orderBy('sessions.created_at', 'desc')
+          .limit(limit)
+          .offset(offset),
+        db('sessions').count('id as count').first(),
+      ]);
+
+      return {
+        items: sessions.map((session: any) => {
+          try {
+            return {
+              ...session,
+              options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+            };
+          } catch (error) {
+            console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
+            return {
+              ...session,
+              options: null,
+            };
+          }
+        }),
+        total: total ? Number(total.count) : 0,
+        page,
+        limit,
+        totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
+      };
+    } catch (error) {
+      console.error('分页查询会话失败:', error);
+      return {
+        items: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
     }
   }
 }

@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { env } from '../config/env.js';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { UserRole } from '@shared/types/index.js';
 
 // 哈希密码
@@ -18,8 +18,7 @@ export async function comparePassword(password: string, hashedPassword: string):
 export function generateToken(payload: { id: number; username: string; role: UserRole }): string {
   // 使用硬编码的密钥进行测试
   const secret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : String(env.JWT_SECRET);
-  // 使用 any 类型绕过 TypeScript 类型检查
-  return (jwt as any).sign(payload, secret, {
+  return jwt.sign(payload, secret, {
     expiresIn: env.JWT_EXPIRES_IN,
   });
 }
@@ -29,8 +28,7 @@ export function verifyToken(token: string): any {
   try {
     // 使用硬编码的密钥进行测试
     const secret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : String(env.JWT_SECRET);
-    // 使用 any 类型绕过 TypeScript 类型检查
-    return (jwt as any).verify(token, secret);
+    return jwt.verify(token, secret);
   } catch (error) {
     return null;
   }

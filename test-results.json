@@ -1,0 +1,179 @@
+{
+  "config": {
+    "configFile": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/playwright.config.ts",
+    "rootDir": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/junit.xml"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.57.0",
+    "workers": 6,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "p0-critical.spec.ts",
+      "file": "p0-critical.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "P0-用户管理核心CRUD",
+          "file": "p0-critical.spec.ts",
+          "line": 239,
+          "column": 6,
+          "specs": [
+            {
+              "title": "P0-U01: 用户列表页面应该正常加载",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 7804,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('用户管理')\nExpected: visible\nError: strict mode violation: getByText('用户管理') resolved to 3 elements:\n    1) <p class=\"text-sm text-gray-600\">用户管理系统</p> aka getByText('用户管理系统')\n    2) <span>用户管理</span> aka getByRole('link', { name: ' 用户管理' })\n    3) <span>用户管理</span> aka locator('#mobile-sidebar').getByText('用户管理')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('用户管理')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('用户管理')\nExpected: visible\nError: strict mode violation: getByText('用户管理') resolved to 3 elements:\n    1) <p class=\"text-sm text-gray-600\">用户管理系统</p> aka getByText('用户管理系统')\n    2) <span>用户管理</span> aka getByRole('link', { name: ' 用户管理' })\n    3) <span>用户管理</span> aka locator('#mobile-sidebar').getByText('用户管理')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('用户管理')\u001b[22m\n\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p0-critical.spec.ts:232:42",
+                        "location": {
+                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p0-critical.spec.ts",
+                          "column": 42,
+                          "line": 232
+                        },
+                        "snippet": "  230 |\n  231 |     // 预期: 页面标题正确\n> 232 |     await expect(page.getByText('用户管理')).toBeVisible();\n      |                                          ^\n  233 |\n  234 |     // 预期: 没有JavaScript错误\n  235 |     await checkNoErrors(page);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p0-critical.spec.ts",
+                            "column": 42,
+                            "line": 232
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('用户管理')\nExpected: visible\nError: strict mode violation: getByText('用户管理') resolved to 3 elements:\n    1) <p class=\"text-sm text-gray-600\">用户管理系统</p> aka getByText('用户管理系统')\n    2) <span>用户管理</span> aka getByRole('link', { name: ' 用户管理' })\n    3) <span>用户管理</span> aka locator('#mobile-sidebar').getByText('用户管理')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('用户管理')\u001b[22m\n\n\n  230 |\n  231 |     // 预期: 页面标题正确\n> 232 |     await expect(page.getByText('用户管理')).toBeVisible();\n      |                                          ^\n  233 |\n  234 |     // 预期: 没有JavaScript错误\n  235 |     await checkNoErrors(page);\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p0-critical.spec.ts:232:42"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-26T09:08:23.970Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p0-critical-P0-用户管理核心CRUD-P0-U01-用户列表页面应该正常加载-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p0-critical-P0-用户管理核心CRUD-P0-U01-用户列表页面应该正常加载-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p0-critical-P0-用户管理核心CRUD-P0-U01-用户列表页面应该正常加载-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p0-critical-P0-用户管理核心CRUD-P0-U01-用户列表页面应该正常加载-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p0-critical.spec.ts",
+                        "column": 42,
+                        "line": 232
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "ff71286bc3525f03e657-8d562d4c582e1402f0ff",
+              "file": "p0-critical.spec.ts",
+              "line": 246,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-12-26T09:08:23.650Z",
+    "duration": 8697.029999999999,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

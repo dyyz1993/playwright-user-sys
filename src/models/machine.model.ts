@@ -335,6 +335,56 @@ export class MachineModel {
       return false;
     }
   }
+
+  // 统计所有机器数
+  static async countAll(): Promise<number> {
+    try {
+      const result = await db('machines').count('id as count').first();
+      return result ? Number(result.count) : 0;
+    } catch (error) {
+      console.error('统计机器数失败:', error);
+      return 0;
+    }
+  }
+
+  // 统计在线机器数
+  static async countOnline(): Promise<number> {
+    try {
+      const result = await db('machines')
+        .where('status', 'online')
+        .count('id as count')
+        .first();
+      return result ? Number(result.count) : 0;
+    } catch (error) {
+      console.error('统计在线机器数失败:', error);
+      return 0;
+    }
+  }
+
+  // 获取所有机器（不分页）
+  static async getAll(): Promise<MachineInfo[]> {
+    try {
+      const machines = await db('machines').orderBy('last_seen', 'desc');
+
+      return machines.map((machine: any) => ({
+        id: machine.id,
+        hostname: machine.hostname,
+        ip: machine.ip,
+        grpcPort: machine.grpc_port,
+        proxyPort: machine.proxy_port,
+        cpuUsage: machine.cpu_usage,
+        memoryUsage: machine.memory_usage,
+        diskUsage: machine.disk_usage,
+        instanceCount: machine.instance_count,
+        maxInstances: machine.max_instances,
+        status: machine.status,
+        lastSeen: machine.last_seen,
+      }));
+    } catch (error) {
+      console.error('获取所有机器失败:', error);
+      return [];
+    }
+  }
 }
 
 export default MachineModel;

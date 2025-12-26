@@ -291,6 +291,48 @@ export class UserModel {
       return { total: 0, used: 0, available: 0 };
     }
   }
+
+  // 统计所有用户数
+  static async countAll(): Promise<number> {
+    try {
+      const result = await db('users').count('id as count').first();
+      return result ? Number(result.count) : 0;
+    } catch (error) {
+      console.error('统计用户数失败:', error);
+      return 0;
+    }
+  }
+
+  // 统计新用户数（最近N天）
+  static async countNewUsers(days: number = 7): Promise<number> {
+    try {
+      const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      const result = await db('users')
+        .where('created_at', '>=', cutoffDate)
+        .count('id as count')
+        .first();
+      return result ? Number(result.count) : 0;
+    } catch (error) {
+      console.error('统计新用户数失败:', error);
+      return 0;
+    }
+  }
+
+  // 统计所有用户点数总和
+  static async sumAllCredits(): Promise<number> {
+    try {
+      const result = await db('users').sum('credits as total').first();
+      return result && result.total ? Number(result.total) : 0;
+    } catch (error) {
+      console.error('统计用户点数总和失败:', error);
+      return 0;
+    }
+  }
+
+  // 分页查询用户
+  static async paginate(page: number = 1, limit: number = 10): Promise<PaginatedResponse<User>> {
+    return this.findAll({ page, limit });
+  }
 }
 
 export default UserModel;

@@ -3,7 +3,7 @@ import { UserModel } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';
 import { v4 as uuidv4 } from 'uuid';
-import { hash } from 'bcryptjs';
+import { hashPassword } from '../utils/auth.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import {
@@ -80,11 +80,11 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         return reply.status(409).send({ success: false, error: '用户名已存在' });
       }
 
-      // 创建用户
+      // 创建用户（使用 SHA256 哈希，与 UserModel 保持一致）
       const userData = {
         username: body.username,
         email: body.email || '',
-        password: await hash(body.password, 10),
+        password: await hashPassword(body.password),
         role: body.role || UserRole.USER,
         status: UserStatus.ACTIVE,
         credits: parseInt(body.credits) || 0,
@@ -216,7 +216,8 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       if (body.role) updateData.role = body.role;
       if (body.status) updateData.status = body.status;
       if (body.webhook_url) updateData.webhook_url = body.webhook_url;
-      if (body.password) updateData.password = await hash(body.password, 10);
+      // 更新密码时使用 SHA256 哈希（与 UserModel 保持一致）
+      if (body.password) updateData.password = await hashPassword(body.password);
 
       // 更新用户
       const updatedUser = await UserModel.update(userId, updateData);

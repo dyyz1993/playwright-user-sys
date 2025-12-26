@@ -1,5 +1,4 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import jwt from 'jsonwebtoken';
 
 // 管理后台路由
 export default async function adminRoutes(fastify: FastifyInstance): Promise<void> {
@@ -44,9 +43,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         return reply.redirect('/admin/login');
       }
 
-      // 验证密码
-      const { compare } = await import('bcryptjs');
-      const isPasswordValid = await compare(password, user.password);
+      // 验证密码（使用 SHA256，与 UserModel 保持一致）
+      const { comparePassword } = await import('../utils/auth.js');
+      const isPasswordValid = await comparePassword(password, user.password);
       
       if (!isPasswordValid) {
         console.log('Invalid password');
@@ -62,13 +61,12 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       }
 
       // 生成 JWT Token
-      const { config } = await import('../config/index.js');
-      const { sign } = await import('jsonwebtoken');
-      const token = sign(
-        { id: user.id, username: user.username, role: user.role },
-        config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn }
-      );
+      const { generateToken } = await import('../utils/auth.js');
+      const token = generateToken({
+        id: user.id,
+        username: user.username,
+        role: user.role
+      });
 
       // 设置 Cookie
       reply.setCookie('token', token, {
@@ -89,7 +87,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // 仪表盘页面
-  fastify.get('/admin', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/admin', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // 检查是否已认证
       if (!request.user) {
@@ -108,7 +108,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         totalUsers,
         newUsers,
         totalCredits,
-        usedCredits
+        usedCredits,
+        recentSessions
       ] = await Promise.all([
         SessionModel.countActiveSessions(),
         MachineModel.countAll(),
@@ -116,7 +117,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         UserModel.countAll(),
         UserModel.countNewUsers(7), // 最近7天新增用户
         UserModel.sumAllCredits(),
-        SessionModel.sumUsedCredits()
+        SessionModel.sumUsedCredits(),
+        SessionModel.getRecentSessions(10) // 获取最近10个会话
       ]);
 
       // 计算会话变化（简单实现）
@@ -139,12 +141,13 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           memoryUsage: 0,
           diskUsage: 0
         },
+        recentSessions,
         flash: request.flash
       });
     } catch (error: any) {
       console.error('获取仪表盘数据失败:', error);
       const errorMessage = error.message || '未知错误';
-      
+
       return reply.view('pages/dashboard', {
         title: '仪表盘',
         subtitle: '系统概览',
@@ -162,13 +165,16 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           memoryUsage: 0,
           diskUsage: 0
         },
+        recentSessions: [],
         flash: { error: '获取仪表盘数据失败: ' + errorMessage }
       });
     }
   });
 
   // 用户管理页面
-  fastify.get('/admin/users', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/admin/users', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // 检查是否是管理员
       if (request.user?.role !== 'admin') {
@@ -195,6 +201,10 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           total,
           totalPages
         },
+        // 直接传递分页变量给模板
+        page,
+        limit,
+        totalUsers: total,
         flash: request.flash
       });
     } catch (error: any) {
@@ -205,7 +215,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // 用户编辑页面
-  fastify.get('/admin/users/:id/edit', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/admin/users/:id/edit', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // 检查是否是管理员
       if (request.user?.role !== 'admin') {
@@ -261,7 +273,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // 机器管理页面
-  fastify.get('/admin/machines', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/admin/machines', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // 检查是否是管理员
       if (request.user?.role !== 'admin') {
@@ -287,7 +301,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // 会话管理页面
-  fastify.get('/admin/sessions', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/admin/sessions', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // 检查是否是管理员
       if (request.user?.role !== 'admin') {
@@ -324,7 +340,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // 系统设置页面
-  fastify.get('/admin/settings', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/admin/settings', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // 检查是否是管理员
       if (request.user?.role !== 'admin') {
@@ -345,7 +363,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // 文件上传页面
-  fastify.get('/admin/files', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/admin/files', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // 检查是否是管理员
       if (request.user?.role !== 'admin') {
@@ -369,7 +389,16 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   fastify.post('/admin/logout', async (request: FastifyRequest, reply: FastifyReply) => {
     // 清除 Cookie
     reply.clearCookie('token', { path: '/' });
-    
+
+    // 重定向到登录页面
+    return reply.redirect('/admin/login');
+  });
+
+  // 登出 (GET版本，用于侧边栏链接)
+  fastify.get('/admin/logout', async (request: FastifyRequest, reply: FastifyReply) => {
+    // 清除 Cookie
+    reply.clearCookie('token', { path: '/' });
+
     // 重定向到登录页面
     return reply.redirect('/admin/login');
   });

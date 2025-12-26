@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { UserModel } from '../models/user.model.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';
 import { sendError } from '../utils/response.js';
+import { env } from '../config/env.js';
 
 export default fp(async function (fastify: FastifyInstance) {
   // JWT 验证中间件
@@ -23,10 +24,21 @@ export default fp(async function (fastify: FastifyInstance) {
         request.log.info('从 cookie 中获取到令牌');
       }
 
-      // 如果仍然没有令牌，返回错误
+      // 如果仍然没有令牌，根据请求类型返回不同的响应
       if (!token) {
         request.log.warn('未提供授权令牌');
-        return sendError(reply, '未提供授权令牌', 401);
+
+        // 检查是否是浏览器页面请求（通过Accept头）
+        const acceptHeader = request.headers.accept || '';
+        const isHtmlRequest = acceptHeader.includes('text/html');
+
+        if (isHtmlRequest) {
+          // 浏览器请求：重定向到登录页面
+          return reply.redirect('/admin/login');
+        } else {
+          // API请求：返回JSON错误
+          return sendError(reply, '未提供授权令牌', 401);
+        }
       }
 
       // 输出所有 cookie 信息以便调试
@@ -34,7 +46,7 @@ export default fp(async function (fastify: FastifyInstance) {
 
       // 使用配置中的 JWT 密钥
       // 测试环境使用固定密钥
-      const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : 'your-secret-key';
+      const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : String(env.JWT_SECRET);
       request.log.info('使用 JWT 密钥验证令牌');
 
       const decoded = jwt.verify(token, jwtSecret) as { id: number };

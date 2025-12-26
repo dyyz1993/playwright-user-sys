@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { UserModel } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { UserRole } from '@shared/types/index.js';
-import { compare } from 'bcryptjs';
+import { comparePassword } from '../utils/auth.js';
 import jwt from 'jsonwebtoken';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import {
@@ -37,8 +37,8 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
         return reply.status(401).send({ success: false, error: '用户名或密码错误' });
       }
 
-      // 验证密码
-      const isPasswordValid = await compare(password, user.password);
+      // 验证密码（使用 SHA256，与 UserModel 保持一致）
+      const isPasswordValid = await comparePassword(password, user.password);
       if (!isPasswordValid) {
         return reply.status(401).send({ success: false, error: '用户名或密码错误' });
       }

@@ -1,0 +1,119 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Playwright" [level=1] [ref=e5]
+      - paragraph [ref=e6]: 用户管理系统
+    - navigation [ref=e7]:
+      - paragraph [ref=e9]: 主菜单
+      - link " 仪表盘" [ref=e10] [cursor=pointer]:
+        - /url: /admin
+        - generic [ref=e11]: 
+        - generic [ref=e12]: 仪表盘
+      - link " 用户管理" [ref=e13] [cursor=pointer]:
+        - /url: /admin/users
+        - generic [ref=e14]: 
+        - generic [ref=e15]: 用户管理
+      - link " 会话管理" [ref=e16] [cursor=pointer]:
+        - /url: /admin/sessions
+        - generic [ref=e17]: 
+        - generic [ref=e18]: 会话管理
+      - link " 机器管理" [ref=e19] [cursor=pointer]:
+        - /url: /admin/machines
+        - generic [ref=e20]: 
+        - generic [ref=e21]: 机器管理
+      - link " 操作日志" [ref=e22] [cursor=pointer]:
+        - /url: /admin/logs
+        - generic [ref=e23]: 
+        - generic [ref=e24]: 操作日志
+      - link " 文件上传" [ref=e25] [cursor=pointer]:
+        - /url: /admin/files
+        - generic [ref=e26]: 
+        - generic [ref=e27]: 文件上传
+      - paragraph [ref=e29]: 账户
+      - link " 个人资料" [ref=e30] [cursor=pointer]:
+        - /url: /admin/profile
+        - generic [ref=e31]: 
+        - generic [ref=e32]: 个人资料
+      - link " 设置" [ref=e33] [cursor=pointer]:
+        - /url: /admin/settings
+        - generic [ref=e34]: 
+        - generic [ref=e35]: 设置
+      - link " 退出登录" [ref=e36] [cursor=pointer]:
+        - /url: /admin/logout
+        - generic [ref=e37]: 
+        - generic [ref=e38]: 退出登录
+  - text:           
+  - generic [ref=e39]:
+    - banner [ref=e40]:
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - heading "用户管理" [level=1] [ref=e43]
+          - paragraph [ref=e44]: 管理系统用户
+        - button "A admin " [ref=e47] [cursor=pointer]:
+          - generic [ref=e48]: A
+          - generic [ref=e49]: admin
+          - generic [ref=e50]: 
+    - main [ref=e51]:
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - heading "用户管理" [level=3] [ref=e54]
+          - button "+ 添加用户" [active] [ref=e55] [cursor=pointer]:
+            - generic [ref=e56]: +
+            - text: 添加用户
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]:
+              - generic [ref=e60]:
+                - generic:
+                  - generic: 
+                - textbox "搜索用户..." [ref=e61]
+              - combobox [ref=e63]:
+                - option "所有角色" [selected]
+                - option "管理员"
+                - option "普通用户"
+            - generic [ref=e64]:
+              - button "" [ref=e65] [cursor=pointer]:
+                - generic [ref=e66]: 
+              - button " 导出" [ref=e68] [cursor=pointer]:
+                - generic [ref=e69]: 
+                - text: 导出
+          - table [ref=e71]:
+            - rowgroup [ref=e72]:
+              - row "用户 角色 算力点数 状态 注册时间 操作" [ref=e73]:
+                - columnheader "用户" [ref=e74]
+                - columnheader "角色" [ref=e75]
+                - columnheader "算力点数" [ref=e76]
+                - columnheader "状态" [ref=e77]
+                - columnheader "注册时间" [ref=e78]
+                - columnheader "操作" [ref=e79]
+            - rowgroup [ref=e80]:
+              - row "A admin 管理员 9999999 点 活跃 2025/12/26 15:27:31   " [ref=e81]:
+                - cell "A admin" [ref=e82]:
+                  - generic [ref=e83]:
+                    - generic [ref=e84]: A
+                    - generic [ref=e86]: admin
+                - cell "管理员" [ref=e87]:
+                  - generic [ref=e88]: 管理员
+                - cell "9999999 点" [ref=e89]
+                - cell "活跃" [ref=e90]:
+                  - generic [ref=e91]: 活跃
+                - cell "2025/12/26 15:27:31" [ref=e92]
+                - cell "  " [ref=e93]:
+                  - generic [ref=e94]:
+                    - button "" [ref=e95] [cursor=pointer]:
+                      - generic [ref=e96]: 
+                    - link "" [ref=e97] [cursor=pointer]:
+                      - /url: /admin/users/2502/edit
+                      - generic [ref=e98]: 
+                    - button "" [ref=e99] [cursor=pointer]:
+                      - generic [ref=e100]: 
+          - generic [ref=e101]:
+            - generic [ref=e102]: 显示 1 到 1 条，共 1 条
+            - generic [ref=e103]:
+              - button "上一页" [disabled] [ref=e104]
+              - button "下一页" [disabled] [ref=e105]
+      - text:   
+```

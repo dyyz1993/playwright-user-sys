@@ -1,0 +1,160 @@
+# Docker Compose for Development
+# Usage: docker-compose -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  # MySQL Database (optional - comment out to use SQLite)
+  mysql:
+    image: mysql:8.0
+    container_name: playwright-mysql-dev
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-playwright_user_sys}
+      MYSQL_USER: ${MYSQL_USER:-playwright}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
+    volumes:
+      - mysql-dev-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - playwright-dev-network
+
+  # Management Server
+  manager:
+    build:
+      context: ..
+      dockerfile: docker/manager/Dockerfile
+      target: dependencies
+    container_name: playwright-manager-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "50051:50051"
+    volumes:
+      - ..:/app:cached
+      - node-modules:/app/node_modules
+      - manager-dev-data:/app/data
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - HOST=0.0.0.0
+      - DB_TYPE=${DB_TYPE:-sqlite}
+      - DB_PATH=/app/data/db.sqlite
+      - DB_NAME=${DB_NAME:-playwright_user_sys}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-playwright}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-key}
+      - JWT_EXPIRES_IN=7d
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-REDACTED_ADMIN_PASS}
+      - GRPC_PORT=50051
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - playwright-dev-network
+    command: ["pnpm", "dev:server"]
+
+  # Machine Service 1
+  machine-1:
+    build:
+      context: ..
+      dockerfile: docker/machine/Dockerfile
+      target: dependencies
+    container_name: playwright-machine-1-dev
+    restart: unless-stopped
+    ports:
+      - "50052:50052"
+      - "8082:8082"
+    volumes:
+      - ..:/app:cached
+      - node-modules:/app/node_modules
+      - machine-1-dev-data:/app/data
+    environment:
+      - NODE_ENV=development
+      - MACHINE_ID=machine-1
+      - MACHINE_NAME=Development Machine 1
+      - MANAGER_HOST=manager:50051
+      - MACHINE_GRPC_PORT=50052
+      - PROXY_PORT=8082
+      - MAX_SESSIONS=5
+      - SESSION_TIMEOUT=300000
+    depends_on:
+      manager:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8082/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - playwright-dev-network
+    command: ["pnpm", "dev:machine"]
+
+  # Machine Service 2 (optional - for scaling testing)
+  machine-2:
+    build:
+      context: ..
+      dockerfile: docker/machine/Dockerfile
+      target: dependencies
+    container_name: playwright-machine-2-dev
+    restart: unless-stopped
+    ports:
+      - "50053:50052"
+      - "8083:8082"
+    volumes:
+      - ..:/app:cached
+      - node-modules:/app/node_modules
+      - machine-2-dev-data:/app/data
+    environment:
+      - NODE_ENV=development
+      - MACHINE_ID=machine-2
+      - MACHINE_NAME=Development Machine 2
+      - MANAGER_HOST=manager:50051
+      - MACHINE_GRPC_PORT=50052
+      - PROXY_PORT=8082
+      - MAX_SESSIONS=5
+      - SESSION_TIMEOUT=300000
+    depends_on:
+      manager:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8082/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - playwright-dev-network
+    command: ["pnpm", "dev:machine"]
+    profiles:
+      - scaling
+
+networks:
+  playwright-dev-network:
+    driver: bridge
+
+volumes:
+  mysql-dev-data:
+  node-modules:
+  manager-dev-data:
+  machine-1-dev-data:
+  machine-2-dev-data:

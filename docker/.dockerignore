@@ -1,0 +1,79 @@
+# Dependencies
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist
+build
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.dev
+.env.machine
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+docs
+*.md
+README*
+
+# Testing
+tests
+test-results
+playwright-report
+coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+
+# Data directories
+data
+screenshots
+files
+
+# Cache
+.cache
+.parcel-cache
+.eslintcache
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Docker files (prevent recursive copy)
+Dockerfile*
+docker-compose*
+.docker
+
+# Old docker configurations
+Dockerfile.simple
+Dockerfile.optimized
+Dockerfile.machine.optimized
+
+# Misc
+*.tmp
+*.temp
+tmp
+temp

@@ -35,4 +35,17 @@ export default async function authRoutes(fastify: FastifyInstance) {
       security: [{ bearerAuth: [] }],
     },
   }, authController.getCurrentUser);
+
+  // 验证 Token 有效性（/me 的别名，用于集成测试）
+  fastify.get('/verify', {
+    onRequest: [fastify.verifyJWT],
+    schema: {
+      response: {
+        200: zodToJsonSchema(currentUserResponseSchema),
+        401: zodToJsonSchema(errorResponseSchema),
+      },
+      tags: ['auth'],
+      security: [{ bearerAuth: [] }],
+    },
+  }, authController.getCurrentUser);
 }

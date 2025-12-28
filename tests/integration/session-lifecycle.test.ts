@@ -264,8 +264,8 @@ describe('会话生命周期集成测试', () => {
       });
       sessions.push(session);
 
-      // 每 2 个会话标记一个为已断开
-      if (i % 2 === 0) {
+      // 标记前 2 个会话为已断开 (索引 0 和 1)
+      if (i < 2) {
         await SessionModel.markDisconnected(session.id, 60);
       }
     }
@@ -274,9 +274,9 @@ describe('会话生命周期集成测试', () => {
     const allSessions = await SessionModel.findAll();
     expect(allSessions.items.length).toBe(5);
 
-    // 查询活跃会话
+    // 查询活跃会话 (索引 2, 3, 4 未断开)
     const activeSessions = await SessionModel.findActiveSessions();
-    expect(activeSessions.length).toBe(3); // 1, 3, 5 未断开
+    expect(activeSessions.length).toBe(3);
 
     // 分页查询
     const paginatedSessions = await SessionModel.paginate(1, 2);
@@ -412,7 +412,8 @@ describe('会话生命周期集成测试', () => {
     expect(detail).toBeDefined();
     expect(detail?.id).toBe(session!.id);
     expect(detail?.username).toBe(testUser.username);
-    expect(detail?.machine_name).toBe(testMachine.name);
+    // machine_name 实际是 machines.hostname，不是 machines.name
+    expect(detail?.machine_name).toBe(testMachine.hostname);
   });
 
   /**

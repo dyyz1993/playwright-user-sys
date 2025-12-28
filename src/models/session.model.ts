@@ -296,21 +296,39 @@ export class SessionModel {
 
   // 标记会话已过期
   static async markExpired(id: string, duration: number): Promise<Session | null> {
+    // 使用 logger 而不是 console.log
+    const { logger } = await import('@shared/utils/logger.js');
+
     // 先获取会话以检查之前的 credits_used
     const session = await this.findById(id);
     if (!session) return null;
 
     const previousCreditsUsed = session.credits_used || 0;
 
+    // 如果提供的持续时间为0且会话有开始时间，尝试计算持续时间
+    let finalDuration = duration;
+    if (duration === 0 && session.start_time) {
+      const now = new Date();
+      const startTime = new Date(session.start_time);
+      finalDuration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+      logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
+    }
+
+    // 确保持续时间不为负数（时区问题可能导致负数）
+    if (finalDuration < 0) {
+      logger.warn(`持续时间为负数 (${finalDuration}秒)，重置为0`);
+      finalDuration = 0;
+    }
+
     // 计算消耗的点数（每分钟1点）
-    // 即使会话只运行了几秒钟，也至少消耗 1 点
-    // 如果 duration 为 0，也至少消耗 1 点（因为会话被创建了）
-    const creditsUsed = duration >= 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+    const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
+
+    logger.info(`标记会话已过期 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${previousCreditsUsed}点`);
 
     await db('sessions').where({ id }).update({
       status: SessionStatus.EXPIRED,
       end_time: new Date(),
-      duration,
+      duration: finalDuration,
       credits_used: creditsUsed,
       updated_at: new Date(),
     });
@@ -324,7 +342,7 @@ export class SessionModel {
         const { UserModel } = await import('./user.model.js');
         await UserModel.deductCredits(session.user_id, creditsToDeduct);
       } catch (error) {
-        console.error(`扣除用户 ${session.user_id} 的点数失败:`, error);
+        logger.error(`扣除用户 ${session.user_id} 的点数失败:`, error);
       }
     }
 
@@ -333,21 +351,39 @@ export class SessionModel {
 
   // 标记会话错误
   static async markError(id: string, duration: number = 0): Promise<Session | null> {
+    // 使用 logger 而不是 console.log
+    const { logger } = await import('@shared/utils/logger.js');
+
     // 先获取会话以检查之前的 credits_used
     const session = await this.findById(id);
     if (!session) return null;
 
     const previousCreditsUsed = session.credits_used || 0;
 
+    // 如果提供的持续时间为0且会话有开始时间，尝试计算持续时间
+    let finalDuration = duration;
+    if (duration === 0 && session.start_time) {
+      const now = new Date();
+      const startTime = new Date(session.start_time);
+      finalDuration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+      logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
+    }
+
+    // 确保持续时间不为负数（时区问题可能导致负数）
+    if (finalDuration < 0) {
+      logger.warn(`持续时间为负数 (${finalDuration}秒)，重置为0`);
+      finalDuration = 0;
+    }
+
     // 计算消耗的点数（每分钟1点）
-    // 即使会话只运行了几秒钟，也至少消耗 1 点
-    // 如果 duration 为 0，也至少消耗 1 点（因为会话被创建了）
-    const creditsUsed = duration >= 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+    const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
+
+    logger.info(`标记会话错误 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${previousCreditsUsed}点`);
 
     await db('sessions').where({ id }).update({
       status: SessionStatus.ERROR,
       end_time: new Date(),
-      duration,
+      duration: finalDuration,
       credits_used: creditsUsed,
       updated_at: new Date(),
     });
@@ -361,7 +397,7 @@ export class SessionModel {
         const { UserModel } = await import('./user.model.js');
         await UserModel.deductCredits(session.user_id, creditsToDeduct);
       } catch (error) {
-        console.error(`扣除用户 ${session.user_id} 的点数失败:`, error);
+        logger.error(`扣除用户 ${session.user_id} 的点数失败:`, error);
       }
     }
 

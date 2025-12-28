@@ -98,8 +98,10 @@ export async function createBrowserSession(
       directUrl = `ws://${env.PUBLIC_MACHINE_ENDPOINT}?sessionId=${sessionId}`;
       logger.info(`使用公共端点构建 WebSocket 端点: ${directUrl}`);
     } else {
-      // 否则使用机器的实际IP地址和端口
-      const machineIp = machine.ip || 'localhost';
+      // 测试环境中，机器端在本地运行，需要使用 127.0.0.1
+      // 因为 getLocalIpAddress() 可能返回非 localhost 的 IP（如 192.168.x.x）
+      // 但机器端实际监听的是 0.0.0.0:proxyPort，本地访问应该用 127.0.0.1
+      const machineIp = process.env.NODE_ENV === 'test' ? '127.0.0.1' : (machine.ip || 'localhost');
       // 使用机器的实际代理端口，如果没有则使用默认值8082
       const proxyPort = machine.proxyPort || 8082;
       directUrl = `ws://${machineIp}:${proxyPort}?sessionId=${sessionId}`;

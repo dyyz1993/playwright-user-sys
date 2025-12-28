@@ -101,7 +101,7 @@ COPY --from=build --chown=nodejs:nodejs /app/package.json ./
 # Create directories
 RUN mkdir -p /app/data \
     /app/dist/data/screenshots \
-    /app/dist/src/protos && \
+    /app/dist/src/shared/protos && \
     chown -R nodejs:nodejs /app
 
 # Copy proto files

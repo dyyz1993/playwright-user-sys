@@ -20,14 +20,15 @@ jobs:
     
     strategy:
       matrix:
-        dockerfile:
-          - Dockerfile
-          - Dockerfile.machine
         include:
-          - dockerfile: Dockerfile
+          - dockerfile: docker/manager/Dockerfile.prod
+            context: .
             image_suffix: manager
-          - dockerfile: Dockerfile.machine
+            target: production
+          - dockerfile: docker/machine/Dockerfile.prod
+            context: .
             image_suffix: machine
+            target: production
     
     steps:
       - name: Checkout repository

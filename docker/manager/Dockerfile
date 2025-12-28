@@ -72,7 +72,7 @@ COPY --from=build --chown=nodejs:nodejs /app/package.json ./
 # Create necessary directories
 RUN mkdir -p /app/data \
     /app/dist/data/screenshots \
-    /app/dist/src/protos \
+    /app/dist/src/shared/protos \
     /app/files && \
     chown -R nodejs:nodejs /app
 

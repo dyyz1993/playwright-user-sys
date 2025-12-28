@@ -27,6 +27,8 @@ const envSchema = z.object({
   DB_PORT: z.string().optional(),
   DB_USER: z.string().optional(),
   DB_PASSWORD: z.string().optional(),
+  DB_POOL_MIN: z.string().optional(),
+  DB_POOL_MAX: z.string().optional(),
 
   // JWT 配置
   // 在测试环境中使用默认值，方便测试

@@ -50,16 +50,32 @@ export const verifyApiKey = async (request: FastifyRequest, reply: FastifyReply)
     if (!apiKey) {
       return reply.status(401).send({ success: false, error: '未提供 API Key' });
     }
-    
+
     const user = await UserModel.findByApiKey(apiKey);
     if (!user) {
       return reply.status(401).send({ success: false, error: '无效的 API Key' });
     }
-    
+
     if (user.status !== UserStatus.ACTIVE) {
       return reply.status(403).send({ success: false, error: '用户账号已被禁用' });
     }
-    
+
+    // 安全修复: 防止水平越权攻击
+    // 如果请求同时包含 JWT token，必须验证 token 所有者与 API Key 所有者一致
+    const authorizationHeader = request.headers.authorization;
+    if (authorizationHeader) {
+      const token = extractTokenFromHeader(authorizationHeader);
+      if (token) {
+        const decoded = verifyToken(token);
+        if (decoded && decoded.id !== user.id) {
+          return reply.status(403).send({
+            success: false,
+            error: 'JWT token 所有者与 API Key 所有者不匹配'
+          });
+        }
+      }
+    }
+
     // 将用户信息添加到请求对象
     request.user = {
       id: user.id,

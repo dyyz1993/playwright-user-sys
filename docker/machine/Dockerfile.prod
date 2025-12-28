@@ -23,8 +23,9 @@ RUN npm install -g pnpm@10.8.0
 
 # Install dependencies with caching
 # Skip better-sqlite3 in production
+# Use --no-frozen-lockfile to allow lockfile updates during build
 RUN --mount=type=cache,target=/root/.pnpm-store \
-    pnpm install --frozen-lockfile --config.sqlite3_binary_host_property=skip
+    pnpm install --no-frozen-lockfile --config.sqlite3_binary_host_property=skip
 
 # ============================================
 # Stage 2: Build
@@ -50,44 +51,29 @@ RUN pnpm build
 FROM node:22-alpine AS production
 
 # Install all runtime dependencies for Playwright (no SQLite)
+# Use minimal dependencies - Playwright will install what it needs
 RUN apk add --no-cache \
     # Basic libraries
     libc6-compat \
     curl \
-    # Playwright browser dependencies
-    libasound \
-    libatk-1.0 \
-    libatk-bridge-2.0 \
-    libcairo \
-    libcups \
-    libdrm \
-    libepoxy \
-    libgbm \
-    libgdk-pixbuf-2.0 \
-    libxkbcommon \
-    libpango-1.0 \
-    libthai \
-    libxcomposite \
-    libxdamage \
-    libxfixes \
-    libxkbcommon-x11 \
-    libxrandr \
-    # Fonts for rendering
-    ttf-liberation \
-    ttf-dejavu \
-    ttf-droid \
-    ttf-freefont \
     # X11 and display
     xvfb \
     dbus \
-    # Additional utilities
+    # Utilities
     wget \
     ca-certificates \
     # MySQL client
-    mysql-client
+    mysql-client \
+    # Fonts
+    ttf-freefont \
+    # Additional dependencies
+    libgcc \
+    libstdc++ \
+    # Bash for setup scripts
+    bash
 
 # Install Chromium via Playwright
-RUN npx playwright install-deps chromium
+# Skip install-deps on Alpine as it's for Debian/Ubuntu
 RUN npx playwright install chromium
 
 # Create non-root user
@@ -146,7 +132,7 @@ health_check() {
 health_check &
 # Start the machine service
 echo "Starting machine server..."
-exec node dist/machine/server.js
+exec node dist/src/machine/server.js
 EOF
 
 RUN chmod +x /app/entrypoint.sh && \
@@ -157,6 +143,9 @@ ENV NODE_ENV=production \
     DISPLAY=:99 \
     PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright \
     DB_TYPE=mysql
+
+# Setup path aliases (before switching to non-root user)
+RUN node -e "const fs = require('fs'); const path = require('path'); const aliases = {'@shared': 'dist/src/shared', '@controllers': 'dist/src/controllers', '@models': 'dist/src/models', '@services': 'dist/src/services', '@routes': 'dist/src/routes', '@middlewares': 'dist/src/middlewares', '@utils': 'dist/src/utils', '@schemas': 'dist/src/schemas', '@plugins': 'dist/src/plugins', '@config': 'dist/src/config', '@machine': 'dist/src/machine', '@manager': 'dist/src/manager'}; for (const [alias, target] of Object.entries(aliases)) { const linkPath = path.join('/app/dist/node_modules', alias); const resolvedPath = path.join('/app', target); if (!fs.existsSync(linkPath)) { fs.mkdirSync(path.dirname(linkPath), { recursive: true }); fs.symlinkSync(resolvedPath, linkPath, 'dir'); console.log('Created symlink:', alias, '->', resolvedPath); } console.log('Symlink exists:', linkPath); }" || true
 
 # Switch to non-root user
 USER nodejs

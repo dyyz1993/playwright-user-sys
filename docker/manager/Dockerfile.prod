@@ -23,8 +23,9 @@ RUN npm install -g pnpm@10.8.0
 
 # Install dependencies with caching
 # Use a custom install to skip better-sqlite3 in production
+# Use --no-frozen-lockfile to allow lockfile updates during build
 RUN --mount=type=cache,target=/root/.pnpm-store \
-    pnpm install --frozen-lockfile --config.sqlite3_binary_host_property=skip
+    pnpm install --no-frozen-lockfile --config.sqlite3_binary_host_property=skip
 
 # ============================================
 # Stage 2: Build
@@ -55,7 +56,8 @@ FROM node:22-alpine AS production
 RUN apk add --no-cache \
     libc6-compat \
     curl \
-    mysql-client
+    mysql-client \
+    bash
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -78,11 +80,19 @@ RUN mkdir -p /app/data \
 # Copy proto files
 COPY --chown=nodejs:nodejs src/shared/protos ./dist/src/shared/protos
 
+# Copy static files (views and public)
+COPY --chown=nodejs:nodejs src/views ./dist/src/views
+COPY --chown=nodejs:nodejs src/public ./dist/src/public
+
 # Set environment variables
 ENV NODE_ENV=production \
     PORT=3000 \
     HOST=0.0.0.0 \
     DB_TYPE=mysql
+
+# Setup path aliases (before switching to non-root user)
+# We need to create symlinks in /app/dist/node_modules pointing to /app/dist/src
+RUN node -e "const fs = require('fs'); const path = require('path'); const aliases = {'@shared': 'dist/src/shared', '@controllers': 'dist/src/controllers', '@models': 'dist/src/models', '@services': 'dist/src/services', '@routes': 'dist/src/routes', '@middlewares': 'dist/src/middlewares', '@utils': 'dist/src/utils', '@schemas': 'dist/src/schemas', '@plugins': 'dist/src/plugins', '@config': 'dist/src/config', '@machine': 'dist/src/machine', '@manager': 'dist/src/manager'}; for (const [alias, target] of Object.entries(aliases)) { const linkPath = path.join('/app/dist/node_modules', alias); const resolvedPath = path.join('/app', target); if (!fs.existsSync(linkPath)) { fs.mkdirSync(path.dirname(linkPath), { recursive: true }); fs.symlinkSync(resolvedPath, linkPath, 'dir'); console.log('Created symlink:', alias, '->', resolvedPath); } console.log('Symlink exists:', linkPath); }" || true
 
 # Switch to non-root user
 USER nodejs
@@ -97,4 +107,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start the application
-CMD ["node", "dist/manager/server.js"]
+CMD ["node", "dist/src/manager/server.js"]

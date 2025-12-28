@@ -120,4 +120,76 @@ export default fp(async function (fastify: FastifyInstance) {
       return sendError(reply, '验证 API Key 失败', 500);
     }
   });
+
+  // 支持 JWT Token 或 API Key 的灵活认证中间件
+  // 优先尝试 JWT Token，如果失败则尝试 API Key
+  fastify.decorate('verifyJWTOrApiKey', async (request: FastifyRequest, reply: FastifyReply) => {
+    const authHeader = request.headers.authorization;
+    const apiKey = request.headers['x-api-key'] as string;
+    const hasToken = authHeader && authHeader.startsWith('Bearer ');
+    const hasApiKey = !!apiKey;
+
+    // 两种方式都没有提供
+    if (!hasToken && !hasApiKey) {
+      return sendError(reply, '未提供授权令牌或 API Key', 401);
+    }
+
+    // 优先尝试 JWT Token
+    if (hasToken) {
+      try {
+        const token = authHeader!.split(' ')[1];
+
+        // 使用配置中的 JWT 密钥
+        const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : String(env.JWT_SECRET);
+        const decoded = jwt.verify(token, jwtSecret) as any;
+
+        const user = await UserModel.findById(decoded.id);
+        if (!user) {
+          return sendError(reply, '无效的用户', 401);
+        }
+
+        if (user.status !== UserStatus.ACTIVE) {
+          return sendError(reply, '用户已被禁用或暂停', 403);
+        }
+
+        // 将用户信息添加到请求对象
+        request.user = {
+          id: user.id,
+          username: user.username,
+          role: user.role as 'admin' | 'user',
+        };
+        return; // JWT 认证成功，直接返回
+      } catch (error) {
+        // JWT 认证失败，记录日志但继续尝试 API Key
+        request.log.warn('JWT Token 验证失败，尝试 API Key 认证');
+      }
+    }
+
+    // 尝试 API Key 认证
+    if (hasApiKey) {
+      try {
+        const user = await UserModel.findByApiKey(apiKey!);
+        if (!user) {
+          return sendError(reply, '无效的 API Key', 401);
+        }
+
+        if (user.status !== UserStatus.ACTIVE) {
+          return sendError(reply, '用户已被禁用或暂停', 403);
+        }
+
+        // 将用户信息添加到请求对象
+        request.user = {
+          id: user.id,
+          username: user.username,
+          role: user.role as 'admin' | 'user',
+        };
+        return; // API Key 认证成功
+      } catch (error) {
+        return sendError(reply, '验证 API Key 失败', 500);
+      }
+    }
+
+    // 都失败了
+    return sendError(reply, '认证失败', 401);
+  });
 });

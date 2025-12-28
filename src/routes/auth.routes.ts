@@ -36,16 +36,16 @@ export default async function authRoutes(fastify: FastifyInstance) {
     },
   }, authController.getCurrentUser);
 
-  // 验证 Token 有效性（/me 的别名，用于集成测试）
+  // 验证 Token 有效性（支持 JWT Token 或 API Key，用于 SDK 集成测试）
   fastify.get('/verify', {
-    onRequest: [fastify.verifyJWT],
+    onRequest: [fastify.verifyJWTOrApiKey],
     schema: {
       response: {
         200: zodToJsonSchema(currentUserResponseSchema),
         401: zodToJsonSchema(errorResponseSchema),
       },
       tags: ['auth'],
-      security: [{ bearerAuth: [] }],
+      security: [{ bearerAuth: [] }, { apiKey: [] }],
     },
   }, authController.getCurrentUser);
 }

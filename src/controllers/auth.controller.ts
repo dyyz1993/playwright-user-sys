@@ -72,16 +72,19 @@ export async function getCurrentUser(request: FastifyRequest, reply: FastifyRepl
       return sendError(reply, '用户不存在', 404);
     }
 
-    // 返回用户信息
+    // 返回用户信息（与 login 控制器保持一致的嵌套结构）
     return sendSuccess(reply, {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      credits: user.credits,
-      webhook_url: user.webhook_url,
-      api_key: user.api_key,
-      created_at: user.created_at,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        credits: user.credits,
+        webhook_url: user.webhook_url,
+        api_key: user.api_key,
+        created_at: user.created_at,
+      },
     });
   } catch (error) {
     request.log.error(error);

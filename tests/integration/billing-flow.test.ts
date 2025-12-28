@@ -53,6 +53,8 @@ describe('计费流程集成测试', () => {
   beforeEach(async () => {
     // 每个测试前清理会话和积分历史
     await clearTables('credit_history', 'sessions');
+    // 重置用户积分为 100，确保每个测试从相同的初始状态开始
+    await db('users').where({ id: testUser.id }).update({ credits: 100 });
   });
 
   /**

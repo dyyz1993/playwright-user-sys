@@ -125,7 +125,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
     process.env.DB_PASSWORD = process.env.DB_PASSWORD || '';
 
     // 设置其他必需的环境变量
-    process.env.JWT_SECRET = 'test_secret_key_for_testing_only';
+    process.env.JWT_SECRET = 'test_secret_key_for_testing_only_32chars';
     process.env.JWT_EXPIRES_IN = '24h';
     process.env.INSTANCE_TIMEOUT = '60000';
     process.env.MACHINE_MONITOR_INTERVAL = '30000';

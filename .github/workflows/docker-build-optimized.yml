@@ -20,20 +20,17 @@ jobs:
     
     strategy:
       matrix:
-        dockerfile:
-          - Dockerfile.optimized
-          - Dockerfile.machine.optimized
-          - Dockerfile.simple
         include:
-          - dockerfile: Dockerfile.optimized
+          - dockerfile: docker/manager/Dockerfile.prod
+            context: .
             image_suffix: manager
             image_name_suffix: manager-optimized
-          - dockerfile: Dockerfile.machine.optimized
+            target: production
+          - dockerfile: docker/machine/Dockerfile.prod
+            context: .
             image_suffix: machine
             image_name_suffix: machine-optimized
-          - dockerfile: Dockerfile.simple
-            image_suffix: simple
-            image_name_suffix: simple
+            target: production
     
     steps:
       - name: Checkout repository

@@ -105,7 +105,7 @@ RUN mkdir -p /app/data \
     chown -R nodejs:nodejs /app
 
 # Copy proto files
-COPY --chown=nodejs:nodejs src/protos ./dist/src/protos
+COPY --chown=nodejs:nodejs src/shared/protos ./dist/src/shared/protos
 
 # Create startup script
 RUN cat > /app/entrypoint.sh << 'EOF'

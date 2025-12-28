@@ -35,8 +35,9 @@ const createDatabaseConfig = () => {
         password: env.DB_PASSWORD || '',
         database: env.DB_NAME || 'playwright_user_sys',
         charset: 'utf8mb4',
-        // 使用环境变量 TZ 或默认 UTC，避免时区问题
-        timezone: process.env.TZ || 'UTC',
+        // MySQL2 需要 +00:00 格式的时区，不接受 UTC
+        // 如果 TZ 设置为 UTC，转换为 +00:00
+        timezone: (process.env.TZ === 'UTC' ? '+00:00' : process.env.TZ) || '+00:00',
         dateStrings: true,
       },
       pool: {

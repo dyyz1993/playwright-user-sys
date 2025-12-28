@@ -94,19 +94,29 @@ jobs:
 
       - name: Run ${{ matrix.test.name }}
         env:
+          NODE_ENV: test
+          PORT: 3000
+          HOST: 127.0.0.1
+          # 数据库配置
           DB_TYPE: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
           DB_NAME: playwright_test_user_sys
           DB_USER: root
           DB_PASSWORD: test_password
-          NODE_ENV: test
-          # 使用与本地 .env.test 完全相同的配置
+          # JWT 配置（与本地 .env.test 完全相同）
           JWT_SECRET: test_secret_key_for_testing_only_do_not_use_in_production
           JWT_EXPIRES_IN: 24h
+          # 管理员配置
           ADMIN_USERNAME: admin
           ADMIN_PASSWORD: REDACTED_ADMIN_PASS
+          # 实例配置
           INSTANCE_TIMEOUT: 60000
+          # gRPC 服务器配置
+          GRPC_PORT: 50051
+          # 代理服务器配置
+          PROXY_PORT: 8082
+          # 机器监控配置
           MACHINE_MONITOR_INTERVAL: 30000
         run: |
           NODE_OPTIONS="--max-old-space-size=4096" npx vitest run ${{ matrix.test.file }} --reporter=verbose --no-coverage

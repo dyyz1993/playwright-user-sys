@@ -108,10 +108,8 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
     process.env.DB_PORT = process.env.DB_PORT || '3306';
     process.env.DB_USER = process.env.DB_USER || 'root';
     process.env.DB_PASSWORD = process.env.DB_PASSWORD || '';
-    process.env.JWT_SECRET = 'test_secret_key_for_testing_only_32chars';
-    process.env.JWT_EXPIRES_IN = '24h';
-    process.env.INSTANCE_TIMEOUT = '60000';
-    process.env.MACHINE_MONITOR_INTERVAL = '30000';
+    // 注意：JWT_SECRET、JWT_EXPIRES_IN、INSTANCE_TIMEOUT、MACHINE_MONITOR_INTERVAL
+    // 等配置使用 .env.test 或 GitHub Actions 环境变量，不再硬编码覆盖
     // 增加连接池大小以支持并发测试
     process.env.DB_POOL_MIN = '5';
     process.env.DB_POOL_MAX = '20';

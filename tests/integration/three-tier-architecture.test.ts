@@ -101,11 +101,8 @@ describe('完整三端架构集成测试', () => {
     process.env.DB_USER = process.env.DB_USER || 'root';
     process.env.DB_PASSWORD = process.env.DB_PASSWORD || '';
 
-    // 设置其他必需的环境变量
-    process.env.JWT_SECRET = 'test_secret_key_for_testing_only_32chars';
-    process.env.JWT_EXPIRES_IN = '24h';
-    process.env.INSTANCE_TIMEOUT = '60000';
-    process.env.MACHINE_MONITOR_INTERVAL = '30000';
+    // 注意：JWT_SECRET、JWT_EXPIRES_IN、INSTANCE_TIMEOUT、MACHINE_MONITOR_INTERVAL
+    // 等配置使用 .env.test 或 GitHub Actions 环境变量，不再硬编码覆盖
 
     // 动态分配端口
     managerHttpPort = parseInt(process.env.PORT || '3000', 10);

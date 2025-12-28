@@ -103,6 +103,8 @@ jobs:
           NODE_ENV: test
           JWT_SECRET: test_secret_key_for_ci_only
           JWT_EXPIRES_IN: 24h
+          ADMIN_USERNAME: admin
+          ADMIN_PASSWORD: REDACTED_ADMIN_PASS
         run: |
           NODE_OPTIONS="--max-old-space-size=4096" npx vitest run ${{ matrix.test.file }} --reporter=verbose --no-coverage
 

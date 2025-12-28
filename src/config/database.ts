@@ -35,7 +35,8 @@ const createDatabaseConfig = () => {
         password: env.DB_PASSWORD || '',
         database: env.DB_NAME || 'playwright_user_sys',
         charset: 'utf8mb4',
-        timezone: '+08:00',
+        // 使用环境变量 TZ 或默认 UTC，避免时区问题
+        timezone: process.env.TZ || 'UTC',
         dateStrings: true,
       },
       pool: {

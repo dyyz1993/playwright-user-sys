@@ -94,6 +94,7 @@ jobs:
 
       - name: Run ${{ matrix.test.name }}
         env:
+          TZ: UTC
           NODE_ENV: test
           PORT: 3000
           HOST: 127.0.0.1

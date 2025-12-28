@@ -23,13 +23,18 @@ import { SessionStatus } from '../../src/shared/types/index.js';
 import { createTestUser, createTestMachine } from '../helpers/factories.js';
 import { clearTables, getTestDbConnection } from '../helpers/database.js';
 import { getFreePort } from '../helpers/ports.js';
-import { db } from '../../src/config/database.js';
+import { db, initDatabase } from '../../src/config/database.js';
+import { runMigrations } from '../../src/models/migrations.js';
 
 describe('计费流程集成测试', () => {
   let testUser: any;
   let testMachine: any;
 
   beforeAll(async () => {
+    // 初始化数据库连接和迁移
+    await initDatabase();
+    await runMigrations();
+
     // 清理数据库
     await clearTables('credit_history', 'sessions', 'users', 'machines');
 

@@ -71,8 +71,14 @@ export function loadConfig(): MachineConfig {
     // 浏览器配置
     maxSessions: parseInt(env.MAX_SESSIONS || '10', 10),
     sessionTimeout: parseInt(env.SESSION_TIMEOUT || '300000', 10), // 5分钟
-    chromePath: env.CHROME_PATH || '/Applications/Google Chrome 2.app/Contents/MacOS/Google Chrome',
-    // '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    // 根据平台自动检测 Chrome 路径
+    chromePath: env.CHROME_PATH || (
+      process.platform === 'darwin'
+        ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+        : process.platform === 'linux'
+          ? '/usr/bin/google-chrome-stable'
+          : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+    ),
 
     // 心跳配置
     heartbeatInterval: parseInt(env.HEARTBEAT_INTERVAL || '30000', 10), // 30秒

@@ -71,20 +71,20 @@
   },
   "suites": [
     {
-      "title": "p0-critical.spec.ts",
-      "file": "p0-critical.spec.ts",
+      "title": "p1-important.spec.ts",
+      "file": "p1-important.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "P0-用户管理核心CRUD",
-          "file": "p0-critical.spec.ts",
-          "line": 239,
+          "title": "P1-系统设置和日志",
+          "file": "p1-important.spec.ts",
+          "line": 1341,
           "column": 6,
           "specs": [
             {
-              "title": "P0-U01: 用户列表页面应该正常加载",
+              "title": "P1-A06: 应该能查看系统操作日志",
               "ok": false,
               "tags": [],
               "tests": [
@@ -99,67 +99,284 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 7804,
+                      "duration": 612,
                       "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('用户管理')\nExpected: visible\nError: strict mode violation: getByText('用户管理') resolved to 3 elements:\n    1) <p class=\"text-sm text-gray-600\">用户管理系统</p> aka getByText('用户管理系统')\n    2) <span>用户管理</span> aka getByRole('link', { name: ' 用户管理' })\n    3) <span>用户管理</span> aka locator('#mobile-sidebar').getByText('用户管理')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('用户管理')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('用户管理')\nExpected: visible\nError: strict mode violation: getByText('用户管理') resolved to 3 elements:\n    1) <p class=\"text-sm text-gray-600\">用户管理系统</p> aka getByText('用户管理系统')\n    2) <span>用户管理</span> aka getByRole('link', { name: ' 用户管理' })\n    3) <span>用户管理</span> aka locator('#mobile-sidebar').getByText('用户管理')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('用户管理')\u001b[22m\n\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p0-critical.spec.ts:232:42",
+                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11",
                         "location": {
-                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p0-critical.spec.ts",
-                          "column": 42,
-                          "line": 232
+                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                          "column": 14,
+                          "line": 94
                         },
-                        "snippet": "  230 |\n  231 |     // 预期: 页面标题正确\n> 232 |     await expect(page.getByText('用户管理')).toBeVisible();\n      |                                          ^\n  233 |\n  234 |     // 预期: 没有JavaScript错误\n  235 |     await checkNoErrors(page);"
+                        "snippet": "  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');"
                       },
                       "errors": [
                         {
                           "location": {
-                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p0-critical.spec.ts",
-                            "column": 42,
-                            "line": 232
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                            "column": 14,
+                            "line": 94
                           },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('用户管理')\nExpected: visible\nError: strict mode violation: getByText('用户管理') resolved to 3 elements:\n    1) <p class=\"text-sm text-gray-600\">用户管理系统</p> aka getByText('用户管理系统')\n    2) <span>用户管理</span> aka getByRole('link', { name: ' 用户管理' })\n    3) <span>用户管理</span> aka locator('#mobile-sidebar').getByText('用户管理')\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByText('用户管理')\u001b[22m\n\n\n  230 |\n  231 |     // 预期: 页面标题正确\n> 232 |     await expect(page.getByText('用户管理')).toBeVisible();\n      |                                          ^\n  233 |\n  234 |     // 预期: 没有JavaScript错误\n  235 |     await checkNoErrors(page);\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p0-critical.spec.ts:232:42"
+                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n\n  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-12-26T09:08:23.970Z",
+                      "startTime": "2025-12-26T18:23:05.787Z",
                       "annotations": [],
                       "attachments": [
                         {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p0-critical-P0-用户管理核心CRUD-P0-U01-用户列表页面应该正常加载-chromium/test-failed-1.png"
-                        },
-                        {
                           "name": "video",
                           "contentType": "video/webm",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p0-critical-P0-用户管理核心CRUD-P0-U01-用户列表页面应该正常加载-chromium/video.webm"
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A06-应该能查看系统操作日志-chromium/video.webm"
                         },
                         {
                           "name": "error-context",
                           "contentType": "text/markdown",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p0-critical-P0-用户管理核心CRUD-P0-U01-用户列表页面应该正常加载-chromium/error-context.md"
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A06-应该能查看系统操作日志-chromium/error-context.md"
                         },
                         {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p0-critical-P0-用户管理核心CRUD-P0-U01-用户列表页面应该正常加载-chromium/trace.zip"
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A06-应该能查看系统操作日志-chromium/trace.zip"
                         }
                       ],
                       "errorLocation": {
-                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p0-critical.spec.ts",
-                        "column": 42,
-                        "line": 232
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                        "column": 14,
+                        "line": 94
                       }
                     }
                   ],
                   "status": "unexpected"
                 }
               ],
-              "id": "ff71286bc3525f03e657-8d562d4c582e1402f0ff",
-              "file": "p0-critical.spec.ts",
-              "line": 246,
+              "id": "cc7a5e2e81e976facf6d-a9311b359cdddc2366d0",
+              "file": "p1-important.spec.ts",
+              "line": 1376,
+              "column": 3
+            },
+            {
+              "title": "P1-A08: 操作日志应该支持按时间筛选",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 501,
+                      "error": {
+                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11",
+                        "location": {
+                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                          "column": 14,
+                          "line": 94
+                        },
+                        "snippet": "  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                            "column": 14,
+                            "line": 94
+                          },
+                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n\n  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-26T18:23:07.196Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A08-操作日志应该支持按时间筛选-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A08-操作日志应该支持按时间筛选-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A08-操作日志应该支持按时间筛选-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                        "column": 14,
+                        "line": 94
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "cc7a5e2e81e976facf6d-cdf40eaff72d48accf17",
+              "file": "p1-important.spec.ts",
+              "line": 1440,
+              "column": 3
+            },
+            {
+              "title": "P1-A09: 应该能访问文件上传页面",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 560,
+                      "error": {
+                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11",
+                        "location": {
+                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                          "column": 14,
+                          "line": 94
+                        },
+                        "snippet": "  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                            "column": 14,
+                            "line": 94
+                          },
+                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n\n  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-26T18:23:08.335Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A09-应该能访问文件上传页面-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A09-应该能访问文件上传页面-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A09-应该能访问文件上传页面-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                        "column": 14,
+                        "line": 94
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "cc7a5e2e81e976facf6d-cad8b78b5d2e39a4e000",
+              "file": "p1-important.spec.ts",
+              "line": 1467,
+              "column": 3
+            },
+            {
+              "title": "P1-A10: 文件上传应该验证文件类型",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 464,
+                      "error": {
+                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n",
+                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11",
+                        "location": {
+                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                          "column": 14,
+                          "line": 94
+                        },
+                        "snippet": "  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                            "column": 14,
+                            "line": 94
+                          },
+                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n\n  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-12-26T18:23:09.538Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A10-文件上传应该验证文件类型-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A10-文件上传应该验证文件类型-chromium/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A10-文件上传应该验证文件类型-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
+                        "column": 14,
+                        "line": 94
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "cc7a5e2e81e976facf6d-2abaac9fa58aab173bf4",
+              "file": "p1-important.spec.ts",
+              "line": 1494,
               "column": 3
             }
           ]
@@ -169,11 +386,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-12-26T09:08:23.650Z",
-    "duration": 8697.029999999999,
+    "startTime": "2025-12-26T18:23:05.467Z",
+    "duration": 4862.063,
     "expected": 0,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 4,
     "flaky": 0
   }
 }

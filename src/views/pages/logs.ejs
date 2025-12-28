@@ -246,52 +246,14 @@
     });
   });
 
-  // 日期范围筛选
+  // 日期范围筛选 - 通过后端 API
   const dateRangeFilter = document.getElementById('date-range');
-  dateRangeFilter?.addEventListener('change', () => {
+  dateRangeFilter?.addEventListener('change', async () => {
     const selectedRange = dateRangeFilter.value;
-    const rows = document.querySelectorAll('tbody tr');
-
-    if (selectedRange === 'all') {
-      rows.forEach(row => {
-        row.style.display = '';
-      });
-      return;
-    }
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    rows.forEach(row => {
-      const dateCell = row.querySelector('td:first-child').textContent;
-      const logDate = new Date(dateCell);
-
-      let show = false;
-
-      switch (selectedRange) {
-        case 'today':
-          show = logDate >= today;
-          break;
-        case 'yesterday':
-          show = logDate >= yesterday && logDate < today;
-          break;
-        case 'week':
-          show = logDate >= startOfWeek;
-          break;
-        case 'month':
-          show = logDate >= startOfMonth;
-          break;
-      }
-
-      row.style.display = show ? '' : 'none';
-    });
+    const url = new URL(window.location.href);
+    url.searchParams.set('dateRange', selectedRange);
+    // 重新加载页面以获取后端筛选的数据
+    window.location.href = url.toString();
   });
 
   // 刷新按钮

@@ -120,3 +120,26 @@ export const adminAddCreditsResponseSchema = z.object({
     credits: z.number(),
   }),
 });
+
+// 用户列表查询参数模式
+export const userListQuerySchema = z.object({
+  page: z.string().optional(),
+  limit: z.string().optional(),
+  sort: z.enum(['username', 'email', 'created_at', 'credits', 'id']).optional(),
+  order: z.enum(['asc', 'desc']).optional(),
+  search: z.string().optional(),
+  role: z.enum(['admin', 'user']).optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+});
+
+// 用户列表响应模式
+export const adminGetUsersResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.object({
+    items: z.array(z.any()), // Will use userListItemSchema from user.schema
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+    totalPages: z.number(),
+  }),
+});

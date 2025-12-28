@@ -43,6 +43,14 @@ export interface UpdateSessionInput {
   error_message?: string;
 }
 
+// 分页查询会话的筛选选项接口
+export interface SessionFilterOptions {
+  status?: string; // 'active' | 'ended' | 'error' | SessionStatus 值
+  userId?: number;
+  startDate?: Date;
+  endDate?: Date;
+}
+
 export class SessionModel {
   // 创建会话
   static async create(data: CreateSessionInput): Promise<Session | null> {
@@ -683,18 +691,64 @@ export class SessionModel {
   }
 
   // 分页查询会话
-  static async paginate(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Session & { username?: string }>> {
+  static async paginate(
+    page: number = 1,
+    limit: number = 10,
+    filters?: SessionFilterOptions
+  ): Promise<PaginatedResponse<Session & { username?: string }>> {
     try {
       const offset = (page - 1) * limit;
 
-      const [sessions, total] = await Promise.all([
-        db('sessions')
-          .select('sessions.*', 'users.username')
-          .leftJoin('users', 'sessions.user_id', 'users.id')
+      // 构建查询
+      let query = db('sessions')
+        .select('sessions.*', 'users.username')
+        .leftJoin('users', 'sessions.user_id', 'users.id');
+
+      // 应用状态筛选
+      if (filters?.status) {
+        const status = filters.status;
+        if (status === 'active') {
+          // 活跃状态: created 或 connected
+          query = query.whereIn('sessions.status', [SessionStatus.CREATED, SessionStatus.CONNECTED]);
+        } else if (status === 'ended') {
+          // 已结束状态: disconnected, expired, completed
+          query = query.whereIn('sessions.status', [
+            SessionStatus.DISCONNECTED,
+            SessionStatus.EXPIRED,
+            SessionStatus.COMPLETED
+          ]);
+        } else if (status === 'error') {
+          query = query.where('sessions.status', SessionStatus.ERROR);
+        } else {
+          // 直接使用 SessionStatus 枚举值
+          query = query.where('sessions.status', status);
+        }
+      }
+
+      // 应用用户筛选
+      if (filters?.userId) {
+        query = query.where('sessions.user_id', filters.userId);
+      }
+
+      // 应用时间范围筛选
+      if (filters?.startDate) {
+        query = query.where('sessions.created_at', '>=', filters.startDate);
+      }
+      if (filters?.endDate) {
+        // 如果 endDate 包含当天的数据，需要设置为当天结束时间
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        query = query.where('sessions.created_at', '<=', endDate);
+      }
+
+      // 执行查询
+      const [sessions, totalResult] = await Promise.all([
+        query.clone()
           .orderBy('sessions.created_at', 'desc')
           .limit(limit)
           .offset(offset),
-        db('sessions').count('id as count').first(),
+        // 计算总数（应用相同的筛选条件）
+        query.count('sessions.id as count').first(),
       ]);
 
       return {
@@ -712,13 +766,244 @@ export class SessionModel {
             };
           }
         }),
-        total: total ? Number(total.count) : 0,
+        total: totalResult ? Number(totalResult.count) : 0,
         page,
         limit,
-        totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
+        totalPages: Math.ceil((totalResult ? Number(totalResult.count) : 0) / limit),
       };
     } catch (error) {
       console.error('分页查询会话失败:', error);
+      return {
+        items: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
+    }
+  }
+
+  // 获取会话统计
+  static async getStats(filters?: {
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<{
+    total: number;
+    active: number;
+    ended: number;
+    error: number;
+    totalCreditsUsed: number;
+    totalDuration: number;
+    avgDuration: number;
+    byUser: Array<{
+      user_id: number;
+      username: string;
+      sessionCount: number;
+      creditsUsed: number;
+    }>;
+  }> {
+    try {
+      let query = db('sessions').select('sessions.*', 'users.username')
+        .leftJoin('users', 'sessions.user_id', 'users.id');
+
+      if (filters?.startDate) {
+        query = query.where('sessions.created_at', '>=', filters.startDate);
+      }
+
+      if (filters?.endDate) {
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        query = query.where('sessions.created_at', '<=', endDate);
+      }
+
+      const sessions = await query;
+
+      // 统计数据
+      const total = sessions.length;
+      const active = sessions.filter((s: any) =>
+        ['created', 'connected'].includes(s.status)
+      ).length;
+      const ended = sessions.filter((s: any) =>
+        ['disconnected', 'expired', 'completed'].includes(s.status)
+      ).length;
+      const error = sessions.filter((s: any) => s.status === 'error').length;
+
+      const totalCreditsUsed = sessions.reduce((sum, s: any) =>
+        sum + (s.credits_used || 0), 0);
+      const totalDuration = sessions.reduce((sum, s: any) =>
+        sum + (s.duration || 0), 0);
+      const avgDuration = total > 0 ? Math.round(totalDuration / total) : 0;
+
+      // 按用户分组统计
+      const byUserMap = new Map();
+      sessions.forEach((s: any) => {
+        const userId = s.user_id;
+        if (!byUserMap.has(userId)) {
+          byUserMap.set(userId, {
+            user_id: userId,
+            username: s.username,
+            sessionCount: 0,
+            creditsUsed: 0
+          });
+        }
+        const user = byUserMap.get(userId);
+        user.sessionCount++;
+        user.creditsUsed += s.credits_used || 0;
+      });
+
+      return {
+        total,
+        active,
+        ended,
+        error,
+        totalCreditsUsed,
+        totalDuration,
+        avgDuration,
+        byUser: Array.from(byUserMap.values())
+      };
+    } catch (error) {
+      logger.error('获取会话统计失败:', error);
+      return {
+        total: 0,
+        active: 0,
+        ended: 0,
+        error: 0,
+        totalCreditsUsed: 0,
+        totalDuration: 0,
+        avgDuration: 0,
+        byUser: []
+      };
+    }
+  }
+
+  // 获取会话详情(包含用户和机器信息)
+  static async getDetailById(id: string): Promise<(Session & {
+    username: string;
+    machine_name?: string;
+  }) | null> {
+    try {
+      const session = await db('sessions')
+        .select('sessions.*', 'users.username', 'machines.hostname as machine_name')
+        .leftJoin('users', 'sessions.user_id', 'users.id')
+        .leftJoin('machines', 'sessions.machine_id', 'machines.id')
+        .where('sessions.id', id)
+        .first();
+
+      if (!session) return null;
+
+      let parsedOptions = null;
+      if (session.options) {
+        try {
+          if (typeof session.options === 'string') {
+            parsedOptions = JSON.parse(session.options);
+          } else {
+            parsedOptions = session.options;
+          }
+        } catch (error) {
+          logger.error(`解析会话选项失败 (ID: ${id}):`, error);
+          parsedOptions = null;
+        }
+      }
+
+      return {
+        ...session,
+        options: parsedOptions,
+      };
+    } catch (error) {
+      logger.error('获取会话详情失败:', error);
+      return null;
+    }
+  }
+
+  // 排序分页查询(支持多种排序方式)
+  static async paginateSorted(
+    page: number = 1,
+    limit: number = 10,
+    options?: {
+      sort?: string;
+      order?: 'asc' | 'desc';
+      filters?: SessionFilterOptions;
+    }
+  ): Promise<PaginatedResponse<Session & { username: string }>> {
+    try {
+      const offset = (page - 1) * limit;
+      const sort = options?.sort || 'created_at';
+      const order = options?.order || 'desc';
+
+      // 构建查询
+      let query = db('sessions')
+        .select('sessions.*', 'users.username')
+        .leftJoin('users', 'sessions.user_id', 'users.id');
+
+      // 应用状态筛选
+      if (options?.filters?.status) {
+        const status = options.filters.status;
+        if (status === 'active') {
+          query = query.whereIn('sessions.status', [SessionStatus.CREATED, SessionStatus.CONNECTED]);
+        } else if (status === 'ended') {
+          query = query.whereIn('sessions.status', [
+            SessionStatus.DISCONNECTED,
+            SessionStatus.EXPIRED,
+            SessionStatus.COMPLETED
+          ]);
+        } else if (status === 'error') {
+          query = query.where('sessions.status', SessionStatus.ERROR);
+        } else {
+          query = query.where('sessions.status', status);
+        }
+      }
+
+      // 应用用户筛选
+      if (options?.filters?.userId) {
+        query = query.where('sessions.user_id', options.filters.userId);
+      }
+
+      // 应用时间范围筛选
+      if (options?.filters?.startDate) {
+        query = query.where('sessions.created_at', '>=', options.filters.startDate);
+      }
+      if (options?.filters?.endDate) {
+        const endDate = new Date(options.filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        query = query.where('sessions.created_at', '<=', endDate);
+      }
+
+      // 验证排序字段有效性
+      const validSortFields = ['created_at', 'duration', 'credits_used', 'updated_at', 'start_time'];
+      const validSortField = validSortFields.includes(sort) ? sort : 'created_at';
+      const validOrder = order === 'asc' || order === 'desc' ? order : 'desc';
+
+      // 执行查询
+      const [sessions, totalResult] = await Promise.all([
+        query.clone()
+          .orderBy(`sessions.${validSortField}`, validOrder)
+          .limit(limit)
+          .offset(offset),
+        query.count('sessions.id as count').first(),
+      ]);
+
+      return {
+        items: sessions.map((session: any) => {
+          try {
+            return {
+              ...session,
+              options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+            };
+          } catch (error) {
+            logger.error(`解析会话选项失败 (ID: ${session.id}):`, error);
+            return {
+              ...session,
+              options: null,
+            };
+          }
+        }),
+        total: totalResult ? Number(totalResult.count) : 0,
+        page,
+        limit,
+        totalPages: Math.ceil((totalResult ? Number(totalResult.count) : 0) / limit),
+      };
+    } catch (error) {
+      logger.error('分页查询会话失败:', error);
       return {
         items: [],
         total: 0,

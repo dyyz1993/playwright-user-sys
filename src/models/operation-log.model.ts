@@ -219,6 +219,106 @@ export class OperationLogModel {
       };
     }
   }
+
+  // 分页查询日志(带筛选)
+  static async paginate(
+    page: number = 1,
+    limit: number = 20,
+    filters?: {
+      action?: string;
+      startDate?: Date;
+      endDate?: Date;
+    }
+  ): Promise<PaginatedResponse<OperationLog & { username?: string; role?: string }>> {
+    try {
+      const offset = (page - 1) * limit;
+
+      // 构建查询
+      let query = db('operation_logs')
+        .select('operation_logs.*', 'users.username', 'users.role')
+        .leftJoin('users', 'operation_logs.admin_id', 'users.id');
+
+      // 应用筛选条件
+      if (filters?.action) {
+        query = query.where('operation_logs.action', filters.action);
+      }
+
+      if (filters?.startDate) {
+        query = query.where('operation_logs.created_at', '>=', filters.startDate);
+      }
+
+      if (filters?.endDate) {
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        query = query.where('operation_logs.created_at', '<=', endDate);
+      }
+
+      // 执行查询
+      const [logs, totalResult] = await Promise.all([
+        query.clone()
+          .orderBy('operation_logs.created_at', 'desc')
+          .limit(limit)
+          .offset(offset),
+        query.count('operation_logs.id as count').first()
+      ]);
+
+      return {
+        items: logs.map((log: any) => ({
+          ...log,
+          details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null
+        })),
+        total: totalResult ? Number(totalResult.count) : 0,
+        page,
+        limit,
+        totalPages: Math.ceil((totalResult ? Number(totalResult.count) : 0) / limit)
+      };
+    } catch (error) {
+      console.error('分页查询操作日志失败:', error);
+      return {
+        items: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0
+      };
+    }
+  }
+
+  // 获取操作统计
+  static async getStats(filters?: {
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<{ total: number; byAction: Record<string, number> }> {
+    try {
+      let query = db('operation_logs');
+
+      if (filters?.startDate) {
+        query = query.where('created_at', '>=', filters.startDate);
+      }
+
+      if (filters?.endDate) {
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        query = query.where('created_at', '<=', endDate);
+      }
+
+      const logs = await query;
+
+      const byAction: Record<string, number> = {};
+      logs.forEach((log: any) => {
+        const action = log.action;
+        byAction[action] = (byAction[action] || 0) + 1;
+      });
+
+      return {
+        total: logs.length,
+        byAction
+      };
+    } catch (error) {
+      console.error('获取操作统计失败:', error);
+      return { total: 0, byAction: {} };
+    }
+  }
 }
 
 export default OperationLogModel;

@@ -37,8 +37,8 @@ export default defineConfig({
     actionTimeout: 10 * 1000,
     navigationTimeout: 30 * 1000,
 
-    // 截图配置
-    screenshot: 'only-on-failure',
+    // 截图配置 - 启用全页面截图
+    screenshot: 'retain-on-failure',
     video: 'retain-on-failure',
 
     // 追踪配置

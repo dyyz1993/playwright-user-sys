@@ -198,7 +198,7 @@ export class UserModel {
   }
 
   // 获取所有用户（分页）
-  static async findAll(query: PaginationQuery = {}): Promise<PaginatedResponse<User>> {
+  static async findAll(query: PaginationQuery & { search?: string; role?: UserRole; status?: UserStatus } = {}): Promise<PaginatedResponse<User>> {
     try {
       console.log('开始查询用户数据');
       const page = query.page || 1;
@@ -207,22 +207,46 @@ export class UserModel {
       const sort = query.sort || 'created_at';
       const order = query.order || 'desc';
 
-      const [users, total] = await Promise.all([
-        db('users')
-          .orderBy(sort, order)
-          .limit(limit)
-          .offset(offset),
-        db('users').count('id as count').first(),
-      ]);
+      // 构建查询
+      let queryBuilder = db('users');
 
-      console.log(`找到 ${users.length} 个用户，总数 ${total ? total.count : 0}`);
+      // 搜索条件（用户名或邮箱）
+      if (query.search) {
+        queryBuilder = queryBuilder.where(function() {
+          this.where('username', 'like', `%${query.search}%`)
+            .orWhere('email', 'like', `%${query.search}%`);
+        });
+      }
+
+      // 角色筛选
+      if (query.role) {
+        queryBuilder = queryBuilder.where('role', query.role);
+      }
+
+      // 状态筛选
+      if (query.status) {
+        queryBuilder = queryBuilder.where('status', query.status);
+      }
+
+      // 获取总数（使用相同的筛选条件）
+      const countQuery = queryBuilder.clone();
+      const totalResult = await countQuery.count('id as count').first();
+      const total = totalResult ? Number(totalResult.count) : 0;
+
+      // 获取分页数据
+      const users = await queryBuilder
+        .orderBy(sort, order)
+        .limit(limit)
+        .offset(offset);
+
+      console.log(`找到 ${users.length} 个用户，总数 ${total}`);
 
       return {
         items: users,
-        total: total ? Number(total.count) : 0,
+        total,
         page,
         limit,
-        totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
+        totalPages: Math.ceil(total / limit),
       };
     } catch (error) {
       console.error('查询用户数据失败:', error);

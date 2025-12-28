@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { MachineModel } from '../models/machine.model.js';
+import { MachineModel, UpdateMachineInput } from '../models/machine.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { sendSuccess, sendError, sendCreated, sendPaginated } from '../utils/response.js';
 import { PaginationQuery } from '@shared/types/index.js';
@@ -411,6 +411,86 @@ export async function deleteMachine(request: FastifyRequest, reply: FastifyReply
   }
 }
 
+// 健康检查
+export async function healthCheck(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const machineId = (request.params as any).id;
+
+    const result = await MachineModel.healthCheck(machineId);
+    return sendSuccess(reply, result);
+  } catch (error) {
+    request.log.error(error);
+    return sendError(reply, '健康检查失败', 500);
+  }
+}
+
+// 批量健康检查
+export async function batchHealthCheck(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { machineIds } = request.body as { machineIds: string[] };
+
+    if (!Array.isArray(machineIds) || machineIds.length === 0) {
+      return sendError(reply, '无效的机器 ID 列表', 400);
+    }
+
+    const results = await MachineModel.batchHealthCheck(machineIds);
+
+    const healthy = results.filter(r => r.status === 'healthy').length;
+    const unhealthy = results.filter(r => r.status === 'unhealthy').length;
+
+    return sendSuccess(reply, {
+      total: results.length,
+      healthy,
+      unhealthy,
+      results
+    });
+  } catch (error) {
+    request.log.error(error);
+    return sendError(reply, '批量健康检查失败', 500);
+  }
+}
+
+// 更新机器配置（管理员）
+export async function updateMachineConfig(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const machineId = (request.params as any).id;
+    const updateData = request.body as UpdateMachineInput;
+
+    // 检查机器是否存在
+    const existingMachine = await MachineModel.findById(machineId);
+    if (!existingMachine) {
+      return sendError(reply, '机器不存在', 404);
+    }
+
+    // 验证 IP 地址格式（如果提供）
+    if (updateData.ip) {
+      const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+      if (!ipRegex.test(updateData.ip)) {
+        return sendError(reply, '无效的 IP 地址格式', 400);
+      }
+    }
+
+    // 验证端口范围（如果提供）
+    if (updateData.grpcPort !== undefined && (updateData.grpcPort < 1 || updateData.grpcPort > 65535)) {
+      return sendError(reply, 'gRPC 端口必须在 1-65535 之间', 400);
+    }
+    if (updateData.proxyPort !== undefined && (updateData.proxyPort < 1 || updateData.proxyPort > 65535)) {
+      return sendError(reply, '代理端口必须在 1-65535 之间', 400);
+    }
+
+    // 更新机器
+    const updatedMachine = await MachineModel.update(machineId, updateData);
+    if (!updatedMachine) {
+      return sendError(reply, '更新机器失败', 500);
+    }
+
+    return sendSuccess(reply, updatedMachine);
+  } catch (error) {
+    request.log.error(error);
+    return sendError(reply, '更新机器失败', 500);
+  }
+}
+
 export default {
   registerMachine,
   updateMachineStatus,
@@ -422,4 +502,7 @@ export default {
   cleanupOldMachines,
   restartMachine,
   deleteMachine,
+  healthCheck,
+  batchHealthCheck,
+  updateMachineConfig,
 };

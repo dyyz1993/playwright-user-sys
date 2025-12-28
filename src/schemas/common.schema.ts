@@ -23,6 +23,9 @@ export const paginationQuerySchema = z.object({
   limit: z.string().optional(),
   sort: z.string().optional(),
   order: z.enum(['asc', 'desc']).optional(),
+  search: z.string().optional(),
+  role: z.enum(['admin', 'user']).optional(),
+  status: z.enum(['active', 'inactive']).optional(),
 });
 
 // 通用分页响应模式

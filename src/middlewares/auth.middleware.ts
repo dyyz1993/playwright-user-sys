@@ -7,25 +7,31 @@ import { UserRole, UserStatus } from '@shared/types/index.js';
 // 验证 JWT Token 中间件
 export const verifyJWT = async (request: FastifyRequest, reply: FastifyReply) => {
   try {
-    const token = extractTokenFromHeader(request.headers.authorization);
+    let token = extractTokenFromHeader(request.headers.authorization);
+
+    // 如果 Authorization header 中没有 token,尝试从 cookie 中获取
+    if (!token && request.cookies) {
+      token = request.cookies.token || '';
+    }
+
     if (!token) {
       return reply.status(401).send({ success: false, error: '未提供认证令牌' });
     }
-    
+
     const decoded = verifyToken(token);
     if (!decoded) {
       return reply.status(401).send({ success: false, error: '无效的认证令牌' });
     }
-    
+
     const user = await UserModel.findById(decoded.id);
     if (!user) {
       return reply.status(401).send({ success: false, error: '用户不存在' });
     }
-    
+
     if (user.status !== UserStatus.ACTIVE) {
       return reply.status(403).send({ success: false, error: '用户账号已被禁用' });
     }
-    
+
     // 将用户信息添加到请求对象
     request.user = {
       id: user.id,

@@ -20,8 +20,15 @@
         <div class="ml-4">
           <select id="role-filter" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
             <option value="">所有角色</option>
-            <option value="admin">管理员</option>
-            <option value="user">普通用户</option>
+            <option value="admin" <%= filters.role === 'admin' ? 'selected' : '' %>>管理员</option>
+            <option value="user" <%= filters.role === 'user' ? 'selected' : '' %>>普通用户</option>
+          </select>
+        </div>
+        <div class="ml-4">
+          <select id="status-filter" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            <option value="">所有状态</option>
+            <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>活跃</option>
+            <option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>禁用</option>
           </select>
         </div>
       </div>
@@ -42,19 +49,47 @@
       </div>
     </div>
 
+    <!-- 批量操作按钮 -->
+    <div id="batch-actions" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-center justify-between">
+      <span class="text-sm text-blue-700">已选择 <span id="selected-count">0</span> 个用户</span>
+      <div class="flex space-x-2">
+        <button id="batch-recharge-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-md text-sm font-medium">
+          <i class="fas fa-coins mr-1"></i> 批量充值
+        </button>
+        <button id="batch-delete-btn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-md text-sm font-medium">
+          <i class="fas fa-trash mr-1"></i> 批量删除
+        </button>
+        <button id="cancel-selection-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium">
+          取消选择
+        </button>
+      </div>
+    </div>
+
     <!-- 用户表格 -->
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+              <input type="checkbox" id="select-all-users" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+            </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               用户
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               角色
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" id="sort-credits">
               算力点数
+              <span id="sort-icon" class="ml-1">
+                <%
+                  const currentSort = query.sort || 'created_at';
+                  const currentOrder = query.order || 'desc';
+                  if (currentSort === 'credits') {
+                    if (currentOrder === 'asc') { %><i class="fas fa-sort-up"></i><% } else { %><i class="fas fa-sort-down"></i><% }
+                  } else { %><i class="fas fa-sort text-gray-300"></i><% }
+                %>
+              </span>
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               状态
@@ -69,7 +104,10 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <% users.forEach(user => { %>
-            <tr>
+            <tr class="user-row" data-user-id="<%= user.id %>" data-role="<%= user.role %>">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <input type="checkbox" class="user-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" data-user-id="<%= user.id %>">
+              </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="flex-shrink-0 h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium">
@@ -111,13 +149,19 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex justify-end space-x-2">
-                  <button class="text-primary-600 hover:text-primary-900 add-credits-btn" data-user-id="<%= user.id %>" data-username="<%= user.username %>">
+                  <button class="text-primary-600 hover:text-primary-900 add-credits-btn" data-user-id="<%= user.id %>" data-username="<%= user.username %>" title="添加算力">
                     <i class="fas fa-coins"></i>
                   </button>
-                  <a href="/admin/users/<%= user.id %>/edit" class="text-indigo-600 hover:text-indigo-900">
+                  <button class="text-green-600 hover:text-green-900 view-logs-btn" data-user-id="<%= user.id %>" data-username="<%= user.username %>" title="查看日志">
+                    <i class="fas fa-history"></i>
+                  </button>
+                  <button class="text-blue-600 hover:text-blue-900 view-sessions-btn" data-user-id="<%= user.id %>" data-username="<%= user.username %>" title="查看会话">
+                    <i class="fas fa-desktop"></i>
+                  </button>
+                  <a href="/admin/users/<%= user.id %>/edit" class="text-indigo-600 hover:text-indigo-900" title="编辑">
                     <i class="fas fa-edit"></i>
                   </a>
-                  <button class="text-red-600 hover:text-red-900 delete-user-btn" data-user-id="<%= user.id %>" data-username="<%= user.username %>">
+                  <button class="text-red-600 hover:text-red-900 delete-user-btn" data-user-id="<%= user.id %>" data-username="<%= user.username %>" title="删除">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
@@ -134,8 +178,20 @@
         显示 <span class="font-medium"><%= (page - 1) * limit + 1 %></span> 到 <span class="font-medium"><%= Math.min(page * limit, totalUsers) %></span> 条，共 <span class="font-medium"><%= totalUsers %></span> 条
       </div>
       <div class="flex space-x-2">
+        <%
+        // 构建分页 URL，保留筛选参数
+        const buildUserPageUrl = (pageNum) => {
+          let url = `/admin/users?page=${pageNum}&limit=${limit}`;
+          if (filters.role) url += `&role=${filters.role}`;
+          if (filters.status) url += `&status=${filters.status}`;
+          if (query.search) url += `&search=${encodeURIComponent(query.search)}`;
+          if (query.sort) url += `&sort=${query.sort}`;
+          if (query.order) url += `&order=${query.order}`;
+          return url;
+        };
+        %>
         <% if (page > 1) { %>
-          <a href="/admin/users?page=<%= page - 1 %>&limit=<%= limit %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+          <a href="<%= buildUserPageUrl(page - 1) %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
             上一页
           </a>
         <% } else { %>
@@ -145,7 +201,7 @@
         <% } %>
 
         <% if (page * limit < totalUsers) { %>
-          <a href="/admin/users?page=<%= page + 1 %>&limit=<%= limit %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+          <a href="<%= buildUserPageUrl(page + 1) %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
             下一页
           </a>
         <% } else { %>
@@ -272,6 +328,46 @@
   </div>
 </div>
 
+<!-- 批量充值模态框 -->
+<div id="batch-recharge-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">批量充值</h3>
+      <button id="close-batch-recharge-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <form id="batch-recharge-form" class="p-6">
+      <div class="mb-4">
+        <p class="text-sm text-gray-600">将为 <span id="batch-recharge-count" class="font-medium text-primary-600">0</span> 个用户充值</p>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label for="batch-credits-amount" class="block text-sm font-medium text-gray-700">点数数量</label>
+          <input type="number" id="batch-credits-amount" name="credits-amount" min="1" value="100" required
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+        </div>
+
+        <div>
+          <label for="batch-credits-reason" class="block text-sm font-medium text-gray-700">原因</label>
+          <textarea id="batch-credits-reason" name="credits-reason" rows="3"
+            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+            placeholder="添加算力的原因（可选）"></textarea>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button type="button" id="cancel-batch-recharge" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 mr-3">
+          取消
+        </button>
+        <button type="submit" class="bg-primary-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          批量充值
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   // 添加用户模态框
   const addUserBtn = document.getElementById('add-user-btn');
@@ -279,6 +375,64 @@
   const closeAddModal = document.getElementById('close-add-modal');
   const cancelAddUser = document.getElementById('cancel-add-user');
   const addUserForm = document.getElementById('add-user-form');
+
+  // 批量充值模态框
+  const batchRechargeModal = document.getElementById('batch-recharge-modal');
+  const closeBatchRechargeModal = document.getElementById('close-batch-recharge-modal');
+  const cancelBatchRecharge = document.getElementById('cancel-batch-recharge');
+  const batchRechargeForm = document.getElementById('batch-recharge-form');
+  const batchRechargeCount = document.getElementById('batch-recharge-count');
+
+  // 批量充值模态框事件
+  closeBatchRechargeModal?.addEventListener('click', () => {
+    batchRechargeModal.classList.add('hidden');
+  });
+
+  cancelBatchRecharge?.addEventListener('click', () => {
+    batchRechargeModal.classList.add('hidden');
+  });
+
+  batchRechargeForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(batchRechargeForm);
+    const creditsData = {
+      userIds: selectedUserIds,
+      credits: parseInt(formData.get('credits-amount')),
+      reason: formData.get('credits-reason')
+    };
+
+    try {
+      const response = await fetch('/api/admin/users/batch-recharge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(creditsData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        let message = `成功为 ${result.data.recharged.length} 个用户充值`;
+        if (result.data.failed.length > 0) {
+          message += `，${result.data.failed.length} 个失败`;
+          console.error('充值失败的用户:', result.data.failed);
+        }
+        alert(message);
+        batchRechargeModal.classList.add('hidden');
+        window.location.reload();
+      } else {
+        alert('批量充值失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('批量充值失败: ' + error.message);
+    }
+  });
+
+  batchRechargeModal?.addEventListener('click', (e) => {
+    if (e.target === batchRechargeModal) {
+      batchRechargeModal.classList.add('hidden');
+    }
+  });
 
   addUserBtn?.addEventListener('click', () => {
     addUserModal.classList.remove('hidden');
@@ -778,6 +932,64 @@
     }
   });
 
+  // 导出 CSV 功能
+  const exportCsvLink = exportMenu?.querySelector('a:first-child');
+  exportCsvLink?.addEventListener('click', async (e) => {
+    e.preventDefault();
+
+    // 获取当前的搜索和筛选条件
+    const searchTerm = document.getElementById('search-users')?.value || '';
+    const roleFilter = document.getElementById('role-filter')?.value || '';
+    const statusFilter = document.getElementById('status-filter')?.value || '';
+
+    // 构建查询参数
+    const params = new URLSearchParams();
+    if (searchTerm) params.append('search', searchTerm);
+    if (roleFilter) params.append('role', roleFilter);
+    if (statusFilter) params.append('status', statusFilter);
+
+    // 发起导出请求
+    try {
+      const response = await fetch(`/api/admin/users/export?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/csv',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('导出失败');
+      }
+
+      // 获取文件名
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'users.csv';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (match && match[1]) {
+          filename = match[1].replace(/['"]/g, '');
+        }
+      }
+
+      // 下载文件
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // 关闭菜单并显示成功提示
+      exportMenu?.classList.add('hidden');
+      alert('导出成功');
+    } catch (error) {
+      alert('导出失败: ' + error.message);
+    }
+  });
+
   // 点击模态框背景关闭模态框
   addUserModal?.addEventListener('click', (e) => {
     if (e.target === addUserModal) {
@@ -791,40 +1003,94 @@
     }
   });
 
-  // 搜索功能
+  // 搜索功能 - 使用后端搜索
   const searchInput = document.getElementById('search-users');
+  let searchTimeout = null;
+
+  // 初始化搜索框的值（从URL参数）
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialSearch = urlParams.get('search') || '';
+  if (searchInput && initialSearch) {
+    searchInput.value = initialSearch;
+  }
+
   searchInput?.addEventListener('input', () => {
-    const searchTerm = searchInput.value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
+    // 清除之前的定时器
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
 
-    rows.forEach(row => {
-      const username = row.querySelector('td:first-child .text-sm.font-medium').textContent.toLowerCase();
-      const email = row.querySelector('td:first-child .text-sm.text-gray-500').textContent.toLowerCase();
-
-      if (username.includes(searchTerm) || email.includes(searchTerm)) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
+    // 延迟 500ms 后执行搜索
+    searchTimeout = setTimeout(() => {
+      const searchTerm = searchInput.value.trim();
+      window.location.href = buildUserUrl({ search: searchTerm, page: 1 });
+    }, 500);
   });
 
-  // 角色筛选
-  const roleFilter = document.getElementById('role-filter');
-  roleFilter?.addEventListener('change', () => {
-    const selectedRole = roleFilter.value;
-    const rows = document.querySelectorAll('tbody tr');
-
-    rows.forEach(row => {
-      const roleCell = row.querySelector('td:nth-child(2) span');
-      const role = roleCell.textContent.trim() === '管理员' ? 'admin' : 'user';
-
-      if (selectedRole === '' || role === selectedRole) {
-        row.style.display = '';
+  // 辅助函数：构建带筛选参数的 URL
+  function buildUserUrl(params) {
+    const url = new URL(window.location.href);
+    // 保留当前的分页参数
+    if (!params.page && url.searchParams.has('page')) {
+      params.page = url.searchParams.get('page');
+    }
+    // 保留当前的 limit 参数
+    if (!params.limit && url.searchParams.has('limit')) {
+      params.limit = url.searchParams.get('limit');
+    }
+    // 保留当前的 sort 参数
+    if (!params.sort && url.searchParams.has('sort')) {
+      params.sort = url.searchParams.get('sort');
+    }
+    // 保留当前的 order 参数
+    if (!params.order && url.searchParams.has('order')) {
+      params.order = url.searchParams.get('order');
+    }
+    // 保留当前的 search 参数
+    if (!params.search && url.searchParams.has('search')) {
+      params.search = url.searchParams.get('search');
+    }
+    // 保留当前的 role 参数
+    if (!params.role && url.searchParams.has('role')) {
+      params.role = url.searchParams.get('role');
+    }
+    // 保留当前的 status 参数
+    if (!params.status && url.searchParams.has('status')) {
+      params.status = url.searchParams.get('status');
+    }
+    // 更新参数
+    Object.keys(params).forEach(key => {
+      if (params[key] === '' || params[key] === null || params[key] === undefined) {
+        url.searchParams.delete(key);
       } else {
-        row.style.display = 'none';
+        url.searchParams.set(key, params[key]);
       }
     });
+    return url.toString();
+  }
+
+  // 初始化筛选器的值（从URL参数）
+  const initialRole = urlParams.get('role') || '';
+  const initialStatus = urlParams.get('status') || '';
+  const roleFilter = document.getElementById('role-filter');
+  const statusFilter = document.getElementById('status-filter');
+  if (roleFilter && initialRole) {
+    roleFilter.value = initialRole;
+  }
+  if (statusFilter && initialStatus) {
+    statusFilter.value = initialStatus;
+  }
+
+  // 角色筛选 - 通过 URL 参数
+  roleFilter?.addEventListener('change', () => {
+    const selectedRole = roleFilter.value;
+    window.location.href = buildUserUrl({ role: selectedRole, page: 1 });
+  });
+
+  // 状态筛选 - 通过 URL 参数
+  statusFilter?.addEventListener('change', () => {
+    const selectedStatus = statusFilter.value;
+    window.location.href = buildUserUrl({ status: selectedStatus, page: 1 });
   });
 
   // 刷新按钮
@@ -832,6 +1098,367 @@
   refreshBtn?.addEventListener('click', () => {
     window.location.reload();
   });
+
+  // 批量操作功能
+  const selectAllCheckbox = document.getElementById('select-all-users');
+  const userCheckboxes = document.querySelectorAll('.user-checkbox');
+  const batchActions = document.getElementById('batch-actions');
+  const selectedCountSpan = document.getElementById('selected-count');
+  const batchDeleteBtn = document.getElementById('batch-delete-btn');
+  const batchRechargeBtn = document.getElementById('batch-recharge-btn');
+  const cancelSelectionBtn = document.getElementById('cancel-selection-btn');
+
+  let selectedUserIds = [];
+
+  // 全选/取消全选
+  selectAllCheckbox?.addEventListener('change', () => {
+    userCheckboxes.forEach(checkbox => {
+      const row = checkbox.closest('tr');
+      const role = row.getAttribute('data-role');
+      // 不选中管理员
+      if (role !== 'admin') {
+        checkbox.checked = selectAllCheckbox.checked;
+      }
+    });
+    updateSelectedUsers();
+  });
+
+  // 单个复选框变化
+  userCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      updateSelectedUsers();
+      // 更新全选框状态
+      const allChecked = Array.from(userCheckboxes).every(cb => cb.checked || cb.closest('tr').getAttribute('data-role') === 'admin');
+      selectAllCheckbox.checked = allChecked && userCheckboxes.length > 0;
+    });
+  });
+
+  // 更新选中用户列表
+  function updateSelectedUsers() {
+    selectedUserIds = Array.from(userCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => parseInt(cb.getAttribute('data-user-id')));
+
+    if (selectedUserIds.length > 0) {
+      batchActions?.classList.remove('hidden');
+      if (selectedCountSpan) {
+        selectedCountSpan.textContent = selectedUserIds.length;
+      }
+    } else {
+      batchActions?.classList.add('hidden');
+    }
+  }
+
+  // 取消选择
+  cancelSelectionBtn?.addEventListener('click', () => {
+    userCheckboxes.forEach(cb => cb.checked = false);
+    selectAllCheckbox.checked = false;
+    updateSelectedUsers();
+  });
+
+  // 批量删除用户
+  batchDeleteBtn?.addEventListener('click', async () => {
+    if (selectedUserIds.length === 0) {
+      alert('请选择要删除的用户');
+      return;
+    }
+
+    if (!confirm(`确定要删除选中的 ${selectedUserIds.length} 个用户吗？此操作无法撤销。`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/users/batch-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds: selectedUserIds })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        let message = `成功删除 ${result.data.deleted.length} 个用户`;
+        if (result.data.failed.length > 0) {
+          message += `，${result.data.failed.length} 个失败`;
+          console.error('删除失败的用户:', result.data.failed);
+        }
+        alert(message);
+        window.location.reload();
+      } else {
+        alert('批量删除失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('批量删除失败: ' + error.message);
+    }
+  });
+
+  // 批量充值
+  batchRechargeBtn?.addEventListener('click', () => {
+    if (selectedUserIds.length === 0) {
+      alert('请选择要充值的用户');
+      return;
+    }
+    if (batchRechargeCount) {
+      batchRechargeCount.textContent = selectedUserIds.length;
+    }
+    batchRechargeModal.classList.remove('hidden');
+  });
+
+  // 查看用户日志模态框
+  const viewLogsButtons = document.querySelectorAll('.view-logs-btn');
+  const viewLogsModal = document.createElement('div');
+  viewLogsModal.id = 'view-logs-modal';
+  viewLogsModal.className = 'fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden';
+  viewLogsModal.innerHTML = `
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl mx-4 max-h-[80vh] flex flex-col">
+      <div class="flex justify-between items-center px-6 py-4 border-b">
+        <h3 class="text-lg font-medium text-gray-900">用户操作日志</h3>
+        <button class="close-logs-modal text-gray-400 hover:text-gray-500">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body p-6 overflow-y-auto flex-1">
+        <div id="logs-content">
+          <div class="flex justify-center items-center py-8">
+            <div class="spinner mr-3"></div>
+            <span>加载中...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(viewLogsModal);
+
+  viewLogsButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const userId = button.getAttribute('data-user-id');
+      const username = button.getAttribute('data-username');
+      openLogsModal(userId, username);
+    });
+  });
+
+  viewLogsModal.querySelector('.close-logs-modal').addEventListener('click', () => {
+    viewLogsModal.classList.add('hidden');
+  });
+
+  viewLogsModal.addEventListener('click', (e) => {
+    if (e.target === viewLogsModal) {
+      viewLogsModal.classList.add('hidden');
+    }
+  });
+
+  function openLogsModal(userId, username) {
+    viewLogsModal.classList.remove('hidden');
+    const logsContent = document.getElementById('logs-content');
+    logsContent.innerHTML = `
+      <div class="flex justify-center items-center py-8">
+        <div class="spinner mr-3"></div>
+        <span>加载中...</span>
+      </div>
+    `;
+
+    fetch(`/api/admin/users/${userId}/logs`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          if (data.data.items.length === 0) {
+            logsContent.innerHTML = `
+              <div class="text-center py-8">
+                <i class="fas fa-inbox text-gray-300 text-4xl mb-4"></i>
+                <p class="text-gray-500">暂无操作日志</p>
+              </div>
+            `;
+          } else {
+            let html = '<h4 class="text-sm font-medium text-gray-700 mb-4">用户: ' + username + '</h4>';
+            html += '<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200">';
+            html += '<thead class="bg-gray-50"><tr>';
+            html += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">操作</th>';
+            html += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">详情</th>';
+            html += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">时间</th>';
+            html += '</tr></thead><tbody class="bg-white divide-y divide-gray-200">';
+
+            data.data.items.forEach(log => {
+              html += '<tr>';
+              html += '<td class="px-4 py-3 text-sm text-gray-900">' + log.action + '</td>';
+              html += '<td class="px-4 py-3 text-sm text-gray-500">' + (log.details ? JSON.stringify(log.details) : '-') + '</td>';
+              html += '<td class="px-4 py-3 text-sm text-gray-500">' + new Date(log.created_at).toLocaleString() + '</td>';
+              html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            html += '<p class="text-xs text-gray-500 mt-2">共 ' + data.data.total + ' 条记录</p>';
+            logsContent.innerHTML = html;
+          }
+        } else {
+          logsContent.innerHTML = `
+            <div class="text-center py-8">
+              <i class="fas fa-exclamation-circle text-red-500 text-4xl mb-4"></i>
+              <p class="text-gray-700">加载失败: ${data.error || '未知错误'}</p>
+            </div>
+          `;
+        }
+      })
+      .catch(error => {
+        logsContent.innerHTML = `
+          <div class="text-center py-8">
+            <i class="fas fa-exclamation-circle text-red-500 text-4xl mb-4"></i>
+            <p class="text-gray-700">加载失败: ${error.message}</p>
+          </div>
+        `;
+      });
+  }
+
+  // 查看用户会话模态框
+  const viewSessionsButtons = document.querySelectorAll('.view-sessions-btn');
+  const viewSessionsModal = document.createElement('div');
+  viewSessionsModal.id = 'view-sessions-modal';
+  viewSessionsModal.className = 'fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden';
+  viewSessionsModal.innerHTML = `
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl mx-4 max-h-[80vh] flex flex-col">
+      <div class="flex justify-between items-center px-6 py-4 border-b">
+        <h3 class="text-lg font-medium text-gray-900">用户会话历史</h3>
+        <button class="close-sessions-modal text-gray-400 hover:text-gray-500">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body p-6 overflow-y-auto flex-1">
+        <div id="sessions-content">
+          <div class="flex justify-center items-center py-8">
+            <div class="spinner mr-3"></div>
+            <span>加载中...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(viewSessionsModal);
+
+  viewSessionsButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const userId = button.getAttribute('data-user-id');
+      const username = button.getAttribute('data-username');
+      openSessionsModal(userId, username);
+    });
+  });
+
+  viewSessionsModal.querySelector('.close-sessions-modal').addEventListener('click', () => {
+    viewSessionsModal.classList.add('hidden');
+  });
+
+  viewSessionsModal.addEventListener('click', (e) => {
+    if (e.target === viewSessionsModal) {
+      viewSessionsModal.classList.add('hidden');
+    }
+  });
+
+  function openSessionsModal(userId, username) {
+    viewSessionsModal.classList.remove('hidden');
+    const sessionsContent = document.getElementById('sessions-content');
+    sessionsContent.innerHTML = `
+      <div class="flex justify-center items-center py-8">
+        <div class="spinner mr-3"></div>
+        <span>加载中...</span>
+      </div>
+    `;
+
+    fetch(`/api/admin/users/${userId}/sessions`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          if (data.data.items.length === 0) {
+            sessionsContent.innerHTML = `
+              <div class="text-center py-8">
+                <i class="fas fa-inbox text-gray-300 text-4xl mb-4"></i>
+                <p class="text-gray-500">暂无会话记录</p>
+              </div>
+            `;
+          } else {
+            let html = '<h4 class="text-sm font-medium text-gray-700 mb-4">用户: ' + username + '</h4>';
+            html += '<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200">';
+            html += '<thead class="bg-gray-50"><tr>';
+            html += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">状态</th>';
+            html += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">时长</th>';
+            html += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">消耗</th>';
+            html += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">创建时间</th>';
+            html += '</tr></thead><tbody class="bg-white divide-y divide-gray-200">';
+
+            const statusMap = {
+              'created': '已创建',
+              'connected': '已连接',
+              'disconnected': '已断开',
+              'expired': '已过期',
+              'error': '错误'
+            };
+
+            const statusClassMap = {
+              'created': 'bg-blue-100 text-blue-800',
+              'connected': 'bg-green-100 text-green-800',
+              'disconnected': 'bg-gray-100 text-gray-800',
+              'expired': 'bg-yellow-100 text-yellow-800',
+              'error': 'bg-red-100 text-red-800'
+            };
+
+            data.data.items.forEach(session => {
+              html += '<tr>';
+              html += '<td class="px-4 py-3 text-sm"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ' + (statusClassMap[session.status] || 'bg-gray-100 text-gray-800') + '">' + (statusMap[session.status] || session.status) + '</span></td>';
+              html += '<td class="px-4 py-3 text-sm text-gray-500">' + (session.duration > 0 ? Math.floor(session.duration / 60) + ' 分钟' : '-') + '</td>';
+              html += '<td class="px-4 py-3 text-sm text-gray-500">' + (session.credits_used > 0 ? session.credits_used + ' 点' : '-') + '</td>';
+              html += '<td class="px-4 py-3 text-sm text-gray-500">' + new Date(session.created_at).toLocaleString() + '</td>';
+              html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            html += '<p class="text-xs text-gray-500 mt-2">共 ' + data.data.total + ' 条记录</p>';
+            sessionsContent.innerHTML = html;
+          }
+        } else {
+          sessionsContent.innerHTML = `
+            <div class="text-center py-8">
+              <i class="fas fa-exclamation-circle text-red-500 text-4xl mb-4"></i>
+              <p class="text-gray-700">加载失败: ${data.error || '未知错误'}</p>
+            </div>
+          `;
+        }
+      })
+      .catch(error => {
+        sessionsContent.innerHTML = `
+          <div class="text-center py-8">
+            <i class="fas fa-exclamation-circle text-red-500 text-4xl mb-4"></i>
+            <p class="text-gray-700">加载失败: ${error.message}</p>
+          </div>
+        `;
+      });
+  }
+
+  // 积分排序功能
+  const sortCreditsHeader = document.getElementById('sort-credits');
+  console.log('积分排序列头元素:', sortCreditsHeader);
+  if (sortCreditsHeader) {
+    console.log('设置积分排序点击事件监听器');
+    sortCreditsHeader.addEventListener('click', (e) => {
+      console.log('积分排序列头被点击');
+      e.preventDefault();
+      const url = new URL(window.location.href);
+      const currentSort = url.searchParams.get('sort') || 'created_at';
+      const currentOrder = url.searchParams.get('order') || 'desc';
+
+      let newOrder = 'asc';
+      if (currentSort === 'credits') {
+        if (currentOrder === 'asc') {
+          newOrder = 'desc';
+        } else {
+          newOrder = 'asc';
+        }
+      }
+
+      url.searchParams.set('sort', 'credits');
+      url.searchParams.set('order', newOrder);
+      console.log('导航到:', url.toString());
+      window.location.href = url.toString();
+    });
+  } else {
+    console.error('未找到积分排序列头元素');
+  }
 </script>
 
 <style>

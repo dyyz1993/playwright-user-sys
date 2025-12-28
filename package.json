@@ -64,6 +64,8 @@
     "pretest:e2e": "bash scripts/setup-aliases.sh",
     "test:e2e": "playwright test",
     "test:e2e:p0": "playwright test tests/e2e/p0-critical.spec.ts",
+    "test:e2e:p1": "playwright test tests/e2e/p1-important.spec.ts",
+    "test:e2e:p2": "playwright test tests/e2e/p2-nice-to-have.spec.ts",
     "test:e2e:views": "playwright test tests/e2e/views.spec.ts",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",

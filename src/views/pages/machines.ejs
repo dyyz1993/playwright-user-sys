@@ -2,6 +2,9 @@
   <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
     <h3 class="text-lg font-medium text-gray-700">机器管理</h3>
     <div class="flex space-x-2">
+      <button id="add-machine-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm font-medium">
+        <i class="fas fa-plus mr-1"></i>添加机器
+      </button>
       <button id="refresh-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
         <i class="fas fa-sync-alt"></i>
       </button>
@@ -22,17 +25,41 @@
         <div class="ml-4">
           <select id="status-filter" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
             <option value="">所有状态</option>
-            <option value="online">在线</option>
-            <option value="offline">离线</option>
+            <option value="online" <%= filters.status === 'online' ? 'selected' : '' %>>在线</option>
+            <option value="offline" <%= filters.status === 'offline' ? 'selected' : '' %>>离线</option>
           </select>
         </div>
+      </div>
+      <div class="flex items-center">
+        <label class="flex items-center">
+          <input type="checkbox" id="select-all-machines" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mr-2">
+          <span class="text-sm text-gray-700">全选</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 批量操作按钮 -->
+    <div id="batch-actions" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-center justify-between">
+      <span class="text-sm text-blue-700">已选择 <span id="selected-count">0</span> 台机器</span>
+      <div class="flex space-x-2">
+        <button id="batch-restart-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-md text-sm font-medium">
+          <i class="fas fa-redo mr-1"></i> 批量重启
+        </button>
+        <button id="cancel-selection-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium">
+          取消选择
+        </button>
       </div>
     </div>
 
     <!-- 机器卡片视图 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <% machines.forEach(machine => { %>
-        <div class="bg-white border rounded-lg shadow-sm overflow-hidden">
+        <div class="machine-card bg-white border rounded-lg shadow-sm overflow-hidden relative" data-machine-id="<%= machine.id %>" data-status="<%= machine.status %>">
+          <!-- 复选框 -->
+          <div class="absolute top-4 left-4 z-10">
+            <input type="checkbox" class="machine-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" data-machine-id="<%= machine.id %>">
+          </div>
+
           <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <div class="flex items-center">
               <% if (machine.status === 'online') { %>
@@ -177,7 +204,122 @@
   </div>
 </div>
 
+<!-- 添加机器模态框 -->
+<div id="add-machine-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">添加新机器</h3>
+      <button id="close-add-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <form id="add-machine-form">
+        <div class="mb-4">
+          <label for="machine-hostname" class="block text-sm font-medium text-gray-700 mb-1">主机名</label>
+          <input type="text" id="machine-hostname" name="hostname" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="例如: machine-01">
+        </div>
+        <div class="mb-4">
+          <label for="machine-ip" class="block text-sm font-medium text-gray-700 mb-1">IP 地址</label>
+          <input type="text" id="machine-ip" name="ip" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="例如: 192.168.1.100">
+          <p class="mt-1 text-xs text-gray-500">有效的 IPv4 地址格式</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label for="machine-grpc-port" class="block text-sm font-medium text-gray-700 mb-1">gRPC 端口</label>
+            <input type="number" id="machine-grpc-port" name="grpcPort" min="1" max="65535"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="50051">
+          </div>
+          <div>
+            <label for="machine-proxy-port" class="block text-sm font-medium text-gray-700 mb-1">代理端口</label>
+            <input type="number" id="machine-proxy-port" name="proxyPort" min="1" max="65535"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="3000">
+          </div>
+        </div>
+        <div class="mb-4">
+          <label for="machine-max-instances" class="block text-sm font-medium text-gray-700 mb-1">最大实例数</label>
+          <input type="number" id="machine-max-instances" name="maxInstances" min="1" max="100" value="10" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div class="flex justify-end space-x-3">
+          <button type="button" id="cancel-add-machine" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            取消
+          </button>
+          <button type="submit" class="bg-blue-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            添加
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
+  // 添加机器模态框
+  const addMachineBtn = document.getElementById('add-machine-btn');
+  const addMachineModal = document.getElementById('add-machine-modal');
+  const closeAddModal = document.getElementById('close-add-modal');
+  const cancelAddMachine = document.getElementById('cancel-add-machine');
+  const addMachineForm = document.getElementById('add-machine-form');
+
+  addMachineBtn?.addEventListener('click', () => {
+    addMachineModal.classList.remove('hidden');
+  });
+
+  closeAddModal?.addEventListener('click', () => {
+    addMachineModal.classList.add('hidden');
+  });
+
+  cancelAddMachine?.addEventListener('click', () => {
+    addMachineModal.classList.add('hidden');
+  });
+
+  addMachineForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(addMachineForm);
+    const data = {
+      hostname: formData.get('hostname'),
+      ip: formData.get('ip'),
+      grpcPort: formData.get('grpcPort') ? parseInt(formData.get('grpcPort')) : undefined,
+      proxyPort: formData.get('proxyPort') ? parseInt(formData.get('proxyPort')) : undefined,
+      maxInstances: parseInt(formData.get('maxInstances')) || 10
+    };
+
+    try {
+      const response = await fetch('/api/admin/machines', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // 刷新页面
+        window.location.reload();
+      } else {
+        alert('添加机器失败: ' + (result.error || result.message || '未知错误'));
+      }
+    } catch (error) {
+      alert('添加机器失败: ' + error.message);
+    }
+  });
+
+  addMachineModal?.addEventListener('click', (e) => {
+    if (e.target === addMachineModal) {
+      addMachineModal.classList.add('hidden');
+    }
+  });
+
   // 重启机器模态框
   const restartMachineButtons = document.querySelectorAll('.restart-machine-btn');
   const restartMachineModal = document.getElementById('restart-machine-modal');
@@ -307,27 +449,117 @@
     });
   });
 
-  // 状态筛选
+  // 辅助函数：构建带筛选参数的 URL
+  function buildMachineUrl(params) {
+    const url = new URL(window.location.href);
+    // 更新参数
+    Object.keys(params).forEach(key => {
+      if (params[key] === '' || params[key] === null || params[key] === undefined) {
+        url.searchParams.delete(key);
+      } else {
+        url.searchParams.set(key, params[key]);
+      }
+    });
+    return url.toString();
+  }
+
+  // 状态筛选 - 通过 URL 参数
   const statusFilter = document.getElementById('status-filter');
   statusFilter?.addEventListener('change', () => {
     const selectedStatus = statusFilter.value;
-    const cards = document.querySelectorAll('.bg-white.border.rounded-lg');
-
-    cards.forEach(card => {
-      const statusBadge = card.querySelector('.px-6.py-4.border-b .flex.items-center span');
-      const status = statusBadge.textContent.trim() === '在线' ? 'online' : 'offline';
-
-      if (selectedStatus === '' || status === selectedStatus) {
-        card.style.display = '';
-      } else {
-        card.style.display = 'none';
-      }
-    });
+    window.location.href = buildMachineUrl({ status: selectedStatus });
   });
 
   // 刷新按钮
   const refreshBtn = document.getElementById('refresh-btn');
   refreshBtn?.addEventListener('click', () => {
     window.location.reload();
+  });
+
+  // 批量操作功能
+  const selectAllMachinesCheckbox = document.getElementById('select-all-machines');
+  const machineCheckboxes = document.querySelectorAll('.machine-checkbox');
+  const batchActions = document.getElementById('batch-actions');
+  const selectedCountSpan = document.getElementById('selected-count');
+  const batchRestartBtn = document.getElementById('batch-restart-btn');
+  const cancelSelectionBtn = document.getElementById('cancel-selection-btn');
+
+  let selectedMachineIds = [];
+
+  // 全选/取消全选
+  selectAllMachinesCheckbox?.addEventListener('change', () => {
+    machineCheckboxes.forEach(checkbox => {
+      checkbox.checked = selectAllMachinesCheckbox.checked;
+    });
+    updateSelectedMachines();
+  });
+
+  // 单个复选框变化
+  machineCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      updateSelectedMachines();
+      // 更新全选框状态
+      const allChecked = Array.from(machineCheckboxes).every(cb => cb.checked);
+      selectAllMachinesCheckbox.checked = allChecked && machineCheckboxes.length > 0;
+    });
+  });
+
+  // 更新选中机器列表
+  function updateSelectedMachines() {
+    selectedMachineIds = Array.from(machineCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.getAttribute('data-machine-id'));
+
+    if (selectedMachineIds.length > 0) {
+      batchActions?.classList.remove('hidden');
+      if (selectedCountSpan) {
+        selectedCountSpan.textContent = selectedMachineIds.length;
+      }
+    } else {
+      batchActions?.classList.add('hidden');
+    }
+  }
+
+  // 取消选择
+  cancelSelectionBtn?.addEventListener('click', () => {
+    machineCheckboxes.forEach(cb => cb.checked = false);
+    selectAllMachinesCheckbox.checked = false;
+    updateSelectedMachines();
+  });
+
+  // 批量重启机器
+  batchRestartBtn?.addEventListener('click', async () => {
+    if (selectedMachineIds.length === 0) {
+      alert('请选择要重启的机器');
+      return;
+    }
+
+    if (!confirm(`确定要重启选中的 ${selectedMachineIds.length} 台机器吗？这将中断所有正在运行的会话。`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/machines/batch-restart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ machineIds: selectedMachineIds })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        let message = `成功重启 ${result.data.restarted.length} 台机器`;
+        if (result.data.failed.length > 0) {
+          message += `，${result.data.failed.length} 台失败`;
+          console.error('重启失败的机器:', result.data.failed);
+        }
+        alert(message);
+        window.location.reload();
+      } else {
+        alert('批量重启失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('批量重启失败: ' + error.message);
+    }
   });
 </script>

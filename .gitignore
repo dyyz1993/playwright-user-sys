@@ -51,3 +51,5 @@ prebuilt/
 # 预编译的 SQLite3 文件
 # 但保留目录结构
 !prebuilt-sqlite3/.gitkeep
+
+test-results/

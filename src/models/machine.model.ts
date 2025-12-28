@@ -385,6 +385,161 @@ export class MachineModel {
       return [];
     }
   }
+
+  // 获取机器详情（包含活跃会话数）
+  static async getDetailById(id: string): Promise<(MachineInfo & {
+    activeSessions: number;
+    healthStatus?: string;
+  }) | null> {
+    try {
+      const machine = await this.findById(id);
+      if (!machine) return null;
+
+      // 获取活跃会话数
+      const { SessionModel } = await import('./session.model.js');
+      const activeSessions = await SessionModel.paginate(1, 999, {
+        filters: {
+          status: 'active'
+        }
+      });
+
+      // 过滤出该机器的活跃会话
+      const machineActiveSessions = activeSessions.items.filter(
+        (s: any) => s.machine_id === id
+      ).length;
+
+      // 计算健康状态
+      let healthStatus = 'unknown';
+      if (machine.status === 'online') {
+        const usageRatio = machine.instanceCount / machine.maxInstances;
+        if (usageRatio >= 0.9) {
+          healthStatus = 'warning';
+        } else if (machine.cpuUsage && machine.cpuUsage > 80) {
+          healthStatus = 'warning';
+        } else if (machine.memoryUsage && machine.memoryUsage > 80) {
+          healthStatus = 'warning';
+        } else {
+          healthStatus = 'healthy';
+        }
+      } else {
+        healthStatus = 'offline';
+      }
+
+      return {
+        ...machine,
+        activeSessions: machineActiveSessions,
+        healthStatus
+      };
+    } catch (error) {
+      console.error('获取机器详情失败:', error);
+      return null;
+    }
+  }
+
+  // 执行健康检查
+  static async healthCheck(id: string): Promise<{
+    machineId: string;
+    status: 'healthy' | 'unhealthy';
+    grpcConnected: boolean;
+    responseTime?: number;
+    activeInstances?: number;
+    systemInfo?: {
+      cpuUsage: number;
+      memoryUsage: number;
+      diskUsage: number;
+      uptime?: number;
+    };
+    error?: string;
+    checkedAt: Date;
+  }> {
+    try {
+      const machine = await this.findById(id);
+      if (!machine) {
+        return {
+          machineId: id,
+          status: 'unhealthy',
+          grpcConnected: false,
+          error: '机器不存在',
+          checkedAt: new Date()
+        };
+      }
+
+      // 导入 gRPC 连接管理器
+      const { connectionManager } = await import('../services/machine-grpc.service.js');
+
+      const startTime = Date.now();
+      try {
+        // 检查机器是否连接
+        const isConnected = connectionManager.isConnected(id);
+
+        if (!isConnected) {
+          return {
+            machineId: id,
+            status: 'unhealthy',
+            grpcConnected: false,
+            error: '机器未连接',
+            responseTime: Date.now() - startTime,
+            checkedAt: new Date()
+          };
+        }
+
+        // 尝试获取机器状态
+        const machineStatus = await connectionManager.getMachineStatus(id);
+        const responseTime = Date.now() - startTime;
+
+        return {
+          machineId: id,
+          status: 'healthy',
+          grpcConnected: true,
+          responseTime,
+          activeInstances: machineStatus.active_sessions || machine.instanceCount,
+          systemInfo: {
+            cpuUsage: machineStatus.cpu_usage || machine.cpuUsage || 0,
+            memoryUsage: machineStatus.memory_usage || machine.memoryUsage || 0,
+            diskUsage: machineStatus.disk_space || machine.diskUsage || 0,
+          },
+          checkedAt: new Date()
+        };
+      } catch (grpcError: any) {
+        return {
+          machineId: id,
+          status: 'unhealthy',
+          grpcConnected: false,
+          error: grpcError.message || 'gRPC 连接失败',
+          checkedAt: new Date()
+        };
+      }
+    } catch (error: any) {
+      console.error('健康检查失败:', error);
+      return {
+        machineId: id,
+        status: 'unhealthy',
+        grpcConnected: false,
+        error: error.message || '健康检查失败',
+        checkedAt: new Date()
+      };
+    }
+  }
+
+  // 批量健康检查
+  static async batchHealthCheck(ids: string[]): Promise<Array<{
+    machineId: string;
+    status: 'healthy' | 'unhealthy';
+    error?: string;
+  }>> {
+    const results = await Promise.all(
+      ids.map(async (id) => {
+        const result = await this.healthCheck(id);
+        return {
+          machineId: id,
+          status: result.status,
+          error: result.error
+        };
+      })
+    );
+
+    return results;
+  }
 }
 
 export default MachineModel;

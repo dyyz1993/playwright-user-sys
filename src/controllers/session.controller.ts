@@ -71,9 +71,9 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
     } catch (serviceError: any) {
       request.log.error(`创建会话服务错误:`, serviceError);
 
-      // 检查是否是点数不足错误
+      // 检查是否是点数不足错误 - 返回 402 (Payment Required)
       if (serviceError.message && serviceError.message.includes('点数不足')) {
-        return sendError(reply, serviceError.message, 400);
+        return sendError(reply, serviceError.message, 402);
       }
 
       // 其他错误返回 500

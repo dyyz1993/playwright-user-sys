@@ -67,7 +67,15 @@ export const verifyApiKey = async (request: FastifyRequest, reply: FastifyReply)
       const token = extractTokenFromHeader(authorizationHeader);
       if (token) {
         const decoded = verifyToken(token);
-        if (decoded && decoded.id !== user.id) {
+        // 如果 JWT token 无效，返回 401
+        if (!decoded) {
+          return reply.status(401).send({
+            success: false,
+            error: '无效的 JWT token'
+          });
+        }
+        // 如果 JWT token 所有者与 API Key 所有者不匹配，返回 403
+        if (decoded.id !== user.id) {
           return reply.status(403).send({
             success: false,
             error: 'JWT token 所有者与 API Key 所有者不匹配'

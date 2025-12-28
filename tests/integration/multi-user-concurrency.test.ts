@@ -202,7 +202,14 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
         proxyPort: proxyPort,
         maxSessions: 10,
         sessionTimeout: 300000,
-        chromePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        // 根据平台自动检测 Chrome 路径
+        chromePath: process.env.CHROME_PATH || (
+          process.platform === 'darwin'
+            ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+            : process.platform === 'linux'
+              ? '/usr/bin/google-chrome-stable'
+              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+        ),
         heartbeatInterval: 30000,
         disconnectionTimeout: 10000,
         activityReportInterval: 3000,

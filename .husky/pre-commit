@@ -1,0 +1,27 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "=========================================="
+echo "运行 pre-commit 检查"
+echo "=========================================="
+
+# 运行类型检查
+echo ""
+echo "1. 运行 TypeScript 类型检查..."
+pnpm build || {
+  echo "❌ TypeScript 类型检查失败"
+  echo "请修复类型错误后再提交"
+  exit 1
+}
+
+# 运行单元测试
+echo ""
+echo "2. 运行单元测试..."
+pnpm test:unit || {
+  echo "❌ 单元测试失败"
+  echo "请修复失败的测试后再提交"
+  exit 1
+}
+
+echo ""
+echo "✅ Pre-commit 检查通过"

@@ -141,7 +141,7 @@ class MemoryStoreService extends EventEmitter {
       disk_space: status.disk_space || 0,
       active_sessions: status.active_sessions,
       max_sessions: status.max_sessions,
-      last_heartbeat: existingStatus?.last_heartbeat || new Date(),
+      last_heartbeat: status.last_heartbeat || new Date(),
     };
 
     // 调试日志

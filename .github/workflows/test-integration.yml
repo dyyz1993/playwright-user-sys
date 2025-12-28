@@ -1,0 +1,127 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  test-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_password
+          MYSQL_DATABASE: playwright_test_user_sys
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - name: "Security Vulnerabilities"
+            file: "tests/integration/security-vulnerabilities.test.ts"
+          - name: "Multi-User Concurrency"
+            file: "tests/integration/multi-user-concurrency.test.ts"
+          - name: "Three-Tier Architecture"
+            file: "tests/integration/three-tier-architecture.test.ts"
+          - name: "Billing Flow"
+            file: "tests/integration/billing-flow.test.ts"
+          - name: "Session Lifecycle"
+            file: "tests/integration/session-lifecycle.test.ts"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@10.8.0
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -ptest_password --silent; then
+              echo "MySQL is ready"
+              exit 0
+            fi
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+          echo "MySQL failed to start"
+          exit 1
+
+      - name: Setup test database
+        env:
+          MYSQL_PWD: test_password
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -e "CREATE DATABASE IF NOT EXISTS playwright_test_user_sys;"
+
+      - name: Build project
+        run: pnpm build
+
+      - name: Run ${{ matrix.test.name }}
+        env:
+          DB_TYPE: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: playwright_test_user_sys
+          DB_USER: root
+          DB_PASSWORD: test_password
+          NODE_ENV: test
+          JWT_SECRET: test_secret_key_for_ci_only
+          JWT_EXPIRES_IN: 24h
+        run: |
+          NODE_OPTIONS="--max-old-space-size=4096" npx vitest run ${{ matrix.test.file }} --reporter=verbose --no-coverage
+
+  test-summary:
+    needs: test-integration
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.test-integration.result }}" == "failure" ]; then
+            echo "❌ Some integration tests failed"
+            echo "Please check the logs above for details"
+            exit 1
+          elif [ "${{ needs.test-integration.result }}" == "success" ]; then
+            echo "✅ All integration tests passed"
+            exit 0
+          else
+            echo "⚠️ Tests were cancelled or skipped"
+            exit 1
+          fi

@@ -216,7 +216,9 @@ export class SessionModel {
     if (finalDuration === 0 && session.start_time) {
       const now = new Date();
       const startTime = new Date(session.start_time);
-      finalDuration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+      // 使用 Math.ceil 确保即使只有 1ms 也计算为 1 秒
+      // 这解决了数据库 TIMESTAMP 精度丢失（毫秒被截断）导致计算为 0 的问题
+      finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
       logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
     }
 
@@ -227,6 +229,7 @@ export class SessionModel {
     }
 
     // 计算消耗的点数（每分钟1点）
+    // 至少消耗 1 点（即使 duration = 0）
     const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
 
     logger.info(`标记会话已断开 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${initialCreditsUsed}点`);
@@ -310,7 +313,8 @@ export class SessionModel {
     if (duration === 0 && session.start_time) {
       const now = new Date();
       const startTime = new Date(session.start_time);
-      finalDuration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+      // 使用 Math.ceil 确保即使只有 1ms 也计算为 1 秒
+      finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
       logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
     }
 
@@ -365,7 +369,8 @@ export class SessionModel {
     if (duration === 0 && session.start_time) {
       const now = new Date();
       const startTime = new Date(session.start_time);
-      finalDuration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+      // 使用 Math.ceil 确保即使只有 1ms 也计算为 1 秒
+      finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
       logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
     }
 

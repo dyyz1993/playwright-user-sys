@@ -1,4 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
 import { env } from '../../config/env.js';
 import authPlugin from '../../plugins/auth.plugin.js';
 import errorHandlerPlugin from '../../plugins/error-handler.plugin.js';
@@ -11,6 +13,7 @@ import authRoutes from '../../routes/auth.routes.js';
 import adminApiRoutes from '../../routes/admin-api.routes.js';
 import sessionRoutes from '../../routes/session.routes.js';
 import machineRoutes from '../../routes/machine.routes.js';
+import adminMachineApiRoutes from '../../routes/admin-machine-api.routes.js';
 
 /**
  * 构建测试应用实例
@@ -18,6 +21,18 @@ import machineRoutes from '../../routes/machine.routes.js';
 export async function build(): Promise<FastifyInstance> {
   const app = Fastify({
     logger: false, // 测试时禁用日志
+  });
+
+  // 配置自定义 validatorCompiler，确保拒绝未知字段而不是删除
+  app.setValidatorCompiler(({ schema }) => {
+    const ajv = new Ajv({
+      removeAdditional: false,  // 关键：拒绝而不是删除未知字段
+      coerceTypes: true,
+      useDefaults: true,
+      allErrors: false,
+    });
+    addFormats(ajv);  // 添加 email、uri 等格式支持
+    return ajv.compile(schema);
   });
 
   // 注册插件
@@ -33,6 +48,7 @@ export async function build(): Promise<FastifyInstance> {
   await app.register(adminApiRoutes);
   await app.register(sessionRoutes, { prefix: '/api/sessions' });
   await app.register(machineRoutes, { prefix: '/api/machines' });
+  await app.register(adminMachineApiRoutes); // 添加机器管理API路由
 
   return app;
 }

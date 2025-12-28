@@ -125,6 +125,13 @@ export class SessionModel {
       return {
         ...session,
         options: parsedOptions,
+        // 将日期字符串转换为 Date 对象
+        start_time: session.start_time ? new Date(session.start_time) : null,
+        end_time: session.end_time ? new Date(session.end_time) : null,
+        disconnected_at: session.disconnected_at ? new Date(session.disconnected_at) : null,
+        last_activity: session.last_activity ? new Date(session.last_activity) : null,
+        created_at: session.created_at ? new Date(session.created_at) : new Date(),
+        updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
       };
     } catch (error) {
       console.error(`查找会话失败 (ID: ${id}):`, error);
@@ -193,17 +200,19 @@ export class SessionModel {
     // 使用 logger 而不是 console.log
     const { logger } = await import('@shared/utils/logger.js');
 
-    // 如果提供的持续时间为0，尝试根据开始时间计算
-    let finalDuration = duration;
-
-    // 先检查会话是否存在
+    // 先检查会话是否存在，并获取初始状态
     const session = await this.findById(id);
     if (!session) {
       logger.error(`标记会话已断开失败: 会话不存在 (${id})`);
       return null;
     }
 
+    // 记录初始状态用于扣费判断
+    const initialCreditsUsed = session.credits_used || 0;
+    const userId = session.user_id;
+
     // 如果提供的持续时间为0且会话有开始时间，尝试计算持续时间
+    let finalDuration = duration;
     if (finalDuration === 0 && session.start_time) {
       const now = new Date();
       const startTime = new Date(session.start_time);
@@ -211,40 +220,24 @@ export class SessionModel {
       logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
     }
 
-    // 计算消耗的点数（每分钟1点）
-    // 即使会话只运行了几秒钟，也至少消耗 1 点
-    const creditsUsed = finalDuration > 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
+    // 确保持续时间不为负数
+    if (finalDuration < 0) {
+      finalDuration = 0;
+      logger.warn(`持续时间为负数，重置为0 (${id})`);
+    }
 
-    logger.info(`标记会话已断开 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 数据源: 会话模型`);
+    // 计算消耗的点数（每分钟1点）
+    const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
+
+    logger.info(`标记会话已断开 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${initialCreditsUsed}点`);
 
     try {
-
-      // 打印会话当前状态
-      logger.info(`会话当前状态 (${id}): 状态=${session.status}, 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
-
-      // 更新会话状态
-      // 如果已有持续时间和消耗点数，取最大值
-      if (session.duration > 0 || session.credits_used > 0) {
-        // 取最大值，确保不会减少
-        const newDuration = Math.max(session.duration, duration);
-        const newCreditsUsed = Math.max(session.credits_used, creditsUsed);
-
-        logger.info(`会话已有持续时间和消耗点数，取最大值 (${id}): 原持续时间=${session.duration}秒, 新持续时间=${newDuration}秒, 原消耗点数=${session.credits_used}点, 新消耗点数=${newCreditsUsed}点`);
-
-        await db('sessions').where({ id }).update({
-          status: SessionStatus.DISCONNECTED,
-          end_time: new Date(),
-          duration: newDuration,
-          credits_used: newCreditsUsed,
-          updated_at: new Date(),
-        });
-
-        logger.info(`更新会话状态，使用最大值 (${id}): 持续时间=${newDuration}秒, 消耗点数=${newCreditsUsed}点`);
-      } else {
-        // 如果没有持续时间和消耗点数，直接更新
-        logger.info(`会话没有持续时间和消耗点数，直接更新 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点`);
-
-        await db('sessions').where({ id }).update({
+      // 使用数据库条件更新确保幂等性
+      // 只更新非终态的会话，避免并发重复扣费
+      const updateResult = await db('sessions')
+        .where({ id })
+        .whereNotIn('status', [SessionStatus.DISCONNECTED, SessionStatus.ERROR, SessionStatus.EXPIRED, SessionStatus.COMPLETED])
+        .update({
           status: SessionStatus.DISCONNECTED,
           end_time: new Date(),
           duration: finalDuration,
@@ -252,21 +245,49 @@ export class SessionModel {
           updated_at: new Date(),
         });
 
-        logger.info(`更新会话状态，直接更新 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点`);
+      // 检查是否有行被更新
+      const rowsAffected = Array.isArray(updateResult) ? updateResult[0] : updateResult;
+
+      if (rowsAffected === 0) {
+        // 没有行被更新，说明会话已经是终态了
+        logger.info(`会话已是终态或已被其他请求更新 (${id}), 直接返回当前状态`);
+        return await this.findById(id);
       }
 
-      // 更新会话状态结果日志
-      logger.info(`更新会话状态完成 (${id})`);
+      logger.info(`数据库更新成功 (${id}), 影响行数: ${rowsAffected}`);
 
-      // 检查更新后的会话状态
-      const updatedSession = await this.findById(id);
-      if (updatedSession) {
-        logger.info(`更新后的会话状态 (${id}): 状态=${updatedSession.status}, 持续时间=${updatedSession.duration}秒, 消耗点数=${updatedSession.credits_used}点`);
+      // 只有当数据库更新成功时才扣费
+      // 使用 GREATEST 确保不会减少 credits_used
+      const creditsToDeduct = Math.max(0, creditsUsed - initialCreditsUsed);
+
+      if (creditsToDeduct > 0) {
+        try {
+          const { UserModel } = await import('./user.model.js');
+          const user = await UserModel.findById(userId);
+          const balanceAfter = user ? user.credits - creditsToDeduct : 0;
+
+          await UserModel.deductCredits(userId, creditsToDeduct);
+          logger.info(`🔴 扣除点数: ${creditsToDeduct} 点, 用户 ${userId} (初始${initialCreditsUsed} -> ${creditsUsed})`);
+
+          // 创建积分历史记录
+          const { CreditHistoryModel } = await import('./credit-history.model.js');
+          await CreditHistoryModel.create({
+            user_id: userId,
+            amount: creditsToDeduct,
+            action: 'use',
+            balance_after: balanceAfter,
+            description: `Session usage: ${id.substring(0, 8)}... (${finalDuration}s)`,
+            metadata: { session_id: id, duration: finalDuration },
+          });
+          logger.info(`✅ 创建积分历史记录: 用户 ${userId}, 扣除 ${creditsToDeduct} 点, 剩余 ${balanceAfter} 点`);
+        } catch (error) {
+          logger.error(`扣除用户 ${userId} 的点数失败:`, error);
+        }
       } else {
-        logger.error(`更新后无法获取会话 (${id})`);
+        logger.info(`无需额外扣费 (${id}), credits_used 未增加`);
       }
 
-      return updatedSession;
+      return await this.findById(id);
     } catch (error) {
       logger.error(`标记会话已断开失败 (${id}):`, error);
       return null;
@@ -275,9 +296,16 @@ export class SessionModel {
 
   // 标记会话已过期
   static async markExpired(id: string, duration: number): Promise<Session | null> {
+    // 先获取会话以检查之前的 credits_used
+    const session = await this.findById(id);
+    if (!session) return null;
+
+    const previousCreditsUsed = session.credits_used || 0;
+
     // 计算消耗的点数（每分钟1点）
     // 即使会话只运行了几秒钟，也至少消耗 1 点
-    const creditsUsed = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+    // 如果 duration 为 0，也至少消耗 1 点（因为会话被创建了）
+    const creditsUsed = duration >= 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
 
     await db('sessions').where({ id }).update({
       status: SessionStatus.EXPIRED,
@@ -287,14 +315,34 @@ export class SessionModel {
       updated_at: new Date(),
     });
 
-    return this.findById(id);
+    const updatedSession = await this.findById(id);
+
+    // 如果有新的点数消耗，则扣除用户积分
+    if (updatedSession && creditsUsed > previousCreditsUsed) {
+      const creditsToDeduct = creditsUsed - previousCreditsUsed;
+      try {
+        const { UserModel } = await import('./user.model.js');
+        await UserModel.deductCredits(session.user_id, creditsToDeduct);
+      } catch (error) {
+        console.error(`扣除用户 ${session.user_id} 的点数失败:`, error);
+      }
+    }
+
+    return updatedSession;
   }
 
   // 标记会话错误
   static async markError(id: string, duration: number = 0): Promise<Session | null> {
+    // 先获取会话以检查之前的 credits_used
+    const session = await this.findById(id);
+    if (!session) return null;
+
+    const previousCreditsUsed = session.credits_used || 0;
+
     // 计算消耗的点数（每分钟1点）
     // 即使会话只运行了几秒钟，也至少消耗 1 点
-    const creditsUsed = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+    // 如果 duration 为 0，也至少消耗 1 点（因为会话被创建了）
+    const creditsUsed = duration >= 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
 
     await db('sessions').where({ id }).update({
       status: SessionStatus.ERROR,
@@ -304,17 +352,35 @@ export class SessionModel {
       updated_at: new Date(),
     });
 
-    return this.findById(id);
+    const updatedSession = await this.findById(id);
+
+    // 如果有新的点数消耗，则扣除用户积分
+    if (updatedSession && creditsUsed > previousCreditsUsed) {
+      const creditsToDeduct = creditsUsed - previousCreditsUsed;
+      try {
+        const { UserModel } = await import('./user.model.js');
+        await UserModel.deductCredits(session.user_id, creditsToDeduct);
+      } catch (error) {
+        console.error(`扣除用户 ${session.user_id} 的点数失败:`, error);
+      }
+    }
+
+    return updatedSession;
   }
 
   // 获取用户的所有会话（分页）
   static async findByUserId(userId: number, query: PaginationQuery = {}): Promise<PaginatedResponse<Session>> {
     try {
-      const page = query.page || 1;
-      const limit = query.limit || 10;
+      const page = Number(query.page) || 1;
+      const limit = Number(query.limit) || 10;
       const offset = (page - 1) * limit;
-      const sort = query.sort || 'created_at';
-      const order = query.order || 'desc';
+
+      // 验证并过滤排序字段和方向，使用默认值代替无效值
+      const validSortFields = ['id', 'user_id', 'machine_id', 'status', 'port', 'duration', 'credits_used', 'start_time', 'end_time', 'created_at', 'updated_at'];
+      const sort = validSortFields.includes(query.sort || '') ? (query.sort || 'created_at') : 'created_at';
+
+      const validOrders = ['asc', 'desc'];
+      const order = validOrders.includes(query.order?.toLowerCase() || '') ? (query.order?.toLowerCase() || 'desc') : 'desc';
 
       const [sessions, total] = await Promise.all([
         db('sessions')
@@ -331,12 +397,26 @@ export class SessionModel {
             return {
               ...session,
               options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+              // 将日期字符串转换为 Date 对象
+              start_time: session.start_time ? new Date(session.start_time) : null,
+              end_time: session.end_time ? new Date(session.end_time) : null,
+              disconnected_at: session.disconnected_at ? new Date(session.disconnected_at) : null,
+              last_activity: session.last_activity ? new Date(session.last_activity) : null,
+              created_at: session.created_at ? new Date(session.created_at) : new Date(),
+              updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
             };
           } catch (error) {
             console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
             return {
               ...session,
               options: null,
+              // 将日期字符串转换为 Date 对象
+              start_time: session.start_time ? new Date(session.start_time) : null,
+              end_time: session.end_time ? new Date(session.end_time) : null,
+              disconnected_at: session.disconnected_at ? new Date(session.disconnected_at) : null,
+              last_activity: session.last_activity ? new Date(session.last_activity) : null,
+              created_at: session.created_at ? new Date(session.created_at) : new Date(),
+              updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
             };
           }
         }),
@@ -347,12 +427,12 @@ export class SessionModel {
       };
     } catch (error) {
       console.error(`获取用户会话失败 (userId: ${userId}):`, error);
-      const page = query.page || 1;
+      const page = Number(query.page) || 1;
       return {
         items: [],
         total: 0,
         page,
-        limit: query.limit || 10,
+        limit: Number(query.limit) || 10,
         totalPages: 0,
       };
     }
@@ -454,11 +534,16 @@ export class SessionModel {
   static async findAll(query: PaginationQuery = {}): Promise<PaginatedResponse<Session>> {
     try {
       console.log('开始查询会话数据');
-      const page = query.page || 1;
-      const limit = query.limit || 10;
+      const page = Number(query.page) || 1;
+      const limit = Number(query.limit) || 10;
       const offset = (page - 1) * limit;
-      const sort = query.sort || 'created_at';
-      const order = query.order || 'desc';
+
+      // 验证并过滤排序字段和方向，使用默认值代替无效值
+      const validSortFields = ['id', 'user_id', 'machine_id', 'status', 'port', 'duration', 'credits_used', 'start_time', 'end_time', 'created_at', 'updated_at'];
+      const sort = validSortFields.includes(query.sort || '') ? (query.sort || 'created_at') : 'created_at';
+
+      const validOrders = ['asc', 'desc'];
+      const order = validOrders.includes(query.order?.toLowerCase() || '') ? (query.order?.toLowerCase() || 'desc') : 'desc';
 
       const [sessions, total] = await Promise.all([
         db('sessions')
@@ -476,12 +561,26 @@ export class SessionModel {
             return {
               ...session,
               options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+              // 将日期字符串转换为 Date 对象
+              start_time: session.start_time ? new Date(session.start_time) : null,
+              end_time: session.end_time ? new Date(session.end_time) : null,
+              disconnected_at: session.disconnected_at ? new Date(session.disconnected_at) : null,
+              last_activity: session.last_activity ? new Date(session.last_activity) : null,
+              created_at: session.created_at ? new Date(session.created_at) : new Date(),
+              updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
             };
           } catch (error) {
             console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
             return {
               ...session,
               options: null,
+              // 将日期字符串转换为 Date 对象
+              start_time: session.start_time ? new Date(session.start_time) : null,
+              end_time: session.end_time ? new Date(session.end_time) : null,
+              disconnected_at: session.disconnected_at ? new Date(session.disconnected_at) : null,
+              last_activity: session.last_activity ? new Date(session.last_activity) : null,
+              created_at: session.created_at ? new Date(session.created_at) : new Date(),
+              updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
             };
           }
         }),
@@ -496,8 +595,8 @@ export class SessionModel {
       return {
         items: [],
         total: 0,
-        page: query.page || 1,
-        limit: query.limit || 10,
+        page: Number(query.page) || 1,
+        limit: Number(query.limit) || 10,
         totalPages: 0,
       };
     }
@@ -741,15 +840,47 @@ export class SessionModel {
         query = query.where('sessions.created_at', '<=', endDate);
       }
 
-      // 执行查询
-      const [sessions, totalResult] = await Promise.all([
-        query.clone()
-          .orderBy('sessions.created_at', 'desc')
-          .limit(limit)
-          .offset(offset),
-        // 计算总数（应用相同的筛选条件）
-        query.count('sessions.id as count').first(),
-      ]);
+      // 先执行 COUNT 查询（需要在数据查询之前，避免修改原始查询）
+      const countQuery = db('sessions').where((builder) => {
+        // 复制筛选条件
+        if (filters?.status) {
+          const status = filters.status;
+          if (status === 'active') {
+            builder.whereIn('sessions.status', [SessionStatus.CREATED, SessionStatus.CONNECTED]);
+          } else if (status === 'ended') {
+            builder.whereIn('sessions.status', [
+              SessionStatus.DISCONNECTED,
+              SessionStatus.EXPIRED,
+              SessionStatus.COMPLETED
+            ]);
+          } else if (status === 'error') {
+            builder.where('sessions.status', SessionStatus.ERROR);
+          } else {
+            builder.where('sessions.status', status);
+          }
+        }
+
+        if (filters?.userId) {
+          builder.where('sessions.user_id', filters.userId);
+        }
+
+        if (filters?.startDate) {
+          builder.where('sessions.created_at', '>=', filters.startDate);
+        }
+        if (filters?.endDate) {
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          builder.where('sessions.created_at', '<=', endDate);
+        }
+      });
+
+      const totalResult = await countQuery.count('* as count').first();
+
+      // 执行数据查询
+      const sessions = await query
+        .orderBy('sessions.created_at', 'desc')
+        .limit(limit)
+        .offset(offset);
 
       return {
         items: sessions.map((session: any) => {
@@ -973,14 +1104,47 @@ export class SessionModel {
       const validSortField = validSortFields.includes(sort) ? sort : 'created_at';
       const validOrder = order === 'asc' || order === 'desc' ? order : 'desc';
 
-      // 执行查询
-      const [sessions, totalResult] = await Promise.all([
-        query.clone()
-          .orderBy(`sessions.${validSortField}`, validOrder)
-          .limit(limit)
-          .offset(offset),
-        query.count('sessions.id as count').first(),
-      ]);
+      // 先执行 COUNT 查询（需要在数据查询之前，避免修改原始查询）
+      const countQuery = db('sessions').where((builder) => {
+        // 复制筛选条件
+        if (options?.filters?.status) {
+          const status = options.filters.status;
+          if (status === 'active') {
+            builder.whereIn('sessions.status', [SessionStatus.CREATED, SessionStatus.CONNECTED]);
+          } else if (status === 'ended') {
+            builder.whereIn('sessions.status', [
+              SessionStatus.DISCONNECTED,
+              SessionStatus.EXPIRED,
+              SessionStatus.COMPLETED
+            ]);
+          } else if (status === 'error') {
+            builder.where('sessions.status', SessionStatus.ERROR);
+          } else {
+            builder.where('sessions.status', status);
+          }
+        }
+
+        if (options?.filters?.userId) {
+          builder.where('sessions.user_id', options.filters.userId);
+        }
+
+        if (options?.filters?.startDate) {
+          builder.where('sessions.created_at', '>=', options.filters.startDate);
+        }
+        if (options?.filters?.endDate) {
+          const endDate = new Date(options.filters.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          builder.where('sessions.created_at', '<=', endDate);
+        }
+      });
+
+      const totalResult = await countQuery.count('* as count').first();
+
+      // 执行数据查询
+      const sessions = await query
+        .orderBy(`sessions.${validSortField}`, validOrder)
+        .limit(limit)
+        .offset(offset);
 
       return {
         items: sessions.map((session: any) => {

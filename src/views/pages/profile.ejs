@@ -61,19 +61,19 @@
           <div class="space-y-4">
             <div>
               <label for="current-password" class="block text-sm font-medium text-gray-700 mb-1">当前密码</label>
-              <input type="password" id="current-password" name="current-password" required
+              <input type="password" id="current-password" name="current_password" required
                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
             </div>
 
             <div>
               <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">新密码</label>
-              <input type="password" id="new-password" name="new-password" required
+              <input type="password" id="new-password" name="new_password" required
                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
             </div>
 
             <div>
               <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">确认新密码</label>
-              <input type="password" id="confirm-password" name="confirm-password" required
+              <input type="password" id="confirm-password" name="confirm_password" required
                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
             </div>
           </div>
@@ -100,7 +100,7 @@
           <label for="api-key" class="block text-sm font-medium text-gray-700 mb-1">您的 API Key</label>
           <% if (user.api_key) { %>
           <div class="flex">
-            <input type="text" id="api-key" value="<%= user.api_key %>" readonly
+            <input type="text" id="api-key" name="api_key" value="<%= user.api_key %>" readonly
               class="block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm bg-gray-50 focus:outline-none focus:ring-primary-500 focus:border-primary-500">
             <button id="copy-api-key" class="bg-gray-100 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md text-gray-700 hover:bg-gray-200">
               <i class="fas fa-copy"></i>
@@ -108,8 +108,12 @@
           </div>
           <p class="mt-1 text-xs text-gray-500">用于访问 API 的密钥，请妥善保管</p>
           <% } else { %>
-          <div class="flex items-center">
-            <p class="text-sm text-red-500">您还没有 API Key，请点击下方按钮生成</p>
+          <div class="flex">
+            <input type="text" id="api-key" name="api_key" value="" readonly
+              class="block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm bg-gray-50 focus:outline-none focus:ring-primary-500 focus:border-primary-500" placeholder="暂无 API Key，请点击下方按钮生成">
+            <button id="copy-api-key" disabled class="bg-gray-50 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md text-gray-400 cursor-not-allowed">
+              <i class="fas fa-copy"></i>
+            </button>
           </div>
           <% } %>
         </div>
@@ -317,9 +321,9 @@
     e.preventDefault();
 
     const formData = new FormData(passwordForm);
-    const currentPassword = formData.get('current-password');
-    const newPassword = formData.get('new-password');
-    const confirmPassword = formData.get('confirm-password');
+    const currentPassword = formData.get('current_password');
+    const newPassword = formData.get('new_password');
+    const confirmPassword = formData.get('confirm_password');
 
     if (newPassword !== confirmPassword) {
       alert('新密码和确认密码不匹配');

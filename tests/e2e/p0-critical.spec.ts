@@ -1250,37 +1250,39 @@ test.describe('P0-机器管理核心功能', () => {
     // 测试步骤:
     // 1. 访问机器管理页面
     await page.goto(`${BASE_URL}/admin/machines`);
-    await page.waitForLoadState('networkidle');
 
-    // 修复: 等待内容加载
-    await page.waitForTimeout(2000);
+    // 等待页面主要内容加载
+    await page.waitForSelector('.machine-card, tbody tr', { timeout: 10000 });
+    await page.waitForTimeout(1000);
 
-    // 2. 点击第一个机器的详情链接（多种可能的定位方式）
-    const detailLink = page.locator(
-      'a[href*="/admin/machines/"], a:has-text("详情"), ' +
-      '.view-details, .machine-detail-link, button:has-text("查看")'
+    // 2. 点击第一个机器的详情链接
+    // 查找详情链接: href="/admin/machines/{id}" 或文本"详情"
+    const detailLink = page.locator('a[href*="/admin/machines/"]').or(
+      page.locator('a:has-text("详情")')
     ).first();
 
-    if (await detailLink.count() > 0 && await detailLink.isVisible()) {
+    const linkCount = await detailLink.count();
+
+    if (linkCount > 0) {
+      // 等待链接可见并点击
+      await detailLink.waitFor({ state: 'visible', timeout: 5000 });
       await detailLink.click();
       await takeScreenshot(page, 'machines', 'P0-M03-查看机器详情', 'general');
 
-      // 预期: 显示机器详情页面或模态框
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(1000);
+      // 等待导航或页面内容更新
+      await page.waitForTimeout(2000);
 
-      // 预期: 显示机器的详细信息（多种可能的展示方式）
-      const hasModal = await page.locator('.modal, .dialog, #detail-modal').count() > 0;
-      const hasDetails = await page.locator('text=/机器|IP|状态|资源|Machine/').count() > 0;
-      const urlChanged = page.url().includes('/machines/');
+      // 预期: URL 已改变或显示详情内容
+      const urlChanged = page.url().includes('/admin/machines/');
+      const hasDetails = await page.locator('text=/机器详情|IP地址|最后心跳|活跃会话/').count() > 0;
 
-      expect(hasModal || hasDetails || urlChanged).toBe(true);
+      expect(urlChanged || hasDetails).toBe(true);
       await takeScreenshot(page, 'machines', 'P0-M03-详情显示成功', 'success');
     } else {
-      // 修复: 如果没有详情链接，检查页面是否已经有详情展示
-      const hasDetailsOnPage = await page.locator('text=/机器详情|Machine Detail/').count() > 0;
-      expect(hasDetailsOnPage || true).toBe(true);
-      await takeScreenshot(page, 'machines', 'P0-M03-无详情链接', 'general');
+      // 如果没有详情链接，说明机器卡片已经展示了详情
+      const hasMachineInfo = await page.locator('.machine-card').count() > 0;
+      expect(hasMachineInfo).toBe(true);
+      await takeScreenshot(page, 'machines', 'P0-M03-卡片已显示详情', 'success');
     }
   });
 

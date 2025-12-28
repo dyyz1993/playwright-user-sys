@@ -5,6 +5,9 @@
       <button id="add-machine-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm font-medium">
         <i class="fas fa-plus mr-1"></i>添加机器
       </button>
+      <button id="batch-health-check-btn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm font-medium">
+        <i class="fas fa-heartbeat mr-1"></i>批量健康检查
+      </button>
       <button id="refresh-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
         <i class="fas fa-sync-alt"></i>
       </button>
@@ -111,6 +114,12 @@
                 详情
               </a>
               <div class="flex space-x-2">
+                <button class="text-green-600 hover:text-green-900 health-check-machine-btn" data-machine-id="<%= machine.id %>" title="健康检查">
+                  <i class="fas fa-heartbeat"></i>
+                </button>
+                <button class="text-blue-600 hover:text-blue-900 edit-machine-btn" data-machine-id="<%= machine.id %>" title="编辑">
+                  <i class="fas fa-edit"></i>
+                </button>
                 <% if (machine.status === 'online') { %>
                   <button class="text-yellow-600 hover:text-yellow-900 restart-machine-btn" data-machine-id="<%= machine.id %>">
                     <i class="fas fa-redo"></i>
@@ -253,6 +262,59 @@
           </button>
           <button type="submit" class="bg-blue-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
             添加
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑机器模态框 -->
+<div id="edit-machine-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">编辑机器配置</h3>
+      <button id="close-edit-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <form id="edit-machine-form">
+        <input type="hidden" name="machineId" id="edit-machine-id">
+        <div class="mb-4">
+          <label for="edit-hostname" class="block text-sm font-medium text-gray-700 mb-1">主机名</label>
+          <input type="text" id="edit-hostname" name="hostname" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div class="mb-4">
+          <label for="edit-ip" class="block text-sm font-medium text-gray-700 mb-1">IP 地址</label>
+          <input type="text" id="edit-ip" name="ip" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <p class="mt-1 text-xs text-gray-500">有效的 IPv4 地址格式</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label for="edit-grpc-port" class="block text-sm font-medium text-gray-700 mb-1">gRPC 端口</label>
+            <input type="number" id="edit-grpc-port" name="grpcPort" min="1" max="65535"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          </div>
+          <div>
+            <label for="edit-proxy-port" class="block text-sm font-medium text-gray-700 mb-1">代理端口</label>
+            <input type="number" id="edit-proxy-port" name="proxyPort" min="1" max="65535"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          </div>
+        </div>
+        <div class="mb-4">
+          <label for="edit-max-instances" class="block text-sm font-medium text-gray-700 mb-1">最大实例数</label>
+          <input type="number" id="edit-max-instances" name="maxInstances" min="1" max="100" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div class="flex justify-end space-x-3">
+          <button type="button" id="cancel-edit" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            取消
+          </button>
+          <button type="submit" class="bg-blue-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            保存
           </button>
         </div>
       </form>
@@ -561,5 +623,172 @@
     } catch (error) {
       alert('批量重启失败: ' + error.message);
     }
+  });
+
+  // 批量健康检查
+  const batchHealthCheckBtn = document.getElementById('batch-health-check-btn');
+  batchHealthCheckBtn?.addEventListener('click', async () => {
+    // 获取所有机器ID
+    const allMachineIds = Array.from(document.querySelectorAll('.machine-checkbox'))
+      .map(cb => cb.getAttribute('data-machine-id'));
+
+    if (allMachineIds.length === 0) {
+      alert('没有可检查的机器');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/machines/health-check/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ machineIds: allMachineIds })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        let message = `健康检查完成:\n健康: ${result.data.healthy} 台\n不健康: ${result.data.unhealthy} 台`;
+        if (result.data.unhealthy > 0) {
+          message += '\n\n不健康的机器:';
+          result.data.results.filter(r => r.status === 'unhealthy').forEach(r => {
+            message += `\n- ${r.machineId}: ${r.error || '连接失败'}`;
+          });
+        }
+        alert(message);
+      } else {
+        alert('批量健康检查失败: ' + result.message);
+      }
+    } catch (error) {
+      alert('批量健康检查失败: ' + error.message);
+    }
+  });
+
+  // 编辑机器功能
+  const editMachineButtons = document.querySelectorAll('.edit-machine-btn');
+  const editMachineModal = document.getElementById('edit-machine-modal');
+  const closeEditModal = document.getElementById('close-edit-modal');
+  const cancelEdit = document.getElementById('cancel-edit');
+  const editMachineForm = document.getElementById('edit-machine-form');
+
+  editMachineButtons.forEach(button => {
+    button.addEventListener('click', async () => {
+      const machineId = button.getAttribute('data-machine-id');
+      const machineCard = button.closest('.machine-card');
+
+      // 从卡片中获取机器信息
+      const hostname = machineCard.querySelector('h3')?.textContent || '';
+      const ip = machineCard.querySelector('.grid-cols-2 div:first-child p:last-child')?.textContent || '';
+
+      // 填充表单
+      document.getElementById('edit-machine-id').value = machineId;
+      document.getElementById('edit-hostname').value = hostname;
+      document.getElementById('edit-ip').value = ip;
+
+      editMachineModal?.classList.remove('hidden');
+    });
+  });
+
+  closeEditModal?.addEventListener('click', () => {
+    editMachineModal?.classList.add('hidden');
+  });
+
+  cancelEdit?.addEventListener('click', () => {
+    editMachineModal?.classList.add('hidden');
+  });
+
+  editMachineForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(editMachineForm);
+    const machineId = formData.get('machineId');
+    const data = {
+      hostname: formData.get('hostname'),
+      ip: formData.get('ip'),
+      grpcPort: formData.get('grpcPort') ? parseInt(formData.get('grpcPort')) : undefined,
+      proxyPort: formData.get('proxyPort') ? parseInt(formData.get('proxyPort')) : undefined,
+      maxInstances: parseInt(formData.get('maxInstances')) || 10
+    };
+
+    try {
+      const response = await fetch(`/api/admin/machines/${machineId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('机器配置已更新');
+        window.location.reload();
+      } else {
+        alert('更新失败: ' + (result.error || result.message || '未知错误'));
+      }
+    } catch (error) {
+      alert('更新失败: ' + error.message);
+    }
+  });
+
+  // 健康检查功能
+  const healthCheckButtons = document.querySelectorAll('.health-check-machine-btn');
+
+  healthCheckButtons.forEach(button => {
+    button.addEventListener('click', async () => {
+      const machineId = button.getAttribute('data-machine-id');
+      const icon = button.querySelector('i');
+
+      // 显示加载状态
+      if (icon) {
+        icon.className = 'fas fa-spinner fa-spin';
+      }
+      button.disabled = true;
+
+      try {
+        const response = await fetch(`/api/admin/machines/${machineId}/health-check`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          const data = result.data;
+          let status = data.status === 'healthy' ? '健康' : '不健康';
+          let message = `机器状态: ${status}\n`;
+
+          if (data.grpcConnected) {
+            message += `gRPC 连接: 已连接\n`;
+            if (data.responseTime !== undefined) {
+              message += `响应时间: ${data.responseTime}ms\n`;
+            }
+            if (data.systemInfo) {
+              message += `\n系统信息:\n`;
+              message += `CPU: ${data.systemInfo.cpuUsage}%\n`;
+              message += `内存: ${data.systemInfo.memoryUsage}%\n`;
+              message += `磁盘: ${data.systemInfo.diskUsage}%\n`;
+            }
+            if (data.activeInstances !== undefined) {
+              message += `活跃实例: ${data.activeInstances}\n`;
+            }
+          }
+
+          if (data.error) {
+            message += `\n错误: ${data.error}`;
+          }
+
+          alert(message);
+        } else {
+          alert('健康检查失败: ' + result.message);
+        }
+      } catch (error) {
+        alert('健康检查失败: ' + error.message);
+      } finally {
+        // 恢复按钮状态
+        if (icon) {
+          icon.className = 'fas fa-heartbeat';
+        }
+        button.disabled = false;
+      }
+    });
   });
 </script>

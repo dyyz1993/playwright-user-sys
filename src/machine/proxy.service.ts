@@ -1,7 +1,7 @@
 import { createServer, Server, IncomingMessage, ServerResponse } from 'http';
 import httpProxy from 'http-proxy';
 import { Socket } from 'net';
-import { CONFIG } from './config.js';
+import { MachineConfig } from './config.js';
 import { sessionManager } from './browser.service.js';
 import { logger } from '@shared/utils/logger.js';
 
@@ -16,13 +16,16 @@ import { WebSocketServer, WebSocket } from 'ws';
  * 代理服务
  * 负责处理 HTTP 和 WebSocket 请求，并将它们转发到相应的浏览器实例
  */
-class ProxyService {
+export class ProxyService {
   private server: Server;
   private proxy: httpProxy;
   // !! 添加 wss 实例变量 !!
   private wss: WebSocketServer;
+  private config: MachineConfig;
 
-  constructor() {
+  constructor(config: MachineConfig) {
+    this.config = config;
+
     // 创建 HTTP 代理
     this.proxy = httpProxy.createProxyServer({
       ws: true,
@@ -72,8 +75,8 @@ class ProxyService {
    * 启动代理服务器
    */
   start(): void {
-    this.server.listen(CONFIG.proxyPort,'0.0.0.0', () => {
-      logger.info(`代理服务器运行在端口 ${CONFIG.proxyPort}`);
+    this.server.listen(this.config.proxyPort, '0.0.0.0', () => {
+      logger.info(`代理服务器运行在端口 ${this.config.proxyPort}`);
     });
   }
 
@@ -288,7 +291,10 @@ class ProxyService {
   }
 }
 
-// 创建代理服务实例
-export const proxyService = new ProxyService();
+// 向后兼容：创建默认的代理服务实例（使用 CONFIG）
+import { CONFIG } from './config.js';
+const defaultProxyService = new ProxyService(CONFIG);
 
-export default proxyService;
+export const proxyService = defaultProxyService;
+
+export default ProxyService;

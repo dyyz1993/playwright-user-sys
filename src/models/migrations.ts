@@ -59,8 +59,12 @@ export async function createTables() {
       table.json('options').nullable();
       table.timestamp('start_time').defaultTo(db.fn.now());
       table.timestamp('end_time').nullable();
+      table.timestamp('disconnected_at').nullable();
       table.integer('duration').defaultTo(0);
+      table.integer('credits_used').defaultTo(0);
       table.string('screenshot_url').nullable();
+      table.timestamp('last_activity').nullable();
+      table.string('error_message').nullable();
       table.timestamps(true, true);
     });
 
@@ -113,6 +117,22 @@ export async function createTables() {
     });
 
     console.log('✅ Webhook 事件表创建成功');
+  }
+
+  // 创建积分历史表
+  if (!(await tableExists('credit_history'))) {
+    await db.schema.createTable('credit_history', (table) => {
+      table.increments('id').primary();
+      table.integer('user_id').unsigned().notNullable();
+      table.string('action').notNullable(); // 'add', 'deduct', 'use'
+      table.integer('amount').notNullable();
+      table.integer('balance_after').notNullable();
+      table.string('description').nullable();
+      table.json('metadata').nullable();
+      table.timestamps(true, true);
+    });
+
+    console.log('✅ 积分历史表创建成功');
   }
 }
 

@@ -39,12 +39,12 @@ const createDatabaseConfig = () => {
         dateStrings: true,
       },
       pool: {
-        min: 2,
-        max: 10,
+        min: parseInt(env.DB_POOL_MIN || '2'),
+        max: parseInt(env.DB_POOL_MAX || '10'),
         // 空闲超时，单位毫秒
         idleTimeoutMillis: 30000,
         // 连接超时，单位毫秒
-        acquireTimeoutMillis: 30000,
+        acquireTimeoutMillis: 60000,
         // 创建连接的错误将被记录并抛出
         propagateCreateError: false,
       },

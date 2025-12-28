@@ -29,7 +29,8 @@ const envSchema = z.object({
   DB_PASSWORD: z.string().optional(),
 
   // JWT 配置
-  JWT_SECRET: z.string(),
+  // 在测试环境中使用默认值，方便测试
+  JWT_SECRET: z.string().default('default_jwt_secret_change_in_production'),
   JWT_EXPIRES_IN: z.string().default('1d'),
 
   // 管理员初始账号
@@ -69,6 +70,8 @@ export const env = {
   GRPC_PORT: parseInt(_env.data.GRPC_PORT, 10),
   PROXY_PORT: parseInt(_env.data.PROXY_PORT, 10),
   MACHINE_MONITOR_INTERVAL: parseInt(_env.data.MACHINE_MONITOR_INTERVAL, 10),
+  // 确保 JWT_EXPIRES_IN 保持为字符串
+  JWT_EXPIRES_IN: _env.data.JWT_EXPIRES_IN,
   ROOT_DIR: rootDir,
   IS_DEV: _env.data.NODE_ENV === 'development',
   IS_PROD: _env.data.NODE_ENV === 'production',

@@ -66,8 +66,11 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
     // 从内存中获取机器数据
     const memoryMachines = memoryStore.getAllMachines();
 
+    console.log(`[DEBUG] getAllMachines: 内存中机器数量 = ${memoryMachines.length}`);
+
     // 如果内存中有数据，则使用内存中的数据
     if (memoryMachines.length > 0) {
+      console.log(`[DEBUG] 使用内存数据，机器数量: ${memoryMachines.length}`);
       // 处理分页
       const page = query.page || 1;
       const limit = query.limit || 10;
@@ -106,19 +109,29 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
       const paginatedMachines = sortedMachines.slice(offset, offset + limit);
 
       // 转换为 API 响应格式
-      const formattedMachines = paginatedMachines.map(machine => ({
-        id: machine.machine_id,
-        hostname: machine.name,
-        ip: machine.ip,
-        grpcPort: machine.grpc_port,
-        cpuUsage: machine.cpu_usage,
-        memoryUsage: machine.memory_usage,
-        diskUsage: machine.disk_space,
-        instanceCount: machine.active_sessions,
-        maxInstances: machine.max_sessions,
-        status: machine.online ? 'online' : 'offline',
-        lastSeen: machine.last_heartbeat,
-      }));
+      const formattedMachines = paginatedMachines.map(machine => {
+        // 调试：打印机器的原始字段
+        console.log(`[DEBUG] 机器原始数据:`, {
+          machine_id: machine.machine_id,
+          grpc_port: machine.grpc_port,
+          has_grpc_port: 'grpc_port' in machine,
+        });
+
+        return {
+          id: machine.machine_id,
+          hostname: machine.name,
+          ip: machine.ip,
+          grpcPort: machine.grpc_port,
+          proxyPort: machine.proxy_port,
+          cpuUsage: machine.cpu_usage,
+          memoryUsage: machine.memory_usage,
+          diskUsage: machine.disk_space,
+          instanceCount: machine.active_sessions,
+          maxInstances: machine.max_sessions,
+          status: machine.online ? 'online' : 'offline',
+          lastSeen: machine.last_heartbeat,
+        };
+      });
 
       return sendPaginated(reply, {
         items: formattedMachines,

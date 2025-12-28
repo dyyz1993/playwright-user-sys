@@ -65,6 +65,7 @@ export default fp(async function (fastify: FastifyInstance) {
   const rootDir = path.resolve(__dirname, '../..');
 
   // 注册 Cookie 插件
+  // 不设置 secret，因为 JWT token 本身已经签名了
   await fastify.register(cookie);
 
   // 注册 Session 插件

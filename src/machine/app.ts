@@ -1,8 +1,8 @@
-import { CONFIG } from './config.js';
+import { CONFIG, MachineConfig, loadConfig } from './config.js';
 import { logger } from '@shared/utils/logger.js';
 import { browserService } from './browser.service.js';
-import { proxyService } from './proxy.service.js';
-import grpcService, { grpcClient, startGrpcServer } from './grpc.service.js';
+import { ProxyService } from './proxy.service.js';
+import grpcService, { grpcClient, startGrpcServer, GrpcClient, setGrpcServerConfig } from './grpc.service.js';
 import retry from 'async-retry';
 
 // 机器端状态枚举
@@ -34,6 +34,39 @@ export class MachineServer {
   // 冷却期时间（毫秒）
   private readonly COOLDOWN_PERIOD: number = 60000; // 1分钟
 
+  // 配置
+  private config: MachineConfig;
+
+  // 代理服务实例（每个 MachineServer 拥有独立的实例）
+  private proxyService: ProxyService;
+
+  // gRPC 客户端实例（每个 MachineServer 拥有独立的实例）
+  private grpcClient: GrpcClient;
+
+  /**
+   * 构造函数
+   * @param customConfig 可选的自定义配置，用于测试环境
+   */
+  constructor(customConfig?: Partial<MachineConfig>) {
+    if (customConfig) {
+      // 如果提供了自定义配置，合并默认配置
+      const defaultConfig = loadConfig();
+      this.config = { ...defaultConfig, ...customConfig };
+      logger.info('使用自定义配置初始化 MachineServer');
+    } else {
+      // 否则使用默认配置（从环境变量加载）
+      this.config = CONFIG;
+      logger.info('使用环境变量配置初始化 MachineServer');
+    }
+
+    // 创建独立的代理服务实例
+    this.proxyService = new ProxyService(this.config);
+
+    // 创建独立的 gRPC 客户端实例（使用此实例的配置）
+    // 注意：GrpcClient 现在需要传入配置参数
+    this.grpcClient = new GrpcClient(this.config);
+  }
+
   /**
    * 获取当前状态
    */
@@ -59,24 +92,27 @@ export class MachineServer {
       this.setState(MachineState.STARTING);
 
       logger.info('机器端配置:', {
-        machineId: CONFIG.machineId,
-        machineName: CONFIG.machineName,
-        managerHost: CONFIG.managerHost,
-        proxyPort: CONFIG.proxyPort,
-        grpcPort: CONFIG.grpcPort,
+        machineId: this.config.machineId,
+        machineName: this.config.machineName,
+        managerHost: this.config.managerHost,
+        proxyPort: this.config.proxyPort,
+        grpcPort: this.config.grpcPort,
       });
 
+      // 设置 gRPC 服务器配置
+      setGrpcServerConfig(this.config);
+
       // 启动 gRPC 服务器
-      startGrpcServer(CONFIG.grpcPort);
+      startGrpcServer(this.config.grpcPort);
 
-      // 启动代理服务器
-      proxyService.start();
+      // 启动代理服务器（使用此实例的代理服务）
+      this.proxyService.start();
 
-      // 注册机器
-      await grpcClient.register();
+      // 注册机器（使用此实例的 gRPC 客户端）
+      await this.grpcClient.register();
 
-      // 连接到管理端
-      await grpcClient.connect();
+      // 连接到管理端（使用此实例的 gRPC 客户端）
+      await this.grpcClient.connect();
 
       // 处理进程退出
       this.setupProcessHandlers();
@@ -150,8 +186,8 @@ export class MachineServer {
       // 关闭所有浏览器实例
       await browserService.closeAllBrowsers();
 
-      // 停止代理服务器
-      await proxyService.stop();
+      // 停止代理服务器（使用此实例的代理服务）
+      await this.proxyService.stop();
 
       // 停止 gRPC 服务器
       // 注意：我们没有实现 gRPC 服务器的停止方法
@@ -246,7 +282,7 @@ export class MachineServer {
               }
 
               logger.info(`执行第 ${attemptNumber} 次重连尝试...`);
-              await grpcClient.connect();
+              await this.grpcClient.connect();
               logger.info('重新连接成功');
 
               // 重连成功，设置状态为运行中

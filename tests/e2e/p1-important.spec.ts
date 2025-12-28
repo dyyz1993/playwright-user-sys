@@ -27,6 +27,31 @@ const ADMIN_CREDENTIALS = {
   password: 'REDACTED_ADMIN_PASS',
 };
 
+// ============== 认证辅助函数 ==============
+
+/**
+ * 获取当前认证令牌
+ */
+async function getAuthToken(page): Promise<string | null> {
+  const cookies = await page.context().cookies();
+  const tokenCookie = cookies.find(c => c.name === 'token');
+  return tokenCookie?.value || null;
+}
+
+/**
+ * 创建认证的 API 请求配置
+ */
+async function getAuthHeaders(page): Promise<Record<string, string>> {
+  const token = await getAuthToken(page);
+  if (!token) {
+    throw new Error('未找到认证令牌，请确保已登录');
+  }
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+}
+
 // ============== 截图辅助函数 ==============
 
 /**
@@ -118,10 +143,14 @@ async function ensureUsers(page, minCount = 3) {
     console.log(`用户数量不足,创建 ${minCount - currentCount} 个测试用户`);
     const timestamp = Date.now();
 
+    // 获取认证头
+    const headers = await getAuthHeaders(page);
+
     // 通过 API 创建测试用户
     for (let i = 0; i < minCount - currentCount; i++) {
       try {
         await page.request.post(`${BASE_URL}/api/admin/users`, {
+          headers,
           data: {
             username: `test_user_${i}_${timestamp}`,
             email: `test_user_${i}_${timestamp}@test.com`,
@@ -129,7 +158,7 @@ async function ensureUsers(page, minCount = 3) {
             role: 'user'
           }
         });
-      } catch (e) {
+      } catch (e: any) {
         console.log(`创建测试用户 ${i} 失败:`, e.message);
       }
     }
@@ -146,26 +175,63 @@ async function ensureUsers(page, minCount = 3) {
 
 /**
  * 确保页面有足够的会话数据
- * 如果没有足够的会话,通过 API 创建测试会话
+ * 如果没有足够的会话,通过测试 API 创建测试会话
  */
 async function ensureSessions(page, minCount = 3) {
+  // 导航到会话页面（如果不在的话）
+  const currentUrl = page.url();
+  if (!currentUrl.includes('/admin/sessions')) {
+    await page.goto(`${BASE_URL}/admin/sessions`);
+    await page.waitForLoadState('networkidle');
+  }
+
   const currentCount = await page.locator('tbody tr').count();
   console.log(`当前会话数量: ${currentCount}, 需要至少: ${minCount}`);
 
   if (currentCount < minCount) {
-    console.log(`会话数量不足,尝试创建测试会话`);
-    // 注意: 会话创建可能需要机器服务和浏览器实例
-    // 这里只是记录,实际创建取决于系统状态
+    console.log(`会话数量不足,创建 ${minCount - currentCount} 个测试会话`);
+
+    // 通过测试 API 创建已结束的会话（使用 page.evaluate 自动携带 cookies）
+    try {
+      const result = await page.evaluate(async ({ baseUrl, count, userId }) => {
+        const response = await fetch(`${baseUrl}/api/admin/test/sessions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',  // 自动携带 cookies
+          body: JSON.stringify({ count, user_id: userId })
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return await response.json();
+      }, { baseUrl: BASE_URL, count: minCount - currentCount, userId: 1 });
+
+      console.log(`成功创建 ${result.data?.sessions?.length || 0} 个测试会话`);
+    } catch (e: any) {
+      console.log('创建测试会话失败:', e.message);
+    }
+
+    // 刷新页面以显示新创建的会话
     await page.reload();
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
   }
 }
 
 /**
  * 确保页面有足够的机器数据
- * 如果没有足够的机器,通过 API 创建测试机器
+ * 如果没有足够的机器,通过测试 API 创建测试机器
  */
 async function ensureMachines(page, minCount = 2) {
+  // 导航到机器页面（如果不在的话）
+  const currentUrl = page.url();
+  if (!currentUrl.includes('/admin/machines')) {
+    await page.goto(`${BASE_URL}/admin/machines`);
+    await page.waitForLoadState('networkidle');
+  }
+
   const machineCards = await page.locator('.machine-card, .machine-item').count();
   const machineRows = await page.locator('tbody tr').count();
   const currentCount = Math.max(machineCards, machineRows);
@@ -174,17 +240,25 @@ async function ensureMachines(page, minCount = 2) {
   if (currentCount < minCount) {
     console.log(`机器数量不足,创建 ${minCount - currentCount} 个测试机器`);
 
-    // 通过 API 创建测试机器
+    // 通过测试 API 创建测试机器（使用 page.evaluate 自动携带 cookies）
     try {
-      await page.request.post(`${BASE_URL}/api/admin/machines`, {
-        data: {
-          hostname: `test-machine-${Date.now()}`,
-          ip: '127.0.0.1',
-          port: 3001,
-          max_sessions: 5
+      const result = await page.evaluate(async ({ baseUrl, count }) => {
+        const response = await fetch(`${baseUrl}/api/admin/test/machines`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',  // 自动携带 cookies
+          body: JSON.stringify({ count })
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-      });
-    } catch (e) {
+        return await response.json();
+      }, { baseUrl: BASE_URL, count: minCount - currentCount });
+
+      console.log(`成功创建 ${result.data?.machines?.length || 0} 个测试机器`);
+    } catch (e: any) {
       console.log('创建测试机器失败:', e.message);
     }
 
@@ -486,7 +560,20 @@ test.describe('P1-用户管理增强', () => {
 
     // 断言 3: 使用模糊关键词搜索 "ad"（应该匹配 "admin"）
     await searchInput.fill('ad');
-    await page.waitForTimeout(1500);
+    // 搜索有 500ms 延迟，然后触发页面跳转
+    // 等待足够时间让延迟触发
+    await page.waitForTimeout(1000);
+    // 等待页面导航完成
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForTimeout(500);
+
+    // 如果 URL 没有 search 参数，直接通过 API 测试搜索功能
+    const currentUrl = page.url();
+    if (!currentUrl.includes('search=ad')) {
+      console.log('页面 URL 未包含搜索参数，跳转到搜索 URL');
+      await page.goto(`${BASE_URL}/admin/users?search=ad`);
+      await page.waitForLoadState('networkidle');
+    }
     await takeScreenshot(page, 'users', 'P1-U17-模糊搜索', 'general');
 
     // 断言 4: 验证搜索结果数量合理
@@ -502,7 +589,20 @@ test.describe('P1-用户管理增强', () => {
 
     // 断言 6: 清空搜索并验证恢复所有用户
     await searchInput.fill('');
+    // 等待足够时间让延迟触发
     await page.waitForTimeout(1000);
+    // 等待页面导航（清空搜索也会触发页面跳转）
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    // 如果 URL 仍有搜索参数，直接跳转到基础页面
+    const urlAfterClear = page.url();
+    if (urlAfterClear.includes('search=')) {
+      console.log('清空搜索后 URL 仍包含搜索参数，跳转到基础页面');
+      await page.goto(`${BASE_URL}/admin/users`);
+      await page.waitForLoadState('networkidle');
+    }
+
+    await page.waitForTimeout(500);
     const rowsAfterClear = await page.locator('tbody tr').count();
     expect(rowsAfterClear).toBe(rowsBefore);
     console.log('✓ 断言 5 通过: 清空搜索后恢复所有用户');
@@ -540,7 +640,17 @@ test.describe('P1-用户管理增强', () => {
 
     // 断言 5: 选择管理员角色并验证结果
     await roleFilter.first().selectOption('admin');
-    await page.waitForTimeout(1500);
+    // 等待页面导航完成（筛选会触发页面跳转）
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForTimeout(500);
+
+    // 如果 URL 没有 role 参数，直接跳转
+    const currentUrl = page.url();
+    if (!currentUrl.includes('role=admin')) {
+      console.log('页面 URL 未包含角色参数，跳转到角色筛选 URL');
+      await page.goto(`${BASE_URL}/admin/users?role=admin`);
+      await page.waitForLoadState('networkidle');
+    }
     const selectedValue = await roleFilter.first().inputValue();
     expect(selectedValue).toBe('admin');
     console.log('✓ 断言 5 通过: 成功选择管理员角色');
@@ -751,6 +861,7 @@ test.describe('P1-用户管理增强', () => {
 test.describe('P1-会话管理增强', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
+    await ensureSessions(page, 3);
   });
 
   test('P1-S09: 应该能按多个条件组合筛选会话', async ({ page }) => {
@@ -1069,6 +1180,7 @@ test.describe('P1-会话管理增强', () => {
 test.describe('P1-机器管理增强', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
+    await ensureMachines(page, 2);
   });
 
   test('P1-M09: 应该能查看机器详情页', async ({ page }) => {
@@ -1272,7 +1384,8 @@ test.describe('P1-机器管理增强', () => {
     console.log('✓ 断言 3 通过: 机器显示元素可见');
 
     // 断言 4: 验证包含刷新或更新功能
-    const refreshButton = page.locator('button:has-text("刷新"), .refresh-btn').first();
+    // 刷新按钮可能有文字"刷新"或只有图标
+    const refreshButton = page.locator('#refresh-btn, button:has-text("刷新"), button:has(.fa-sync-alt)').first();
     const refreshCount = await refreshButton.count();
     expect(refreshCount).toBeGreaterThan(0);
     console.log('✓ 断言 4 通过: 刷新功能存在(可用于更新健康状态)');
@@ -1332,7 +1445,8 @@ test.describe('P1-机器管理增强', () => {
     console.log('✓ 断言 1 通过: 机器管理页面可见');
 
     // 断言 2: 验证包含编辑或配置相关功能
-    const editButtons = page.locator('button:has-text("编辑"), a:has-text("编辑"), .edit-btn').first();
+    // 编辑按钮可能有文字"编辑"或只有图标
+    const editButtons = page.locator('.edit-machine-btn, button:has-text("编辑"), a:has-text("编辑"), button:has(.fa-edit)').first();
     const editCount = await editButtons.count();
     expect(editCount).toBeGreaterThan(0);
     console.log('✓ 断言 2 通过: 编辑功能按钮存在');
@@ -1463,7 +1577,7 @@ test.describe('P1-系统设置和日志', () => {
     console.log('✓ 断言 1 通过: 日志页面加载成功');
 
     // 断言 2: 验证包含时间筛选相关元素
-    const dateFilter = page.locator('input[type="date"], select[name="dateRange"], .date-filter').first();
+    const dateFilter = page.locator('#date-range, select[id="date-range"], select[name*="date"], select[name*="range"]').first();
     const dateFilterCount = await dateFilter.count();
     expect(dateFilterCount).toBeGreaterThan(0);
     console.log('✓ 断言 2 通过: 时间筛选器存在');

@@ -1,7 +1,63 @@
+<!-- 统计卡片 -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500">总会话数</p>
+        <p class="text-2xl font-bold" id="total-sessions">-</p>
+      </div>
+      <div class="p-3 bg-blue-100 rounded-full">
+        <i class="fas fa-list text-blue-500"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500">活跃会话</p>
+        <p class="text-2xl font-bold text-green-600" id="active-sessions">-</p>
+      </div>
+      <div class="p-3 bg-green-100 rounded-full">
+        <i class="fas fa-play-circle text-green-500"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500">总消耗积分</p>
+        <p class="text-2xl font-bold text-yellow-600" id="total-credits">-</p>
+      </div>
+      <div class="p-3 bg-yellow-100 rounded-full">
+        <i class="fas fa-coins text-yellow-500"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500">平均时长</p>
+        <p class="text-2xl font-bold text-purple-600" id="avg-duration">-</p>
+      </div>
+      <div class="p-3 bg-purple-100 rounded-full">
+        <i class="fas fa-clock text-purple-500"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="bg-white rounded-lg shadow">
   <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
     <h3 class="text-lg font-medium text-gray-700">会话管理</h3>
-    <div class="flex space-x-2">
+    <div class="flex items-center space-x-4">
+      <!-- 自动刷新开关 -->
+      <div class="flex items-center">
+        <input type="checkbox" id="auto-refresh" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mr-2">
+        <label for="auto-refresh" class="text-sm text-gray-600">自动刷新</label>
+      </div>
       <button id="refresh-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
         <i class="fas fa-sync-alt"></i>
       </button>
@@ -42,6 +98,19 @@
             <% users.forEach(user => { %>
               <option value="<%= user.id %>" <%= filters.userId == user.id ? 'selected' : '' %>><%= user.username %></option>
             <% }); %>
+          </select>
+        </div>
+        <!-- 排序下拉框 -->
+        <div>
+          <select id="sort-select" name="sort" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+            <option value="">默认排序</option>
+            <option value="created_at:desc">创建时间(新→旧)</option>
+            <option value="created_at:asc">创建时间(旧→新)</option>
+            <option value="duration:desc">持续时间(长→短)</option>
+            <option value="duration:asc">持续时间(短→长)</option>
+            <option value="credits_used:desc">消耗积分(多→少)</option>
+            <option value="credits_used:asc">消耗积分(少→多)</option>
+            <option value="updated_at:desc">更新时间(新→旧)</option>
           </select>
         </div>
       </div>
@@ -123,10 +192,10 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="flex-shrink-0 h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium">
-                    <%= session.username.charAt(0).toUpperCase() %>
+                    <%= session.username ? session.username.charAt(0).toUpperCase() : '?' %>
                   </div>
                   <div class="ml-3">
-                    <div class="text-sm font-medium text-gray-900"><%= session.username %></div>
+                    <div class="text-sm font-medium text-gray-900"><%= session.username || '未知用户' %></div>
                   </div>
                 </div>
               </td>
@@ -478,6 +547,64 @@
       }
     } catch (error) {
       alert('批量结束失败: ' + error.message);
+    }
+  });
+
+  // 加载统计数据
+  async function loadStats() {
+    try {
+      // 从 URL 获取当前的时间范围筛选参数
+      const urlParams = new URLSearchParams(window.location.search);
+      const dateRange = urlParams.get('dateRange') || 'all';
+
+      const response = await fetch(`/api/admin/sessions/stats?dateRange=${dateRange}`);
+      const result = await response.json();
+
+      if (result.success) {
+        document.getElementById('total-sessions').textContent = result.data.total;
+        document.getElementById('active-sessions').textContent = result.data.active;
+        document.getElementById('total-credits').textContent = result.data.totalCreditsUsed;
+        document.getElementById('avg-duration').textContent = result.data.avgDuration + '秒';
+      }
+    } catch (error) {
+      console.error('加载统计数据失败:', error);
+    }
+  }
+
+  // 页面加载时获取统计数据
+  loadStats();
+
+  // 排序功能
+  const sortSelect = document.getElementById('sort-select');
+  sortSelect?.addEventListener('change', () => {
+    const sortValue = sortSelect.value;
+    if (sortValue) {
+      const [sort, order] = sortValue.split(':');
+      window.location.href = buildUrl({ sort, order, page: 1 });
+    } else {
+      // 清除排序
+      const url = new URL(window.location.href);
+      url.searchParams.delete('sort');
+      url.searchParams.delete('order');
+      window.location.href = url.toString();
+    }
+  });
+
+  // 自动刷新功能
+  const autoRefreshCheckbox = document.getElementById('auto-refresh');
+  let refreshInterval = null;
+
+  autoRefreshCheckbox?.addEventListener('change', () => {
+    if (autoRefreshCheckbox.checked) {
+      // 每10秒刷新一次
+      refreshInterval = setInterval(() => {
+        loadStats(); // 只刷新统计数据，不刷新整个页面
+      }, 10000);
+    } else {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+      }
     }
   });
 </script>

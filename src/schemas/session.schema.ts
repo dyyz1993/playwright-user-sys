@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { successResponseSchema, timestampSchema } from './common.schema.js';
+import { successResponseSchema, timestampSchema, paginatedResponseSchema } from './common.schema.js';
 
 // 会话选项模式
 export const sessionOptionsSchema = z.object({
@@ -23,7 +23,7 @@ export const createSessionRequestSchema = z.object({
     width: z.number().int().positive(),
     height: z.number().int().positive(),
   }).optional(),
-});  // 允许空对象
+}).strict();  // 严格模式：拒绝未知字段如 "options"
 
 // 会话基本信息模式
 export const sessionBaseSchema = z.object({
@@ -38,8 +38,12 @@ export const sessionDetailSchema = sessionBaseSchema.extend({
   port: z.number().nullable(),
   start_time: timestampSchema,
   end_time: timestampSchema.nullable(),
+  disconnected_at: timestampSchema.nullable(),
   duration: z.number(),
+  credits_used: z.number(),
   screenshot_url: z.string().nullable(),
+  last_activity: timestampSchema.nullable(),
+  error_message: z.string().nullable(),
   created_at: timestampSchema,
   updated_at: timestampSchema,
 });
@@ -50,6 +54,7 @@ export const createSessionResponseSchema = successResponseSchema(
     created_at: timestampSchema,
     browserWSEndpoint: z.string(),
     directUrl: z.string(),
+    viewerUrl: z.string().optional(),
   })
 );
 
@@ -73,13 +78,13 @@ export const sessionListItemSchema = sessionDetailSchema.extend({
 });
 
 // 获取用户会话响应模式
-export const getUserSessionsResponseSchema = successResponseSchema(
-  z.array(sessionListItemSchema)
+export const getUserSessionsResponseSchema = paginatedResponseSchema(
+  sessionListItemSchema
 );
 
 // 获取所有会话响应模式
-export const getAllSessionsResponseSchema = successResponseSchema(
-  z.array(sessionListItemSchema)
+export const getAllSessionsResponseSchema = paginatedResponseSchema(
+  sessionListItemSchema
 );
 
 // 获取会话响应模式

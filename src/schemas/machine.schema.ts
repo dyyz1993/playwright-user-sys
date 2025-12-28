@@ -67,9 +67,15 @@ export const markMachineOfflineResponseSchema = successResponseSchema(
   })
 );
 
-// 获取所有机器响应模式
+// 获取所有机器响应模式 (分页格式)
 export const getAllMachinesResponseSchema = successResponseSchema(
-  z.array(machineDetailSchema)
+  z.object({
+    items: z.array(machineDetailSchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+    totalPages: z.number(),
+  })
 );
 
 // 获取机器详情响应模式

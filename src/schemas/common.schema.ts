@@ -22,7 +22,8 @@ export const paginationQuerySchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
   sort: z.string().optional(),
-  order: z.enum(['asc', 'desc']).optional(),
+  // 接受任意字符串，但在应用层验证和过滤无效值
+  order: z.string().optional(),
   search: z.string().optional(),
   role: z.enum(['admin', 'user']).optional(),
   status: z.enum(['active', 'inactive']).optional(),

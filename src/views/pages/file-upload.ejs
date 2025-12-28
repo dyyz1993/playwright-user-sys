@@ -1,10 +1,6 @@
-<% layout('layouts/main') -%>
-<% block('title', '文件上传') -%>
-<% block('subtitle', '上传和管理文件') -%>
-
 <div class="bg-white shadow rounded-lg p-6 mb-6">
   <h2 class="text-xl font-semibold text-gray-800 mb-4">上传文件</h2>
-  
+
   <form id="upload-form" class="mb-6">
     <div class="flex items-center space-x-4">
       <div class="flex-1">
@@ -14,7 +10,8 @@
           file:text-sm file:font-semibold
           file:bg-primary-600 file:text-white
           hover:file:bg-primary-700
-        " required>
+        " accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip" required>
+        <p class="text-sm text-gray-500 mt-2">支持的文件类型: JPG, PNG, GIF, PDF, DOC, DOCX, TXT, ZIP</p>
       </div>
       <button type="submit" class="bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
         上传文件

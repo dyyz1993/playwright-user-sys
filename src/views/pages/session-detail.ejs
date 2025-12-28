@@ -1,11 +1,19 @@
+<%
+  // 定义活跃和已结束的状态列表
+  const activeStatuses = ['created', 'connected'];
+  const endedStatuses = ['disconnected', 'expired', 'completed'];
+%>
 <div class="bg-white rounded-lg shadow">
   <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-    <h3 class="text-lg font-medium text-gray-700">会话详情</h3>
+    <div>
+      <h3 class="text-lg font-medium text-gray-700">会话详情</h3>
+      <p class="text-sm text-gray-500 mt-1">会话 ID: <%= session.id.substring(0, 8) + '...' %></p>
+    </div>
     <div class="flex space-x-2">
       <a href="/admin/sessions" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
         <i class="fas fa-arrow-left mr-1"></i> 返回
       </a>
-      <% if (session.status === 'active') { %>
+      <% if (activeStatuses.includes(session.status)) { %>
         <button id="end-session-btn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm font-medium">
           <i class="fas fa-stop-circle mr-1"></i> 结束会话
         </button>
@@ -22,18 +30,22 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p class="text-sm text-gray-500">会话 ID</p>
-              <p class="text-sm font-medium"><%= session.id %></p>
+              <p class="text-sm font-medium font-mono text-xs"><%= session.id %></p>
             </div>
             <div>
               <p class="text-sm text-gray-500">状态</p>
               <p class="text-sm">
-                <% if (session.status === 'active') { %>
+                <% if (activeStatuses.includes(session.status)) { %>
                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                     活跃
                   </span>
-                <% } else if (session.status === 'ended') { %>
+                <% } else if (endedStatuses.includes(session.status)) { %>
                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                     已结束
+                  </span>
+                <% } else if (session.status === 'error') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                    错误
                   </span>
                 <% } else { %>
                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
@@ -44,15 +56,15 @@
             </div>
             <div>
               <p class="text-sm text-gray-500">创建时间</p>
-              <p class="text-sm font-medium"><%= new Date(session.created_at).toLocaleString() %></p>
+              <p class="text-sm font-medium"><%= new Date(session.created_at).toLocaleString('zh-CN') %></p>
             </div>
             <div>
               <p class="text-sm text-gray-500">开始时间</p>
-              <p class="text-sm font-medium"><%= session.start_time ? new Date(session.start_time).toLocaleString() : '未开始' %></p>
+              <p class="text-sm font-medium"><%= session.start_time ? new Date(session.start_time).toLocaleString('zh-CN') : '未开始' %></p>
             </div>
             <div>
               <p class="text-sm text-gray-500">结束时间</p>
-              <p class="text-sm font-medium"><%= session.end_time ? new Date(session.end_time).toLocaleString() : '未结束' %></p>
+              <p class="text-sm font-medium"><%= session.end_time ? new Date(session.end_time).toLocaleString('zh-CN') : '未结束' %></p>
             </div>
             <div>
               <p class="text-sm text-gray-500">持续时间</p>
@@ -74,17 +86,17 @@
             </div>
             <div>
               <p class="text-sm text-gray-500">消耗点数</p>
-              <p class="text-sm font-medium">
+              <p class="text-sm font-bold text-primary-600">
                 <%= session.credits_used || 0 %> 点
               </p>
             </div>
             <div>
-              <p class="text-sm text-gray-500">端口</p>
+              <p class="text-sm text-gray-500">代理端口</p>
               <p class="text-sm font-medium"><%= session.port || '未分配' %></p>
             </div>
             <div>
               <p class="text-sm text-gray-500">最后活动时间</p>
-              <p class="text-sm font-medium"><%= session.last_activity ? new Date(session.last_activity).toLocaleString() : '无活动' %></p>
+              <p class="text-sm font-medium"><%= session.last_activity ? new Date(session.last_activity).toLocaleString('zh-CN') : '无活动' %></p>
             </div>
           </div>
         </div>
@@ -94,64 +106,38 @@
           <h4 class="text-md font-medium text-gray-700 mb-4">用户信息</h4>
           <div class="flex items-center mb-4">
             <div class="flex-shrink-0 h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium">
-              <%= session.user.username ? session.user.username.charAt(0).toUpperCase() : '?' %>
+              <%= session.username ? session.username.charAt(0).toUpperCase() : '?' %>
             </div>
             <div class="ml-4">
-              <h5 class="text-sm font-medium text-gray-900"><%= session.user.username %></h5>
-              <p class="text-sm text-gray-500"><%= session.user.email || '' %></p>
+              <h5 class="text-sm font-medium text-gray-900"><%= session.username %></h5>
+              <p class="text-sm text-gray-500">用户 ID: <%= session.user_id %></p>
             </div>
             <div class="ml-auto">
-              <a href="/admin/users/<%= session.user.id %>" class="text-primary-600 hover:text-primary-900 text-sm">
+              <a href="/admin/users/<%= session.user_id %>" class="text-primary-600 hover:text-primary-900 text-sm">
                 查看用户详情
               </a>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p class="text-sm text-gray-500">用户 ID</p>
-              <p class="text-sm font-medium"><%= session.user.id %></p>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">剩余点数</p>
-              <p class="text-sm font-medium"><%= session.user.credits || 0 %></p>
             </div>
           </div>
         </div>
 
         <!-- 机器信息 -->
-        <% if (session.machine) { %>
+        <% if (session.machine_id) { %>
           <div class="bg-gray-50 rounded-lg p-4 mb-6">
             <h4 class="text-md font-medium text-gray-700 mb-4">机器信息</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p class="text-sm text-gray-500">机器 ID</p>
-                <p class="text-sm font-medium"><%= session.machine.id %></p>
+                <p class="text-sm font-medium font-mono text-xs"><%= session.machine_id %></p>
               </div>
+              <% if (session.machine_name) { %>
               <div>
                 <p class="text-sm text-gray-500">机器名称</p>
-                <p class="text-sm font-medium"><%= session.machine.name %></p>
+                <p class="text-sm font-medium"><%= session.machine_name %></p>
               </div>
-              <div>
-                <p class="text-sm text-gray-500">IP 地址</p>
-                <p class="text-sm font-medium"><%= session.machine.ip %></p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-500">状态</p>
-                <p class="text-sm">
-                  <% if (session.machine.status === 'online') { %>
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      在线
-                    </span>
-                  <% } else { %>
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                      离线
-                    </span>
-                  <% } %>
-                </p>
-              </div>
+              <% } %>
             </div>
             <div class="mt-4">
-              <a href="/admin/machines/<%= session.machine.id %>" class="text-primary-600 hover:text-primary-900 text-sm">
+              <a href="/admin/machines/<%= session.machine_id %>" class="text-primary-600 hover:text-primary-900 text-sm">
                 查看机器详情
               </a>
             </div>
@@ -179,7 +165,7 @@
           <h4 class="text-md font-medium text-gray-700 mb-4">会话选项</h4>
           <% if (session.options) { %>
             <div class="overflow-auto max-h-60">
-              <pre class="text-xs text-gray-700 bg-gray-100 p-3 rounded"><%= JSON.stringify(session.options, null, 2) %></pre>
+              <pre class="text-xs text-gray-700 bg-white p-3 rounded border"><%= JSON.stringify(session.options, null, 2) %></pre>
             </div>
           <% } else { %>
             <p class="text-sm text-gray-500">无选项</p>
@@ -251,11 +237,14 @@
 
   confirmEndSession?.addEventListener('click', async () => {
     try {
-      const response = await fetch(`/api/sessions/${sessionId}/release`, {
+      const response = await fetch(`/api/admin/sessions/batch-release`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          sessionIds: [sessionId]
+        })
       });
 
       const result = await response.json();
@@ -264,7 +253,7 @@
         // 重定向到会话列表页
         window.location.href = '/admin/sessions';
       } else {
-        alert('结束会话失败: ' + result.message);
+        alert('结束会话失败: ' + (result.message || result.error || '未知错误'));
       }
     } catch (error) {
       alert('结束会话失败: ' + error.message);

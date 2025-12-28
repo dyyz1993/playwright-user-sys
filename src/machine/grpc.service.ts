@@ -9,6 +9,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { browserService } from './browser.service.js';
 import { logger } from '@shared/utils/logger.js';
+import { MachineConfig } from './config.js';
 
 // 存储上一次CPU使用情况，用于计算使用率
 let lastCpuInfo: { idle: number; total: number } | null = null;
@@ -83,6 +84,21 @@ const __dirname = path.dirname(__filename);
 // 导入配置
 import { CONFIG } from './config.js';
 
+// 用于服务端实现的全局配置（gRPC服务器端）
+let serverConfig: MachineConfig = CONFIG;
+
+/**
+ * 设置 gRPC 服务器配置（由 MachineServer 调用）
+ * @param config 配置对象
+ */
+export function setGrpcServerConfig(config: MachineConfig): void {
+  serverConfig = config;
+  logger.info('gRPC 服务器配置已更新:', {
+    machineId: config.machineId,
+    grpcPort: config.grpcPort,
+  });
+}
+
 // 加载 proto 文件
 const protoPath = path.resolve(__dirname, '../shared/protos/machine_service.proto');
 const packageDefinition = protoLoader.loadSync(protoPath, {
@@ -95,18 +111,24 @@ const packageDefinition = protoLoader.loadSync(protoPath, {
 
 const proto = grpc.loadPackageDefinition(packageDefinition).machine as any;
 
+// 导出 grpcClient 实例引用，用于重新初始化
+let grpcClientInstance: GrpcClient | null = null;
+
 /**
  * gRPC 客户端类
  * 负责与管理端通信
  */
-class GrpcClient extends EventEmitter {
+export class GrpcClient extends EventEmitter {
   private client: any;
   private call: any;
   private connected: boolean = false;
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  private config: MachineConfig;  // 实例级配置
 
-  constructor() {
+  constructor(config: MachineConfig = CONFIG) {
     super();
+    this.config = config;
+    grpcClientInstance = this;
     this.initClient();
 
     // 监听浏览器服务的会话事件
@@ -137,7 +159,7 @@ class GrpcClient extends EventEmitter {
    */
   private initClient() {
     this.client = new proto.MachineService(
-      CONFIG.managerHost,
+      this.config.managerHost,
       grpc.credentials.createInsecure()
     );
   }
@@ -167,12 +189,12 @@ class GrpcClient extends EventEmitter {
       return new Promise((resolve, reject) => {
 
       const request = {
-        machine_id: CONFIG.machineId,
-        name: CONFIG.machineName,
+        machine_id: this.config.machineId,
+        name: this.config.machineName,
         ip_address: this.getLocalIpAddress(),
-        grpc_port: CONFIG.grpcPort,
-        proxy_port: CONFIG.proxyPort,
-        max_sessions: CONFIG.maxSessions,
+        grpc_port: this.config.grpcPort,
+        proxy_port: this.config.proxyPort,
+        max_sessions: this.config.maxSessions,
         system_info: systemInfo,
       };
 
@@ -200,12 +222,12 @@ class GrpcClient extends EventEmitter {
         };
 
         const request = {
-          machine_id: CONFIG.machineId,
-          name: CONFIG.machineName,
+          machine_id: this.config.machineId,
+          name: this.config.machineName,
           ip_address: this.getLocalIpAddress(),
-          grpc_port: CONFIG.grpcPort,
-          proxy_port: CONFIG.proxyPort,
-          max_sessions: CONFIG.maxSessions,
+          grpc_port: this.config.grpcPort,
+          proxy_port: this.config.proxyPort,
+          max_sessions: this.config.maxSessions,
           system_info: systemInfo,
         };
 
@@ -303,7 +325,7 @@ class GrpcClient extends EventEmitter {
 
               // 发送第一条消息以建立连接
               const heartbeat = {
-                machine_id: CONFIG.machineId,
+                machine_id: this.config.machineId,
                 heartbeat: {
                   timestamp: Date.now(),
                   cpu_usage: this.getCpuUsage(),
@@ -459,7 +481,7 @@ class GrpcClient extends EventEmitter {
     try {
       // 构造心跳消息
       const heartbeat = {
-        machine_id: CONFIG.machineId,
+        machine_id: this.config.machineId,
         heartbeat: {
           timestamp: Date.now(),
           cpu_usage: this.getCpuUsage(),
@@ -534,7 +556,7 @@ class GrpcClient extends EventEmitter {
 
       // 构造会话状态消息
       const message = {
-        machine_id: CONFIG.machineId,
+        machine_id: this.config.machineId,
         session_status: {
           session_id: sessionId,
           status: status,
@@ -566,7 +588,7 @@ class GrpcClient extends EventEmitter {
     try {
       // 构造会话截图消息
       const message = {
-        machine_id: CONFIG.machineId,
+        machine_id: this.config.machineId,
         session_screenshot: {
           session_id: sessionId,
           screenshot_url: screenshotUrl,
@@ -692,7 +714,7 @@ class GrpcClient extends EventEmitter {
     try {
       // 构造心跳响应消息
       const response = {
-        machine_id: CONFIG.machineId,
+        machine_id: this.config.machineId,
         heartbeat: {
           timestamp: Date.now(),
           cpu_usage: this.getCpuUsage(),
@@ -891,12 +913,12 @@ const serviceImplementation = {
 
       // 构造响应
       callback(null, {
-        machine_id: CONFIG.machineId,
+        machine_id: serverConfig.machineId,
         online: true,
         cpu_usage: cpuUsage,
         memory_usage: (os.totalmem() - os.freemem()) / os.totalmem() * 100,
         active_sessions: browserService.getActiveSessions(),
-        max_sessions: CONFIG.maxSessions,
+        max_sessions: serverConfig.maxSessions,
         timestamp: Date.now(),
       });
     } catch (error: any) {

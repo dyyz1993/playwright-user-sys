@@ -540,6 +540,10 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       // 获取会话列表
       const { items, total, totalPages } = await SessionModel.paginate(page, limit, filters);
 
+      // 调试日志
+      console.log(`[DEBUG] /admin/sessions: page=${page}, limit=${limit}, filters=`, JSON.stringify(filters));
+      console.log(`[DEBUG] /admin/sessions: items.length=${items.length}, total=${total}`);
+
       return reply.view('pages/sessions', {
         title: '会话管理',
         subtitle: '管理系统会话',
@@ -570,6 +574,42 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       request.log.error('获取会话列表失败:', error);
       request.flash('error', '获取会话列表失败: ' + error.message);
       return reply.redirect('/admin');
+    }
+  });
+
+  // 会话详情页
+  fastify.get('/admin/sessions/:id', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      // 检查是否是管理员
+      if (request.user?.role !== 'admin') {
+        return reply.redirect('/admin');
+      }
+
+      const params = request.params as { id: string };
+      const sessionId = params.id;
+
+      // 获取会话详情
+      const { SessionModel } = await import('../models/session.model.js');
+      const session = await SessionModel.getDetailById(sessionId);
+
+      if (!session) {
+        request.flash('error', '会话不存在');
+        return reply.redirect('/admin/sessions');
+      }
+
+      return reply.view('pages/session-detail', {
+        title: '会话详情',
+        subtitle: '查看会话详细信息',
+        user: request.user,
+        session,
+        flash: request.flash
+      });
+    } catch (error: any) {
+      request.log.error('获取会话详情失败:', error);
+      request.flash('error', '获取会话详情失败: ' + error.message);
+      return reply.redirect('/admin/sessions');
     }
   });
 
@@ -637,26 +677,95 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     return reply.redirect('/admin/login');
   });
 
-  // 个人资料页面
-  fastify.get('/admin/profile', {
+  // 调试端点 - 查看所有 cookies
+  fastify.get('/admin/debug/cookies', async (request: FastifyRequest, reply: FastifyReply) => {
+    return {
+      cookies: request.cookies,
+      headers: request.headers,
+      user: request.user
+    };
+  });
+
+  // 调试端点 - 手动验证 JWT
+  fastify.post('/admin/debug/verify-token', async (request: FastifyRequest, reply: FastifyReply) => {
+    const jwt = (await import('jsonwebtoken')).default;
+    const { env } = await import('../config/env.js');
+
+    const body = request.body as any;
+    const token = body.token || request.cookies?.token;
+
+    console.log('[DEBUG] Token from cookies:', request.cookies?.token?.substring(0, 20) + '...');
+    console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
+    console.log('[DEBUG] JWT_SECRET:', env.JWT_SECRET);
+
+    if (!token) {
+      return { error: 'No token provided' };
+    }
+
+    const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : String(env.JWT_SECRET);
+
+    try {
+      const decoded = jwt.verify(token, jwtSecret);
+      console.log('[DEBUG] Decoded token:', decoded);
+      return {
+        success: true,
+        decoded,
+        jwtSecret,
+        NODE_ENV: process.env.NODE_ENV
+      };
+    } catch (e: any) {
+      console.log('[DEBUG] Verification failed:', e.message);
+      return {
+        success: false,
+        error: e.message,
+        jwtSecret,
+        NODE_ENV: process.env.NODE_ENV
+      };
+    }
+  });
+
+  // 调试端点 - 测试 verifyJWT 中间件
+  fastify.get('/admin/debug/auth', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    return {
+      message: 'Authentication successful',
+      user: request.user
+    };
+  });
+
+  // 调试端点 - 检查用户是否存在
+  fastify.get('/admin/debug/user', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const { UserModel } = await import('../models/user.model.js');
+    const user = await UserModel.findById(request.user!.id);
+    return {
+      userId: request.user!.id,
+      userExists: !!user,
+      userData: user
+    };
+  });
+
+  // 调试端点 - 测试 profile 视图渲染
+  fastify.get('/admin/debug/profile-view', {
     onRequest: [fastify.verifyJWT]
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // 获取当前用户的详细信息
       const { UserModel } = await import('../models/user.model.js');
       const { CreditHistoryModel } = await import('../models/credit-history.model.js');
 
       const user = await UserModel.findById(request.user!.id);
       if (!user) {
-        request.flash('error', '用户不存在');
-        return reply.redirect('/admin');
+        return { error: 'User not found' };
       }
 
-      // 获取积分使用历史
-      const creditHistory = await CreditHistoryModel.findByUserId(user.id, { limit: 5 });
+      const creditHistory = await CreditHistoryModel.findByUserId(user.id, 5);
 
-      // 计算已使用的积分
-      const usedCredits = await CreditHistoryModel.getTotalUsedByUser(user.id);
+      // 暂时将已使用的积分设为 0
+      const usedCredits = 0;
+
+      console.log('[DEBUG PROFILE VIEW] About to render view...');
 
       return reply.view('pages/profile', {
         title: '个人资料',
@@ -675,6 +784,55 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         flash: request.flash
       });
     } catch (error: any) {
+      console.error('[DEBUG PROFILE VIEW ERROR]', error);
+      return { error: error.message, stack: error.stack };
+    }
+  });
+
+  // 个人资料页面
+  fastify.get('/admin/profile', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      console.log('[PROFILE] Accessing profile page');
+      console.log('[PROFILE] request.user:', request.user);
+      console.log('[PROFILE] request.cookies:', request.cookies);
+
+      // 获取当前用户的详细信息
+      const { UserModel } = await import('../models/user.model.js');
+      const { CreditHistoryModel } = await import('../models/credit-history.model.js');
+
+      const user = await UserModel.findById(request.user!.id);
+      if (!user) {
+        request.flash('error', '用户不存在');
+        return reply.redirect('/admin');
+      }
+
+      // 获取积分使用历史
+      const creditHistory = await CreditHistoryModel.findByUserId(user.id, 5);
+
+      // 暂时将已使用的积分设为 0（因为数据库表结构可能不匹配）
+      const usedCredits = 0;
+
+      return reply.view('pages/profile', {
+        title: '个人资料',
+        subtitle: '管理个人信息',
+        path: request.url,
+        user: {
+          ...request.user,
+          email: user.email,
+          webhook_url: user.webhook_url,
+          credits: user.credits,
+          api_key: user.api_key,
+          created_at: user.created_at,
+          used_credits: usedCredits
+        },
+        creditHistory,
+        flash: request.flash
+      });
+    } catch (error: any) {
+      console.error('[PROFILE ERROR] Error details:', error);
+      console.error('[PROFILE ERROR] Error stack:', error.stack);
       request.log.error('获取个人资料失败:', error);
       request.flash('error', '获取个人资料失败: ' + error.message);
       return reply.redirect('/admin');

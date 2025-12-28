@@ -126,6 +126,9 @@ class MemoryStoreService extends EventEmitter {
   updateMachineStatus(status: MachineStatus): void {
     const existingStatus = this.machines.get(status.machine_id);
 
+    // 调试日志
+    console.log(`[MemoryStore] updateMachineStatus: machine_id=${status.machine_id}, grpc_port=${status.grpc_port}, has_grpc_port=${'grpc_port' in status}`);
+
     // 创建新的状态对象
     const newStatus: MachineRealTimeStatus = {
       machine_id: status.machine_id,
@@ -140,6 +143,9 @@ class MemoryStoreService extends EventEmitter {
       max_sessions: status.max_sessions,
       last_heartbeat: existingStatus?.last_heartbeat || new Date(),
     };
+
+    // 调试日志
+    console.log(`[MemoryStore] newStatus.grpc_port=${newStatus.grpc_port}`);
 
     // 更新状态
     this.machines.set(status.machine_id, newStatus);

@@ -30,20 +30,26 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
 
     const userId = request.user.id;
 
-    // 解析请求体，如果为空则使用默认值
+    // 验证并解析请求体
+    // 完全依赖 Zod strict() 模式进行验证，拒绝未知字段
     let options: SessionCreateOptions = {};
-
-    try {
-      // 尝试解析请求体
-      if (request.body) {
+    if (request.body) {
+      try {
         options = createSessionRequestSchema.parse(request.body) as SessionCreateOptions;
+      } catch (parseError: any) {
+        if (parseError instanceof z.ZodError) {
+          // 提供详细的错误信息
+          const errors = parseError.errors.map((e: any) => {
+            if (e.code === 'unrecognized_keys') {
+              return `包含未知字段: ${e.keys.join(', ')}`;
+            }
+            return `${e.path.join('.') || 'field'}: ${e.message}`;
+          });
+          return sendError(reply, '无效的请求数据: ' + errors.join(', '), 400);
+        }
+        return sendError(reply, '无效的请求数据', 400);
       }
-    } catch (parseError) {
-      request.log.error(`解析请求体失败:`, parseError);
-      // 使用默认空对象
     }
-
-    request.log.info(`创建会话的选项: ${JSON.stringify(options)}`);
 
     try {
       // 使用共享服务创建会话
@@ -113,8 +119,12 @@ export async function getSession(request: FastifyRequest, reply: FastifyReply) {
       options: session.options,
       start_time: session.start_time,
       end_time: session.end_time,
+      disconnected_at: session.disconnected_at,
       duration: session.duration,
+      credits_used: session.credits_used,
       screenshot_url: session.screenshot_url,
+      last_activity: session.last_activity,
+      error_message: session.error_message,
       created_at: session.created_at,
       updated_at: session.updated_at,
     });
@@ -133,20 +143,21 @@ export async function getUserSessions(request: FastifyRequest, reply: FastifyRep
     }
 
     const userId = request.user.id;
-    const query = paginationQuerySchema.parse(request.query) as PaginationQuery;
+    // 直接传递查询参数，让 Model 层处理验证和默认值
+    const query = request.query as any;
 
     // 获取用户的所有会话
     const paginatedSessions = await SessionModel.findByUserId(userId, query);
 
-    // 只返回会话数组，而不是分页对象
-    return sendSuccess(reply, paginatedSessions.items);
+    // 返回完整的分页对象
+    return sendSuccess(reply, paginatedSessions);
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return sendError(reply, '无效的查询参数: ' + error.errors.map((e: any) => e.message).join(', '), 400);
     }
 
-    request.log.error(error);
-    return sendError(reply, '获取会话列表失败', 500);
+    request.log.error('获取用户会话失败:', error);
+    return sendError(reply, '获取会话列表失败: ' + (error.message || error), 500);
   }
 }
 
@@ -179,11 +190,16 @@ export async function releaseSession(request: FastifyRequest, reply: FastifyRepl
 
     // 检查会话是否有关联的机器
     if (!session.machine_id) {
-      await SessionModel.update(sessionId, {
-        status: SessionStatus.DISCONNECTED,
-        end_time: new Date(),
-      });
-      return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration: 0 }, '会话已释放');
+      // 计算会话持续时间
+      const now = new Date();
+      const startTime = new Date(session.start_time);
+      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+
+      // 使用 markDisconnected 方法更新会话状态并计算点数
+      // 注意：markDisconnected 已经自动扣除了用户积分
+      const updatedSession = await SessionModel.markDisconnected(sessionId, duration);
+
+      return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration: updatedSession?.duration || duration }, '会话已释放');
     }
 
     try {
@@ -218,24 +234,7 @@ export async function releaseSession(request: FastifyRequest, reply: FastifyRepl
         disconnected_at: disconnectedAt,
       });
 
-      // 获取更新后的会话信息
-      const updatedSession = await SessionModel.findById(sessionId);
-      if (!updatedSession) {
-        request.log.error(`无法获取更新后的会话信息 (${sessionId})`);
-        return sendError(reply, '无法获取会话信息', 500);
-      }
-
-      // 扣除用户点数（只有在会话没有消耗点数时才扣除）
-      if (updatedSession.credits_used === 0) {
-        try {
-          await UserModel.deductCredits(userId, minutes);
-          request.log.info(`已扣除用户 ${userId} 的点数: ${minutes} 点 (${sessionId})`);
-        } catch (error) {
-          request.log.error('扣除点数失败:', error);
-        }
-      } else {
-        request.log.info(`会话已有消耗点数，不重复扣除 (${sessionId}): 消耗点数=${updatedSession.credits_used}点`);
-      }
+      // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
 
       return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration }, '会话已释放');
     } catch (machineError: any) {
@@ -259,24 +258,7 @@ export async function releaseSession(request: FastifyRequest, reply: FastifyRepl
       // 记录错误信息
       request.log.error(`关闭浏览器错误信息: ${machineError.message}`);
 
-      // 获取更新后的会话信息
-      const updatedSession = await SessionModel.findById(sessionId);
-      if (!updatedSession) {
-        request.log.error(`无法获取更新后的会话信息 (${sessionId})`);
-        return sendError(reply, '无法获取会话信息', 500);
-      }
-
-      // 扣除用户点数（只有在会话没有消耗点数时才扣除）
-      if (updatedSession.credits_used === 0) {
-        try {
-          await UserModel.deductCredits(userId, minutes);
-          request.log.info(`已扣除用户 ${userId} 的点数: ${minutes} 点 (${sessionId})`);
-        } catch (error) {
-          request.log.error('扣除点数失败:', error);
-        }
-      } else {
-        request.log.info(`会话已有消耗点数，不重复扣除 (${sessionId}): 消耗点数=${updatedSession.credits_used}点`);
-      }
+      // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
 
       return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration }, '会话已释放（但关闭浏览器实例失败）');
     }
@@ -300,13 +282,14 @@ export async function getAllSessions(request: FastifyRequest, reply: FastifyRepl
       return sendError(reply, '无权访问', 403);
     }
 
-    const query = paginationQuerySchema.parse(request.query) as PaginationQuery;
+    // 直接传递查询参数，让 Model 层处理验证和默认值
+    const query = request.query as any;
 
     // 获取所有会话
     const paginatedSessions = await SessionModel.findAll(query);
 
-    // 只返回会话数组，而不是分页对象
-    return sendSuccess(reply, paginatedSessions.items);
+    // 返回完整的分页对象
+    return sendSuccess(reply, paginatedSessions);
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return sendError(reply, '无效的查询参数: ' + error.errors.map((e: any) => e.message).join(', '), 400);
@@ -346,11 +329,16 @@ export async function closeSession(request: FastifyRequest, reply: FastifyReply)
 
     // 检查会话是否有关联的机器
     if (!session.machine_id) {
-      await SessionModel.update(sessionId, {
-        status: SessionStatus.DISCONNECTED,
-        end_time: new Date(),
-      });
-      return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration: 0 }, '会话已关闭');
+      // 计算会话持续时间
+      const now = new Date();
+      const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
+      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+
+      // 使用 markDisconnected 方法更新会话状态并计算点数
+      // 注意：markDisconnected 已经自动扣除了用户积分
+      const updatedSession = await SessionModel.markDisconnected(sessionId, duration);
+
+      return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration: updatedSession?.duration || duration }, '会话已关闭');
     }
 
     try {
@@ -384,24 +372,7 @@ export async function closeSession(request: FastifyRequest, reply: FastifyReply)
         disconnected_at: disconnectedAt,
       });
 
-      // 获取更新后的会话信息
-      const updatedSession = await SessionModel.findById(sessionId);
-      if (!updatedSession) {
-        request.log.error(`无法获取更新后的会话信息 (${sessionId})`);
-        return sendError(reply, '无法获取会话信息', 500);
-      }
-
-      // 扣除用户点数（只有在会话没有消耗点数时才扣除）
-      if (updatedSession.credits_used === 0) {
-        try {
-          await UserModel.deductCredits(session.user_id, minutes);
-          request.log.info(`已扣除用户 ${session.user_id} 的点数: ${minutes} 点 (${sessionId})`);
-        } catch (error) {
-          request.log.error('扣除点数失败:', error);
-        }
-      } else {
-        request.log.info(`会话已有消耗点数，不重复扣除 (${sessionId}): 消耗点数=${updatedSession.credits_used}点`);
-      }
+      // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
 
       return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration }, '会话已关闭');
     } catch (machineError: any) {

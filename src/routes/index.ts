@@ -6,6 +6,7 @@ import machineRoutes from './machine.routes.js';
 import adminRoutes from './admin.routes.js';
 import adminApiRoutes from './admin-api.routes.js';
 import adminApiAuthRoutes from './admin-api-auth.routes.js';
+import adminMachineApiRoutes from './admin-machine-api.routes.js';
 import fileRoutes from './file.routes.js';
 
 export default async function routes(fastify: FastifyInstance) {
@@ -15,12 +16,13 @@ export default async function routes(fastify: FastifyInstance) {
   fastify.register(sessionRoutes, { prefix: '/api/sessions' });
   fastify.register(machineRoutes, { prefix: '/api/machines' });
   fastify.register(fileRoutes);
-  
-  
+
+
   // 注册管理后台路由
   fastify.register(adminRoutes);
   fastify.register(adminApiRoutes);
   fastify.register(adminApiAuthRoutes);
+  fastify.register(adminMachineApiRoutes);
 
   // 健康检查路由
   fastify.get('/health', async () => {

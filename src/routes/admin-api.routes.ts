@@ -1029,10 +1029,15 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
 
           // 检查会话是否有关联的机器
           if (!session.machine_id) {
-            await SessionModel.update(sessionId, {
-              status: SessionStatus.DISCONNECTED,
-              end_time: new Date(),
-            });
+            // 计算会话持续时间
+            const now = new Date();
+            const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
+            const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+
+            // 使用 markDisconnected 方法更新会话状态并计算点数
+            // 注意：markDisconnected 已经自动扣除了用户积分
+            await SessionModel.markDisconnected(sessionId, duration);
+
             released.push(sessionId);
             continue;
           }
@@ -1061,15 +1066,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
               disconnected_at: new Date(),
             });
 
-            // 获取更新后的会话信息
-            const updatedSession = await SessionModel.findById(sessionId);
-            if (updatedSession && updatedSession.credits_used === 0) {
-              try {
-                await UserModel.deductCredits(session.user_id, minutes);
-              } catch (error) {
-                request.log.error('扣除点数失败:', error);
-              }
-            }
+            // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
 
             released.push(sessionId);
           } catch (machineError: any) {
@@ -1078,6 +1075,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
             const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
             await SessionModel.markDisconnected(sessionId, duration);
+
+            // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
+
             released.push(sessionId);
           }
         } catch (error: any) {
@@ -1468,8 +1468,8 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         properties: {
           page: { type: 'number' },
           limit: { type: 'number' },
-          sort: { type: 'string', enum: ['created_at', 'duration', 'credits_used', 'updated_at', 'start_time'] },
-          order: { type: 'string', enum: ['asc', 'desc'] },
+          sort: { type: 'string' },  // 移除 enum 限制，允许任意值
+          order: { type: 'string' },  // 移除 enum 限制，允许任意值
           status: { type: 'string' },
           userId: { type: 'number' },
           startDate: { type: 'string' },
@@ -1779,6 +1779,101 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
     } catch (error: any) {
       request.log.error('刷新会话状态失败:', error);
       return reply.status(500).send({ success: false, error: '刷新会话状态失败: ' + error.message });
+    }
+  });
+
+  // ========== 测试数据 API（仅用于测试环境）==========
+
+  // 创建测试会话数据
+  fastify.post('/api/admin/test/sessions', {
+    preHandler: [authenticate],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { SessionModel } = await import('../models/session.model.js');
+      const { v4: uuidv4 } = await import('uuid');
+
+      const body = request.body as any;
+      const count = body.count || 1;
+      const userId = body.user_id || 1;
+
+      const sessions = [];
+      const now = new Date();
+
+      for (let i = 0; i < count; i++) {
+        const sessionId = uuidv4();
+        const startTime = new Date(now.getTime() - Math.random() * 86400000);
+        const duration = Math.floor(Math.random() * 3600);
+        const endTime = new Date(startTime.getTime() + duration * 1000);
+
+        const session = await SessionModel.create({
+          id: sessionId,
+          user_id: userId,
+          machine_id: null,
+          status: 'disconnected',
+          start_time: startTime,
+          end_time: endTime,
+          duration: duration,
+          credits_used: Math.floor(Math.random() * 100),
+          metadata: {}
+        });
+
+        if (session) {
+          sessions.push(session);
+        }
+      }
+
+      return reply.send({
+        success: true,
+        message: `成功创建 ${sessions.length} 个测试会话`,
+        data: { sessions }
+      });
+    } catch (error: any) {
+      return reply.status(500).send({
+        success: false,
+        error: '创建测试会话失败: ' + error.message
+      });
+    }
+  });
+
+  // 创建测试机器数据
+  fastify.post('/api/admin/test/machines', {
+    preHandler: [authenticate],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { MachineModel } = await import('../models/machine.model.js');
+      const { v4: uuidv4 } = await import('uuid');
+
+      const body = request.body as any;
+      const count = body.count || 1;
+
+      const machines = [];
+      for (let i = 0; i < count; i++) {
+        const machineId = uuidv4();
+        const machine = await MachineModel.register({
+          id: machineId,
+          hostname: `test-machine-${Date.now()}-${i}`,
+          ip: `192.168.1.${100 + i}`,
+          grpcPort: 50051 + i,
+          proxyPort: 8080 + i,
+          maxInstances: 10,
+          instanceCount: 0
+        });
+
+        if (machine) {
+          machines.push(machine);
+        }
+      }
+
+      return reply.send({
+        success: true,
+        message: `成功创建 ${machines.length} 个测试机器`,
+        data: { machines }
+      });
+    } catch (error: any) {
+      return reply.status(500).send({
+        success: false,
+        error: '创建测试机器失败: ' + error.message
+      });
     }
   });
 }

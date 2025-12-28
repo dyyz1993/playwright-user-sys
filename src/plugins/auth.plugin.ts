@@ -43,14 +43,19 @@ export default fp(async function (fastify: FastifyInstance) {
 
       // 输出所有 cookie 信息以便调试
       request.log.info('请求中的 cookie:', request.cookies);
+      request.log.info('NODE_ENV:', process.env.NODE_ENV);
 
       // 使用配置中的 JWT 密钥
       // 测试环境使用固定密钥
       const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : String(env.JWT_SECRET);
+      request.log.info('JWT_SECRET:', jwtSecret);
       request.log.info('使用 JWT 密钥验证令牌');
+      request.log.info('Token 前缀:', token?.substring(0, 20) + '...');
 
-      const decoded = jwt.verify(token, jwtSecret) as { id: number };
-      request.log.info('令牌验证成功，用户 ID:', decoded.id);
+      const decoded = jwt.verify(token, jwtSecret) as any;
+      request.log.info('完整解码后的 token:', JSON.stringify(decoded));
+      request.log.info('令牌验证成功，用户 ID:', decoded?.id);
+      request.log.info('令牌类型:', typeof decoded);
 
       const user = await UserModel.findById(decoded.id);
       if (!user) {

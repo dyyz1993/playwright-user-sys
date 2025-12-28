@@ -238,7 +238,11 @@ class MachineConnectionManager extends EventEmitter {
       // 获取机器信息
       const machine = await MachineModel.findById(machineId);
 
+      logger.debug(`findById 返回: machine=${machine ? '存在' : 'null'}`);
+
       if (machine) {
+        logger.debug(`machine.grpcPort=${machine.grpcPort}`);
+
         // 更新内存中的机器状态
         memoryStore.updateMachineStatus({
           machine_id: machineId,
@@ -252,6 +256,8 @@ class MachineConnectionManager extends EventEmitter {
           max_sessions: machine.maxInstances,
           last_heartbeat: new Date(),
         });
+      } else {
+        logger.warn(`机器 ${machineId} 在数据库中不存在，跳过内存更新`);
       }
 
       // 同时更新数据库中的机器状态（作为备份）
@@ -353,30 +359,13 @@ class MachineConnectionManager extends EventEmitter {
           break;
 
         case 'disconnected':
-          // 计算消耗的点数（每分钟1点）
-          // 即使会话只运行了几秒钟，也至少消耗 1 点
-          const disconnectMinutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
-
-          // 检查会话是否已经有持续时间和消耗点数
-          if (session.duration > 0 || session.credits_used > 0) {
-            // 如果已经有持续时间和消耗点数，只更新状态和断开时间
-            await SessionModel.update(session_id, {
-              status: SessionStatus.DISCONNECTED,
-              disconnected_at: new Date(),
-            });
-            logger.info(`会话已有持续时间和消耗点数，只更新状态和断开时间 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
-          } else {
-            // 如果没有持续时间和消耗点数，更新所有字段
-            await SessionModel.update(session_id, {
-              status: SessionStatus.DISCONNECTED,
-              disconnected_at: new Date(),
-              duration,
-              credits_used: disconnectMinutes,
-            });
-            logger.info(`会话没有持续时间和消耗点数，更新所有字段 (${session_id}): 持续时间=${duration}秒, 消耗点数=${disconnectMinutes}点`);
-          }
-
-          logger.info(`用户已断开会话连接，暂停计费 (${session_id})`);
+          // 使用 markDisconnected 方法更新会话状态并扣费
+          // 这个方法会处理：
+          // 1. 更新数据库（状态、持续时间、消耗点数）
+          // 2. 扣除用户积分
+          // 3. 生成积分历史记录
+          await SessionModel.markDisconnected(session_id, duration);
+          logger.info(`机器端报告用户已断开会话连接，已调用 markDisconnected 完成扣费 (${session_id})`);
           break;
 
         case 'active':
@@ -435,43 +424,15 @@ class MachineConnectionManager extends EventEmitter {
           break;
 
         case 'closed':
-          // 计算消耗的点数（每分钟1点）
-          // 即使会话只运行了几秒钟，也至少消耗 1 点
-          const finalMinutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
-
-          // 检查会话是否已经有持续时间和消耗点数
-          if (session.duration > 0 || session.credits_used > 0) {
-            // 如果已经有持续时间和消耗点数，只更新状态和结束时间
-            await SessionModel.update(session_id, {
-              status: SessionStatus.DISCONNECTED,
-              end_time: new Date(),
-            });
-            logger.info(`会话已有持续时间和消耗点数，只更新状态和结束时间 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
-          } else {
-            // 如果没有持续时间和消耗点数，更新所有字段
-            await SessionModel.update(session_id, {
-              status: SessionStatus.DISCONNECTED,
-              end_time: new Date(),
-              duration,
-              credits_used: finalMinutes,
-            });
-            logger.info(`会话没有持续时间和消耗点数，更新所有字段 (${session_id}): 持续时间=${duration}秒, 消耗点数=${finalMinutes}点`);
-          }
+          // 使用 markDisconnected 方法更新会话状态并扣费
+          // 这个方法会处理：
+          // 1. 更新数据库（状态、持续时间、消耗点数）
+          // 2. 扣除用户积分
+          // 3. 生成积分历史记录
+          await SessionModel.markDisconnected(session_id, duration);
 
           // 如果会话已分配机器，减少机器的实例计数
           await MachineModel.decrementInstanceCount(machineId);
-
-          // // 只有在会话没有持续时间和消耗点数时才扣除点数
-          // if (!(session.duration > 0 || session.credits_used > 0)) {
-          //   try {
-          //     await UserModel.deductCredits(session.user_id, finalMinutes);
-          //     logger.info(`已扣除用户 ${session.user_id} 的点数: ${finalMinutes} 点 (${session_id})`);
-          //   } catch (error) {
-          //     logger.error('扣除点数失败:', error);
-          //   }
-          // } else {
-          //   logger.info(`会话已有持续时间和消耗点数，不重复扣除点数 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
-          // }
 
           // 触发 Webhook 事件
           await createWebhookEvent(session.user_id, WebhookEventType.SESSION_DISCONNECTED, {
@@ -480,7 +441,7 @@ class MachineConnectionManager extends EventEmitter {
             disconnected_at: new Date(),
           });
 
-          // logger.info(`会话已结束，计费完成 (${session_id}): ${duration}秒, ${finalMinutes}点`);
+          logger.info(`浏览器实例已关闭，已调用 markDisconnected 完成扣费 (${session_id})`);
           break;
 
         case 'error':
@@ -851,6 +812,22 @@ const serviceImplementation = {
 
         logger.info(`机器已创建: ${request.machine_id}`);
       }
+
+      // 修复：注册后立即更新内存状态
+      const { memoryStore } = await import('./memory-store.service.js');
+      memoryStore.updateMachineStatus({
+        machine_id: request.machine_id,
+        name: request.name,
+        ip: request.ip_address,
+        grpc_port: request.grpc_port,
+        cpu_usage: 0,
+        memory_usage: 0,
+        disk_space: 0,
+        active_sessions: 0,
+        max_sessions: request.max_sessions || 10,
+        last_heartbeat: new Date(),
+      });
+      logger.info(`内存状态已更新: ${request.machine_id}, grpc_port=${request.grpc_port}`);
 
       callback(null, { success: true, message: '注册成功' });
     } catch (error: any) {

@@ -66,25 +66,2002 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.57.0",
-    "workers": 6,
-    "webServer": null
+    "workers": 1,
+    "webServer": {
+      "command": "NODE_ENV=test npx tsx src/server.ts",
+      "port": 3000,
+      "reuseExistingServer": false,
+      "timeout": 120000,
+      "env": {
+        "NODE_ENV": "test",
+        "TEST_ENV": "true"
+      }
+    }
   },
   "suites": [
     {
-      "title": "p1-important.spec.ts",
-      "file": "p1-important.spec.ts",
+      "title": "grpc-fields-validation.spec.ts",
+      "file": "grpc-fields-validation.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "P1-系统设置和日志",
-          "file": "p1-important.spec.ts",
-          "line": 1341,
+          "title": "P0: 机器注册字段验证",
+          "file": "grpc-fields-validation.spec.ts",
+          "line": 55,
           "column": 6,
           "specs": [
             {
-              "title": "P1-A06: 应该能查看系统操作日志",
+              "title": "P0-R01: 机器注册应该包含所有必填字段",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14111,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886837892-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58079\n"
+                        },
+                        {
+                          "text": "   - PID: 15850\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886839897-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58087\n"
+                        },
+                        {
+                          "text": "   - PID: 15933\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n📊 第一台机器数据: {\n  \"id\": \"test-machine-1766886839897-1\",\n  \"hostname\": \"测试机器-2\",\n  \"ip\": \"REDACTED_PROXY_HOST\",\n  \"cpuUsage\": 50,\n  \"memoryUsage\": 99.70512390136719,\n  \"diskUsage\": 0,\n  \"instanceCount\": 0,\n  \"maxInstances\": 10,\n  \"status\": \"online\",\n  \"lastSeen\": \"2025-12-28T01:54:00.726Z\"\n}\n"
+                        },
+                        {
+                          "text": "验证机器: test-machine-1766886839897-1\n"
+                        },
+                        {
+                          "text": "验证机器: test-machine-1766886837892-0\n"
+                        },
+                        {
+                          "text": "验证机器: test-machine-1766886810299-1\n"
+                        },
+                        {
+                          "text": "验证机器: test-machine-1766886808292-0\n"
+                        },
+                        {
+                          "text": "验证机器: test-machine-1766886786233-1\n"
+                        },
+                        {
+                          "text": "验证机器: test-machine-1766886784230-0\n"
+                        },
+                        {
+                          "text": "验证机器: test-machine-1766886772151-1\n"
+                        },
+                        {
+                          "text": "验证机器: test-machine-1766886770148-0\n"
+                        },
+                        {
+                          "text": "验证机器: test-machine-1766886757649-1\n"
+                        },
+                        {
+                          "text": "验证机器: test-machine-1766886755645-0\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:53:57.882Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-93f5f2421abe5a4414d0",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 56,
+              "column": 3
+            },
+            {
+              "title": "P0-R02: 机器注册数据应该正确持久化到数据库",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14039,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886852013-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58118\n"
+                        },
+                        {
+                          "text": "   - PID: 16236\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886854017-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58124\n"
+                        },
+                        {
+                          "text": "   - PID: 16326\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:54:12.006Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-aee9f31766f9d2ebd17c",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 122,
+              "column": 3
+            },
+            {
+              "title": "P0-R03: 机器注册字段应该与配置一致",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14034,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886866060-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58156\n"
+                        },
+                        {
+                          "text": "   - PID: 16589\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886868063-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58163\n"
+                        },
+                        {
+                          "text": "   - PID: 16681\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:54:26.056Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-c3d2b8707202d68facec",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 142,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "P0: 心跳字段验证",
+          "file": "grpc-fields-validation.spec.ts",
+          "line": 158,
+          "column": 6,
+          "specs": [
+            {
+              "title": "P0-H01: 心跳应该包含所有必填字段",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 49036,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886880104-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58191\n"
+                        },
+                        {
+                          "text": "   - PID: 16960\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886882110-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58198\n"
+                        },
+                        {
+                          "text": "   - PID: 17052\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:54:40.098Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-8ede40a5593972cbf0eb",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 159,
+              "column": 3
+            },
+            {
+              "title": "P0-H02: 心跳 CPU 使用率应该在有效范围内",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 49055,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886929150-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58302\n"
+                        },
+                        {
+                          "text": "   - PID: 18022\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886931154-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58308\n"
+                        },
+                        {
+                          "text": "   - PID: 18112\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886931154-1 CPU 使用率: 17.66901585002367%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886929150-0 CPU 使用率: 18.212464826010645%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886882110-1 CPU 使用率: 18.255781554750627%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886880104-0 CPU 使用率: 18.27073116362014%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886868063-1 CPU 使用率: 25%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886866060-0 CPU 使用率: 33.33333333333334%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886854017-1 CPU 使用率: 100%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886852013-0 CPU 使用率: 28.57142857142857%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886839897-1 CPU 使用率: 50%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886837892-0 CPU 使用率: 40%\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:55:29.145Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-2fa21687e5659790fbd0",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 180,
+              "column": 3
+            },
+            {
+              "title": "P0-H03: 心跳内存使用率应该在有效范围内",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 49054,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886978213-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58414\n"
+                        },
+                        {
+                          "text": "   - PID: 19016\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766886980217-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58420\n"
+                        },
+                        {
+                          "text": "   - PID: 19106\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886980217-1 内存使用率: 99.70459938049316%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886978213-0 内存使用率: 99.65996742248535%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886931154-1 内存使用率: 99.70579147338867%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886929150-0 内存使用率: 99.72152709960938%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886882110-1 内存使用率: 99.80792999267578%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886880104-0 内存使用率: 99.73502159118652%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886868063-1 内存使用率: 99.75056648254395%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886866060-0 内存使用率: 99.30868148803711%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886854017-1 内存使用率: 99.76620674133301%\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886852013-0 内存使用率: 99.22032356262207%\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:56:18.209Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-500f49549794f1cb0be9",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 201,
+              "column": 3
+            },
+            {
+              "title": "P0-H04: 心跳活跃会话数应该准确",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14048,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887027275-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58512\n"
+                        },
+                        {
+                          "text": "   - PID: 19987\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887029279-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58521\n"
+                        },
+                        {
+                          "text": "   - PID: 20075\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887029279-1 活跃会话: 0/10\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887027275-0 活跃会话: 0/10\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886980217-1 活跃会话: 0/10\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886978213-0 活跃会话: 0/10\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886931154-1 活跃会话: 0/10\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886929150-0 活跃会话: 0/10\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886882110-1 活跃会话: 0/10\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886880104-0 活跃会话: 0/10\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886868063-1 活跃会话: 0/10\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766886866060-0 活跃会话: 0/10\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:57:07.272Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-74ec7566b67d8825096b",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 222,
+              "column": 3
+            },
+            {
+              "title": "P0-H05: 心跳间隔应该符合配置 (30秒)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14030,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887041330-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58551\n"
+                        },
+                        {
+                          "text": "   - PID: 20340\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887043333-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58559\n"
+                        },
+                        {
+                          "text": "   - PID: 20423\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:57:21.327Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-cba8fed6df079c68715e",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 239,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "P0: 会话管理字段验证",
+          "file": "grpc-fields-validation.spec.ts",
+          "line": 255,
+          "column": 6,
+          "specs": [
+            {
+              "title": "P0-S01: 会话列表应该包含所有必填字段",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14095,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887055371-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58592\n"
+                        },
+                        {
+                          "text": "   - PID: 20691\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887057374-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58602\n"
+                        },
+                        {
+                          "text": "   - PID: 20792\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "验证会话: 9ae97c66-2d94-4958-984d-1fb749bf641f\n"
+                        },
+                        {
+                          "text": "验证会话: b7ddd42c-b4fa-4f65-b64d-237ac25ce785\n"
+                        },
+                        {
+                          "text": "验证会话: d0f78acb-5a29-4c65-9aad-3b44ef104fcb\n"
+                        },
+                        {
+                          "text": "验证会话: 10467753-a7c7-4646-ab60-2e49ce3393b0\n"
+                        },
+                        {
+                          "text": "验证会话: d974b259-206a-4088-b466-b5d057cce1bd\n"
+                        },
+                        {
+                          "text": "验证会话: 1fdc8e68-4118-44b2-bd29-573a5a51f2a4\n"
+                        },
+                        {
+                          "text": "验证会话: 7960a6c7-39a7-4929-b574-f11b667dd001\n"
+                        },
+                        {
+                          "text": "验证会话: a90b3f6d-29ff-4486-bfdb-75c915591b2b\n"
+                        },
+                        {
+                          "text": "验证会话: c805b832-53a0-4bdc-b994-ccef93e0e9b6\n"
+                        },
+                        {
+                          "text": "验证会话: 06320479-b735-453f-ba1b-f9b9cb86a2b7\n"
+                        },
+                        {
+                          "text": "验证会话: 3971e67e-fa64-49b8-a18a-1acc4bb82d41\n"
+                        },
+                        {
+                          "text": "验证会话: a6c50ee7-ee87-4189-971b-9dd36bef00a3\n"
+                        },
+                        {
+                          "text": "验证会话: a0947495-57ab-426a-80cc-2960491c62cd\n"
+                        },
+                        {
+                          "text": "验证会话: f39ac875-1162-4d5f-8505-90813eef242b\n"
+                        },
+                        {
+                          "text": "验证会话: 8dec491f-0c8f-4acb-805a-376322b4cef4\n"
+                        },
+                        {
+                          "text": "验证会话: 9c05bb05-d486-45de-8284-253ecd73382f\n"
+                        },
+                        {
+                          "text": "验证会话: ec76e57a-feef-4f4b-b58c-ba8d1dfa5fbc\n"
+                        },
+                        {
+                          "text": "验证会话: 2ad286b9-19a0-46d2-9d20-5dea096c0a8c\n"
+                        },
+                        {
+                          "text": "验证会话: 1fff63d6-464f-42d5-9f8e-b692b5d7df2b\n"
+                        },
+                        {
+                          "text": "验证会话: 1dd79adc-06ba-4f9d-a8e4-da90d4f1078f\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:57:35.365Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-d39e7ef659faebc81e29",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 256,
+              "column": 3
+            },
+            {
+              "title": "P0-S02: 会话状态机转换应该正确",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14081,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887069475-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58630\n"
+                        },
+                        {
+                          "text": "   - PID: 21054\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887071480-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58638\n"
+                        },
+                        {
+                          "text": "   - PID: 21141\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:57:49.471Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-d09941501cdbaf09298b",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 284,
+              "column": 3
+            },
+            {
+              "title": "P0-S03: 会话计费逻辑应该正确",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14076,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887083571-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58666\n"
+                        },
+                        {
+                          "text": "   - PID: 21406\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887085575-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58676\n"
+                        },
+                        {
+                          "text": "   - PID: 21498\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:58:03.565Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-0d98e66e00bd1b4a9dbd",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 306,
+              "column": 3
+            },
+            {
+              "title": "P0-S04: 会话时间字段应该一致",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14081,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887097667-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58702\n"
+                        },
+                        {
+                          "text": "   - PID: 21760\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887099672-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58709\n"
+                        },
+                        {
+                          "text": "   - PID: 21847\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:58:17.659Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-ab4bc263dcf653e2351e",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 324,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "P1: 状态同步验证",
+          "file": "grpc-fields-validation.spec.ts",
+          "line": 359,
+          "column": 6,
+          "specs": [
+            {
+              "title": "P1-SYNC01: 机器在线状态应该正确更新",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 17068,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887111757-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58737\n"
+                        },
+                        {
+                          "text": "   - PID: 22130\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887113761-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58744\n"
+                        },
+                        {
+                          "text": "   - PID: 22215\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "机器 测试机器-1 状态: online\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:58:31.751Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-d9a7b58a280848d36ec6",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 360,
+              "column": 3
+            },
+            {
+              "title": "P1-SYNC02: 最后心跳时间应该更新",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 49063,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887128834-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58808\n"
+                        },
+                        {
+                          "text": "   - PID: 22546\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887130839-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58816\n"
+                        },
+                        {
+                          "text": "   - PID: 22638\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:58:48.830Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-fe5eb69baf42bdd4de40",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 380,
+              "column": 3
+            },
+            {
+              "title": "P1-SYNC03: 机器数量应该与启动数量一致",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14037,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887177909-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58932\n"
+                        },
+                        {
+                          "text": "   - PID: 23643\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887179913-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58944\n"
+                        },
+                        {
+                          "text": "   - PID: 23733\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "机器数量: 10 (预期 >= 2)\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:59:37.905Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-4d6f04121b08b337d2f3",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 406,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "P2: 统计和监控验证",
+          "file": "grpc-fields-validation.spec.ts",
+          "line": 425,
+          "column": 6,
+          "specs": [
+            {
+              "title": "P2-STAT01: 机器系统信息应该完整",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14038,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887191956-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58972\n"
+                        },
+                        {
+                          "text": "   - PID: 24031\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887193960-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:58981\n"
+                        },
+                        {
+                          "text": "   - PID: 24114\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T01:59:51.952Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-cd23e8bd8703396a4293",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 426,
+              "column": 3
+            },
+            {
+              "title": "P2-STAT02: 活跃会话数应该准确反映实际状态",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14067,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887206002-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59008\n"
+                        },
+                        {
+                          "text": "   - PID: 24437\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887208004-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59016\n"
+                        },
+                        {
+                          "text": "   - PID: 24526\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887208004-1: 报告 0 个活跃会话, 实际 0 个\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887206002-0: 报告 0 个活跃会话, 实际 0 个\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887193960-1: 报告 0 个活跃会话, 实际 0 个\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887191956-0: 报告 0 个活跃会话, 实际 0 个\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887179913-1: 报告 0 个活跃会话, 实际 0 个\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887177909-0: 报告 0 个活跃会话, 实际 0 个\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887130839-1: 报告 0 个活跃会话, 实际 0 个\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887128834-0: 报告 0 个活跃会话, 实际 0 个\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887113761-1: 报告 0 个活跃会话, 实际 0 个\n"
+                        },
+                        {
+                          "text": "机器 test-machine-1766887111757-0: 报告 0 个活跃会话, 实际 0 个\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:00:05.998Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-d0c45ea00acd52919f23",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 442,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "数据一致性验证",
+          "file": "grpc-fields-validation.spec.ts",
+          "line": 468,
+          "column": 6,
+          "specs": [
+            {
+              "title": "CONSISTENCY01: 内存缓存与数据库应该同步",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "需要添加内存状态查询 API",
+                      "location": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/grpc-fields-validation.spec.ts",
+                        "line": 509,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 14044,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887220076-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59079\n"
+                        },
+                        {
+                          "text": "   - PID: 24832\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887222082-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59085\n"
+                        },
+                        {
+                          "text": "   - PID: 24998\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:00:20.074Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "需要添加内存状态查询 API",
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/grpc-fields-validation.spec.ts",
+                            "line": 509,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "048eea557e95323f8825-64373d32e26d1fde5f24",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 469,
+              "column": 3
+            },
+            {
+              "title": "CONSISTENCY02: 机器重启后状态应该恢复",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "需要实现机器重启逻辑",
+                      "location": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/grpc-fields-validation.spec.ts",
+                        "line": 525,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 14038,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887234138-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59125\n"
+                        },
+                        {
+                          "text": "   - PID: 25293\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887236144-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59132\n"
+                        },
+                        {
+                          "text": "   - PID: 25383\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:00:34.130Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "需要实现机器重启逻辑",
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/grpc-fields-validation.spec.ts",
+                            "line": 525,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "048eea557e95323f8825-c5dffa34f1a4ef7296ca",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 485,
+              "column": 3
+            },
+            {
+              "title": "CONSISTENCY03: 并发会话创建应该正确处理",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14053,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887248191-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59165\n"
+                        },
+                        {
+                          "text": "   - PID: 25674\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887250195-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59175\n"
+                        },
+                        {
+                          "text": "   - PID: 25835\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "机器最大会话数: 10\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:00:48.185Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-6c419f50c0256f941724",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 492,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "性能验证",
+          "file": "grpc-fields-validation.spec.ts",
+          "line": 517,
+          "column": 6,
+          "specs": [
+            {
+              "title": "PERF01: 心跳响应时间应该在合理范围内",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14075,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887262262-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59205\n"
+                        },
+                        {
+                          "text": "   - PID: 26109\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887264268-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59212\n"
+                        },
+                        {
+                          "text": "   - PID: 26201\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "API 响应时间: 6ms\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:01:02.256Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-342d35621ccbf74960d5",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 518,
+              "column": 3
+            },
+            {
+              "title": "PERF02: 机器注册时间应该在合理范围内",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14036,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887276349-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59238\n"
+                        },
+                        {
+                          "text": "   - PID: 26478\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887278354-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59247\n"
+                        },
+                        {
+                          "text": "   - PID: 26573\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:01:16.344Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "048eea557e95323f8825-f80f73b34090ffe132f8",
+              "file": "grpc-fields-validation.spec.ts",
+              "line": 531,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "memory-state-validation.spec.ts",
+      "file": "memory-state-validation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "MemoryStore 内存状态验证",
+          "file": "memory-state-validation.spec.ts",
+          "line": 22,
+          "column": 6,
+          "specs": [
+            {
+              "title": "MEM-01: 机器数据应该在内存存储中",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 17037,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887290404-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59276\n"
+                        },
+                        {
+                          "text": "   - PID: 26953\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887292407-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59284\n"
+                        },
+                        {
+                          "text": "   - PID: 27043\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "在线机器数量: 2\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:01:30.401Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-643e6af2ccf9a48acb28",
+              "file": "memory-state-validation.spec.ts",
+              "line": 23,
+              "column": 3
+            },
+            {
+              "title": "MEM-02: 内存中的机器数据应该包含所有必需字段",
               "ok": false,
               "tags": [],
               "tests": [
@@ -99,66 +2076,94 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 612,
+                      "duration": 14034,
                       "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11",
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveProperty\u001b[2m(\u001b[22m\u001b[32mpath\u001b[39m\u001b[2m)\u001b[22m\n\nExpected path: \u001b[32m\"grpc_port\"\u001b[39m\nReceived path: \u001b[31m[]\u001b[39m\n\nReceived value: \u001b[31m{\"cpuUsage\": 0, \"diskUsage\": 0, \"hostname\": \"测试机器-2\", \"id\": \"test-machine-1766887309453-1\", \"instanceCount\": 0, \"ip\": \"REDACTED_PROXY_HOST\", \"lastSeen\": \"2025-12-28T02:01:50.307Z\", \"maxInstances\": 10, \"memoryUsage\": 99.6851921081543, \"status\": \"online\"}\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveProperty\u001b[2m(\u001b[22m\u001b[32mpath\u001b[39m\u001b[2m)\u001b[22m\n\nExpected path: \u001b[32m\"grpc_port\"\u001b[39m\nReceived path: \u001b[31m[]\u001b[39m\n\nReceived value: \u001b[31m{\"cpuUsage\": 0, \"diskUsage\": 0, \"hostname\": \"测试机器-2\", \"id\": \"test-machine-1766887309453-1\", \"instanceCount\": 0, \"ip\": \"REDACTED_PROXY_HOST\", \"lastSeen\": \"2025-12-28T02:01:50.307Z\", \"maxInstances\": 10, \"memoryUsage\": 99.6851921081543, \"status\": \"online\"}\u001b[39m\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:54:23",
                         "location": {
-                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                          "column": 14,
-                          "line": 94
+                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                          "column": 23,
+                          "line": 54
                         },
-                        "snippet": "  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');"
+                        "snippet": "  52 |       expect(machine).toHaveProperty('hostname');\n  53 |       expect(machine).toHaveProperty('ip');\n> 54 |       expect(machine).toHaveProperty('grpc_port');\n     |                       ^\n  55 |       expect(machine).toHaveProperty('proxy_port');\n  56 |       expect(machine).toHaveProperty('status');\n  57 |       expect(machine).toHaveProperty('last_seen');"
                       },
                       "errors": [
                         {
                           "location": {
-                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                            "column": 14,
-                            "line": 94
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "column": 23,
+                            "line": 54
                           },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n\n  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11"
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoHaveProperty\u001b[2m(\u001b[22m\u001b[32mpath\u001b[39m\u001b[2m)\u001b[22m\n\nExpected path: \u001b[32m\"grpc_port\"\u001b[39m\nReceived path: \u001b[31m[]\u001b[39m\n\nReceived value: \u001b[31m{\"cpuUsage\": 0, \"diskUsage\": 0, \"hostname\": \"测试机器-2\", \"id\": \"test-machine-1766887309453-1\", \"instanceCount\": 0, \"ip\": \"REDACTED_PROXY_HOST\", \"lastSeen\": \"2025-12-28T02:01:50.307Z\", \"maxInstances\": 10, \"memoryUsage\": 99.6851921081543, \"status\": \"online\"}\u001b[39m\n\n  52 |       expect(machine).toHaveProperty('hostname');\n  53 |       expect(machine).toHaveProperty('ip');\n> 54 |       expect(machine).toHaveProperty('grpc_port');\n     |                       ^\n  55 |       expect(machine).toHaveProperty('proxy_port');\n  56 |       expect(machine).toHaveProperty('status');\n  57 |       expect(machine).toHaveProperty('last_seen');\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:54:23"
                         }
                       ],
-                      "stdout": [],
-                      "stderr": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887307450-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59320\n"
+                        },
+                        {
+                          "text": "   - PID: 27428\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887309453-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59333\n"
+                        },
+                        {
+                          "text": "   - PID: 27516\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
                       "retry": 0,
-                      "startTime": "2025-12-26T18:23:05.787Z",
+                      "startTime": "2025-12-28T02:01:47.446Z",
                       "annotations": [],
                       "attachments": [
                         {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A06-应该能查看系统操作日志-chromium/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A06-应该能查看系统操作日志-chromium/error-context.md"
-                        },
-                        {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A06-应该能查看系统操作日志-chromium/trace.zip"
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/memory-state-validation-Me-10b9f-证-MEM-02-内存中的机器数据应该包含所有必需字段-chromium/trace.zip"
                         }
                       ],
                       "errorLocation": {
-                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                        "column": 14,
-                        "line": 94
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "column": 23,
+                        "line": 54
                       }
                     }
                   ],
                   "status": "unexpected"
                 }
               ],
-              "id": "cc7a5e2e81e976facf6d-a9311b359cdddc2366d0",
-              "file": "p1-important.spec.ts",
-              "line": 1376,
+              "id": "99bd41b13e279bfd52c7-11ed93d13c93f06bd438",
+              "file": "memory-state-validation.spec.ts",
+              "line": 40,
               "column": 3
             },
             {
-              "title": "P1-A08: 操作日志应该支持按时间筛选",
+              "title": "MEM-03: 内存状态应该实时更新 (CPU/内存)",
               "ok": false,
               "tags": [],
               "tests": [
@@ -173,66 +2178,823 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 501,
+                      "duration": 49107,
                       "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11",
+                        "message": "TypeError: Cannot read properties of undefined (reading 'id')",
+                        "stack": "TypeError: Cannot read properties of undefined (reading 'id')\n    at find (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:83:67)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:83:32",
                         "location": {
-                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                          "column": 14,
-                          "line": 94
+                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                          "column": 67,
+                          "line": 83
                         },
-                        "snippet": "  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');"
+                        "snippet": "  81 |     const result2 = await response2.json();\n  82 |     const machines2 = result2.data?.items || result2.data || result;\n> 83 |     const machine2 = machines2.find((m: any) => m.id === machine1.id);\n     |                                                                   ^\n  84 |\n  85 |     if (machine2) {\n  86 |       // 验证 last_seen 已更新"
                       },
                       "errors": [
                         {
                           "location": {
-                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                            "column": 14,
-                            "line": 94
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "column": 67,
+                            "line": 83
                           },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n\n  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11"
+                          "message": "TypeError: Cannot read properties of undefined (reading 'id')\n\n  81 |     const result2 = await response2.json();\n  82 |     const machines2 = result2.data?.items || result2.data || result;\n> 83 |     const machine2 = machines2.find((m: any) => m.id === machine1.id);\n     |                                                                   ^\n  84 |\n  85 |     if (machine2) {\n  86 |       // 验证 last_seen 已更新\n    at find (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:83:67)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:83:32"
                         }
                       ],
-                      "stdout": [],
-                      "stderr": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887321898-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59382\n"
+                        },
+                        {
+                          "text": "   - PID: 27880\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887323903-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59389\n"
+                        },
+                        {
+                          "text": "   - PID: 27975\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
                       "retry": 0,
-                      "startTime": "2025-12-26T18:23:07.196Z",
+                      "startTime": "2025-12-28T02:02:01.888Z",
                       "annotations": [],
                       "attachments": [
                         {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A08-操作日志应该支持按时间筛选-chromium/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A08-操作日志应该支持按时间筛选-chromium/error-context.md"
-                        },
-                        {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A08-操作日志应该支持按时间筛选-chromium/trace.zip"
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/memory-state-validation-Me-65426-证-MEM-03-内存状态应该实时更新-CPU-内存--chromium/trace.zip"
                         }
                       ],
                       "errorLocation": {
-                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                        "column": 14,
-                        "line": 94
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "column": 67,
+                        "line": 83
                       }
                     }
                   ],
                   "status": "unexpected"
                 }
               ],
-              "id": "cc7a5e2e81e976facf6d-cdf40eaff72d48accf17",
-              "file": "p1-important.spec.ts",
-              "line": 1440,
+              "id": "99bd41b13e279bfd52c7-932ef4dda5a65c72288d",
+              "file": "memory-state-validation.spec.ts",
+              "line": 67,
               "column": 3
             },
             {
-              "title": "P1-A09: 应该能访问文件上传页面",
+              "title": "MEM-04: 会话数据应该在内存存储中",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14138,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887371421-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59587\n"
+                        },
+                        {
+                          "text": "   - PID: 29030\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887373427-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59593\n"
+                        },
+                        {
+                          "text": "   - PID: 29123\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "会话总数: 20\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:02:51.411Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-668a3a4271cf17fd9df7",
+              "file": "memory-state-validation.spec.ts",
+              "line": 108,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "gRPC 连接管理验证",
+          "file": "memory-state-validation.spec.ts",
+          "line": 131,
+          "column": 6,
+          "specs": [
+            {
+              "title": "GRPC-01: 机器应该成功建立 gRPC 连接",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14029,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887385565-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59636\n"
+                        },
+                        {
+                          "text": "   - PID: 29405\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887387569-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59646\n"
+                        },
+                        {
+                          "text": "   - PID: 29492\n"
+                        },
+                        {
+                          "text": "机器进程 29405 正在运行\n"
+                        },
+                        {
+                          "text": "gRPC 端口 59636 可访问\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:03:05.560Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-3dcde3df45ecfc0d543e",
+              "file": "memory-state-validation.spec.ts",
+              "line": 132,
+              "column": 3
+            },
+            {
+              "title": "GRPC-02: 代理端口应该可访问",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14032,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887399607-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59675\n"
+                        },
+                        {
+                          "text": "   - PID: 29763\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887401614-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59682\n"
+                        },
+                        {
+                          "text": "   - PID: 29848\n"
+                        },
+                        {
+                          "text": "代理端口 59676 可访问\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:03:19.602Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-5d145973dd35709da9b9",
+              "file": "memory-state-validation.spec.ts",
+              "line": 163,
+              "column": 3
+            },
+            {
+              "title": "GRPC-03: gRPC 连接应该保持活动状态",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 49029,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887413650-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59710\n"
+                        },
+                        {
+                          "text": "   - PID: 30117\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887415655-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59719\n"
+                        },
+                        {
+                          "text": "   - PID: 30204\n"
+                        },
+                        {
+                          "text": "gRPC 连接保持活动: PID 30117\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:03:33.644Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-f3231ac4812666a4d128",
+              "file": "memory-state-validation.spec.ts",
+              "line": 183,
+              "column": 3
+            },
+            {
+              "title": "GRPC-04: 机器应该能重新连接 (容错)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "需要实现网络中断模拟",
+                      "location": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "line": 204,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 14050,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887462701-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59849\n"
+                        },
+                        {
+                          "text": "   - PID: 30967\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887464709-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59871\n"
+                        },
+                        {
+                          "text": "   - PID: 31036\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:04:22.688Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "需要实现网络中断模拟",
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "line": 204,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-79f47cf6da24c4442a3d",
+              "file": "memory-state-validation.spec.ts",
+              "line": 200,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "IPC 数据传输验证",
+          "file": "memory-state-validation.spec.ts",
+          "line": 210,
+          "column": 6,
+          "specs": [
+            {
+              "title": "IPC-01: 机器注册数据应该正确传输",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14071,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887476765-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59899\n"
+                        },
+                        {
+                          "text": "   - PID: 31177\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887478776-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59909\n"
+                        },
+                        {
+                          "text": "   - PID: 31287\n"
+                        },
+                        {
+                          "text": "注册数据传输验证通过\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:04:36.757Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-6ea6085fef4d7f498340",
+              "file": "memory-state-validation.spec.ts",
+              "line": 211,
+              "column": 3
+            },
+            {
+              "title": "IPC-02: 心跳数据应该正确传输",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 49069,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887490859-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59935\n"
+                        },
+                        {
+                          "text": "   - PID: 31394\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887492866-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:59942\n"
+                        },
+                        {
+                          "text": "   - PID: 31458\n"
+                        },
+                        {
+                          "text": "心跳数据传输验证通过\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:04:50.848Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-5bb49313b6f863dcf3a2",
+              "file": "memory-state-validation.spec.ts",
+              "line": 230,
+              "column": 3
+            },
+            {
+              "title": "IPC-03: 会话状态更新应该正确传输",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "需要实现会话创建测试",
+                      "location": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "line": 267,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 14046,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887539937-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60042\n"
+                        },
+                        {
+                          "text": "   - PID: 31741\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887541942-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60048\n"
+                        },
+                        {
+                          "text": "   - PID: 31802\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:05:39.932Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "需要实现会话创建测试",
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "line": 267,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-abba25c4f4538815c786",
+              "file": "memory-state-validation.spec.ts",
+              "line": 249,
+              "column": 3
+            },
+            {
+              "title": "IPC-04: 数据传输应该可靠 (无丢失)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "需要实现消息序列号验证",
+                      "location": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "line": 272,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 14051,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887554001-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60076\n"
+                        },
+                        {
+                          "text": "   - PID: 31916\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887556007-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60084\n"
+                        },
+                        {
+                          "text": "   - PID: 31982\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:05:53.995Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "需要实现消息序列号验证",
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "line": 272,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-a4d4c6b929224e2e5d0c",
+              "file": "memory-state-validation.spec.ts",
+              "line": 255,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "实时状态同步验证",
+          "file": "memory-state-validation.spec.ts",
+          "line": 265,
+          "column": 6,
+          "specs": [
+            {
+              "title": "SYNC-01: 机器状态变化应该实时同步",
               "ok": false,
               "tags": [],
               "tests": [
@@ -247,66 +3009,519 @@
                       "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 560,
+                      "duration": 49065,
                       "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11",
+                        "message": "TypeError: machines1 is not iterable",
+                        "stack": "TypeError: machines1 is not iterable\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:297:28",
                         "location": {
-                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                          "column": 14,
-                          "line": 94
+                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                          "column": 28,
+                          "line": 297
                         },
-                        "snippet": "  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');"
+                        "snippet": "  295 |     expect(machines2.length).toBe(machines1.length);\n  296 |\n> 297 |     for (const machine1 of machines1) {\n      |                            ^\n  298 |       const machine2 = machines2.find((m: any) => m.id === machine1.id);\n  299 |       expect(machine2).toBeDefined();\n  300 |"
                       },
                       "errors": [
                         {
                           "location": {
-                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                            "column": 14,
-                            "line": 94
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "column": 28,
+                            "line": 297
                           },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n\n  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11"
+                          "message": "TypeError: machines1 is not iterable\n\n  295 |     expect(machines2.length).toBe(machines1.length);\n  296 |\n> 297 |     for (const machine1 of machines1) {\n      |                            ^\n  298 |       const machine2 = machines2.find((m: any) => m.id === machine1.id);\n  299 |       expect(machine2).toBeDefined();\n  300 |\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:297:28"
                         }
                       ],
-                      "stdout": [],
-                      "stderr": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887568060-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60114\n"
+                        },
+                        {
+                          "text": "   - PID: 32094\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887570066-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60125\n"
+                        },
+                        {
+                          "text": "   - PID: 32163\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
                       "retry": 0,
-                      "startTime": "2025-12-26T18:23:08.335Z",
+                      "startTime": "2025-12-28T02:06:08.057Z",
                       "annotations": [],
                       "attachments": [
                         {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A09-应该能访问文件上传页面-chromium/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A09-应该能访问文件上传页面-chromium/error-context.md"
-                        },
-                        {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A09-应该能访问文件上传页面-chromium/trace.zip"
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/memory-state-validation-实时状态同步验证-SYNC-01-机器状态变化应该实时同步-chromium/trace.zip"
                         }
                       ],
                       "errorLocation": {
-                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                        "column": 14,
-                        "line": 94
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "column": 28,
+                        "line": 297
                       }
                     }
                   ],
                   "status": "unexpected"
                 }
               ],
-              "id": "cc7a5e2e81e976facf6d-cad8b78b5d2e39a4e000",
-              "file": "p1-important.spec.ts",
-              "line": 1467,
+              "id": "99bd41b13e279bfd52c7-b8eff7aef210e55d6012",
+              "file": "memory-state-validation.spec.ts",
+              "line": 266,
               "column": 3
             },
             {
-              "title": "P1-A10: 文件上传应该验证文件类型",
+              "title": "SYNC-02: 多机器状态应该独立同步",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14100,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887617556-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60225\n"
+                        },
+                        {
+                          "text": "   - PID: 32464\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887619566-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60232\n"
+                        },
+                        {
+                          "text": "   - PID: 32533\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "独立机器数量: 10\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:06:57.546Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-ac1b8e63ae0520c2081f",
+              "file": "memory-state-validation.spec.ts",
+              "line": 298,
+              "column": 3
+            },
+            {
+              "title": "SYNC-03: 状态同步延迟应该在可接受范围内",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14062,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887631663-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60264\n"
+                        },
+                        {
+                          "text": "   - PID: 32707\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887633667-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60272\n"
+                        },
+                        {
+                          "text": "   - PID: 32770\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "状态同步延迟: 7ms\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:07:11.657Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-2dc9b81936bb35134929",
+              "file": "memory-state-validation.spec.ts",
+              "line": 316,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "容错和恢复验证",
+          "file": "memory-state-validation.spec.ts",
+          "line": 334,
+          "column": 6,
+          "specs": [
+            {
+              "title": "FAULT-01: 机器断开后应该标记为离线",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "需要实现机器停止测试",
+                      "location": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "line": 353,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 14023,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887645739-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60303\n"
+                        },
+                        {
+                          "text": "   - PID: 32916\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887647743-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60317\n"
+                        },
+                        {
+                          "text": "   - PID: 33003\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:07:25.735Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "需要实现机器停止测试",
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "line": 353,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-507dd0d4a8f6e6d01add",
+              "file": "memory-state-validation.spec.ts",
+              "line": 335,
+              "column": 3
+            },
+            {
+              "title": "FAULT-02: 机器重连后应该恢复在线",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "需要实现机器重启测试",
+                      "location": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "line": 358,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 14024,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887659769-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60351\n"
+                        },
+                        {
+                          "text": "   - PID: 33276\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887661771-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60362\n"
+                        },
+                        {
+                          "text": "   - PID: 33363\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:07:39.766Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "需要实现机器重启测试",
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "line": 358,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-c353cb7447aa776424d1",
+              "file": "memory-state-validation.spec.ts",
+              "line": 341,
+              "column": 3
+            },
+            {
+              "title": "FAULT-03: 心跳超时应该触发离线标记",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "需要实现心跳超时模拟",
+                      "location": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "line": 363,
+                        "column": 10
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 14028,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887673801-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60390\n"
+                        },
+                        {
+                          "text": "   - PID: 33663\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887675806-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60401\n"
+                        },
+                        {
+                          "text": "   - PID: 33768\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:07:53.796Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "需要实现心跳超时模拟",
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "line": 363,
+                            "column": 10
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-46cfba19a0feddaf5be9",
+              "file": "memory-state-validation.spec.ts",
+              "line": 347,
+              "column": 3
+            },
+            {
+              "title": "FAULT-04: 部分机器离线不应影响其他机器",
               "ok": false,
               "tags": [],
               "tests": [
@@ -321,62 +3536,499 @@
                       "workerIndex": 3,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 464,
+                      "duration": 14021,
                       "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11",
+                        "message": "ReferenceError: apiRequest is not defined",
+                        "stack": "ReferenceError: apiRequest is not defined\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:368:22",
                         "location": {
-                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                          "column": 14,
-                          "line": 94
+                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                          "column": 22,
+                          "line": 368
                         },
-                        "snippet": "  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');"
+                        "snippet": "  366 |   test('FAULT-04: 部分机器离线不应影响其他机器', async ({ testEnv }) => {\n  367 |     // 验证单点故障不影响整体\n> 368 |     const response = await apiRequest('/api/machines');\n      |                      ^\n  369 |     expect(response.ok).toBe(true);\n  370 |\n  371 |     const result = await response.json();"
                       },
                       "errors": [
                         {
                           "location": {
-                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                            "column": 14,
-                            "line": 94
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "column": 22,
+                            "line": 368
                           },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin/login\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/admin/login\", waiting until \"load\"\u001b[22m\n\n\n  92 |  */\n  93 | async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {\n> 94 |   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });\n     |              ^\n  95 |   await page.fill('input[name=\"username\"]', username);\n  96 |   await page.fill('input[name=\"password\"]', password);\n  97 |   await page.click('button[type=\"submit\"]');\n    at login (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:94:14)\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts:1359:11"
+                          "message": "ReferenceError: apiRequest is not defined\n\n  366 |   test('FAULT-04: 部分机器离线不应影响其他机器', async ({ testEnv }) => {\n  367 |     // 验证单点故障不影响整体\n> 368 |     const response = await apiRequest('/api/machines');\n      |                      ^\n  369 |     expect(response.ok).toBe(true);\n  370 |\n  371 |     const result = await response.json();\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:368:22"
                         }
                       ],
-                      "stdout": [],
-                      "stderr": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887687838-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60435\n"
+                        },
+                        {
+                          "text": "   - PID: 33930\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887689842-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60447\n"
+                        },
+                        {
+                          "text": "   - PID: 33996\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
                       "retry": 0,
-                      "startTime": "2025-12-26T18:23:09.538Z",
+                      "startTime": "2025-12-28T02:08:07.833Z",
                       "annotations": [],
                       "attachments": [
                         {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A10-文件上传应该验证文件类型-chromium/video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A10-文件上传应该验证文件类型-chromium/error-context.md"
-                        },
-                        {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/p1-important-P1-系统设置和日志-P1-A10-文件上传应该验证文件类型-chromium/trace.zip"
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/memory-state-validation-容错和恢复验证-FAULT-04-部分机器离线不应影响其他机器-chromium/trace.zip"
                         }
                       ],
                       "errorLocation": {
-                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/p1-important.spec.ts",
-                        "column": 14,
-                        "line": 94
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "column": 22,
+                        "line": 368
                       }
                     }
                   ],
                   "status": "unexpected"
                 }
               ],
-              "id": "cc7a5e2e81e976facf6d-2abaac9fa58aab173bf4",
-              "file": "p1-important.spec.ts",
-              "line": 1494,
+              "id": "99bd41b13e279bfd52c7-cd00efffa7dfa6c30dda",
+              "file": "memory-state-validation.spec.ts",
+              "line": 353,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "数据完整性验证",
+          "file": "memory-state-validation.spec.ts",
+          "line": 372,
+          "column": 6,
+          "specs": [
+            {
+              "title": "INT-01: 机器 ID 应该唯一",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14053,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887702267-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60481\n"
+                        },
+                        {
+                          "text": "   - PID: 34173\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887704271-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60489\n"
+                        },
+                        {
+                          "text": "   - PID: 34251\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "机器 ID 唯一性: 10/10\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:08:22.256Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-40105d3d1e1082f583ec",
+              "file": "memory-state-validation.spec.ts",
+              "line": 373,
+              "column": 3
+            },
+            {
+              "title": "INT-02: 端口号不应该冲突",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 14041,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m10\u001b[39m\nReceived: \u001b[31m1\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m10\u001b[39m\nReceived: \u001b[31m1\u001b[39m\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:408:34",
+                        "location": {
+                          "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                          "column": 34,
+                          "line": 408
+                        },
+                        "snippet": "  406 |     // 检查 gRPC 端口唯一性\n  407 |     const uniqueGrpcPorts = new Set(grpcPorts);\n> 408 |     expect(uniqueGrpcPorts.size).toBe(grpcPorts.length);\n      |                                  ^\n  409 |\n  410 |     // 检查代理端口唯一性\n  411 |     const uniqueProxyPorts = new Set(proxyPorts);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                            "column": 34,
+                            "line": 408
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m10\u001b[39m\nReceived: \u001b[31m1\u001b[39m\n\n  406 |     // 检查 gRPC 端口唯一性\n  407 |     const uniqueGrpcPorts = new Set(grpcPorts);\n> 408 |     expect(uniqueGrpcPorts.size).toBe(grpcPorts.length);\n      |                                  ^\n  409 |\n  410 |     // 检查代理端口唯一性\n  411 |     const uniqueProxyPorts = new Set(proxyPorts);\n    at /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts:408:34"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887716325-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60531\n"
+                        },
+                        {
+                          "text": "   - PID: 34464\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887718328-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60540\n"
+                        },
+                        {
+                          "text": "   - PID: 34553\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:08:36.319Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results/memory-state-validation-数据完整性验证-INT-02-端口号不应该冲突-chromium/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e/memory-state-validation.spec.ts",
+                        "column": 34,
+                        "line": 408
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-13e6695ea167463c622f",
+              "file": "memory-state-validation.spec.ts",
+              "line": 385,
+              "column": 3
+            },
+            {
+              "title": "INT-03: 时间戳应该单调递增",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 14065,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887730768-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60583\n"
+                        },
+                        {
+                          "text": "   - PID: 34778\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887732772-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60592\n"
+                        },
+                        {
+                          "text": "   - PID: 34867\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "时间戳单调性验证通过\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:08:50.757Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-88b496ff773408a15385",
+              "file": "memory-state-validation.spec.ts",
+              "line": 404,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "性能验证",
+          "file": "memory-state-validation.spec.ts",
+          "line": 426,
+          "column": 6,
+          "specs": [
+            {
+              "title": "PERF-MEM01: 内存使用应该稳定",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 24038,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887744842-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60628\n"
+                        },
+                        {
+                          "text": "   - PID: 35075\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887746846-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60635\n"
+                        },
+                        {
+                          "text": "   - PID: 35163\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:09:04.838Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-7b706a66fbc047c1e180",
+              "file": "memory-state-validation.spec.ts",
+              "line": 427,
+              "column": 3
+            },
+            {
+              "title": "PERF-MEM02: CPU 使用应该稳定",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 24041,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "\n🚀 启动测试环境: 2 个机器服务\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #1 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887768890-0\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60696\n"
+                        },
+                        {
+                          "text": "   - PID: 35568\n"
+                        },
+                        {
+                          "text": "✅ 机器服务 #2 已启动:\n"
+                        },
+                        {
+                          "text": "   - ID: test-machine-1766887770894-1\n"
+                        },
+                        {
+                          "text": "   - gRPC: localhost:60705\n"
+                        },
+                        {
+                          "text": "   - PID: 35654\n"
+                        },
+                        {
+                          "text": "✅ 已获取 admin token\n"
+                        },
+                        {
+                          "text": "\n🧹 清理测试环境\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "⚠️  警告: 期望 2 台机器注册，但未完全验证\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-12-28T02:09:28.887Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "99bd41b13e279bfd52c7-90382e5416d6536bd04f",
+              "file": "memory-state-validation.spec.ts",
+              "line": 453,
               "column": 3
             }
           ]
@@ -386,11 +4038,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-12-26T18:23:05.467Z",
-    "duration": 4862.063,
-    "expected": 0,
-    "skipped": 0,
-    "unexpected": 4,
+    "startTime": "2025-12-28T01:53:55.649Z",
+    "duration": 957281.217,
+    "expected": 33,
+    "skipped": 8,
+    "unexpected": 5,
     "flaky": 0
   }
 }

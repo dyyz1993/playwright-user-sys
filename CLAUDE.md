@@ -105,3 +105,4 @@ Uses dotenv with environment-specific configs (`.env.dev`). The system supports 
 - Playwright for browser automation
 - gRPC for inter-service communication
 - WebSocket for real-time browser proxy connections
+- 任务有计划的，排查问题,查找用子任务，执行mcp用子任务。

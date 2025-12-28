@@ -21,11 +21,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - dockerfile: docker/manager/Dockerfile
+          - dockerfile: docker/manager/Dockerfile.prod
             context: .
             image_suffix: manager
             target: production
-          - dockerfile: docker/machine/Dockerfile
+          - dockerfile: docker/machine/Dockerfile.prod
             context: .
             image_suffix: machine
             target: production

@@ -105,8 +105,8 @@ jobs:
           DB_NAME: playwright_test_user_sys
           DB_USER: root
           DB_PASSWORD: test_password
-          # JWT 配置（必须与 src/utils/auth.ts 中硬编码的密钥一致）
-          JWT_SECRET: test-secret-key
+          # JWT 配置（必须至少 32 个字符以满足 @fastify/session 要求）
+          JWT_SECRET: test-secret-key-for-testing-only-32chars
           JWT_EXPIRES_IN: 24h
           # 管理员配置
           ADMIN_USERNAME: admin

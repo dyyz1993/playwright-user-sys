@@ -1,6 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { generateToken, hashPassword } from '../../src/utils/auth.js';
-import { db } from '../../src/config/database.js';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -17,6 +15,9 @@ const API_BASE = 'http://localhost:3000/api';
 
 // 辅助函数：创建测试用户
 async function createTestUser(overrides: any = {}) {
+  const { hashPassword } = await import('../../src/utils/auth.js');
+  const { db } = await import('../../src/config/database.js');
+
   const userData = {
     username: `test_${Date.now()}_${Math.random().toString(36).substring(7)}`,
     password: await hashPassword('TestPassword123'),
@@ -37,6 +38,7 @@ async function createTestUser(overrides: any = {}) {
 
 // 辅助函数：清理测试数据
 async function cleanupTestUser(userId: number) {
+  const { db } = await import('../../src/config/database.js');
   await db('sessions').where({ user_id: userId }).delete();
   await db('credit_history').where({ user_id: userId }).delete();
   await db('users').where({ id: userId }).delete();
@@ -44,6 +46,7 @@ async function cleanupTestUser(userId: number) {
 
 // 辅助函数：创建测试会话
 async function createTestSession(userId: number, overrides: any = {}) {
+  const { db } = await import('../../src/config/database.js');
   const sessionId = uuidv4();
   const sessionData = {
     id: sessionId,
@@ -69,7 +72,7 @@ async function createTestSession(userId: number, overrides: any = {}) {
   return sessionData;
 }
 
-describe('TIER 安全漏洞测试套件', () => {
+test.describe('TIER 安全漏洞测试套件', () => {
   // ============================================================================
   // 类别 A: 认证与授权漏洞 (TIER-051 ~ TIER-055)
   // ============================================================================
@@ -127,6 +130,7 @@ describe('TIER 安全漏洞测试套件', () => {
           expect(sessionData.success).toBe(true);
 
           // 验证点：数据库层 - 检查会话归属
+          const { db } = await import('../../src/config/database.js');
           const session = await db('sessions').where({ id: sessionData.data.id }).first();
           expect(session.user_id).toBe(testUser.id); // 会话属于受害者
 
@@ -201,6 +205,7 @@ describe('TIER 安全漏洞测试套件', () => {
 
       try {
         // 步骤 2: 生成普通用户的 JWT Token
+        const { generateToken } = await import('../../src/utils/auth.js');
         const userToken = generateToken({
           id: regularUser.id,
           username: regularUser.username,
@@ -363,6 +368,7 @@ describe('TIER 安全漏洞测试套件', () => {
         expect(sessionIds.length).toBeLessThan(50); // 假设合理限制为 50
 
         // 验证点：数据库层 - 检查实际创建的会话数
+        const { db } = await import('../../src/config/database.js');
         const userSessions = await db('sessions').where({ user_id: testUser.id }).whereNotNull('machine_id');
         expect(userSessions.length).toBeLessThan(50);
 
@@ -380,6 +386,7 @@ describe('TIER 安全漏洞测试套件', () => {
       // 攻击场景：通过并发请求利用竞态条件绕过积分检查
 
       // 步骤 1: 将用户积分设置为刚好够创建 1 个会话
+      const { db } = await import('../../src/config/database.js');
       await db('users').where({ id: testUser.id }).update({ credits: 1 });
 
       // 步骤 2: 并发发送多个创建会话请求
@@ -416,6 +423,7 @@ describe('TIER 安全漏洞测试套件', () => {
       // 攻击场景：通过某种方式使用户积分变为负数
 
       // 步骤 1: 将用户积分设置为 0
+      const { db } = await import('../../src/config/database.js');
       await db('users').where({ id: testUser.id }).update({ credits: 0 });
 
       // 步骤 2: 尝试创建会话（应该失败，因为积分不足）
@@ -437,6 +445,7 @@ describe('TIER 安全漏洞测试套件', () => {
       // 攻击场景：通过某些方式创建会话但不扣除积分
 
       // 步骤 1: 记录初始积分
+      const { db } = await import('../../src/config/database.js');
       const initialCredits = (await db('users').where({ id: testUser.id }).first()).credits;
 
       // 步骤 2: 尝试创建会话
@@ -480,6 +489,7 @@ describe('TIER 安全漏洞测试套件', () => {
       // 攻击场景：创建会话时不检查机器容量，导致实例计数超出限制
 
       // 步骤 1: 获取一台机器
+      const { db } = await import('../../src/config/database.js');
       const machine = await db('machines').where({ status: 'online' }).first();
 
       if (!machine) {
@@ -565,6 +575,7 @@ describe('TIER 安全漏洞测试套件', () => {
       });
 
       // 步骤 2: 记录初始积分
+      const { db } = await import('../../src/config/database.js');
       const initialCredits = (await db('users').where({ id: testUser.id }).first()).credits;
 
       // 步骤 3: 并发发送多个释放会话请求
@@ -608,6 +619,7 @@ describe('TIER 安全漏洞测试套件', () => {
       });
 
       // 步骤 2: 手动将会话状态改为 disconnected
+      const { db } = await import('../../src/config/database.js');
       await db('sessions').where({ id: session.id }).update({
         status: 'disconnected',
         end_time: new Date(),
@@ -651,6 +663,7 @@ describe('TIER 安全漏洞测试套件', () => {
       });
 
       // 步骤 3: 检查扣费情况
+      const { db } = await import('../../src/config/database.js');
       const updatedSession = await db('sessions').where({ id: session.id }).first();
 
       // 验证点：业务层 - 计费逻辑
@@ -674,6 +687,7 @@ describe('TIER 安全漏洞测试套件', () => {
       });
 
       // 步骤 3: 检查积分历史记录
+      const { db } = await import('../../src/config/database.js');
       const creditHistory = await db('credit_history')
         .where({ user_id: testUser.id })
         .orderBy('created_at', 'desc')
@@ -689,6 +703,7 @@ describe('TIER 安全漏洞测试套件', () => {
       // 攻击场景：会话被删除但机器实例计数未同步更新
 
       // 步骤 1: 获取一台机器
+      const { db } = await import('../../src/config/database.js');
       const machine = await db('machines').where({ status: 'online' }).first();
 
       if (!machine) {
@@ -774,6 +789,7 @@ describe('TIER 安全漏洞测试套件', () => {
       // 攻击场景：用户 A 尝试获取用户 B 的积分信息
 
       // 步骤 1: 用户 A 尝试访问用户 B 的用户信息
+      const { generateToken } = await import('../../src/utils/auth.js');
       const response = await request.get(`${API_BASE}/users/${userB.id}`, {
         headers: {
           'Authorization': `Bearer ${generateToken({
@@ -818,6 +834,7 @@ describe('TIER 安全漏洞测试套件', () => {
     test('TIER-074: SQL 注入尝试漏洞 - 通过输入参数尝试 SQL 注入', async ({ request }) => {
       // 攻击场景：尝试通过输入参数进行 SQL 注入
 
+      const { generateToken } = await import('../../src/utils/auth.js');
       const sqlInjectionPayloads = [
         "1' OR '1'='1",
         "1' UNION SELECT * FROM users--",

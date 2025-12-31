@@ -81,6 +81,7 @@ message HeartbeatRequest {
 message LaunchBrowserRequest {
   string session_id = 1;
   BrowserOptions options = 2;
+  int64 user_id = 3;  // 用户ID，用于计算 userDataDir 路径
 }
 
 // 浏览器选项
@@ -90,12 +91,46 @@ message BrowserOptions {
   Viewport viewport = 3;
   repeated string cookies = 4;
   repeated string args = 5;
+  string storage_state_path = 6;  // 从文件加载存储状态
+  StorageState storage_state = 7;  // 直接传递存储状态对象
+  bool shared_user_data = 8;       // 是否共享用户数据目录
+  string user_data_dir = 9;        // @deprecated 用户数据目录路径（已废弃）
 }
 
 // 视口大小
 message Viewport {
   int32 width = 1;
   int32 height = 2;
+}
+
+// 存储状态（Cookie 和 localStorage）
+message StorageState {
+  repeated Cookie cookies = 1;
+  repeated OriginStorage origins = 2;
+}
+
+// Cookie
+message Cookie {
+  string name = 1;
+  string value = 2;
+  string domain = 3;
+  string path = 4;
+  int64 expires = 5;
+  bool http_only = 6;
+  bool secure = 7;
+  string same_site = 8;
+}
+
+// Origin 存储状态（localStorage 等）
+message OriginStorage {
+  string origin = 1;
+  repeated StorageEntry localStorage = 2;
+}
+
+// 存储条目
+message StorageEntry {
+  string name = 1;
+  string value = 2;
 }
 
 // 关闭浏览器请求

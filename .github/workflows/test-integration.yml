@@ -30,8 +30,8 @@ jobs:
       fail-fast: false
       matrix:
         test:
-          - name: "Security Vulnerabilities"
-            file: "tests/integration/security-vulnerabilities.test.ts"
+          - name: "Browser Parameters"
+            file: "tests/integration/browser-parameters.test.ts"
           - name: "Multi-User Concurrency"
             file: "tests/integration/multi-user-concurrency.test.ts"
           - name: "Three-Tier Architecture"
@@ -40,6 +40,8 @@ jobs:
             file: "tests/integration/billing-flow.test.ts"
           - name: "Session Lifecycle"
             file: "tests/integration/session-lifecycle.test.ts"
+          - name: "User Data Persistence"
+            file: "tests/integration/user-data-persistence.test.ts"
 
     steps:
       - name: Checkout repository

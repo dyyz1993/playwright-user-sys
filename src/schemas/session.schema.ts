@@ -1,6 +1,36 @@
 import { z } from 'zod';
 import { successResponseSchema, timestampSchema, paginatedResponseSchema } from './common.schema.js';
 
+// Cookie 模式
+const cookieSchema = z.object({
+  name: z.string(),
+  value: z.string(),
+  domain: z.string(),
+  path: z.string(),
+  expires: z.number().optional(),
+  httpOnly: z.boolean().optional(),
+  secure: z.boolean().optional(),
+  sameSite: z.enum(['Strict', 'Lax', 'None']).optional(),
+});
+
+// localStorage 项模式
+const localStorageItemSchema = z.object({
+  name: z.string(),
+  value: z.string(),
+});
+
+// Origin 模式
+const originSchema = z.object({
+  origin: z.string(),
+  localStorage: z.array(localStorageItemSchema),
+});
+
+// StorageState 模式
+const storageStateSchema = z.object({
+  cookies: z.array(cookieSchema).optional(),
+  origins: z.array(originSchema).optional(),
+});
+
 // 会话选项模式
 export const sessionOptionsSchema = z.object({
   userAgent: z.string().optional(),
@@ -23,6 +53,16 @@ export const createSessionRequestSchema = z.object({
     width: z.number().int().positive(),
     height: z.number().int().positive(),
   }).optional(),
+  // 新增参数
+  storageStatePath: z.string().optional(),
+  storageState: storageStateSchema.optional(),
+  // 共享用户数据目录
+  // 当 sharedUserData 为 true 时，所有会话共享同一个用户数据目录
+  // 当 sharedUserData 为 false 或未设置时，每个会话有独立的用户数据目录
+  sharedUserData: z.boolean().optional(),
+  // @deprecated userDataDir 已废弃，出于安全考虑不再允许客户端指定任意路径
+  // 请使用 sharedUserData 参数控制是否共享用户数据目录
+  userDataDir: z.string().optional(),
 }).strict();  // 严格模式：拒绝未知字段如 "options"
 
 // 会话基本信息模式

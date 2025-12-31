@@ -107,6 +107,30 @@ export interface SessionCreateOptions {
     width: number;
     height: number;
   };
+  // 存储状态相关
+  storageStatePath?: string;
+  storageState?: {
+    cookies?: Array<{
+      name: string;
+      value: string;
+      domain: string;
+      path: string;
+      expires?: number;
+      httpOnly?: boolean;
+      secure?: boolean;
+      sameSite?: 'Strict' | 'Lax' | 'None';
+    }>;
+    origins?: Array<{
+      origin: string;
+      localStorage: Array<{ name: string; value: string }>;
+    }>;
+  };
+  // 共享用户数据目录
+  // 当 sharedUserData 为 true 时，所有会话共享同一个用户数据目录
+  // 当 sharedUserData 为 false 或未设置时，每个会话有独立的用户数据目录
+  sharedUserData?: boolean;
+  // @deprecated 出于安全考虑，不再允许客户端指定任意路径
+  userDataDir?: string;
 }
 
 // 实例机器信息

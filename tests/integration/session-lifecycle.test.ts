@@ -20,21 +20,45 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { SessionModel } from '../../src/models/session.model.js';
-import { UserModel } from '../../src/models/user.model.js';
-import { MachineModel } from '../../src/models/machine.model.js';
-import { SessionStatus } from '../../src/shared/types/index.js';
-import { createTestUser, createTestMachine, createTestUsers } from '../helpers/factories.js';
-import { clearTables, getTestDbConnection } from '../helpers/database.js';
-import { getFreePort } from '../helpers/ports.js';
-import { db, initDatabase } from '../../src/config/database.js';
-import { runMigrations } from '../../src/models/migrations.js';
 
 describe('会话生命周期集成测试', () => {
   let testUser: any;
   let testMachine: any;
+  let SessionModel: any;
+  let SessionStatus: any;
+  let createTestUser: any;
+  let createTestMachine: any;
+  let clearTables: any;
+  let getFreePort: any;
+  let db: any;
+  let initDatabase: any;
+  let runMigrations: any;
 
   beforeAll(async () => {
+    // Dynamic imports to avoid premature dependency loading
+    const sessionModule = await import('../../src/models/session.model.js');
+    SessionModel = sessionModule.SessionModel;
+
+    const typesModule = await import('../../src/shared/types/index.js');
+    SessionStatus = typesModule.SessionStatus;
+
+    const factoriesModule = await import('../helpers/factories.js');
+    createTestUser = factoriesModule.createTestUser;
+    createTestMachine = factoriesModule.createTestMachine;
+
+    const databaseHelperModule = await import('../helpers/database.js');
+    clearTables = databaseHelperModule.clearTables;
+
+    const portsModule = await import('../helpers/ports.js');
+    getFreePort = portsModule.getFreePort;
+
+    const configModule = await import('../../src/config/database.js');
+    db = configModule.db;
+    initDatabase = configModule.initDatabase;
+
+    const migrationsModule = await import('../../src/models/migrations.js');
+    runMigrations = migrationsModule.runMigrations;
+
     // 初始化数据库连接和迁移
     await initDatabase();
     await runMigrations();
@@ -70,12 +94,12 @@ describe('会话生命周期集成测试', () => {
       port: await getFreePort(),
     });
 
-    expect(session).toBeDefined();
-    expect(session.id).toBeDefined();
-    expect(session.user_id).toBe(testUser.id);
-    expect(session.machine_id).toBe(testMachine.id);
-    expect(session.status).toBe(SessionStatus.CREATED);
-    expect(session.start_time).toBeDefined();
+    expect(session).toHaveProperty('id');
+    expect(session).toHaveProperty('user_id', testUser.id);
+    expect(session).toHaveProperty('machine_id', testMachine.id);
+    expect(session).toHaveProperty('status', SessionStatus.CREATED);
+    expect(session).toHaveProperty('start_time');
+    expect(session.start_time).toBeTruthy();
     expect(session.end_time).toBeNull();
   });
 
@@ -92,8 +116,8 @@ describe('会话生命周期集成测试', () => {
 
     const connectedSession = await SessionModel.markConnected(session!.id);
 
-    expect(connectedSession).toBeDefined();
-    expect(connectedSession?.status).toBe(SessionStatus.CONNECTED);
+    expect(connectedSession).toBeTruthy();
+    expect(connectedSession).toHaveProperty('status', SessionStatus.CONNECTED);
   });
 
   /**
@@ -114,11 +138,12 @@ describe('会话生命周期集成测试', () => {
 
     const disconnectedSession = await SessionModel.markDisconnected(session!.id, 0);
 
-    expect(disconnectedSession).toBeDefined();
-    expect(disconnectedSession?.status).toBe(SessionStatus.DISCONNECTED);
-    expect(disconnectedSession?.end_time).toBeDefined();
-    expect(disconnectedSession?.duration).toBeGreaterThan(0);
-    expect(disconnectedSession?.credits_used).toBeGreaterThan(0);
+    expect(disconnectedSession).toBeTruthy();
+    expect(disconnectedSession).toHaveProperty('status', SessionStatus.DISCONNECTED);
+    expect(disconnectedSession).toHaveProperty('end_time');
+    expect(disconnectedSession.end_time).toBeTruthy();
+    expect(disconnectedSession?.duration).toBeGreaterThanOrEqual(1);
+    expect(disconnectedSession?.credits_used).toBeGreaterThanOrEqual(1);
   });
 
   /**
@@ -139,9 +164,10 @@ describe('会话生命周期集成测试', () => {
 
     const expiredSession = await SessionModel.markExpired(session!.id, 120);
 
-    expect(expiredSession).toBeDefined();
-    expect(expiredSession?.status).toBe(SessionStatus.EXPIRED);
-    expect(expiredSession?.end_time).toBeDefined();
+    expect(expiredSession).toBeTruthy();
+    expect(expiredSession).toHaveProperty('status', SessionStatus.EXPIRED);
+    expect(expiredSession).toHaveProperty('end_time');
+    expect(expiredSession.end_time).toBeTruthy();
     expect(expiredSession?.duration).toBe(120);
     expect(expiredSession?.credits_used).toBe(2); // 120 秒 = 2 分钟
   });
@@ -164,9 +190,10 @@ describe('会话生命周期集成测试', () => {
 
     const errorSession = await SessionModel.markError(session!.id, 60);
 
-    expect(errorSession).toBeDefined();
-    expect(errorSession?.status).toBe(SessionStatus.ERROR);
-    expect(errorSession?.end_time).toBeDefined();
+    expect(errorSession).toBeTruthy();
+    expect(errorSession).toHaveProperty('status', SessionStatus.ERROR);
+    expect(errorSession).toHaveProperty('end_time');
+    expect(errorSession.end_time).toBeTruthy();
     expect(errorSession?.duration).toBe(60);
     expect(errorSession?.credits_used).toBe(1); // 60 秒 = 1 分钟
   });
@@ -190,9 +217,10 @@ describe('会话生命周期集成测试', () => {
     // 使用断开来表示完成
     const completedSession = await SessionModel.markDisconnected(session!.id, 0);
 
-    expect(completedSession).toBeDefined();
-    expect(completedSession?.status).toBe(SessionStatus.DISCONNECTED);
-    expect(completedSession?.end_time).toBeDefined();
+    expect(completedSession).toBeTruthy();
+    expect(completedSession).toHaveProperty('status', SessionStatus.DISCONNECTED);
+    expect(completedSession).toHaveProperty('end_time');
+    expect(completedSession.end_time).toBeTruthy();
   });
 
   /**
@@ -211,8 +239,9 @@ describe('会话生命周期集成测试', () => {
 
     const updatedSession = await SessionModel.updateLastActivity(session!.id);
 
-    expect(updatedSession).toBeDefined();
-    expect(updatedSession?.last_activity).toBeDefined();
+    expect(updatedSession).toBeTruthy();
+    expect(updatedSession).toHaveProperty('last_activity');
+    expect(updatedSession.last_activity).toBeTruthy();
 
     // 验证最后活动时间在会话创建之后
     const lastActivity = new Date(updatedSession!.last_activity!);
@@ -240,8 +269,8 @@ describe('会话生命周期集成测试', () => {
       options,
     });
 
-    expect(session).toBeDefined();
-    expect(session?.options).toBeDefined();
+    expect(session).toBeTruthy();
+    expect(session).toHaveProperty('options');
     expect(session?.options).toEqual(options);
 
     // 从数据库读取并验证选项
@@ -309,8 +338,8 @@ describe('会话生命周期集成测试', () => {
     const stats = await SessionModel.getUserSessionStats(testUser.id);
 
     expect(stats.total_sessions).toBe(5);
-    expect(stats.total_duration).toBeGreaterThan(0);
-    expect(stats.total_credits_used).toBeGreaterThan(0);
+    expect(stats.total_duration).toBeGreaterThanOrEqual(60); // At least 60 seconds (1 minute * 1)
+    expect(stats.total_credits_used).toBeGreaterThanOrEqual(1); // At least 1 credit
   });
 
   /**
@@ -409,11 +438,11 @@ describe('会话生命周期集成测试', () => {
     // 获取会话详情
     const detail = await SessionModel.getDetailById(session!.id);
 
-    expect(detail).toBeDefined();
-    expect(detail?.id).toBe(session!.id);
-    expect(detail?.username).toBe(testUser.username);
+    expect(detail).toBeTruthy();
+    expect(detail).toHaveProperty('id', session!.id);
+    expect(detail).toHaveProperty('username', testUser.username);
     // machine_name 实际是 machines.hostname，不是 machines.name
-    expect(detail?.machine_name).toBe(testMachine.hostname);
+    expect(detail).toHaveProperty('machine_name', testMachine.hostname);
   });
 
   /**
@@ -439,10 +468,10 @@ describe('会话生命周期集成测试', () => {
     // 检查并标记超时会话（超时时间设置为 30 分钟）
     const expiredCount = await SessionModel.checkExpiredSessions(1800000);
 
-    expect(expiredCount).toBeGreaterThan(0);
+    expect(expiredCount).toBeGreaterThanOrEqual(1);
 
     // 验证会话已被标记为过期
     const expiredSession = await SessionModel.findById(session!.id);
-    expect(expiredSession?.status).toBe(SessionStatus.EXPIRED);
+    expect(expiredSession).toHaveProperty('status', SessionStatus.EXPIRED);
   });
 });

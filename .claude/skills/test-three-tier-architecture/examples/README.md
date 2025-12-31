@@ -87,7 +87,7 @@ it('TIER-003: User can create a new browser session', async () => {
 
   const response = await createSession(user.token);
   expect(response.statusCode).toBe(201);
-  expect(response.data.ws_url).toContain('ws://');
+  expect(response.data.directUrl).toContain('ws://');
 
   const session = await SessionModel.findById(response.data.id);
   expect(session.user_id).toBe(user.id);
@@ -103,7 +103,7 @@ it('TIER-004: User can connect to browser via WebSocket', async () => {
 
   const session = await createSession(user.token);
   const browser = await puppeteer.connect({
-    browserWSEndpoint: session.data.ws_url,
+    browserWSEndpoint: session.data.directUrl,
   });
 
   expect(browser.isConnected()).toBe(true);

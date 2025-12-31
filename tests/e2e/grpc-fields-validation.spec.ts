@@ -35,6 +35,71 @@ const VALID_MACHINE_FIELDS = {
   maxInstances: 'number',
 };
 
+// ==================== 辅助函数 ====================
+
+/**
+ * 轮询等待心跳更新 - 比硬编码等待更高效
+ * @param apiRequest API 请求函数
+ * @param timeoutMs 超时时间（默认35000ms）
+ * @param intervalMs 轮询间隔（默认2000ms）
+ */
+async function waitForHeartbeatUpdate(
+  apiRequest: any,
+  timeoutMs: number = 35000,
+  intervalMs: number = 2000
+): Promise<boolean> {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < timeoutMs) {
+    const response = await apiRequest('/api/machines');
+    if (response.ok) {
+      const result = await response.json();
+      const machines = result.data?.items || result.data || result.items || [];
+
+      // 检查是否有机器有有效的心跳数据（CPU或内存使用率）
+      const hasValidHeartbeat = machines.some((m: any) =>
+        (m.cpuUsage !== null && m.cpuUsage !== undefined) ||
+        (m.memoryUsage !== null && m.memoryUsage !== undefined)
+      );
+
+      if (hasValidHeartbeat) {
+        return true;
+      }
+    }
+
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+  }
+
+  return false;
+}
+
+/**
+ * 轮询等待日志出现指定内容
+ * @param logFilePath 日志文件路径
+ * @param expectedContent 期望的内容
+ * @param timeoutMs 超时时间（默认35000ms）
+ */
+async function waitForLogContent(
+  logFilePath: string,
+  expectedContent: string,
+  timeoutMs: number = 35000
+): Promise<boolean> {
+  const startTime = Date.now();
+  const intervalMs = 2000;
+
+  while (Date.now() - startTime < timeoutMs) {
+    if (fs.existsSync(logFilePath)) {
+      const logContent = fs.readFileSync(logFilePath, 'utf-8');
+      if (logContent.includes(expectedContent)) {
+        return true;
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+  }
+
+  return false;
+}
+
 const VALID_HEARTBEAT_FIELDS = {
   // P0 必填字段
   timestamp: 'number',
@@ -80,7 +145,7 @@ test.describe('P0: 机器注册字段验证', () => {
       console.log(`\n📊 第一台机器数据:`, JSON.stringify(machines[0], null, 2));
     }
 
-    expect(machines.length).toBeGreaterThan(0);
+    expect(machines.length).toBeGreaterThanOrEqual(1);
 
     // 验证每台机器的字段
     for (const machine of machines) {
@@ -171,10 +236,7 @@ test.describe('P0: 心跳字段验证', () => {
   test('P0-H01: 心跳应该包含所有必填字段', async ({ testEnv }) => {
     const testMachine = testEnv.machines[0];
 
-    // 等待至少一次心跳
-    await new Promise(resolve => setTimeout(resolve, 35000));
-
-    // 读取机器日志，验证心跳数据
+    // 轮询等待心跳数据更新（最多35秒，每2秒检查一次）
     const logsDir = path.join(__dirname, '../../logs/test-logs');
     const logFiles = fs.readdirSync(logsDir)
       .filter(f => f.startsWith('machine-0-'))
@@ -182,13 +244,13 @@ test.describe('P0: 心跳字段验证', () => {
       .reverse();
 
     if (logFiles.length > 0) {
-      const logContent = fs.readFileSync(
-        path.join(logsDir, logFiles[0]),
-        'utf-8'
-      );
+      const logPath = path.join(logsDir, logFiles[0]);
 
-      // 验证日志包含心跳信息
-      expect(logContent).toContain('心跳');
+      // 使用轮询等待心跳日志出现
+      const heartbeatFound = await waitForLogContent(logPath, '心跳');
+      expect(heartbeatFound).toBe(true);
+
+      const logContent = fs.readFileSync(logPath, 'utf-8');
 
       // 验证心跳定时器已启动
       expect(logContent).toContain('已启动心跳定时器');
@@ -196,8 +258,9 @@ test.describe('P0: 心跳字段验证', () => {
   });
 
   test('P0-H02: 心跳 CPU 使用率应该在有效范围内', async ({ testEnv, apiRequest }) => {
-    // 等待心跳更新
-    await new Promise(resolve => setTimeout(resolve, 35000));
+    // 轮询等待心跳更新
+    const heartbeatReceived = await waitForHeartbeatUpdate(apiRequest);
+    expect(heartbeatReceived).toBe(true);
 
     const response = await apiRequest('/api/machines');
     expect(response.ok).toBe(true);
@@ -206,18 +269,24 @@ test.describe('P0: 心跳字段验证', () => {
     const machines = result.data?.items || result.data || result.items || [];
 
     // 验证 CPU 使用率
+    let cpuUsageFound = false;
     for (const machine of machines) {
       if (machine.cpuUsage !== null && machine.cpuUsage !== undefined) {
+        cpuUsageFound = true;
         expect(machine.cpuUsage).toBeGreaterThanOrEqual(0);
         expect(machine.cpuUsage).toBeLessThanOrEqual(100);
         console.log(`机器 ${machine.id} CPU 使用率: ${machine.cpuUsage}%`);
       }
     }
+
+    // 确保至少有一个机器有 CPU 使用率数据
+    expect(cpuUsageFound).toBe(true);
   });
 
   test('P0-H03: 心跳内存使用率应该在有效范围内', async ({ testEnv, apiRequest }) => {
-    // 等待心跳更新
-    await new Promise(resolve => setTimeout(resolve, 35000));
+    // 轮询等待心跳更新
+    const heartbeatReceived = await waitForHeartbeatUpdate(apiRequest);
+    expect(heartbeatReceived).toBe(true);
 
     const response = await apiRequest('/api/machines');
     expect(response.ok).toBe(true);
@@ -226,13 +295,18 @@ test.describe('P0: 心跳字段验证', () => {
     const machines = result.data?.items || result.data || result.items || [];
 
     // 验证内存使用率
+    let memoryUsageFound = false;
     for (const machine of machines) {
       if (machine.memoryUsage !== null && machine.memoryUsage !== undefined) {
+        memoryUsageFound = true;
         expect(machine.memoryUsage).toBeGreaterThanOrEqual(0);
         expect(machine.memoryUsage).toBeLessThanOrEqual(100);
         console.log(`机器 ${machine.id} 内存使用率: ${machine.memoryUsage}%`);
       }
     }
+
+    // 确保至少有一个机器有内存使用率数据
+    expect(memoryUsageFound).toBe(true);
   });
 
   test('P0-H04: 心跳活跃会话数应该准确', async ({ testEnv, apiRequest }) => {
@@ -411,16 +485,17 @@ test.describe('P1: 状态同步验证', () => {
     // 获取初始心跳时间
     const response1 = await apiRequest('/api/machines');
     const result1 = await response1.json();
-    const machines1 = result1.data || result;
+    const machines1 = result1.data || result1;
     const initialLastSeen = machines1[0]?.lastSeen;
 
-    // 等待下一次心跳
-    await new Promise(resolve => setTimeout(resolve, 35000));
+    // 轮询等待心跳更新（最多35秒）
+    const heartbeatReceived = await waitForHeartbeatUpdate(apiRequest);
+    expect(heartbeatReceived).toBe(true);
 
     // 获取更新后的心跳时间
     const response2 = await apiRequest('/api/machines');
     const result2 = await response2.json();
-    const machines2 = result2.data || result;
+    const machines2 = result2.data || result2;
     const updatedLastSeen = machines2[0]?.lastSeen;
 
     if (initialLastSeen && updatedLastSeen) {

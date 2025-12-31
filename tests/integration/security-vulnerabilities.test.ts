@@ -643,7 +643,8 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
         // 验证会话确实被创建
         const sessionInDb = await SessionModel.findById(sessionId);
         console.log(`   sessionInDb result: ${sessionInDb ? 'found (user_id=' + sessionInDb.user_id + ')' : 'null'}`);
-        expect(sessionInDb).toBeDefined();
+        expect(sessionInDb).toBeTruthy();
+        expect(sessionInDb!.id).toBe(sessionId);
 
         // 验证会话归属于API Key所有者（用户B）
         expect(sessionInDb!.user_id).toBe(userB.id);
@@ -676,8 +677,10 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
 
       console.log('\n[步骤 5] 验证用户B的会话仍然活跃...');
       const sessionBAfter = await SessionModel.findById(sessionBId);
-      expect(sessionBAfter).toBeDefined();
+      expect(sessionBAfter).toBeTruthy();
+      expect(sessionBAfter!.id).toBe(sessionBId);
       expect(sessionBAfter!.user_id).toBe(userB.id);
+      expect(sessionBAfter!.status).toBe('active');
       console.log('   ✅ 用户B的会话未被修改');
 
       console.log('✅ TIER-043 水平越权测试完成（真实漏洞已记录）');
@@ -1014,7 +1017,8 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
           expect(responseData.id).toBe(customSessionId);
 
           const customSessionInDb = await SessionModel.findById(customSessionId);
-          expect(customSessionInDb).toBeDefined();
+          expect(customSessionInDb).toBeTruthy();
+          expect(customSessionInDb!.id).toBe(customSessionId);
           console.log(`   ✅ 自定义会话ID已创建: ${customSessionId}`);
 
           console.log('\n   【真实漏洞确认】');
@@ -1123,7 +1127,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       // 响应格式: { success: true, data: { id: ..., status: ..., duration: ... } }
       const duration = endData.data?.duration !== undefined ? endData.data.duration : endData.duration;
       console.log(`   duration: ${duration} (data.duration=${endData.data?.duration}, raw.duration=${endData.duration})`);
-      expect(duration).toBeGreaterThan(0);
+      expect(duration).toBeGreaterThanOrEqual(1); // 至少1秒
       console.log(`   会话时长: ${duration}秒`);
 
       // Layer 2: Database - 验证积分扣除
@@ -1142,7 +1146,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       const session = await SessionModel.findById(sessionId);
       expect(session!.status).toBe('disconnected');
       expect(session!.credits_used).toBeGreaterThanOrEqual(1);
-      expect(session!.duration).toBeGreaterThan(0);
+      expect(session!.duration).toBeGreaterThanOrEqual(1); // 至少1秒
       console.log(`   会话时长: ${session!.duration}秒`);
       console.log(`   扣除积分: ${session!.credits_used}`);
 
@@ -1194,10 +1198,14 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       expect(loginResponse.statusCode).toBe(200);
       const loginData = JSON.parse(loginResponse.body);
 
-      expect(loginData.data).toBeDefined();
-      expect(loginData.data.user).toBeDefined();
+      expect(loginData.success).toBe(true);
+      expect(loginData.data).toBeTruthy();
+      expect(loginData.data.user).toBeTruthy();
+      expect(loginData.data.user.id).toBe(user.id);
+      expect(loginData.data.user.username).toBe(user.username);
       expect(loginData.data.user.password).toBeUndefined();
       expect(loginData.data.user.api_key).toBeUndefined();
+      expect(loginData.data.token).toBeTruthy();
       console.log('   ✅ 登录接口不返回密码和API密钥');
 
       console.log('\n[步骤 2] 测试用户信息接口不返回密码...');
@@ -1212,15 +1220,20 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       expect(userResponse.statusCode).toBe(200);
       const userData = JSON.parse(userResponse.body);
 
-      expect(userData.data).toBeDefined();
+      expect(userData.success).toBe(true);
+      expect(userData.data).toBeTruthy();
       // /api/auth/me 返回的是直接的 user 对象，不是 data.user
       // 检查返回的数据结构
       if (userData.data.user) {
         // 如果是 data.user 格式
+        expect(userData.data.user.id).toBe(user.id);
+        expect(userData.data.user.username).toBe(user.username);
         expect(userData.data.user.password).toBeUndefined();
         console.log('   ✅ 用户信息接口不返回密码（data.user格式）');
       } else {
         // 如果是直接返回 user 对象
+        expect(userData.data.id).toBe(user.id);
+        expect(userData.data.username).toBe(user.username);
         expect(userData.data.password).toBeUndefined();
         console.log('   ✅ 用户信息接口不返回密码（data格式）');
       }
@@ -1237,10 +1250,12 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       expect(errorResponse.statusCode).toBe(404);
       const errorData = JSON.parse(errorResponse.body);
 
-      expect(errorData.error).toBeDefined();
+      expect(errorData.success).toBe(false);
+      expect(errorData.error).toBeTruthy();
       expect(errorData.error).not.toContain('Error:');
       expect(errorData.error).not.toContain('SELECT');
       expect(errorData.error).not.toMatch(/database/i);
+      expect(errorData.error.length).toBeGreaterThan(5); // 合理的错误消息长度
       console.log(`   错误消息: ${errorData.error}`);
       console.log('   ✅ 错误消息不泄露系统信息');
 
@@ -1266,8 +1281,10 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
 
       if (sessionsData.data && sessionsData.data.items && sessionsData.data.items.length > 0) {
         const session = sessionsData.data.items[0];
-        expect(session.ws_url).toBeDefined(); // WebSocket URL应该返回
-        expect(session.machine_id).toBeDefined();
+        expect(session.ws_url).toBeTruthy(); // WebSocket URL应该返回
+        expect(session.ws_url).toMatch(/^ws:\/\/127\.0\.0\.1:\d+\/proxy\/[a-f0-9-]+$/); // 验证格式
+        expect(session.machine_id).toBeTruthy();
+        expect(session.machine_id).toMatch(/^test-machine-\d+-\d+$/); // 验证机器ID格式
         console.log('   ✅ 会话信息包含必要字段但不包含敏感数据');
       }
 

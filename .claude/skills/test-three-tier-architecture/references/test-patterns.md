@@ -103,11 +103,11 @@ it('TIER-XXX: Clear description of what is being tested', { timeout: 60000 }, as
   // Step 4: Verify API response
   console.log('[步骤 4] Verify API response');
   expect(response.statusCode).toBe(201);
-  expect(response.data.ws_url).toContain('ws://');
+  expect(response.data.directUrl).toContain('ws://');
 
   // Step 5: Verify actual effect
   console.log('[步骤 5] Verify WebSocket connection');
-  const browser = await puppeteer.connect({ browserWSEndpoint: response.data.ws_url });
+  const browser = await puppeteer.connect({ browserWSEndpoint: response.data.directUrl });
   expect(browser.isConnected()).toBe(true);
   await browser.disconnect();
 
@@ -162,7 +162,7 @@ it('TIER-XXX: Multi-layer verification example', async () => {
   expect(machine.instance_count).toBe(1);
 
   // Layer 4: Browser (optional)
-  const browser = await puppeteer.connect({ browserWSEndpoint: response.data.ws_url });
+  const browser = await puppeteer.connect({ browserWSEndpoint: response.data.browserWSEndpoint });
   expect(browser.isConnected()).toBe(true);
   await browser.disconnect();
 });
@@ -203,6 +203,33 @@ const user = await createTestUser({
   username: `testuser_${Date.now()}`,
   credits: 100,
   role: 'user',
+});
+```
+
+**IMPORTANT**: `createTestUser` does NOT generate a JWT token automatically. You must generate it manually:
+
+```typescript
+// Step 1: Create user
+const user = await createTestUser({
+  username: `testuser_${Date.now()}`,
+  credits: 100,
+  role: 'user',
+});
+
+// Step 2: Generate JWT token
+const { generateToken } = await import('../../src/utils/auth.js');
+const token = generateToken({
+  id: user.id,
+  username: user.username,
+  role: user.role,
+});
+
+// Step 3: Store user with token
+testUsers.push({
+  id: user.id,
+  username: user.username,
+  token,
+  apiKey: user.api_key || '',
 });
 ```
 

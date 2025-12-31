@@ -19,6 +19,14 @@ const dbConfig = {
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'playwright_test',
   },
+  // 添加连接池配置，避免连接泄漏
+  pool: {
+    min: parseInt(process.env.DB_POOL_MIN || '2'),
+    max: parseInt(process.env.DB_POOL_MAX || '10'),
+    idleTimeoutMillis: 30000,     // 30秒空闲超时
+    acquireTimeoutMillis: 60000,  // 60秒获取连接超时
+    propagateCreateError: false,
+  },
 };
 
 /**
@@ -32,6 +40,13 @@ function getAdminConnection(): Knex {
       port: dbConfig.connection.port,
       user: dbConfig.connection.user,
       password: dbConfig.connection.password,
+    },
+    // 添加连接池配置
+    pool: {
+      min: 1,
+      max: 2,
+      idleTimeoutMillis: 10000,
+      acquireTimeoutMillis: 30000,
     },
   });
 }
@@ -94,12 +109,23 @@ export async function initTestDatabase(dbName: string): Promise<Knex> {
     testDbConnection = null;
   }
 
-  // 创建新连接
+  // 创建新连接（包含连接池配置）
   testDbConnection = knex({
-    ...dbConfig,
+    client: dbConfig.client,
     connection: {
-      ...dbConfig.connection,
+      host: dbConfig.connection.host,
+      port: dbConfig.connection.port,
+      user: dbConfig.connection.user,
+      password: dbConfig.connection.password,
       database: dbName,
+    },
+    // 添加连接池配置
+    pool: {
+      min: 2,
+      max: parseInt(process.env.DB_POOL_MAX || '10'),
+      idleTimeoutMillis: 30000,
+      acquireTimeoutMillis: 60000,
+      propagateCreateError: false,
     },
   });
 

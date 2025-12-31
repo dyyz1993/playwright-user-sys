@@ -67,8 +67,10 @@ export async function createBrowserSession(
     // 获取 connectionManager 并启动浏览器
     const { connectionManager } = await import('../services/machine-grpc.service.js');
     logger.info(`向机器 ${machineId} 发送启动浏览器请求 (sessionId: ${sessionId})`);
-    
-    const result = await connectionManager.launchBrowser(machineId, sessionId, options);
+
+    // 将 userId 添加到 options 中，用于计算 userDataDir 路径
+    const launchOptions = { ...options, userId };
+    const result = await connectionManager.launchBrowser(machineId, sessionId, launchOptions);
     logger.info(`启动浏览器结果: ${JSON.stringify(result)}`);
 
     // 更新会话记录
@@ -120,6 +122,18 @@ export async function createBrowserSession(
       created_at: session.created_at,
     };
   } catch (error: any) {
+    // 检查是否是共享会话已存在的错误
+    // 注意：gRPC 会将业务错误包装成 grpc.status.FAILED_PRECONDITION
+    // 所以需要检查错误消息内容而不是 error.code
+    if (error.code === 'SHARED_SESSION_EXISTS' ||
+        error.message?.includes('活跃的共享数据会话') ||
+        error.message?.includes('每个用户同时只能有 1 个共享数据会话')) {
+      // 这是预期的业务错误，不需要更新数据库状态
+      logger.warn(`共享会话冲突: ${error.message}`);
+      // 抛出友好的错误信息
+      throw new Error(error.message);
+    }
+
     // 如果启动浏览器失败，更新会话状态为错误
     await SessionModel.update(sessionId, {
       status: SessionStatus.ERROR,
@@ -128,7 +142,7 @@ export async function createBrowserSession(
     // 记录错误信息
     logger.error(`会话错误信息: ${error.message}`);
     logger.error(`启动浏览器实例失败 (sessionId: ${sessionId}):`, error);
-    
+
     throw new Error(`启动浏览器实例失败: ${error.message}`);
   }
 }

@@ -18,7 +18,7 @@ export default async function sessionRoutes(fastify: FastifyInstance): Promise<v
 
   // 创建会话
   fastify.post('/', {
-    onRequest: [fastify.verifyApiKey],
+    onRequest: [fastify.verifyJWTOrApiKey],
     schema: {
       body: zodToJsonSchema(createSessionRequestSchema),
       response: {
@@ -33,7 +33,7 @@ export default async function sessionRoutes(fastify: FastifyInstance): Promise<v
 
   // 获取会话信息
   fastify.get('/:id', {
-    onRequest: [fastify.verifyApiKey],
+    onRequest: [fastify.verifyJWTOrApiKey],
     schema: {
       params: zodToJsonSchema(idParamSchema),
       response: {
@@ -48,7 +48,7 @@ export default async function sessionRoutes(fastify: FastifyInstance): Promise<v
 
   // 获取用户的所有会话
   fastify.get('/', {
-    onRequest: [fastify.verifyApiKey],
+    onRequest: [fastify.verifyJWTOrApiKey],
     schema: {
       response: {
         200: zodToJsonSchema(getUserSessionsResponseSchema),
@@ -60,7 +60,7 @@ export default async function sessionRoutes(fastify: FastifyInstance): Promise<v
 
   // 释放会话
   fastify.post('/:id/release', {
-    onRequest: [fastify.verifyApiKey],
+    onRequest: [fastify.verifyJWTOrApiKey],
     schema: {
       params: zodToJsonSchema(idParamSchema),
       response: {
@@ -104,7 +104,7 @@ export default async function sessionRoutes(fastify: FastifyInstance): Promise<v
 
   // 获取会话截图
   fastify.get('/:id/screenshot', {
-    onRequest: [fastify.verifyApiKey],
+    onRequest: [fastify.verifyJWTOrApiKey],
     schema: {
       params: zodToJsonSchema(idParamSchema),
       response: {

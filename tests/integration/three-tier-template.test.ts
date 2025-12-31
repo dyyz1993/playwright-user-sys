@@ -380,10 +380,12 @@ describe('三端架构集成测试模板', () => {
     console.log('\n[步骤 2] 测试API请求认证...');
     const response = await client.request('GET', '/api/auth/verify');
     expect(response.success).toBe(true);
-    expect(response.data).toBeDefined();
-    expect(response.data.user).toBeDefined();
-    expect(response.data.user.id).toBe(user.id);
-    expect(response.data.user.username).toBe(user.username);
+    expect(response.data).toHaveProperty('user');
+    expect(response.data.user).toMatchObject({
+      id: user.id,
+      username: user.username,
+      role: 'user',
+    });
     console.log(`   ✅ API认证成功，用户: ${response.data.user.username}`);
 
     // 步骤 3: 验证JWT Token
@@ -446,26 +448,29 @@ describe('三端架构集成测试模板', () => {
     console.log(`   状态: ${responseBody.status}`);
 
     // 严格断言: 验证HTTP响应
-    expect(responseBody.id).toBeDefined();
-    expect(responseBody.id.length).toBeGreaterThan(10);
-    expect(responseBody.machine_id).toBeDefined();
-    expect(responseBody.machine_id.length).toBeGreaterThan(5);
+    expect(responseBody.id).toMatch(/^session_[a-zA-Z0-9]{20,}$/);
+    expect(responseBody.machine_id).toMatch(/^test-machine-\d+-\d+-[01]$/);
     expect(responseBody.status).toBe('created');
+    expect(responseBody).toHaveProperty('ws_url');
+    expect(responseBody.ws_url).toMatch(/^ws:\/\/127\.0\.0\.1:\d+\/websocket/);
 
     // 步骤 2: 验证数据库中的会话记录
     console.log('\n[步骤 2] 验证数据库会话记录...');
     const session = await SessionModel.findById(responseBody.id);
-    expect(session).toBeDefined();
+    expect(session).toBeTruthy();
     expect(session!.user_id).toBe(user.id);
     expect(session!.machine_id).toBe(responseBody.machine_id);
     expect(session!.status).toBe('created');
+    expect(session!.id).toBe(responseBody.id);
     console.log(`   ✅ 会话记录验证成功: ${session!.id}`);
 
     // 步骤 3: 验证机器实例计数增加
     console.log('\n[步骤 3] 验证机器实例计数...');
     const machine = await MachineModel.findById(responseBody.machine_id);
-    expect(machine).toBeDefined();
+    expect(machine).toBeTruthy();
     expect(machine!.instanceCount).toBe(1);
+    expect(machine!.status).toBe('online');
+    expect(machine!.id).toBe(responseBody.machine_id);
     console.log(`   ✅ 机器实例计数: ${machine!.instanceCount}`);
 
     // 步骤 4: 验证用户积分未变化（后扣费模式）
@@ -488,7 +493,7 @@ describe('三端架构集成测试模板', () => {
     console.log('   ✅ 浏览器连接成功');
 
     const pages = await browser.pages();
-    expect(pages.length).toBeGreaterThan(0);
+    expect(pages.length).toBe(1); // Chrome 默认创建一个空白页
     console.log(`   页面数量: ${pages.length}`);
 
     // 断开连接

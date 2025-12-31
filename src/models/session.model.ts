@@ -215,11 +215,22 @@ export class SessionModel {
     let finalDuration = duration;
     if (finalDuration === 0 && session.start_time) {
       const now = new Date();
-      const startTime = new Date(session.start_time);
-      // 使用 Math.ceil 确保即使只有 1ms 也计算为 1 秒
-      // 这解决了数据库 TIMESTAMP 精度丢失（毫秒被截断）导致计算为 0 的问题
-      finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
-      logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
+      // 直接从数据库查询原始的 start_time 字符串，避免时区转换问题
+      const rawSession = await db('sessions').where({ id }).select('start_time').first();
+      const rawStartTime = rawSession?.start_time;
+
+      if (rawStartTime && typeof rawStartTime === 'string') {
+        // MySQL 返回的时间字符串是 UTC 时间（格式: '2025-12-30 01:44:03'）
+        // 将其转换为 ISO 格式以正确解析
+        const startTime = new Date(rawStartTime.replace(' ', 'T') + '.000Z');
+        finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
+        logger.info(`根据开始时间计算持续时间 (${id}): 原始时间=${rawStartTime}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
+      } else {
+        // 降级处理：使用 Date 对象（可能有8小时时差）
+        const startTime = new Date(session.start_time);
+        finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
+        logger.info(`降级处理：使用 Date 对象计算持续时间 (${id}): 持续时间=${finalDuration}秒`);
+      }
     }
 
     // 确保持续时间不为负数
@@ -312,10 +323,17 @@ export class SessionModel {
     let finalDuration = duration;
     if (duration === 0 && session.start_time) {
       const now = new Date();
-      const startTime = new Date(session.start_time);
+      // 处理 dateStrings: true 导致的时区问题
+      // MySQL 返回的时间字符串是 UTC 时间（格式: '2025-12-30 01:44:03'）
+      let startTime: Date;
+      if (typeof session.start_time === 'string') {
+        startTime = new Date(session.start_time.replace(' ', 'T') + '.000Z');
+      } else {
+        startTime = new Date(session.start_time);
+      }
       // 使用 Math.ceil 确保即使只有 1ms 也计算为 1 秒
       finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
-      logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
+      logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${session.start_time}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
     }
 
     // 确保持续时间不为负数（时区问题可能导致负数）
@@ -368,10 +386,17 @@ export class SessionModel {
     let finalDuration = duration;
     if (duration === 0 && session.start_time) {
       const now = new Date();
-      const startTime = new Date(session.start_time);
+      // 处理 dateStrings: true 导致的时区问题
+      // MySQL 返回的时间字符串是 UTC 时间（格式: '2025-12-30 01:44:03'）
+      let startTime: Date;
+      if (typeof session.start_time === 'string') {
+        startTime = new Date(session.start_time.replace(' ', 'T') + '.000Z');
+      } else {
+        startTime = new Date(session.start_time);
+      }
       // 使用 Math.ceil 确保即使只有 1ms 也计算为 1 秒
       finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
-      logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
+      logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${session.start_time}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
     }
 
     // 确保持续时间不为负数（时区问题可能导致负数）
@@ -768,7 +793,13 @@ export class SessionModel {
       // 标记为过期
       if (expiredSessions.length > 0) {
         for (const session of expiredSessions) {
-          const startTime = new Date(session.start_time);
+          // 处理 dateStrings: true 导致的时区问题
+          let startTime: Date;
+          if (typeof session.start_time === 'string') {
+            startTime = new Date(session.start_time.replace(' ', 'T') + '.000Z');
+          } else {
+            startTime = new Date(session.start_time);
+          }
           const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
 
           // 标记会话为过期

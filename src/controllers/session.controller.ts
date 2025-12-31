@@ -63,7 +63,7 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
       return sendCreated(reply, {
         id: sessionResult.sessionId,
         status: sessionResult.status,
-        browserWSEndpoint: sessionResult.browserWSEndpoint,
+        browserWSEndpoint: sessionResult.directUrl, // 使用代理端点而不是原始 CDP 端点
         directUrl: sessionResult.directUrl,
         viewerUrl: viewerUrl,
         created_at: sessionResult.created_at,
@@ -183,12 +183,9 @@ export async function releaseSession(request: FastifyRequest, reply: FastifyRepl
       return sendError(reply, '无权操作此会话', 403);
     }
 
-    // 检查会话状态
-    if (session.status === SessionStatus.DISCONNECTED || session.status === SessionStatus.ERROR) {
-      return sendSuccess(reply, { id: sessionId, status: session.status, duration: session.duration || 0 }, '会话已释放');
-    }
-
     // 检查会话是否有关联的机器
+    // 即使会话已经是 DISCONNECTED 状态，也要尝试关闭浏览器以确保清理
+    // （例如：清理共享浏览器记录 userSharedBrowsers）
     if (!session.machine_id) {
       // 计算会话持续时间
       const now = new Date();

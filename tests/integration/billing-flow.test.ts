@@ -15,22 +15,45 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { SessionModel } from '../../src/models/session.model.js';
-import { UserModel } from '../../src/models/user.model.js';
-import { MachineModel } from '../../src/models/machine.model.js';
-import { CreditHistoryModel } from '../../src/models/credit-history.model.js';
-import { SessionStatus } from '../../src/shared/types/index.js';
-import { createTestUser, createTestMachine } from '../helpers/factories.js';
-import { clearTables, getTestDbConnection } from '../helpers/database.js';
-import { getFreePort } from '../helpers/ports.js';
-import { db, initDatabase } from '../../src/config/database.js';
-import { runMigrations } from '../../src/models/migrations.js';
 
 describe('计费流程集成测试', () => {
   let testUser: any;
   let testMachine: any;
+  let db: any;
+  let SessionModel: any;
+  let UserModel: any;
+  let MachineModel: any;
+  let CreditHistoryModel: any;
+  let SessionStatus: any;
+  let createTestUser: any;
+  let createTestMachine: any;
+  let clearTables: any;
+  let getFreePort: any;
 
   beforeAll(async () => {
+    // 动态导入依赖
+    const dbModule = await import('../../src/config/database.js');
+    db = dbModule.db;
+    const { initDatabase } = dbModule;
+    const { runMigrations } = await import('../../src/models/migrations.js');
+    const sessionModule = await import('../../src/models/session.model.js');
+    SessionModel = sessionModule.SessionModel;
+    const userModule = await import('../../src/models/user.model.js');
+    UserModel = userModule.UserModel;
+    const machineModule = await import('../../src/models/machine.model.js');
+    MachineModel = machineModule.MachineModel;
+    const creditHistoryModule = await import('../../src/models/credit-history.model.js');
+    CreditHistoryModel = creditHistoryModule.CreditHistoryModel;
+    const typesModule = await import('../../src/shared/types/index.js');
+    SessionStatus = typesModule.SessionStatus;
+    const factoriesModule = await import('../helpers/factories.js');
+    createTestUser = factoriesModule.createTestUser;
+    createTestMachine = factoriesModule.createTestMachine;
+    const databaseHelperModule = await import('../helpers/database.js');
+    clearTables = databaseHelperModule.clearTables;
+    const portsModule = await import('../helpers/ports.js');
+    getFreePort = portsModule.getFreePort;
+
     // 初始化数据库连接和迁移
     await initDatabase();
     await runMigrations();
@@ -69,8 +92,9 @@ describe('计费流程集成测试', () => {
       port: await getFreePort(),
     });
 
-    expect(session).toBeDefined();
-    expect(session.status).toBe(SessionStatus.CREATED);
+    expect(session).toBeTruthy();
+    expect(session!.id).toBeGreaterThan(0);
+    expect(session!.status).toBe(SessionStatus.CREATED);
 
     // 验证用户积分（创建时暂不扣除，只在结束时扣除）
     const user = await UserModel.findById(testUser.id);
@@ -122,9 +146,10 @@ describe('计费流程集成测试', () => {
     // 标记为已断开
     const disconnectedSession = await SessionModel.markDisconnected(session!.id, 0);
 
-    expect(disconnectedSession).toBeDefined();
-    expect(disconnectedSession?.status).toBe(SessionStatus.DISCONNECTED);
-    expect(disconnectedSession?.credits_used).toBeGreaterThan(0);
+    expect(disconnectedSession).toBeTruthy();
+    expect(disconnectedSession!.id).toBeGreaterThan(0);
+    expect(disconnectedSession!.status).toBe(SessionStatus.DISCONNECTED);
+    expect(disconnectedSession!.credits_used).toBeGreaterThanOrEqual(1);
 
     // 验证用户积分已扣除
     const user = await UserModel.findById(testUser.id);
@@ -153,9 +178,10 @@ describe('计费流程集成测试', () => {
     // 模拟会话超时（设置过期时间）
     const expiredSession = await SessionModel.markExpired(session!.id, 120);
 
-    expect(expiredSession).toBeDefined();
-    expect(expiredSession?.status).toBe(SessionStatus.EXPIRED);
-    expect(expiredSession?.credits_used).toBeGreaterThan(0);
+    expect(expiredSession).toBeTruthy();
+    expect(expiredSession!.id).toBeGreaterThan(0);
+    expect(expiredSession!.status).toBe(SessionStatus.EXPIRED);
+    expect(expiredSession!.credits_used).toBeGreaterThanOrEqual(1);
 
     // 验证用户积分已扣除
     const user = await UserModel.findById(testUser.id);
@@ -187,9 +213,10 @@ describe('计费流程集成测试', () => {
     // 标记为错误状态
     const errorSession = await SessionModel.markError(session!.id, 60);
 
-    expect(errorSession).toBeDefined();
-    expect(errorSession?.status).toBe(SessionStatus.ERROR);
-    expect(errorSession?.credits_used).toBeGreaterThan(0);
+    expect(errorSession).toBeTruthy();
+    expect(errorSession!.id).toBeGreaterThan(0);
+    expect(errorSession!.status).toBe(SessionStatus.ERROR);
+    expect(errorSession!.credits_used).toBeGreaterThanOrEqual(1);
 
     // 验证用户积分已扣除
     const user = await UserModel.findById(testUser.id);
@@ -222,7 +249,8 @@ describe('计费流程集成测试', () => {
       port: await getFreePort(),
     });
 
-    expect(session).toBeDefined();
+    expect(session).toBeTruthy();
+    expect(session!.id).toBeGreaterThan(0);
 
     // 尝试扣费应该失败
     try {
@@ -299,9 +327,10 @@ describe('计费流程集成测试', () => {
       .orderBy('created_at', 'desc')
       .first();
 
-    expect(history).toBeDefined();
-    expect(history.action).toBe('use');
-    expect(history.amount).toBeGreaterThan(0);
+    expect(history).toBeTruthy();
+    expect(history!.id).toBeGreaterThan(0);
+    expect(history!.action).toBe('use');
+    expect(history!.amount).toBeGreaterThanOrEqual(1);
   });
 
   /**

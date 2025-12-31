@@ -24,9 +24,9 @@ test.describe('Fixtures 功能验证', () => {
     console.log(`管理端 gRPC 端口: ${testEnv.managerGrpcPort}`);
     console.log(`机器数量: ${testEnv.machines.length}`);
 
-    // 验证机器服务已启动
-    expect(testEnv.machines.length).toBeGreaterThan(0);
-    expect(testEnv.machines[0].process.pid).toBeGreaterThan(0);
+    // 验证机器服务已启动（fixture 配置启动 2 台机器）
+    expect(testEnv.machines.length).toBeGreaterThanOrEqual(2);
+    expect(testEnv.machines[0].process.pid).toBeGreaterThan(100);
 
     // 访问机器管理页面
     await page.goto(`${testEnv.managerUrl}/admin/login`);
@@ -57,11 +57,12 @@ test.describe('Fixtures 功能验证', () => {
   });
 
   test('应该能访问测试环境信息', async ({ testEnv }) => {
-    // 验证测试环境信息
-    expect(testEnv).toBeDefined();
-    expect(testEnv.managerUrl).toBeDefined();
-    expect(testEnv.managerGrpcPort).toBeDefined();
+    // 验证测试环境信息（使用具体断言）
+    expect(testEnv).toBeTruthy();
+    expect(testEnv.managerUrl).toMatch(/^http:\/\/localhost:\d+$/);
+    expect(testEnv.managerGrpcPort).toBeGreaterThan(0);
     expect(testEnv.machines).toBeInstanceOf(Array);
+    expect(testEnv.machines.length).toBeGreaterThanOrEqual(2);
 
     console.log('\n📊 测试环境详情:');
     console.log(`管理端: ${testEnv.managerUrl}`);
@@ -79,7 +80,7 @@ test.describe('Fixtures 功能验证', () => {
 
     // 验证所有进程都在运行
     testEnv.machines.forEach(machine => {
-      expect(machine.process.pid).toBeGreaterThan(0);
+      expect(machine.process.pid).toBeGreaterThan(100);
       expect(machine.process.killed).toBe(false);
     });
   });
@@ -88,12 +89,16 @@ test.describe('Fixtures 功能验证', () => {
     // 验证所有机器进程都在运行
     console.log('\n🔍 验证机器进程状态:');
 
+    let runningCount = 0;
     for (const machine of testEnv.machines) {
-      const isRunning = !machine.process.killed && machine.process.pid !== undefined;
+      const isRunning = !machine.process.killed && machine.process.pid !== undefined && machine.process.pid > 0;
+      if (isRunning) runningCount++;
       console.log(`  机器 ${machine.name} (PID: ${machine.process.pid}): ${isRunning ? '✅ 运行中' : '❌ 已停止'}`);
       expect(isRunning).toBe(true);
     }
 
+    // 验证至少有 2 台机器在运行
+    expect(runningCount).toBeGreaterThanOrEqual(2);
     console.log('\n✅ 所有机器进程状态正常');
   });
 });

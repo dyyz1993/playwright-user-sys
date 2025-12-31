@@ -8,6 +8,7 @@ import {
   LaunchOptions,
   FileChooser,
 } from "puppeteer-core";
+import fsSync from "fs";
 
 
 
@@ -83,6 +84,35 @@ export interface BrowserOptions {
     operatingSystems?: ("windows" | "macos" | "linux" | "android" | "ios")[];
     browsers?: ("chrome" | "firefox" | "safari" | "edge")[];
   };
+
+  // 状态持久化参数
+  storageStatePath?: string; // 从文件加载存储状态
+
+  storageState?: {
+    // 直接传递存储状态对象
+    cookies?: Array<{
+      name: string;
+      value: string;
+      domain: string;
+      path: string;
+      expires?: number;
+      httpOnly?: boolean;
+      secure?: boolean;
+      sameSite?: "Strict" | "Lax" | "None";
+    }>;
+    origins?: Array<{
+      origin: string;
+      localStorage: Array<{ name: string; value: string }>;
+    }>;
+  };
+
+  // 共享用户数据目录
+  // 当 sharedUserData 为 true 时，所有会话共享同一个用户数据目录
+  // 当 sharedUserData 为 false 或未设置时，每个会话有独立的用户数据目录
+  sharedUserData?: boolean;
+
+  // @deprecated 出于安全考虑，不再允许客户端指定任意路径
+  userDataDir?: string; // 用户数据目录路径
 }
 
 // 浏览器选项接口
@@ -112,6 +142,11 @@ interface SessionInfo {
   wsEndpoint: string;
   // !! 新增：存储当前会话配置 !!
   config: SessionConfig;
+  // !! 新增：存储用户ID和会话ID用于计算userDataDir !!
+  userId?: number;
+  sessionId?: string;
+  sharedUserData?: boolean;
+  userDataDir?: string;
 }
 
 // 连接信息接口
@@ -138,9 +173,89 @@ class BrowserService extends EventEmitter {
   private disconnectionTimers: Map<string, NodeJS.Timeout> = new Map();
   private activityReportInterval: NodeJS.Timeout | null = null;
 
+  // 共享浏览器追踪：每个用户同时最多有 1 个 shared 浏览器
+  // Map<userId, sessionId>
+  private userSharedBrowsers: Map<number, string> = new Map();
+
   constructor() {
     super();
     this.startActivityReporting();
+  }
+
+  /**
+   * 计算 userDataDir 路径
+   * @param userId 用户ID（可选，用于多用户隔离）
+   * @param sessionId 会话ID
+   * @param sharedUserData 是否共享用户数据目录
+   * @returns userDataDir 路径
+   */
+  private calculateUserDataDir(
+    userId: number | undefined,
+    sessionId: string,
+    sharedUserData: boolean = false
+  ): string {
+    // 基础目录
+    const baseDir = path.join(process.cwd(), 'data', 'user-data');
+
+    if (sharedUserData && userId) {
+      // 共享模式: /data/user-data/{userId}/shared/
+      const sharedDir = path.join(baseDir, String(userId), 'shared');
+      logger.info(`使用共享用户数据目录 (userId: ${userId}): ${sharedDir}`);
+      return sharedDir;
+    } else if (userId) {
+      // 独立模式: /data/user-data/{userId}/sessions/{sessionId}/
+      const sessionDir = path.join(baseDir, String(userId), 'sessions', sessionId);
+      logger.info(`使用独立用户数据目录 (userId: ${userId}, sessionId: ${sessionId}): ${sessionDir}`);
+      return sessionDir;
+    } else {
+      // 兼容模式（没有 userId）: /data/user-data/sessions/{sessionId}/
+      const sessionDir = path.join(baseDir, 'sessions', sessionId);
+      logger.info(`使用兼容模式用户数据目录 (sessionId: ${sessionId}): ${sessionDir}`);
+      return sessionDir;
+    }
+  }
+
+  /**
+   * 确保 userDataDir 目录存在
+   * @param userDataDir 用户数据目录路径
+   */
+  private ensureUserDataDir(userDataDir: string): void {
+    try {
+      if (!fsSync.existsSync(userDataDir)) {
+        fsSync.mkdirSync(userDataDir, { recursive: true });
+        logger.info(`已创建用户数据目录: ${userDataDir}`);
+      }
+    } catch (error) {
+      logger.error(`创建用户数据目录失败 (${userDataDir}):`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 清理独立会话的用户数据目录
+   * 注意：共享会话的目录不会被清理
+   * @param sessionId 会话ID
+   */
+  private async cleanupUserDataDir(sessionId: string): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    if (!session || !session.userDataDir) {
+      return;
+    }
+
+    // 如果是共享会话，不清理目录
+    if (session.sharedUserData) {
+      logger.info(`共享会话不清理用户数据目录 (sessionId: ${sessionId})`);
+      return;
+    }
+
+    try {
+      if (fsSync.existsSync(session.userDataDir)) {
+        await fs.rm(session.userDataDir, { recursive: true, force: true });
+        logger.info(`已清理独立会话的用户数据目录 (sessionId: ${sessionId}): ${session.userDataDir}`);
+      }
+    } catch (error) {
+      logger.error(`清理用户数据目录失败 (sessionId: ${sessionId}):`, error);
+    }
   }
 
   /**
@@ -324,6 +439,48 @@ class BrowserService extends EventEmitter {
     try {
       logger.info(`开始启动浏览器 (sessionId: ${sessionId})`);
       const timeout = 120000;
+
+      // 提取 userId 和 sharedUserData 选项
+      // 注意：userId 通常从 options 中传递，或者从会话上下文中获取
+      const userId = (options as any).userId;
+      const sharedUserData = options.sharedUserData || false;
+
+      // ===== 检查用户是否已有共享浏览器 =====
+      if (sharedUserData && userId) {
+        const existingSessionId = this.userSharedBrowsers.get(userId);
+        if (existingSessionId) {
+          const existingSession = this.sessions.get(existingSessionId);
+          if (existingSession) {
+            // 用户已有活跃的共享浏览器
+            const error = new Error(
+              `您已有一个活跃的共享数据会话 (ID: ${existingSessionId})。` +
+              `每个用户同时只能有 1 个共享数据会话。` +
+              `请先关闭现有会话，或使用独立会话模式（不设置 sharedUserData）。`
+            ) as any;
+            error.code = 'SHARED_SESSION_EXISTS';
+            error.existingSessionId = existingSessionId;
+            error.userId = userId;
+            throw error;
+          } else {
+            // Map 中的 sessionId 已失效，清理
+            this.userSharedBrowsers.delete(userId);
+            logger.info(`清理失效的共享浏览器记录 (userId: ${userId})`);
+          }
+        }
+      }
+
+      // 计算 userDataDir 路径
+      let userDataDir = options.userDataDir;
+
+      // 如果没有明确指定 userDataDir（已废弃），则根据 sharedUserData 计算
+      if (!userDataDir) {
+        userDataDir = this.calculateUserDataDir(userId, sessionId, sharedUserData);
+        // 确保目录存在
+        this.ensureUserDataDir(userDataDir);
+        // 设置到 options 中供 convertPuppeteerOptions 使用
+        options.userDataDir = userDataDir;
+      }
+
       if (!options.fingerprintOptions) {
         options.fingerprintOptions = { enabled: true };
       }
@@ -356,6 +513,66 @@ class BrowserService extends EventEmitter {
       const browser = await Promise.race([browserPromise, timeoutPromise]);
 
       const primaryPage = (await browser.pages())[0];
+
+      // 明确设置 viewport（确保 defaultViewport 生效）
+      if (options.viewport && primaryPage) {
+        try {
+          await primaryPage.setViewport(options.viewport);
+          logger.info(`✅ Viewport 已设置: ${options.viewport.width}x${options.viewport.height}`);
+        } catch (viewportError) {
+          logger.warn('设置 Viewport 失败:', viewportError);
+        }
+      }
+
+      // 处理 storageState - 在浏览器启动后设置 Cookie 和 localStorage
+      if (options.storageStatePath || options.storageState) {
+        try {
+          let storageState = options.storageState;
+
+          // 如果是路径，从文件加载
+          if (options.storageStatePath && !storageState) {
+            logger.info(`从文件加载 storageState: ${options.storageStatePath}`);
+            const storageContent = await fs.readFile(options.storageStatePath, 'utf-8');
+            storageState = JSON.parse(storageContent);
+          }
+
+          // 设置 cookies
+          if (storageState?.cookies && Array.isArray(storageState.cookies)) {
+            logger.info(`设置 ${storageState.cookies.length} 个 cookies`);
+            try {
+              await primaryPage.setCookie(...storageState.cookies);
+              logger.info('✅ Cookies 设置成功');
+            } catch (cookieError) {
+              logger.warn('设置 Cookies 失败:', cookieError);
+            }
+          }
+
+          // 设置 localStorage
+          if (storageState?.origins && Array.isArray(storageState.origins)) {
+            logger.info(`为 ${storageState.origins.length} 个 origin 设置 localStorage`);
+            for (const origin of storageState.origins) {
+              try {
+                // 导航到对应 origin
+                await primaryPage.goto(origin.origin, { waitUntil: 'domcontentloaded', timeout: 10000 });
+
+                // 设置 localStorage
+                await primaryPage.evaluate((items) => {
+                  items.forEach(item => {
+                    localStorage.setItem(item.name, item.value);
+                  });
+                }, origin.localStorage);
+
+                logger.info(`✅ localStorage 设置成功: ${origin.origin}`);
+              } catch (originError) {
+                logger.warn(`设置 localStorage 失败 (${origin.origin}):`, originError);
+              }
+            }
+          }
+        } catch (error) {
+          logger.error('处理 storageState 时出错:', error);
+        }
+      }
+
       // 设置事件监听 (只保留必要的)
       if (fingerprint) {
         try {
@@ -401,10 +618,22 @@ class BrowserService extends EventEmitter {
         wsEndpoint: browserWSEndpoint,
         config: initialConfig,
         fingerprint,
+        // 新增：存储用户数据相关信息
+        userId,
+        sessionId,
+        sharedUserData,
+        userDataDir,
       });
       logger.info(
-        `浏览器已启动 (sessionId: ${sessionId}, port: ${port}, path: ${path})`
+        `浏览器已启动 (sessionId: ${sessionId}, port: ${port}, path: ${path}, userDataDir: ${userDataDir}, sharedUserData: ${sharedUserData})`
       );
+
+      // ===== 注册共享浏览器 =====
+      if (sharedUserData && userId) {
+        this.userSharedBrowsers.set(userId, sessionId);
+        logger.info(`注册共享浏览器 (userId: ${userId}, sessionId: ${sessionId})`);
+      }
+
       const screenshotUrl = await this.takeScreenshot(sessionId); // 生成初始截图 URL
       return { browserWSEndpoint, port, path, screenshotUrl };
     } catch (error) {
@@ -465,9 +694,22 @@ class BrowserService extends EventEmitter {
           (Date.now() - session.startTime) / 1000
         );
       }
+
+      // 清理独立会话的用户数据目录（共享会话不会被清理）
+      await this.cleanupUserDataDir(sessionId);
+
+      // ===== 清理共享浏览器记录 =====
+      if (session.sharedUserData && session.userId) {
+        const registeredSessionId = this.userSharedBrowsers.get(session.userId);
+        if (registeredSessionId === sessionId) {
+          this.userSharedBrowsers.delete(session.userId);
+          logger.info(`清理共享浏览器记录 (userId: ${session.userId}, sessionId: ${sessionId})`);
+        }
+      }
+
       this.sessions.delete(sessionId);
       await session.browser.close();
-      
+
       this.connections.delete(sessionId);
       if (this.disconnectionTimers.has(sessionId)) {
         clearTimeout(this.disconnectionTimers.get(sessionId)!);
@@ -481,6 +723,14 @@ class BrowserService extends EventEmitter {
       return true;
     } catch (error) {
       logger.error(`关闭浏览器失败 (sessionId: ${sessionId}):`, error);
+
+      // ===== 清理共享浏览器记录 =====
+      const session = this.sessions.get(sessionId);
+      if (session && session.sharedUserData && session.userId) {
+        this.userSharedBrowsers.delete(session.userId);
+        logger.info(`清理共享浏览器记录 (userId: ${session.userId}, sessionId: ${sessionId})`);
+      }
+
       this.sessions.delete(sessionId);
       this.connections.delete(sessionId);
       if (this.disconnectionTimers.has(sessionId)) {
@@ -545,11 +795,11 @@ class BrowserService extends EventEmitter {
         "--disable-dev-shm-usage",
         "--disable-responsive-ui",
         "--force-device-scale-factor=1",
-        "--disable-gpu",
+        // 已移除 --disable-gpu 以支持 WebGL (反机器人检测需要)
         "--headless=new",
         // "--disable-web-security",
         "--disable-setuid-sandbox",
-        "--use-angle=disabled",
+        // 已移除 --use-angle=disabled 以支持 WebGL (反机器人检测需要)
         "--disable-blink-features=AutomationControlled",
         "--webrtc-ip-handling-policy=disable_non_proxied_udp",
         "--force-webrtc-ip-handling-policy",
@@ -562,6 +812,12 @@ class BrowserService extends EventEmitter {
       executablePath: CONFIG.chromePath,
       protocolTimeout: 60000,
     };
+
+    // 处理 userDataDir - 必须在启动时传递
+    if (options.userDataDir) {
+      result.args.push(`--user-data-dir=${options.userDataDir}`);
+      logger.info(`设置 userDataDir: ${options.userDataDir}`);
+    }
 
     if (options.args && Array.isArray(options.args)) {
       result.args.push(...options.args);
@@ -761,6 +1017,23 @@ class BrowserService extends EventEmitter {
         await page.evaluateOnNewDocument(() => {
           console.debug = () => {};
         });
+
+        // 反机器人检测：隐藏 navigator.webdriver
+        // 这是最关键的检测点，很多网站通过此检测自动化工具
+        await page.evaluateOnNewDocument(() => {
+          Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined,
+          });
+        });
+
+        // 反机器人检测：注入 deviceMemory
+        // deviceMemory 是设备能力指纹的一部分，桌面浏览器通常返回 8 (GB)
+        await page.evaluateOnNewDocument(() => {
+          Object.defineProperty(navigator, 'deviceMemory', {
+            get: () => 8,
+          });
+        });
+
         // 这里注入 focusin 事件监听器 ？
         logger.info(
           `成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`

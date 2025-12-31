@@ -660,15 +660,15 @@ test.describe('P0-用户管理核心CRUD', () => {
 
     // 如果数据足够多，验证分页功能
     if (await nextPageLink.count() > 0 && await nextPageLink.isVisible()) {
-      // 记录当前页码
-      const currentUrl = page.url();
-
       // 3. 点击下一页
       await nextPageLink.click();
       await page.waitForLoadState('networkidle');
 
       // 预期: URL已变化（可能包含page参数或保持不变）
-      expect(page.url()).toBeTruthy();
+      // 验证URL格式正确（以http开头且包含admin或users路径）
+      const currentUrl = page.url();
+      expect(currentUrl).toMatch(/^https?:\/\//);
+      expect(currentUrl).toMatch(/\/admin\/(users|sessions)/);
     }
   });
 
@@ -932,7 +932,8 @@ test.describe('P0-会话管理核心功能', () => {
     const table = page.locator('table').first();
     if (await table.count() > 0) {
       const thElements = await table.locator('th').allTextContents();
-      expect(thElements.length).toBeGreaterThan(0);
+      // 表格应该至少有4个表头（用户、状态、时间等核心信息）
+      expect(thElements.length).toBeGreaterThanOrEqual(4);
 
       // 检查关键列是否存在
       const headersText = thElements.join(' ');
@@ -1228,7 +1229,8 @@ test.describe('P0-机器管理核心功能', () => {
     const table = page.locator('table').first();
     if (await table.count() > 0) {
       const thElements = await table.locator('th').allTextContents();
-      expect(thElements.length).toBeGreaterThan(0);
+      // 表格应该至少有4个表头（IP、状态、机器等核心信息）
+      expect(thElements.length).toBeGreaterThanOrEqual(4);
 
       // 检查关键列是否存在
       const headersText = thElements.join(' ');

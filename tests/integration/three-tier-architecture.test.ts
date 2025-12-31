@@ -353,8 +353,8 @@ describe('完整三端架构集成测试', () => {
     console.log('\n[步骤 2] 测试API请求认证...');
     const response = await client.request('GET', '/api/auth/verify');
     expect(response.success).toBe(true);
-    expect(response.data).toBeDefined();
-    expect(response.data.user).toBeDefined();
+    expect(response.data).toEqual(expect.any(Object));
+    expect(response.data.user).toEqual(expect.any(Object));
     expect(response.data.user.id).toBe(user.id);
     expect(response.data.user.username).toBe(user.username);
     console.log(`   ✅ API认证成功，用户: ${response.data.user.username}`);
@@ -404,8 +404,8 @@ describe('完整三端架构集成测试', () => {
 
     const loginData = JSON.parse(loginResponse.body);
     expect(loginData.success).toBe(true);
-    expect(loginData.data).toBeDefined();
-    expect(loginData.data.token).toBeDefined();
+    expect(loginData.data).toEqual(expect.any(Object));
+    expect(loginData.data.token).toMatch(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/);
     expect(loginData.data.token.length).toBeGreaterThan(50);
     console.log(`   ✅ 登录成功，Token长度: ${loginData.data.token.length}`);
 
@@ -484,16 +484,16 @@ describe('完整三端架构集成测试', () => {
     console.log(`   状态: ${responseBody.status}`);
 
     // 严格断言: 验证HTTP响应
-    expect(responseBody.id).toBeDefined();
-    expect(responseBody.id.length).toBeGreaterThan(10);
-    expect(responseBody.machine_id).toBeDefined();
-    expect(responseBody.machine_id.length).toBeGreaterThan(5);
+    expect(responseBody.id).toMatch(/^session_[a-zA-Z0-9_-]{16,}$/);
+    expect(responseBody.id.length).toBeGreaterThanOrEqual(20);
+    expect(responseBody.machine_id).toMatch(/^test-machine-[0-9]+-[0-9]-[0-9]$/);
+    expect(responseBody.machine_id.length).toBeGreaterThanOrEqual(20);
     expect(responseBody.status).toBe('created');
 
     // 步骤 2: 验证数据库中的会话记录
     console.log('\n[步骤 2] 验证数据库会话记录...');
     const session = await SessionModel.findById(responseBody.id);
-    expect(session).toBeDefined();
+    expect(session).toEqual(expect.any(Object));
     expect(session!.user_id).toBe(user.id);
     expect(session!.machine_id).toBe(responseBody.machine_id);
     expect(session!.status).toBe('created');
@@ -502,7 +502,7 @@ describe('完整三端架构集成测试', () => {
     // 步骤 3: 验证机器实例计数增加
     console.log('\n[步骤 3] 验证机器实例计数...');
     const machine = await MachineModel.findById(responseBody.machine_id);
-    expect(machine).toBeDefined();
+    expect(machine).toEqual(expect.any(Object));
     expect(machine!.instanceCount).toBe(1);
     console.log(`   ✅ 机器实例计数: ${machine!.instanceCount}`);
 
@@ -526,7 +526,7 @@ describe('完整三端架构集成测试', () => {
     console.log('   ✅ 浏览器连接成功');
 
     const pages = await browser.pages();
-    expect(pages.length).toBeGreaterThan(0);
+    expect(pages.length).toBeGreaterThanOrEqual(1);
     console.log(`   页面数量: ${pages.length}`);
 
     // 断开连接
@@ -693,9 +693,9 @@ describe('完整三端架构集成测试', () => {
     // 验证会话状态
     console.log('\n[步骤 7] 验证会话状态...');
     const session = await SessionModel.findById(sessionId);
-    expect(session).toBeDefined();
+    expect(session).toEqual(expect.any(Object));
     expect(session!.status).toBe('disconnected');
-    expect(session!.duration).toBeGreaterThan(0);
+    expect(session!.duration).toBeGreaterThanOrEqual(5); // 至少5秒
     expect(session!.credits_used).toBeGreaterThanOrEqual(1); // 至少1点
 
     console.log(`   会话状态: ${session!.status}`);
@@ -714,7 +714,7 @@ describe('完整三端架构集成测试', () => {
     // 验证积分历史
     console.log('\n[步骤 9] 验证积分历史...');
     const creditHistory = await CreditHistoryModel.findByUserId(user.id);
-    expect(creditHistory.length).toBeGreaterThan(0);
+    expect(creditHistory.length).toBeGreaterThanOrEqual(1);
 
     const latestHistory = creditHistory[0];
     expect(latestHistory.action).toBe('use');
@@ -724,7 +724,7 @@ describe('完整三端架构集成测试', () => {
     // 验证机器实例计数减少
     console.log('\n[步骤 10] 验证机器实例计数...');
     const machine = await MachineModel.findById(session!.machine_id!);
-    expect(machine).toBeDefined();
+    expect(machine).toEqual(expect.any(Object));
     expect(machine!.instanceCount).toBe(0);
     console.log(`   ✅ 机器实例计数: ${machine!.instanceCount}`);
 

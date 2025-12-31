@@ -552,7 +552,8 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
         const deducted = INITIAL_CREDITS - userRecord.credits;
         totalDeducted += deducted;
         console.log(`   用户 ${user.id}: 扣除 ${deducted} 积分，剩余 ${userRecord.credits}`);
-        expect(deducted).toBeGreaterThan(0);
+        // 10秒应该扣1点（<=1分钟按1分钟计）
+        expect(deducted).toBe(1);
       }
 
       console.log(`   总扣除积分: ${totalDeducted}`);
@@ -747,12 +748,14 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       for (const user of testUsers) {
         const historyRecords = await CreditHistoryModel.findByUserId(user.id);
         console.log(`   用户 ${user.id}: ${historyRecords.length} 条积分历史`);
-        expect(historyRecords.length).toBeGreaterThan(0);
+        // 每个用户释放会话应该产生1条积分历史记录
+        expect(historyRecords.length).toBe(1);
 
         // 验证最新的记录是扣费
         const latestRecord = historyRecords[0];
         console.log(`     最新记录: ${latestRecord.action} ${latestRecord.amount} 积分, 剩余 ${latestRecord.balance_after} 积分`);
         expect(latestRecord.action).toBe('use');
+        expect(latestRecord.amount).toBe(1);
       }
 
       console.log('\n✅ TIER-037 测试通过: 积分历史记录正确');

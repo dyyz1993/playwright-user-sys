@@ -832,11 +832,82 @@ const serviceImplementation = {
       const request = call.request;
       logger.info(`收到启动浏览器请求:`, request);
 
-      const { session_id, options } = request;
+      const { session_id, options, user_id } = request;
+
+      // 转换 proto 格式的 options 到 TypeScript 接口格式
+      const convertedOptions: any = {};
+
+      if (options.user_agent) {
+        convertedOptions.userAgent = options.user_agent;
+      }
+
+      if (options.proxy) {
+        convertedOptions.proxy = options.proxy;
+      }
+
+      if (options.viewport) {
+        convertedOptions.viewport = {
+          width: options.viewport.width,
+          height: options.viewport.height,
+        };
+      }
+
+      if (options.args && Array.isArray(options.args)) {
+        convertedOptions.args = options.args;
+      }
+
+      if (options.storage_state_path) {
+        convertedOptions.storageStatePath = options.storage_state_path;
+      }
+
+      if (options.storage_state) {
+        // 转换 storage_state
+        const storageState: any = {};
+
+        if (options.storage_state.cookies && Array.isArray(options.storage_state.cookies)) {
+          storageState.cookies = options.storage_state.cookies.map((cookie: any) => ({
+            name: cookie.name,
+            value: cookie.value,
+            domain: cookie.domain,
+            path: cookie.path,
+            expires: cookie.expires,
+            httpOnly: cookie.http_only,
+            secure: cookie.secure,
+            sameSite: cookie.same_site,
+          }));
+        }
+
+        if (options.storage_state.origins && Array.isArray(options.storage_state.origins)) {
+          storageState.origins = options.storage_state.origins.map((origin: any) => ({
+            origin: origin.origin,
+            localStorage: origin.localStorage,
+          }));
+        }
+
+        convertedOptions.storageState = storageState;
+      }
+
+      // 新增：shared_user_data 参数
+      if (options.shared_user_data !== undefined) {
+        convertedOptions.sharedUserData = options.shared_user_data;
+      }
+
+      // 保留向后兼容：如果客户端传递了 user_data_dir（已废弃）
+      if (options.user_data_dir) {
+        convertedOptions.userDataDir = options.user_data_dir;
+        logger.warn(`user_data_dir 参数已废弃，客户端传递了自定义路径: ${options.user_data_dir}`);
+      }
+
+      // 传递 userId 用于计算 userDataDir
+      if (user_id) {
+        convertedOptions.userId = user_id;
+      }
+
+      logger.info(`转换后的浏览器选项:`, convertedOptions);
 
       // 调用浏览器服务启动浏览器
       try {
-        const result = await browserService.launchBrowser(session_id, options);
+        const result = await browserService.launchBrowser(session_id, convertedOptions);
         logger.info(`浏览器启动成功 (sessionId: ${session_id}, port: ${result.port})`);
 
         // 构造响应
@@ -849,12 +920,12 @@ const serviceImplementation = {
         });
       } catch (error: any) {
         logger.error(`启动浏览器失败 (sessionId: ${session_id}):`, error);
-        callback(null, {
-          session_id,
-          success: false,
-          browser_ws_endpoint: '',
-          port: 0,
-          error: error.message || '启动浏览器失败',
+
+        // 业务逻辑错误（如 SHARED_SESSION_EXISTS）应该返回给客户端
+        // 使用 gRPC 错误回调，让管理端正确处理
+        callback({
+          code: grpc.status.FAILED_PRECONDITION,
+          message: error.message || '启动浏览器失败',
         });
       }
     } catch (error: any) {

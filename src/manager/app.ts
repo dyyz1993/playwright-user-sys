@@ -41,11 +41,6 @@ export async function buildManager(): Promise<FastifyInstance> {
     } : false,
   });
 
-  // 初始化数据库
-  if (process.env.NODE_ENV === 'test') {
-    await initDatabase();
-  }
-
   // 在注册任何路由之前，初始化原生WebSocket代理服务
   wsProxyService = new NativeWebSocketProxyService(app.server);
   logger.info('✅ 原生WebSocket代理服务已初始化');
@@ -77,6 +72,9 @@ export async function buildManager(): Promise<FastifyInstance> {
  */
 export async function startManager() {
   try {
+    // 先初始化数据库（在迁移之前）
+    await initDatabase();
+
     // 运行数据库迁移
     await runMigrations();
 
@@ -108,6 +106,9 @@ export async function startManager() {
 
     // 构建应用
     const fastify = await buildManager();
+
+    // 移除 buildManager 中的 initDatabase 调用，因为已经在上面调用了
+    // （通过在 buildManager 之前调用 initDatabase）
 
     // 在应用关闭时停止监控服务
     fastify.addHook('onClose', async () => {

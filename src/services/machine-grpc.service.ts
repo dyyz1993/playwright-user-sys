@@ -625,10 +625,77 @@ class MachineConnectionManager extends EventEmitter {
 
         logger.info(`向机器 ${machineId} 发送启动浏览器请求 (sessionId: ${sessionId})`);
 
+        // 转换 TypeScript 格式的 options 到 proto 格式
+        const protoOptions: any = {};
+
+        if (options.userAgent) {
+          protoOptions.user_agent = options.userAgent;
+        }
+
+        if (options.proxy) {
+          protoOptions.proxy = options.proxy;
+        }
+
+        if (options.viewport) {
+          protoOptions.viewport = {
+            width: options.viewport.width,
+            height: options.viewport.height,
+          };
+        }
+
+        if (options.args && Array.isArray(options.args)) {
+          protoOptions.args = options.args;
+        }
+
+        if (options.storageStatePath) {
+          protoOptions.storage_state_path = options.storageStatePath;
+        }
+
+        if (options.storageState) {
+          // 转换 storage_state
+          const storageState: any = {};
+
+          if (options.storageState.cookies && Array.isArray(options.storageState.cookies)) {
+            storageState.cookies = options.storageState.cookies.map((cookie: any) => ({
+              name: cookie.name,
+              value: cookie.value,
+              domain: cookie.domain,
+              path: cookie.path,
+              expires: cookie.expires,
+              http_only: cookie.httpOnly,
+              secure: cookie.secure,
+              same_site: cookie.sameSite,
+            }));
+          }
+
+          if (options.storageState.origins && Array.isArray(options.storageState.origins)) {
+            storageState.origins = options.storageState.origins.map((origin: any) => ({
+              origin: origin.origin,
+              localStorage: origin.localStorage,
+            }));
+          }
+
+          protoOptions.storage_state = storageState;
+        }
+
+        // 新增：sharedUserData 参数
+        if (options.sharedUserData !== undefined) {
+          protoOptions.shared_user_data = options.sharedUserData;
+        }
+
+        // 保留向后兼容：如果客户端直接传递了 userDataDir（已废弃）
+        if (options.userDataDir) {
+          protoOptions.user_data_dir = options.userDataDir;
+          logger.warn(`userDataDir 参数已废弃，客户端传递了自定义路径: ${options.userDataDir}`);
+        }
+
+        logger.info(`转换后的 proto 浏览器选项:`, protoOptions);
+
         // 构造请求参数
         const request = {
           session_id: sessionId,
-          options: options,
+          options: protoOptions,
+          user_id: options.userId || 0,  // 传递 userId 用于计算 userDataDir
         };
 
         // 创建 metadata 并设置机器 ID

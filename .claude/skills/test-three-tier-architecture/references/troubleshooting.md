@@ -152,7 +152,162 @@ console.log('Online machines:', onlineMachines.length);
 
 ---
 
-### Issue 4: Database Connection Failures
+### Issue 4: Database Connection Pool Full
+
+**Symptoms:**
+```
+Error: KnexTimeoutError: Knex: Timeout acquiring a connection. The pool is probably full.
+Error: database connection pool exhausted
+Error: Unable to acquire database connection
+```
+
+**Solutions:**
+
+1. **Kill leaked MySQL connections:**
+```bash
+# Check for long-running connections
+MYSQL_PWD="your_password" mysql -h 127.0.0.1 -uroot -e "SHOW PROCESSLIST"
+
+# Kill specific connection
+MYSQL_PWD="your_password" mysql -h 127.0.0.1 -uroot -e "KILL <connection_id>;"
+
+# Kill idle connections older than 1 hour
+MYSQL_PWD="your_password" mysql -h 127.0.0.1 -uroot -e "
+SELECT CONCAT('KILL ', id, ';')
+FROM information_schema.PROCESSLIST
+WHERE user = 'root'
+  AND command = 'Sleep'
+  AND time > 3600;"
+```
+
+2. **Configure connection pool in tests/helpers/database.ts:**
+```typescript
+const dbConfig = {
+  client: 'mysql2',
+  connection: {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'playwright_test',
+  },
+  // Add pool configuration to prevent leaks
+  pool: {
+    min: parseInt(process.env.DB_POOL_MIN || '2'),
+    max: parseInt(process.env.DB_POOL_MAX || '10'),
+    idleTimeoutMillis: 30000,     // 30 seconds idle timeout
+    acquireTimeoutMillis: 60000,  // 60 seconds acquire timeout
+    propagateCreateError: false,
+  },
+};
+```
+
+3. **Configure vitest.config.ts for sequential execution:**
+```typescript
+export default defineConfig({
+  test: {
+    // Disable parallel execution to avoid pool conflicts
+    maxConcurrency: 1,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true, // Use single process
+      },
+    },
+  },
+});
+```
+
+4. **Set environment variables for larger pool:**
+```bash
+# In .env.test
+DB_POOL_MIN=2
+DB_POOL_MAX=20  # Increase if running many tests in parallel
+```
+
+5. **Ensure proper cleanup in tests:**
+```typescript
+afterEach(async () => {
+  // Close database connections
+  await db.destroy();
+});
+
+afterAll(async () => {
+  // Close all connections
+  await closeDatabase();
+});
+```
+
+---
+
+### Issue 5: Database Tables Don't Exist
+
+**Symptoms:**
+```
+Error: Table 'playwright_test_user_sys.users' doesn't exist
+Error: select * from `sessions` - Table doesn't exist
+Error: Can't find database model
+```
+
+**Solutions:**
+
+1. **Create database manually:**
+```bash
+MYSQL_PWD="your_password" mysql -h 127.0.0.1 -uroot -e "
+CREATE DATABASE IF NOT EXISTS playwright_test_user_sys
+CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+2. **Create tables using migration script:**
+```bash
+# Run the table creation script
+NODE_ENV=test DB_TYPE=mysql DB_NAME=playwright_test_user_sys npx tsx scripts/create-test-tables.ts
+```
+
+3. **Or use the migration command:**
+```bash
+pnpm migrate
+```
+
+4. **Verify tables exist:**
+```bash
+MYSQL_PWD="your_password" mysql -h 127.0.0.1 -uroot -e "
+USE playwright_test_user_sys;
+SHOW TABLES;"
+```
+
+Expected output:
+```
++---------------------------+
+| Tables_in_playwright_test |
++---------------------------+
+| users                     |
+| machines                  |
+| sessions                  |
+| credit_history            |
+| operation_logs            |
++---------------------------+
+```
+
+5. **Create tables programmatically in beforeAll:**
+```typescript
+beforeAll(async () => {
+  // 1. Create database
+  await adminDb.raw(`DROP DATABASE IF EXISTS ${dbName}`);
+  await adminDb.raw(`CREATE DATABASE ${dbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+
+  // 2. Initialize database connection
+  await initDatabase();
+
+  // 3. Create tables
+  const { createTables } = await import('../src/models/migrations.js');
+  await createTables();
+});
+```
+
+---
+
+### Issue 6: Database Connection Failures
 
 **Symptoms:**
 ```
@@ -201,7 +356,7 @@ sudo ufw allow 3306
 
 ---
 
-### Issue 5: Test Timeouts
+### Issue 7: Test Timeouts
 
 **Symptoms:**
 ```
@@ -304,7 +459,7 @@ afterAll(async () => {
 
 ---
 
-### Issue 7: Module Import Errors
+### Issue 8: Module Import Errors
 
 **Symptoms:**
 ```
@@ -347,7 +502,7 @@ ls -la dist/models/user.js
 
 ---
 
-### Issue 8: gRPC Connection Failures
+### Issue 9: gRPC Connection Failures
 
 **Symptoms:**
 ```
@@ -465,3 +620,6 @@ cat tests/integration/three-tier-template.test.ts
 6. **Always check Chrome path** in .env.test before running
 7. **Always verify MySQL is running** before starting tests
 8. **Always kill zombie processes** after failed tests
+9. **Always configure connection pool** in tests/helpers/database.ts - set min/max, timeouts
+10. **Always run tests sequentially** if using database - set `maxConcurrency: 1` in vitest.config.ts
+11. **Always create database tables** before running tests - use migration scripts or `createTables()`

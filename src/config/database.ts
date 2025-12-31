@@ -43,24 +43,38 @@ const createDatabaseConfig = () => {
       pool: {
         min: parseInt(env.DB_POOL_MIN || '2'),
         max: parseInt(env.DB_POOL_MAX || '10'),
-        // 空闲超时，单位毫秒
-        idleTimeoutMillis: 30000,
-        // 连接超时，单位毫秒
-        acquireTimeoutMillis: 60000,
+        // 空闲超时，单位毫秒 - 增加到 120 秒
+        idleTimeoutMillis: 120000,
+        // 连接超时，单位毫秒 - 增加到 120 秒
+        acquireTimeoutMillis: 120000,
         // 创建连接的错误将被记录并抛出
         propagateCreateError: false,
       },
-      // 增加连接限制选项
-      acquireConnectionTimeout: 60000,
+      // 增加连接限制选项 - 匹配池配置的超时时间
+      acquireConnectionTimeout: 120000,
     };
   }
 };
+
+// 数据库实例
+let dbInstance: knex.Knex<any, unknown[]>;
 
 // 初始化数据库
 export async function initDatabase() {
   try {
     console.log('正在初始化数据库...');
     const config = createDatabaseConfig();
+
+    // 如果已经存在连接，先销毁
+    if (dbInstance) {
+      console.log('销毁旧的数据库连接...');
+      try {
+        await dbInstance.destroy();
+        console.log('旧数据库连接已销毁');
+      } catch (e) {
+        console.error('销毁旧连接时出错:', e);
+      }
+    }
 
     // 如果是测试环境且使用内存数据库
     if (process.env.NODE_ENV === 'test' && process.env.DATABASE_PATH === ':memory:') {
@@ -69,9 +83,12 @@ export async function initDatabase() {
     }
 
     // 创建数据库连接
+    console.log('创建新的数据库连接...');
     dbInstance = knex(config);
+    console.log('knex 实例已创建');
 
     // 测试连接
+    console.log('测试数据库连接 (SELECT 1)...');
     await dbInstance.raw('SELECT 1');
     console.log('数据库连接创建成功');
 
@@ -82,18 +99,57 @@ export async function initDatabase() {
   }
 }
 
-// 创建数据库连接
-console.log('正在创建数据库连接...');
-let dbInstance :knex.Knex<any, unknown[]>;
-
-try {
-  dbInstance = knex(createDatabaseConfig());
-  console.log('数据库连接创建成功');
-} catch (error) {
-  console.error('创建数据库连接失败:', error);
-  throw error;
+// 创建初始数据库连接（非测试环境）
+if (process.env.NODE_ENV !== 'test') {
+  console.log('正在创建数据库连接...');
+  try {
+    dbInstance = knex(createDatabaseConfig());
+    console.log('数据库连接创建成功');
+  } catch (error) {
+    console.error('创建数据库连接失败:', error);
+    throw error;
+  }
 }
 
-export const db = dbInstance;
+// 导出 getter 来获取最新的数据库实例
+export const getDb = () => dbInstance;
+
+// 创建一个可调用的 db 对象来支持 db('table') 调用方式
+const createDbProxy = () => {
+  const proxyFn = function (table: string, ...args: any[]) {
+    if (dbInstance) {
+      return dbInstance(table, ...args);
+    }
+    throw new Error('Database not initialized. Call initDatabase() first.');
+  } as any;
+
+  // 复制所有 Knex 原型方法到 proxyFn
+  const knexMethods = Object.getOwnPropertyNames(Object.getPrototypeOf({}));
+  // 通过 Proxy 拦截属性访问
+  return new Proxy(proxyFn, {
+    get(target, prop) {
+      if (prop === 'then' || prop === 'catch') {
+        // 不拦截 Promise 方法
+        return undefined;
+      }
+      if (dbInstance) {
+        return dbInstance[prop];
+      }
+      throw new Error('Database not initialized. Call initDatabase() first.');
+    },
+    set(target, prop, value) {
+      if (dbInstance) {
+        dbInstance[prop] = value;
+        return true;
+      }
+      return false;
+    },
+    has(target, prop) {
+      return prop in (dbInstance || {});
+    },
+  });
+};
+
+export const db = createDbProxy();
 
 export default db;

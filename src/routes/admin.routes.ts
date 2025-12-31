@@ -930,4 +930,27 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       return reply.redirect('/admin');
     }
   });
+
+  // 存储管理页面
+  fastify.get('/admin/storage', {
+    onRequest: [fastify.verifyJWT]
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      // 检查是否是管理员
+      if (request.user?.role !== 'admin') {
+        return reply.redirect('/admin');
+      }
+
+      return reply.view('pages/storage', {
+        title: '存储管理',
+        subtitle: '管理用户存储和清理数据',
+        user: request.user,
+        flash: request.flash
+      });
+    } catch (error: any) {
+      request.log.error('加载存储管理页面失败:', error);
+      request.flash('error', '加载存储管理页面失败: ' + error.message);
+      return reply.redirect('/admin');
+    }
+  });
 }

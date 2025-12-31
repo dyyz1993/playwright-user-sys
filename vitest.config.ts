@@ -18,5 +18,13 @@ export default defineConfig({
     testTimeout: 30000, // 30秒超时
     setupFiles: ['./src/tests/setup.ts'], // 全局设置文件，确保环境变量在模块加载前设置
     fileParallelism: false, // 禁用文件并行执行，避免数据隔离问题
+    // 针对三层架构集成测试的配置
+    maxConcurrency: 1, // 最大并发度为 1，串行执行测试
+    pool: 'forks', // 使用独立进程池
+    poolOptions: {
+      forks: {
+        singleFork: true, // 使用单进程执行
+      },
+    },
   },
 });

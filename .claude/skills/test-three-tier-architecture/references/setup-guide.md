@@ -85,10 +85,62 @@ The `beforeAll` hook in your test file will automatically:
 await adminDb.raw(`DROP DATABASE IF EXISTS ${process.env.DB_NAME}`);
 await adminDb.raw(`CREATE DATABASE ${process.env.DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
 await initDatabase();
-await runMigrations();
+await createTables(); // Create tables
 ```
 
-## Step 6: Manual Database Setup (Optional)
+## Step 6: Configure Connection Pool
+
+Configure connection pool in `.env.test` to prevent connection pool exhaustion:
+
+```bash
+# Connection Pool Settings
+DB_POOL_MIN=2
+DB_POOL_MAX=20  # Increase if running tests with multiple database operations
+```
+
+Then update `tests/helpers/database.ts` to use these settings:
+
+```typescript
+const dbConfig = {
+  client: 'mysql2',
+  connection: {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'playwright_test',
+  },
+  // Add pool configuration to prevent leaks
+  pool: {
+    min: parseInt(process.env.DB_POOL_MIN || '2'),
+    max: parseInt(process.env.DB_POOL_MAX || '10'),
+    idleTimeoutMillis: 30000,     // 30 seconds idle timeout
+    acquireTimeoutMillis: 60000,  // 60 seconds acquire timeout
+    propagateCreateError: false,
+  },
+};
+```
+
+## Step 7: Configure Test Sequential Execution
+
+To avoid database connection pool issues, configure `vitest.config.ts` for sequential execution:
+
+```typescript
+export default defineConfig({
+  test: {
+    // Disable parallel execution to avoid pool conflicts
+    maxConcurrency: 1,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true, // Use single process
+      },
+    },
+  },
+});
+```
+
+## Step 8: Manual Database Setup (Optional)
 
 If you need to manually set up the database:
 
@@ -96,17 +148,17 @@ If you need to manually set up the database:
 # Create database
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS playwright_test_user_sys CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-# Run migrations
-pnpm migrate
+# Create database tables
+NODE_ENV=test DB_TYPE=mysql DB_NAME=playwright_test_user_sys npx tsx scripts/create-test-tables.ts
 ```
 
-## Step 7: Install Dependencies
+## Step 9: Install Dependencies
 
 ```bash
 pnpm install
 ```
 
-## Step 8: Verify Environment
+## Step 10: Verify Environment
 
 Run the setup script to verify your environment:
 
@@ -120,7 +172,7 @@ This script will check:
 - Chrome installation
 - Port availability
 
-## Step 9: Run Test
+## Step 11: Run Test
 
 ```bash
 # Run all integration tests
@@ -141,6 +193,8 @@ pnpm test:unit tests/integration/three-tier-template.test.ts
 | DB_PORT | MySQL port | 3306 | Yes |
 | DB_USER | MySQL user | root | Yes |
 | DB_PASSWORD | MySQL password | (empty) | No |
+| DB_POOL_MIN | Database pool min connections | 2 | No |
+| DB_POOL_MAX | Database pool max connections | 20 | No |
 | PORT | Manager HTTP port | 3000 | No |
 | GRPC_PORT | Manager gRPC port | 50051 | No |
 | CHROME_PATH | Chrome executable path | auto-detect | No |

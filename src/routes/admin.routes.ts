@@ -103,8 +103,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       reply.setCookie('token', token, {
         path: '/',
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: true,
+        secure: false, // 暂时禁用 secure，允许 HTTP 登录
+        sameSite: 'lax', // 使用 lax 提高兼容性
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 天
       });
 

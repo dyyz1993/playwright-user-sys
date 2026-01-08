@@ -1,51 +1,21 @@
 # Docker Compose for Production
-# Usage: docker-compose -f docker-compose.prod.yml up -d
+# Usage: docker compose -f docker-compose.prod.yml up -d
 
 version: '3.8'
 
 services:
-  # MySQL Database
-  mysql:
-    image: mysql:8.0
-    container_name: playwright-mysql-prod
-    restart: always
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-playwright_user_sys}
-      MYSQL_USER: ${MYSQL_USER:-playwright}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    volumes:
-      - mysql-prod-data:/var/lib/mysql
-      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
-      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-    networks:
-      - playwright-prod-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
   # Management Server
   manager:
+    restart: always
     build:
       context: ..
       dockerfile: docker/manager/Dockerfile.prod
       target: production
     image: playwright-manager:${IMAGE_TAG:-latest}
     container_name: playwright-manager-prod
-    restart: always
     ports:
-      - "${MANAGER_HTTP_PORT:-3000}:3000"
-      - "${MANAGER_GRPC_PORT:-50051}:50051"
+      - "3011:3000"
+      - "50051:50051"
     volumes:
       - manager-prod-data:/app/data
       - manager-prod-files:/app/files
@@ -54,36 +24,23 @@ services:
       - PORT=3000
       - HOST=0.0.0.0
       - DB_TYPE=mysql
-      - DB_NAME=${MYSQL_DATABASE:-playwright_user_sys}
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1d}
-      - ADMIN_USERNAME=${ADMIN_USERNAME}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - DB_HOST=REDACTED_INTERNAL_HOST
+      - DB_PORT=3307
+      - DB_USER=playwright_user_sys
+      - DB_PASSWORD=REDACTED_PASSWORD
+      - DB_NAME=playwright_user_sys
+      - JWT_SECRET=your-32-character-minimum-secret-key-for-jwt-and-session
+      - JWT_EXPIRES_IN=1d
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=REDACTED_ADMIN_PASS
       - GRPC_PORT=50051
-      - MACHINE_MONITOR_INTERVAL=${MACHINE_MONITOR_INTERVAL:-30000}
-    depends_on:
-      mysql:
-        condition: service_healthy
+      - MACHINE_MONITOR_INTERVAL=30000
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
-    networks:
-      - playwright-prod-network
-    deploy:
-      resources:
-        limits:
-          cpus: ${MANAGER_CPU_LIMIT:-2}
-          memory: ${MANAGER_MEMORY_LIMIT:-2G}
-        reservations:
-          cpus: ${MANAGER_CPU_RESERVATION:-0.5}
-          memory: ${MANAGER_MEMORY_RESERVATION:-512M}
     logging:
       driver: "json-file"
       options:
@@ -100,48 +57,42 @@ services:
     container_name: playwright-machine-1-prod
     restart: always
     ports:
-      - "${MACHINE_1_GRPC_PORT:-50052}:50052"
-      - "${MACHINE_1_PROXY_PORT:-8082}:8082"
+      - "50052:50052"
+      - "8082:8082"
     volumes:
       - machine-1-prod-data:/app/data
       - machine-1-prod-screenshots:/app/dist/data/screenshots
+      - /data/docker/cache/chromium:/opt/google/chrome:ro
     environment:
       - NODE_ENV=production
-      - MACHINE_ID=${MACHINE_1_ID:-machine-1}
-      - MACHINE_NAME=${MACHINE_1_NAME:-Production Machine 1}
+      - MACHINE_ID=machine-1
+      - MACHINE_NAME="Production Machine 1"
       - MANAGER_HOST=manager:50051
       - MACHINE_GRPC_PORT=50052
       - PROXY_PORT=8082
-      - MAX_SESSIONS=${MAX_SESSIONS:-10}
-      - SESSION_TIMEOUT=${SESSION_TIMEOUT:-300000}
-      - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL:-30000}
+      - MAX_SESSIONS=10
+      - SESSION_TIMEOUT=300000
+      - HEARTBEAT_INTERVAL=30000
+      - CHROME_BIN=/opt/google/chrome/chromium
+      - CHROME_PATH=/opt/google/chrome/chromium
+      - PUPPETEER_EXECUTABLE_PATH=/opt/google/chrome/chromium
+      - no_proxy=REDACTED_INTERNAL_HOST,localhost,127.0.0.1,manager,machine-1,machine-2
+      - NO_PROXY=REDACTED_INTERNAL_HOST,localhost,127.0.0.1,manager,machine-1,machine-2
     depends_on:
-      manager:
-        condition: service_healthy
-    # Skip health check for machine service as it requires sessionId
+      - manager
     healthcheck:
       test: ["CMD", "node", "-e", "process.exit(0)"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 90s
-    networks:
-      - playwright-prod-network
-    deploy:
-      resources:
-        limits:
-          cpus: ${MACHINE_CPU_LIMIT:-4}
-          memory: ${MACHINE_MEMORY_LIMIT:-4G}
-        reservations:
-          cpus: ${MACHINE_CPU_RESERVATION:-1}
-          memory: ${MACHINE_MEMORY_RESERVATION:-1G}
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
 
-  # Machine Service 2 (for horizontal scaling)
+  # Machine Service 2
   machine-2:
     build:
       context: ..
@@ -151,99 +102,48 @@ services:
     container_name: playwright-machine-2-prod
     restart: always
     ports:
-      - "${MACHINE_2_GRPC_PORT:-50053}:50052"
-      - "${MACHINE_2_PROXY_PORT:-8083}:8082"
+      - "50053:50053"
+      - "8083:8083"
     volumes:
       - machine-2-prod-data:/app/data
       - machine-2-prod-screenshots:/app/dist/data/screenshots
+      - /data/docker/cache/chromium:/opt/google/chrome:ro
     environment:
       - NODE_ENV=production
-      - MACHINE_ID=${MACHINE_2_ID:-machine-2}
-      - MACHINE_NAME=${MACHINE_2_NAME:-Production Machine 2}
+      - MACHINE_ID=machine-2
+      - MACHINE_NAME="Production Machine 2"
       - MANAGER_HOST=manager:50051
-      - MACHINE_GRPC_PORT=50052
-      - PROXY_PORT=8082
-      - MAX_SESSIONS=${MAX_SESSIONS:-10}
-      - SESSION_TIMEOUT=${SESSION_TIMEOUT:-300000}
-      - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL:-30000}
+      - MACHINE_GRPC_PORT=50053
+      - PROXY_PORT=8083
+      - MAX_SESSIONS=10
+      - SESSION_TIMEOUT=300000
+      - HEARTBEAT_INTERVAL=30000
+      - CHROME_BIN=/opt/google/chrome/chromium
+      - CHROME_PATH=/opt/google/chrome/chromium
+      - PUPPETEER_EXECUTABLE_PATH=/opt/google/chrome/chromium
+      - no_proxy=REDACTED_INTERNAL_HOST,localhost,127.0.0.1,manager,machine-1,machine-2
+      - NO_PROXY=REDACTED_INTERNAL_HOST,localhost,127.0.0.1,manager,machine-1,machine-2
+      - HTTP_PROXY=http://REDACTED_PROXY_HOST:7890
+      - HTTPS_PROXY=http://REDACTED_PROXY_HOST:7890
+      - ALL_PROXY=socks5://REDACTED_PROXY_HOST:7890
     depends_on:
-      manager:
-        condition: service_healthy
+      - manager
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8082/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "node", "-e", "process.exit(0)"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 90s
-    networks:
-      - playwright-prod-network
-    deploy:
-      resources:
-        limits:
-          cpus: ${MACHINE_CPU_LIMIT:-4}
-          memory: ${MACHINE_MEMORY_LIMIT:-4G}
-        reservations:
-          cpus: ${MACHINE_CPU_RESERVATION:-1}
-          memory: ${MACHINE_MEMORY_RESERVATION:-1G}
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-    profiles:
-      - scaling
-
-  # Nginx Reverse Proxy (optional)
-  nginx:
-    image: nginx:alpine
-    container_name: playwright-nginx-prod
-    restart: always
-    ports:
-      - "${NGINX_HTTP_PORT:-80}:80"
-      - "${NGINX_HTTPS_PORT:-443}:443"
-    volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
-      - nginx-prod-logs:/var/log/nginx
-    depends_on:
-      - manager
-    networks:
-      - playwright-prod-network
-    deploy:
-      resources:
-        limits:
-          cpus: ${NGINX_CPU_LIMIT:-1}
-          memory: ${NGINX_MEMORY_LIMIT:-512M}
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    profiles:
-      - with-nginx
-
-networks:
-  playwright-prod-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: ${NETWORK_SUBNET:-172.20.0.0/16}
 
 volumes:
-  mysql-prod-data:
-    driver: local
   manager-prod-data:
-    driver: local
   manager-prod-files:
-    driver: local
   machine-1-prod-data:
-    driver: local
   machine-1-prod-screenshots:
-    driver: local
   machine-2-prod-data:
-    driver: local
   machine-2-prod-screenshots:
-    driver: local
-  nginx-prod-logs:
-    driver: local

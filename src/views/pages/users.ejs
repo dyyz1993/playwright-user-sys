@@ -706,7 +706,8 @@
               }
             });
           }
-        } else {
+        });
+      } else {
           editUserModalBody.innerHTML = `
             <div class="text-center py-8">
               <i class="fas fa-exclamation-circle text-red-500 text-4xl mb-4"></i>
@@ -751,11 +752,16 @@
     const formData = new FormData(form);
     const userId = formData.get('user_id');
     const userData = {
-      email: formData.get('email'),
       role: formData.get('role'),
       status: formData.get('status'),
-      webhook_url: formData.get('webhook_url')
+      webhook_url: formData.get('webhook_url') || null
     };
+
+    // 如果提供了 email，则添加到请求数据中
+    const email = formData.get('email');
+    if (email && email.trim() !== '') {
+      userData.email = email;
+    }
 
     // 如果提供了密码，则添加到请求数据中
     const password = formData.get('password');

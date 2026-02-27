@@ -17,6 +17,7 @@ const wsConnectQuerySchema = z.object({
   userAgent: z.string().optional(),
   cookies: z.record(z.string(), z.string()).optional(),
   localStorage: z.record(z.string(), z.string()).optional(),
+  sharedUserData: z.coerce.boolean().optional(),
 });
 
 export class NativeWebSocketProxyService {
@@ -135,7 +136,8 @@ export class NativeWebSocketProxyService {
         localStorage: validatedParams.localStorage,
         viewport: validatedParams.width && validatedParams.height ? 
           { width: validatedParams.width, height: validatedParams.height } : 
-          undefined
+          undefined,
+        sharedUserData: validatedParams.sharedUserData,
       };
 
       logger.info(`为用户 ${userId} 创建浏览器会话`);

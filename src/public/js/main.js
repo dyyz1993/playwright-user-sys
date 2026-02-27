@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 设置表单验证
   setupFormValidation();
+
+  // 初始化高级搜索（如果存在）
+  initAdvancedSearch();
 });
 
 // 设置当前活跃的侧边栏链接
@@ -42,7 +45,7 @@ function initDataTables() {
     // 添加表格悬停效果
     const rows = table.querySelectorAll('tbody tr');
     rows.forEach(row => {
-      row.classList.add('table-hover');
+      row.classList.add('table-hover', 'table-row-animate');
     });
     
     // 添加排序功能
@@ -60,9 +63,57 @@ function initDataTables() {
         headers.forEach(h => h.classList.remove('sorting-asc', 'sorting-desc'));
         this.classList.add(`sorting-${newDirection}`);
         
-        // 这里可以添加实际的排序逻辑，或者通过 AJAX 请求服务器排序
-        console.log(`Sorting by ${sortKey} in ${newDirection} order`);
+        // 触发自定义事件，让页面脚本处理排序
+        const event = new CustomEvent('table-sort', {
+          detail: { key: sortKey, direction: newDirection }
+        });
+        document.dispatchEvent(event);
       });
+    });
+  });
+}
+
+// 初始化高级搜索
+function initAdvancedSearch() {
+  // 为所有搜索输入框添加防抖功能
+  const searchInputs = document.querySelectorAll('[data-search-input]');
+  
+  searchInputs.forEach(input => {
+    const debounceTime = parseInt(input.dataset.searchDebounce) || 500;
+    const searchUrl = input.dataset.searchUrl || window.location.pathname;
+    
+    // 初始值
+    input.addEventListener('input', window.appUtils.debounce(function() {
+      const value = this.value.trim();
+      const url = new URL(window.location.href);
+      
+      if (value) {
+        url.searchParams.set('search', value);
+      } else {
+        url.searchParams.delete('search');
+      }
+      url.searchParams.set('page', '1'); // 搜索时重置到第一页
+      
+      window.location.href = url.toString();
+    }, debounceTime));
+  });
+
+  // 为筛选下拉框添加即时筛选功能
+  const filters = document.querySelectorAll('[data-filter-select]');
+  
+  filters.forEach(select => {
+    select.addEventListener('change', function() {
+      const url = new URL(window.location.href);
+      const paramName = this.dataset.filterParam || this.id.replace('filter', '').toLowerCase();
+      
+      if (this.value) {
+        url.searchParams.set(paramName, this.value);
+      } else {
+        url.searchParams.delete(paramName);
+      }
+      url.searchParams.set('page', '1'); // 筛选时重置到第一页
+      
+      window.location.href = url.toString();
     });
   });
 }
@@ -125,40 +176,12 @@ function setupFormValidation() {
 
 // 显示通知
 function showNotification(message, type = 'info') {
-  const notification = document.createElement('div');
-  notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-    type === 'success' ? 'bg-green-500' :
-    type === 'error' ? 'bg-red-500' :
-    type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
-  } text-white`;
-  
-  notification.innerHTML = `
-    <div class="flex items-center">
-      <i class="fas fa-${
-        type === 'success' ? 'check-circle' :
-        type === 'error' ? 'exclamation-circle' :
-        type === 'warning' ? 'exclamation-triangle' : 'info-circle'
-      } mr-3"></i>
-      <span>${message}</span>
-    </div>
-  `;
-  
-  document.body.appendChild(notification);
-  
-  // 3秒后自动消失
-  setTimeout(() => {
-    notification.classList.add('opacity-0', 'transition-opacity');
-    setTimeout(() => {
-      notification.remove();
-    }, 300);
-  }, 3000);
+  window.appUtils.toast[type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'](message);
 }
 
 // 确认对话框
 function confirmAction(message, callback) {
-  if (confirm(message)) {
-    callback();
-  }
+  window.appUtils.confirmAction(message, callback);
 }
 
 // 格式化日期
@@ -166,18 +189,20 @@ function formatDate(date) {
   if (!date) return '';
   
   const d = new Date(date);
-  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+  return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN');
 }
 
 // 格式化数字
 function formatNumber(num) {
-  return new Intl.NumberFormat().format(num);
+  return new Intl.NumberFormat('zh-CN').format(num);
 }
 
 // 导出工具函数
-window.appUtils = {
+window.appUtils = window.appUtils || {};
+
+Object.assign(window.appUtils, {
   showNotification,
   confirmAction,
   formatDate,
   formatNumber
-};
+});

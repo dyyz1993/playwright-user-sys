@@ -7,6 +7,7 @@
   <title><%= title %> - Playwright 用户管理系统</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
   <script>
     tailwind.config = {
       theme: {
@@ -24,6 +25,12 @@
               800: '#075985',
               900: '#0c4a6e',
             }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.2s ease-out',
+            'slide-up': 'slideUp 0.3s ease-out',
+            'slide-down': 'slideDown 0.2s ease-out',
+            'scale-in': 'scaleIn 0.2s ease-out',
           }
         }
       }
@@ -34,9 +41,74 @@
       background-color: rgba(14, 165, 233, 0.1);
       border-left: 3px solid #0ea5e9;
     }
+    
+    /* 改进的通知样式 */
+    .toast-container {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-width: 400px;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOutRight {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+
+    .toast-enter {
+      animation: slideInRight 0.3s ease forwards;
+    }
+
+    .toast-exit {
+      animation: slideOutRight 0.3s ease forwards;
+    }
+
+    /* 改进的模态框样式 */
+    .modal-backdrop {
+      backdrop-filter: blur(2px);
+    }
+
+    /* 改进的按钮hover效果 */
+    .btn-animate:active {
+      transform: scale(0.98);
+    }
+
+    /* 表格行动画 */
+    .table-row-enter {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
+  <!-- Toast 通知容器 -->
+  <div id="toast-container" class="toast-container"></div>
+
   <div class="flex h-screen overflow-hidden">
     <!-- 侧边栏 -->
     <%- include('../partials/sidebar') %>
@@ -49,14 +121,20 @@
       <!-- 页面内容 -->
       <main class="p-6">
         <% if (locals.flash && flash.success) { %>
-          <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <span class="block sm:inline"><%= flash.success %></span>
+          <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg relative mb-4 fade-in" role="alert">
+            <div class="flex items-center">
+              <i class="fas fa-check-circle mr-2"></i>
+              <span class="block sm:inline"><%= flash.success %></span>
+            </div>
           </div>
         <% } %>
 
         <% if (locals.flash && flash.error) { %>
-          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <span class="block sm:inline"><%= flash.error %></span>
+          <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg relative mb-4 fade-in" role="alert">
+            <div class="flex items-center">
+              <i class="fas fa-exclamation-circle mr-2"></i>
+              <span class="block sm:inline"><%= flash.error %></span>
+            </div>
           </div>
         <% } %>
 
@@ -67,53 +145,239 @@
 
   <!-- 公共工具函数 -->
   <script>
-    // 全局工具对象
-    window.appUtils = {
-      // 显示通知
-      showNotification: function(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
-          type === 'success' ? 'bg-green-100 text-green-800 border border-green-300' :
-          type === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
-          'bg-blue-100 text-blue-800 border border-blue-300'
-        }`;
-        notification.innerHTML = `
-          <div class="flex items-center">
-            <i class="fas fa-${
-              type === 'success' ? 'check-circle' :
-              type === 'error' ? 'exclamation-circle' :
-              'info-circle'
-            } mr-2"></i>
-            <span>${message}</span>
-          </div>
-        `;
-        document.body.appendChild(notification);
+    // Toast 通知系统
+    const Toast = {
+      container: null,
 
-        // 3秒后自动消失
-        setTimeout(() => {
-          notification.classList.add('opacity-0', 'transition-opacity');
-          setTimeout(() => {
-            document.body.removeChild(notification);
-          }, 300);
-        }, 3000);
+      init() {
+        if (!this.container) {
+          this.container = document.getElementById('toast-container');
+        }
+        return this.container;
       },
 
-      // 确认操作
-      confirmAction: function(message, callback) {
-        if (confirm(message)) {
-          callback();
+      show(message, type = 'info', duration = 3000) {
+        const container = this.init();
+        
+        const toast = document.createElement('div');
+        toast.className = `toast-notification ${type} toast-enter`;
+        
+        const icons = {
+          success: 'fa-check-circle',
+          error: 'fa-exclamation-circle',
+          warning: 'fa-exclamation-triangle',
+          info: 'fa-info-circle'
+        };
+
+        toast.innerHTML = `
+          <i class="fas ${icons[type] || icons.info} text-lg"></i>
+          <span class="flex-1">${message}</span>
+          <button class="toast-close ml-2 hover:opacity-70 transition-opacity">
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+
+        container.appendChild(toast);
+
+        // 绑定关闭按钮
+        toast.querySelector('.toast-close').addEventListener('click', () => {
+          this.dismiss(toast);
+        });
+
+        // 自动关闭
+        if (duration > 0) {
+          setTimeout(() => {
+            this.dismiss(toast);
+          }, duration);
         }
+
+        return toast;
+      },
+
+      dismiss(toast) {
+        toast.classList.remove('toast-enter');
+        toast.classList.add('toast-exit');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      },
+
+      success(message, duration) {
+        return this.show(message, 'success', duration);
+      },
+
+      error(message, duration) {
+        return this.show(message, 'error', duration);
+      },
+
+      warning(message, duration) {
+        return this.show(message, 'warning', duration);
+      },
+
+      info(message, duration) {
+        return this.show(message, 'info', duration);
+      }
+    };
+
+    // 全局工具对象
+    window.appUtils = {
+      // 显示通知（兼容旧API）
+      showNotification: function(message, type = 'info') {
+        Toast[type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'](message);
+      },
+
+      // Toast 快捷方法
+      toast: Toast,
+
+      // 确认操作（改进版）
+      confirmAction: function(message, callback, options = {}) {
+        const {
+          title = '确认操作',
+          confirmText = '确认',
+          cancelText = '取消',
+          type = 'warning'
+        } = options;
+
+        // 创建确认对话框
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center';
+        modal.innerHTML = `
+          <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-50" data-action="close"></div>
+          <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 animate-scale-in">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-${type === 'danger' ? 'triangle' : 'circle'} text-${type === 'danger' ? 'red' : 'yellow'}-500 text-2xl"></i>
+              </div>
+              <div class="ml-4 flex-1">
+                <h3 class="text-lg font-medium text-gray-900">${title}</h3>
+                <p class="mt-2 text-sm text-gray-500">${message}</p>
+              </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+              <button class="cancel-btn px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                ${cancelText}
+              </button>
+              <button class="confirm-btn px-4 py-2 text-sm font-medium text-white ${type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'} rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${type === 'danger' ? 'focus:ring-red-500' : 'focus:ring-primary-500'}">
+                ${confirmText}
+              </button>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // 绑定事件
+        const closeModal = () => {
+          modal.remove();
+        };
+
+        modal.querySelector('[data-action="close"]').addEventListener('click', closeModal);
+        modal.querySelector('.cancel-btn').addEventListener('click', closeModal);
+        modal.querySelector('.confirm-btn').addEventListener('click', () => {
+          closeModal();
+          callback();
+        });
+
+        // ESC 关闭
+        const escHandler = (e) => {
+          if (e.key === 'Escape') {
+            closeModal();
+            document.removeEventListener('keydown', escHandler);
+          }
+        };
+        document.addEventListener('keydown', escHandler);
       },
 
       // 格式化日期
       formatDate: function(dateString) {
         if (!dateString) return '未知';
-        return new Date(dateString).toLocaleString();
+        return new Date(dateString).toLocaleString('zh-CN');
+      },
+
+      // 格式化数字
+      formatNumber: function(num) {
+        return new Intl.NumberFormat('zh-CN').format(num);
+      },
+
+      // 格式化文件大小
+      formatBytes: function(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+      },
+
+      // 复制到剪贴板
+      copyToClipboard: async function(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          Toast.success('已复制到剪贴板');
+          return true;
+        } catch (err) {
+          // 降级方案
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          try {
+            document.execCommand('copy');
+            Toast.success('已复制到剪贴板');
+            document.body.removeChild(textarea);
+            return true;
+          } catch (e) {
+            document.body.removeChild(textarea);
+            Toast.error('复制失败');
+            return false;
+          }
+        }
+      },
+
+      // 加载状态
+      setLoading: function(element, loading = true) {
+        if (loading) {
+          element.classList.add('btn-loading');
+          element.disabled = true;
+        } else {
+          element.classList.remove('btn-loading');
+          element.disabled = false;
+        }
+      },
+
+      // 防抖
+      debounce: function(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      },
+
+      // 节流
+      throttle: function(func, limit) {
+        let inThrottle;
+        return function(...args) {
+          if (!inThrottle) {
+            func.apply(this, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+          }
+        };
       }
     };
 
     // 获取当前路径
     const currentPath = window.location.pathname;
+    window.appPath = currentPath;
 
     // 将当前路径保存到全局变量中，供其他脚本使用
     window.appPath = currentPath;
@@ -126,6 +390,28 @@
       const href = link.getAttribute('href');
       if (currentPath === href || (href !== '/admin' && currentPath.startsWith(href))) {
         link.classList.add('sidebar-active');
+      }
+    });
+
+    // 键盘快捷键
+    document.addEventListener('keydown', function(e) {
+      // Ctrl/Cmd + K: 搜索
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="search"], input[id*="search"]');
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }
+      
+      // Escape: 关闭模态框
+      if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('.fixed.inset-0:not(.hidden)');
+        modals.forEach(modal => {
+          if (modal.classList.contains('z-50')) {
+            modal.classList.add('hidden');
+          }
+        });
       }
     });
   </script>

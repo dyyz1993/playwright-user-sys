@@ -54,3 +54,6 @@ prebuilt/
 
 test-results/
 test-results/
+!.env.example
+.en*
+

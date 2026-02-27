@@ -42,7 +42,7 @@ import { db, initDatabase } from '../../src/config/database.js';
 import { runMigrations } from '../../src/models/migrations.js';
 import { getFreePort } from '../helpers/ports.js';
 import { createTestUser } from '../helpers/factories.js';
-import puppeteer from 'puppeteer-core';
+import puppeteer, { Page } from 'puppeteer-core';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
@@ -77,7 +77,7 @@ async function startTestHttpServer(): Promise<number> {
   testHttpServer = http.createServer(async (req, res) => {
     try {
       // 解析 URL
-      const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+      const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
 
       // 处理 favicon 请求
       if (parsedUrl.pathname === '/favicon.ico') {
@@ -144,7 +144,7 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
     const adminDb = knex.default({
       client: 'mysql2',
       connection: {
-        host: process.env.DB_HOST,
+        host: process.env.DB_HOST || 'mysql.19930810.xyz',
         port: parseInt(process.env.DB_PORT || '3306'),
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
@@ -190,11 +190,13 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
       });
 
       const { generateToken } = await import('../../src/utils/auth.js');
+      console.log(`   [DEBUG] JWT_SECRET in test: ${process.env.JWT_SECRET}`);
       const token = generateToken({
         id: user.id,
         username: user.username,
         role: user.role,
       });
+      console.log(`   [DEBUG] Generated token (first 50 chars): ${token.substring(0, 50)}...`);
 
       testUsers.push({
         id: user.id,
@@ -313,7 +315,7 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
    * 获取浏览器指纹
    * 使用 HTTP 服务器提供 HTML，避免 file:// 和 data: URL 的限制
    */
-  async function getFingerprint(page: puppeteer.Page, instanceId?: string): Promise<{
+  async function getFingerprint(page: Page, instanceId?: string): Promise<{
     hash: string;
     basic: any;
     canvas: any;
@@ -329,10 +331,10 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
 
     // 收集控制台消息用于调试
     const consoleMessages: string[] = [];
-    page.on('console', msg => {
+    page.on('console', (msg: any) => {
       consoleMessages.push(msg.text());
     });
-    page.on('pageerror', error => {
+    page.on('pageerror', (error: any) => {
       console.error('[Page Error]', error.message);
     });
 
@@ -391,6 +393,14 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
       },
       body: {},
     });
+
+    // 打印错误信息以便调试
+    if (response.statusCode !== 201) {
+      console.error('[createSessionAndConnect] 错误响应:', {
+        statusCode: response.statusCode,
+        body: response.body,
+      });
+    }
 
     expect(response.statusCode).toBe(201);
     const sessionData = JSON.parse(response.body);

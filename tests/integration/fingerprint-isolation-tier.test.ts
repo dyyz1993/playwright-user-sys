@@ -128,7 +128,7 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
   let managerApp: any;
   let managerHttpPort: number;
   let managerGrpcPort: number;
-  let testDbName: string;
+  let testDb: IsolatedTestDatabase;
 
   // ========================================
   // 步骤 4: beforeAll - 环境准备
@@ -138,35 +138,13 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
     console.log('beforeAll: 开始环境准备');
     console.log('========================================');
 
-    // [步骤 1] 创建独立的测试数据库
-    console.log('\n[步骤 1] 创建测试数据库...');
-    testDbName = `test_tier_fingerprint_${Date.now()}`;
-    process.env.DB_NAME = testDbName;
+    // [步骤 1] 创建独立测试数据库
+    console.log('\n[步骤 1] 创建独立测试数据库...');
+    testDb = await createIsolatedTestDatabase();
+    console.log(`   ✅ 测试数据库已创建: ${testDb.dbName}`);
 
-    const knex = await import('knex');
-    const adminDb = knex.default({
-      client: 'mysql2',
-      connection: {
-        host: process.env.DB_HOST || 'mysql.19930810.xyz',
-        port: parseInt(process.env.DB_PORT || '3306'),
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-      },
-    });
-
-    await adminDb.raw(`DROP DATABASE IF EXISTS ${testDbName}`);
-    await adminDb.raw(`CREATE DATABASE ${testDbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-    await adminDb.destroy();
-    console.log(`   ✅ 测试数据库 ${testDbName} 已创建`);
-
-    // [步骤 2] 初始化数据库连接并运行迁移
-    console.log('\n[步骤 2] 初始化数据库连接...');
-    await initDatabase();
-    await runMigrations();
-    console.log('   ✅ 数据库迁移完成');
-
-    // [步骤 3] 启动管理端服务器
-    console.log('\n[步骤 3] 启动管理端服务器...');
+    // [步骤 2] 启动管理端服务器
+    console.log('\n[步骤 2] 启动管理端服务器...');
     managerHttpPort = await getFreePort();
     managerGrpcPort = await getFreePort();
 
@@ -231,7 +209,7 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
     // [步骤 6] 等待机器注册
     console.log('\n[步骤 6] 等待机器注册到管理端...');
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    const machines = await db('machines').select('*');
+    const machines = await testDb.db('machines').select('*');
     console.log(`   ✅ 已注册 ${machines.length} 个机器`);
 
     console.log('\n========================================');
@@ -270,22 +248,9 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
 
     // [步骤 3] 清理测试数据库
     console.log('\n[步骤 3] 清理测试数据库...');
-    try {
-      const knex = await import('knex');
-      const adminDb = knex.default({
-        client: 'mysql2',
-        connection: {
-          host: process.env.DB_HOST,
-          port: parseInt(process.env.DB_PORT || '3306'),
-          user: process.env.DB_USER,
-          password: process.env.DB_PASSWORD,
-        },
-      });
-      await adminDb.raw(`DROP DATABASE IF EXISTS ${testDbName}`);
-      await adminDb.destroy();
+    if (testDb) {
+      await dropIsolatedTestDatabase(testDb);
       console.log('   ✅ 测试数据库已删除');
-    } catch (error) {
-      console.log('   ⚠️ 删除数据库失败:', error);
     }
 
     console.log('\n========================================');
@@ -297,16 +262,16 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
   // 步骤 6: beforeEach - 每个测试前清理
   // ========================================
   beforeEach(async () => {
-    await db('sessions').del();
-    await db('credit_history').del();
+    await testDb.db('sessions').del();
+    await testDb.db('credit_history').del();
 
     for (const user of testUsers) {
-      await db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
+      await testDb.db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
     }
 
-    const machines = await db('machines').select('id');
+    const machines = await testDb.db('machines').select('id');
     for (const machine of machines) {
-      await db('machines').where({ id: machine.id }).update({ instance_count: 0 });
+      await testDb.db('machines').where({ id: machine.id }).update({ instance_count: 0 });
     }
   }, 10000);
 

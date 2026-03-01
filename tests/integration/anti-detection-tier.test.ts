@@ -176,7 +176,7 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
     console.log('\n[步骤 6] 等待机器注册到管理端...');
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    const machines = await db('machines').select('*');
+    const machines = await testDb.db('machines').select('*');
     console.log(`   ✅ 已注册 ${machines.length} 个机器`);
 
     console.log('\n========================================');

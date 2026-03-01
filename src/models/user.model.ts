@@ -33,6 +33,7 @@ export interface UpdateUserInput {
   status?: UserStatus;
   credits?: number;
   webhook_url?: string;
+  api_key?: string;
 }
 
 export class UserModel {

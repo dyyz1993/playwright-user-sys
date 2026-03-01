@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { env } from '../config/env.js';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { UserRole } from '@shared/types/index.js';
@@ -12,6 +12,11 @@ export async function hashPassword(password: string): Promise<string> {
 export async function comparePassword(password: string, hashedPassword: string): Promise<boolean> {
   const hashed = await hashPassword(password);
   return hashed === hashedPassword;
+}
+
+// 生成 API Key
+export function generateApiKey(): string {
+  return randomUUID();
 }
 
 // 生成 JWT Token
@@ -79,6 +84,7 @@ export function extractTokenFromHeader(header: string | undefined): string | nul
 export default {
   hashPassword,
   comparePassword,
+  generateApiKey,
   generateToken,
   verifyToken,
   extractTokenFromHeader,

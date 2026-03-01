@@ -108,6 +108,20 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
       });
 
+      // 记录登录操作日志
+      const { OperationLogModel } = await import('../models/operation-log.model.js');
+      OperationLogModel.create({
+        admin_id: user.id,
+        action: '登录',
+        details: {
+          username: user.username,
+          role: user.role,
+          ip: request.ip,
+        },
+      }).catch((logError) => {
+        request.log.error({ err: logError }, '记录登录操作日志失败');
+      });
+
       // 重定向到仪表盘
       return reply.redirect('/admin');
     } catch (error: any) {

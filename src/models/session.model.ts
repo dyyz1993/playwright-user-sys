@@ -928,14 +928,15 @@ export class SessionModel {
     page: number = 1,
     limit: number = 10,
     filters?: SessionFilterOptions
-  ): Promise<PaginatedResponse<Session & { username?: string }>> {
+  ): Promise<PaginatedResponse<Session & { username?: string; machine_name?: string }>> {
     try {
       const offset = (page - 1) * limit;
 
       // 构建查询
       let query = db('sessions')
-        .select('sessions.*', 'users.username')
-        .leftJoin('users', 'sessions.user_id', 'users.id');
+        .select('sessions.*', 'users.username', 'machines.hostname as machine_name')
+        .leftJoin('users', 'sessions.user_id', 'users.id')
+        .leftJoin('machines', 'sessions.machine_id', 'machines.id');
 
       // 应用状态筛选
       if (filters?.status) {
@@ -1185,7 +1186,7 @@ export class SessionModel {
       order?: 'asc' | 'desc';
       filters?: SessionFilterOptions;
     }
-  ): Promise<PaginatedResponse<Session & { username: string }>> {
+  ): Promise<PaginatedResponse<Session & { username: string; machine_name?: string }>> {
     try {
       const offset = (page - 1) * limit;
       const sort = options?.sort || 'created_at';
@@ -1193,8 +1194,9 @@ export class SessionModel {
 
       // 构建查询
       let query = db('sessions')
-        .select('sessions.*', 'users.username')
-        .leftJoin('users', 'sessions.user_id', 'users.id');
+        .select('sessions.*', 'users.username', 'machines.hostname as machine_name')
+        .leftJoin('users', 'sessions.user_id', 'users.id')
+        .leftJoin('machines', 'sessions.machine_id', 'machines.id');
 
       // 应用状态筛选
       if (options?.filters?.status) {

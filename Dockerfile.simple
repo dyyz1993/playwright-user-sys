@@ -29,8 +29,8 @@ COPY . .
 RUN mkdir -p /app/data
 RUN mkdir -p /app/dist/data/screenshots
 
-# 编译 TypeScript 文件
-RUN pnpm run build || echo "TypeScript compilation failed, but continuing with build"
+# 编译 TypeScript 文件 (生成 dist 目录)
+RUN pnpm run build:emit || echo "TypeScript compilation failed, but continuing with build"
 
 # 复制视图和 proto 文件
 RUN mkdir -p /app/dist/src/views/layouts

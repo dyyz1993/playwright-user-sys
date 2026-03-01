@@ -29,8 +29,8 @@ RUN --mount=type=cache,target=/root/.npm \
     cd /app/node_modules/better-sqlite3 && \
     npm run build-release
 
-# 编译 TypeScript
-RUN pnpm run build || echo "TypeScript compilation failed, but continuing with build"
+# 编译 TypeScript (生成 dist 目录)
+RUN pnpm run build:emit || echo "TypeScript compilation failed, but continuing with build"
 
 # 第二阶段：运行阶段
 FROM node:18-alpine AS runtime

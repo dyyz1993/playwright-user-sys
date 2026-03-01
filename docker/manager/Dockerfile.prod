@@ -44,8 +44,8 @@ COPY . .
 RUN npm install -g pnpm@10.8.0
 RUN pnpm setup:aliases || true
 
-# Build TypeScript
-RUN pnpm build
+# Build TypeScript (generate dist directory)
+RUN pnpm build:emit
 
 # ============================================
 # Stage 3: Production

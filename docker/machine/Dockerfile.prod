@@ -39,10 +39,10 @@ COPY --from=dependencies /app/node_modules ./node_modules
 # Copy source code
 COPY . .
 
-# Setup and build
+# Setup and build (generate dist directory)
 RUN npm install -g pnpm@10.8.0
 RUN pnpm setup:aliases || true
-RUN pnpm build
+RUN pnpm build:emit
 
 # ============================================
 # Stage 3: Production with Host Chrome

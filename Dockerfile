@@ -36,8 +36,8 @@ RUN chmod -R 755 /app/node_modules/better-sqlite3/build/Release/
 # 复制源代码
 COPY . .
 
-# 编译 TypeScript 文件
-RUN pnpm run build || echo "TypeScript compilation failed, but continuing with build"
+# 编译 TypeScript 文件 (生成 dist 目录)
+RUN pnpm run build:emit || echo "TypeScript compilation failed, but continuing with build"
 
 # 第二阶段：创建最终镜像
 FROM node:18-slim

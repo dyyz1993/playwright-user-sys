@@ -104,13 +104,13 @@
         <div>
           <select id="sort-select" name="sort" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
             <option value="">默认排序</option>
-            <option value="created_at:desc">创建时间(新→旧)</option>
-            <option value="created_at:asc">创建时间(旧→新)</option>
-            <option value="duration:desc">持续时间(长→短)</option>
-            <option value="duration:asc">持续时间(短→长)</option>
-            <option value="credits_used:desc">消耗积分(多→少)</option>
-            <option value="credits_used:asc">消耗积分(少→多)</option>
-            <option value="updated_at:desc">更新时间(新→旧)</option>
+            <option value="created_at:desc" <%= (filters.sort === 'created_at' && filters.order === 'desc') ? 'selected' : '' %>>创建时间(新→旧)</option>
+            <option value="created_at:asc" <%= (filters.sort === 'created_at' && filters.order === 'asc') ? 'selected' : '' %>>创建时间(旧→新)</option>
+            <option value="duration:desc" <%= (filters.sort === 'duration' && filters.order === 'desc') ? 'selected' : '' %>>持续时间(长→短)</option>
+            <option value="duration:asc" <%= (filters.sort === 'duration' && filters.order === 'asc') ? 'selected' : '' %>>持续时间(短→长)</option>
+            <option value="credits_used:desc" <%= (filters.sort === 'credits_used' && filters.order === 'desc') ? 'selected' : '' %>>消耗积分(多→少)</option>
+            <option value="credits_used:asc" <%= (filters.sort === 'credits_used' && filters.order === 'asc') ? 'selected' : '' %>>消耗积分(少→多)</option>
+            <option value="updated_at:desc" <%= (filters.sort === 'updated_at' && filters.order === 'desc') ? 'selected' : '' %>>更新时间(新→旧)</option>
           </select>
         </div>
       </div>

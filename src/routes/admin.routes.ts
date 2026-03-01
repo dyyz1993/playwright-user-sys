@@ -505,9 +505,13 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           startDate?: string;
           endDate?: string;
           dateRange?: string;
+          sort?: string;
+          order?: string;
         };
         const page = parseInt(query.page || '1');
         const limit = parseInt(query.limit || '10');
+        const sort = query.sort || 'created_at';
+        const order = (query.order?.toLowerCase() === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc';
 
         // 获取用户列表（用于用户筛选）
         const { UserModel } = await import('../models/user.model.js');
@@ -559,8 +563,12 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           filters.endDate = new Date(query.endDate);
         }
 
-        // 获取会话列表
-        const { items, total, totalPages } = await SessionModel.paginate(page, limit, filters);
+        // 获取会话列表（支持排序）
+        const { items, total, totalPages } = await SessionModel.paginateSorted(page, limit, {
+          sort,
+          order,
+          filters,
+        });
 
         // 调试日志
         console.log(`[DEBUG] /admin/sessions: page=${page}, limit=${limit}, filters=`, JSON.stringify(filters));
@@ -589,6 +597,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
             dateRange: query.dateRange || 'all',
             startDate: query.startDate || '',
             endDate: query.endDate || '',
+            sort,
+            order,
           },
           flash: request.flash,
         });

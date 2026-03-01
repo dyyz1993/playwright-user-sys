@@ -244,6 +244,8 @@ export class GrpcClient extends EventEmitter {
     try {
       await retry(
         async () => {
+          const diskUsage = await this.getDiskUsage();
+
           return new Promise<void>((resolve, reject) => {
             try {
               // 如果已经连接，先取消当前连接
@@ -321,6 +323,7 @@ export class GrpcClient extends EventEmitter {
                   timestamp: Date.now(),
                   cpu_usage: this.getCpuUsage(),
                   memory_usage: this.getMemoryUsage(),
+                  disk_usage: diskUsage,
                   active_sessions: browserService.getActiveSessions(),
                 },
               };
@@ -472,6 +475,8 @@ export class GrpcClient extends EventEmitter {
     }
 
     try {
+      const diskUsage = await this.getDiskUsage();
+
       // 构造心跳消息
       const heartbeat = {
         machine_id: this.config.machineId,
@@ -479,6 +484,7 @@ export class GrpcClient extends EventEmitter {
           timestamp: Date.now(),
           cpu_usage: this.getCpuUsage(),
           memory_usage: this.getMemoryUsage(),
+          disk_usage: diskUsage,
           active_sessions: browserService.getActiveSessions(),
         },
       };
@@ -830,6 +836,65 @@ export class GrpcClient extends EventEmitter {
     } catch (error) {
       logger.error('获取磁盘空间失败:', error);
       return 1000000000; // 1GB
+    }
+  }
+
+  /**
+   * 获取磁盘使用率
+   * 返回0-100之间的数值，表示磁盘使用百分比
+   */
+  private async getDiskUsage(): Promise<number> {
+    try {
+      const execAsync = promisify(exec);
+      let command = '';
+
+      if (os.platform() === 'win32') {
+        // Windows - 使用 wmic 获取磁盘使用率
+        command = 'wmic logicaldisk where "DeviceID=\'C:\'" get FreeSpace,Size';
+      } else if (os.platform() === 'darwin') {
+        // macOS
+        command = 'df -k / | tail -1 | awk \'{ print $3 " " $2 }\'';
+      } else {
+        // Linux 和其他类 Unix 系统
+        command = 'df -k / | tail -1 | awk \'{ print $3 " " $2 }\'';
+      }
+
+      const { stdout } = await execAsync(command);
+
+      // 解析输出
+      if (os.platform() === 'win32') {
+        // Windows 输出格式: FreeSpace Size
+        const lines = stdout
+          .trim()
+          .split('\n')
+          .filter((line) => line.trim() && !line.includes('FreeSpace'));
+        if (lines.length > 0) {
+          const parts = lines[0].trim().split(/\s+/);
+          if (parts.length >= 2) {
+            const freeSpace = parseInt(parts[0], 10);
+            const totalSpace = parseInt(parts[1], 10);
+            if (!isNaN(freeSpace) && !isNaN(totalSpace) && totalSpace > 0) {
+              return ((totalSpace - freeSpace) / totalSpace) * 100;
+            }
+          }
+        }
+      } else {
+        // macOS 和 Linux 输出格式: used total (in KB)
+        const parts = stdout.trim().split(/\s+/);
+        if (parts.length >= 2) {
+          const used = parseInt(parts[0], 10);
+          const total = parseInt(parts[1], 10);
+          if (!isNaN(used) && !isNaN(total) && total > 0) {
+            return (used / total) * 100;
+          }
+        }
+      }
+
+      // 如果无法解析，返回默认值
+      return 50; // 默认 50%
+    } catch (error) {
+      logger.error('获取磁盘使用率失败:', error);
+      return 50; // 默认 50%
     }
   }
 }

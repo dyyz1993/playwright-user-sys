@@ -248,7 +248,7 @@ class MachineConnectionManager extends EventEmitter {
           proxy_port: machine.proxyPort || 8080, // 默认值
           cpu_usage: heartbeat.cpu_usage,
           memory_usage: heartbeat.memory_usage,
-          disk_space: heartbeat.disk_space || 0,
+          disk_space: heartbeat.disk_usage || 0, // 使用心跳中的磁盘使用率
           active_sessions: heartbeat.active_sessions,
           max_sessions: machine.maxInstances,
           last_heartbeat: new Date(),

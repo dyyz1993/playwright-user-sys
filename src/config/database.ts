@@ -1,4 +1,4 @@
-import knex from 'knex';
+import knex, { Knex } from 'knex';
 import path from 'path';
 import { env } from './env.js';
 import { fileURLToPath } from 'url';
@@ -57,7 +57,7 @@ const createDatabaseConfig = () => {
 };
 
 // 数据库实例
-let dbInstance: knex.Knex<any, unknown[]>;
+let dbInstance: Knex;
 
 // 初始化数据库
 export async function initDatabase() {
@@ -116,16 +116,13 @@ export const getDb = () => dbInstance;
 
 // 创建一个可调用的 db 对象来支持 db('table') 调用方式
 const createDbProxy = () => {
-  const proxyFn = function (table: string, ...args: any[]) {
+  const proxyFn = function (table: string, ..._args: unknown[]) {
     if (dbInstance) {
-      return dbInstance(table, ...args);
+      return dbInstance(table);
     }
     throw new Error('Database not initialized. Call initDatabase() first.');
-  } as any;
+  } as Knex;
 
-  // 复制所有 Knex 原型方法到 proxyFn
-  const knexMethods = Object.getOwnPropertyNames(Object.getPrototypeOf({}));
-  // 通过 Proxy 拦截属性访问
   return new Proxy(proxyFn, {
     get(target, prop) {
       if (prop === 'then' || prop === 'catch') {

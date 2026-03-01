@@ -1,7 +1,7 @@
 import { readdir, stat, rm } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { STORAGE_CONFIG, StorageLimitType } from '../config/storage.config.js';
+import { STORAGE_CONFIG } from '../config/storage.config.js';
 import { logger } from '../shared/utils/logger.js';
 
 /**

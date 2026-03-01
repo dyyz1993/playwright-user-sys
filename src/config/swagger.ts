@@ -1,6 +1,5 @@
 import { FastifySwaggerOptions } from '@fastify/swagger';
 import { env } from './env.js';
-import { FastifyApiReferenceOptions } from '@scalar/fastify-api-reference';
 
 // Swagger 配置
 export const swaggerOptions: FastifySwaggerOptions = {

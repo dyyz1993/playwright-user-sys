@@ -11,12 +11,3 @@ export const STORAGE_CONFIG = {
   /** Cleanup shared data older than this many days */
   SHARED_CLEANUP_AGE_DAYS: 30,
 } as const;
-
-/**
- * Storage limit types for error messages
- */
-export enum StorageLimitType {
-  SESSION = 'session',
-  SHARED = 'shared',
-  TOTAL = 'total',
-}

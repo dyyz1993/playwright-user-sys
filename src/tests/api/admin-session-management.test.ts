@@ -1,6 +1,7 @@
 import { describe, beforeAll, afterAll, beforeEach, test, expect } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app.js';
+import { initDatabase } from '../../config/database.js';
 import { clearAllTables } from '../helpers/database.js';
 import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
@@ -17,6 +18,7 @@ describe('管理员会话管理功能测试', () => {
   let testSessionId: string;
 
   beforeAll(async () => {
+    await initDatabase();
     await clearAllTables();
 
     app = await build();

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app';
+import { initDatabase } from '../../config/database.js';
 import { Client } from '../../sdk/client';
 import { UserModel } from '../../models/user.model';
 import { SessionModel } from '../../models/session.model';
@@ -16,6 +17,9 @@ describe('SDK 客户端集成测试', () => {
 
   // 在所有测试之前设置测试环境
   beforeAll(async () => {
+    // 初始化数据库
+    await initDatabase();
+
     // 构建测试应用
     app = await build();
     await app.ready();

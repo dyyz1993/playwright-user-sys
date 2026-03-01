@@ -1,6 +1,7 @@
 import { describe, beforeAll, afterAll, test, expect } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app.js';
+import { initDatabase } from '../../config/database.js';
 import { UserModel } from '../../models/user.model.js';
 import { generateToken, hashPassword } from '../../utils/auth.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';
@@ -13,6 +14,9 @@ describe('管理员添加点数API测试', () => {
 
   // 在所有测试之前设置应用和创建测试用户
   beforeAll(async () => {
+    // 初始化数据库
+    await initDatabase();
+
     // 构建应用实例
     app = await build();
 

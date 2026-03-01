@@ -6,6 +6,7 @@
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app.js';
+import { initDatabase } from '../../config/database.js';
 import { clearAllTables } from '../helpers/database.js';
 import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
@@ -18,6 +19,7 @@ describe('Dashboard 页面集成测试', () => {
   let adminToken: string;
 
   beforeAll(async () => {
+    await initDatabase();
     await clearAllTables();
 
     app = await build();

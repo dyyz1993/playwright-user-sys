@@ -61,6 +61,12 @@ export default [
     },
   },
   {
+    files: ['src/tests/**/*.ts', 'tests/**/*.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
     files: ['src/public/js/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,

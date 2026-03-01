@@ -135,3 +135,4 @@ export async function start() {
 
 export default fastify;
 // test
+test;

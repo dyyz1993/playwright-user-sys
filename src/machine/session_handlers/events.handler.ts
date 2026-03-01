@@ -370,7 +370,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
 
       // --- 配置更新 ---
       case 'updateClip':
-        // falls through to event handler
+      // falls through to event handler
       // --- 程序化接口 ---
       case 'event':
         handleMouseEvents(eventData.event.type, eventData.event, page, ws, sessionId, requestType);

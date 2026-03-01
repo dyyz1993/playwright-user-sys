@@ -3,7 +3,7 @@ import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app.js';
 import { initDatabase } from '../../config/database.js';
 import { UserModel } from '../../models/user.model.js';
-import { generateToken, hashPassword } from '../../utils/auth.js';
+import { hashPassword } from '../../utils/auth.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';
 
 describe('管理员添加点数API测试', () => {

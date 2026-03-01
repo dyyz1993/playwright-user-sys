@@ -11,7 +11,7 @@ import { CONFIG } from '../config.js';
 declare global {
   interface Window {
     _mouseTrackingInjected?: boolean;
-    updateMousePosition?: (x: number, y: number, viewportWidth: number, viewportHeight: number) => void;
+    updateMousePosition?: (_x: number, _y: number, _viewportWidth: number, _viewportHeight: number) => void;
     _focusListenerAttached?: boolean;
     _emitFocusEvent?: () => void;
   }
@@ -26,8 +26,8 @@ interface EventConnectionInfo {
   listeners: {
     pageCloseHandler?: () => void;
     pageCrashHandler?: () => void;
-    frameNavigatedHandler?: (frame: Frame) => void;
-    configUpdateListener?: (sessionId: string, newConfig: SessionConfig) => void;
+    frameNavigatedHandler?: (_frame: Frame) => void;
+    configUpdateListener?: (_sessionId: string, _newConfig: SessionConfig) => void;
     // 页面内 focus 监听器理论上随页面关闭，但保留引用以明确
     focusListenerAttached?: boolean;
   };

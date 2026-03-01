@@ -275,7 +275,7 @@ export class MachineServer {
           }
 
           await retry(
-            async (bail: (error: Error) => void, attemptNumber: number) => {
+            async (bail: (_error: Error) => void, attemptNumber: number) => {
               try {
                 // 再次检查状态
                 if (this.state === MachineState.SHUTTING_DOWN || this.state === MachineState.STOPPED) {

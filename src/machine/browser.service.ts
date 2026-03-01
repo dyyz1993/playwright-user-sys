@@ -19,7 +19,7 @@ const puppeteer = puppeteerStealth.default;
 declare global {
   interface Window {
     _mouseTrackingInjected?: boolean;
-    updateMousePosition?: (x: number, y: number, viewportWidth: number, viewportHeight: number) => void;
+    updateMousePosition?: (_x: number, _y: number, _viewportWidth: number, _viewportHeight: number) => void;
   }
 }
 

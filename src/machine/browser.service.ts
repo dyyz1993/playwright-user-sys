@@ -1038,8 +1038,8 @@ export class BrowserService extends EventEmitter {
       if (session) {
         session.screenshotUrl = screenshotUrl; // 更新 URL
       }
-      // !! 移除 sessionScreenshot emit，这个应由请求者处理 !!
-      // this.emit('sessionScreenshot', sessionId, screenshotUrl);
+      // 发送截图更新事件，让 grpc.service 通过流发送到管理端
+      this.emit('sessionScreenshot', sessionId, screenshotUrl);
       logger.info(`预分配截图 URL (sessionId: ${sessionId}): ${screenshotUrl}`);
       return screenshotUrl;
     } catch (error) {

@@ -48,7 +48,7 @@ export default [
       'no-case-declarations': 'warn',
       'no-async-promise-executor': 'warn',
       'no-restricted-imports': [
-        'warn',
+        'error',
         {
           patterns: [
             {

@@ -6,7 +6,7 @@
  * - 自定义时区：通过 timezone 参数设置
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 import puppeteer from 'puppeteer';
@@ -31,9 +31,9 @@ describe('Timezone Integration Tests', () => {
   const testDataBaseDir = path.join(process.cwd(), 'data', 'user-data');
 
   beforeAll(async () => {
-    // 动态导入 BrowserService，避免模块加载时的依赖问题
-    const { BrowserService: BrowserServiceClass } = await import('../../src/machine/browser.service.js');
-    browserService = new BrowserServiceClass();
+    // 动态导入 BrowserService 实例
+    const { browserService: service } = await import('../../src/machine/browser.service.js');
+    browserService = service as BrowserService;
   });
 
   afterAll(async () => {

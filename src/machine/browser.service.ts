@@ -1,34 +1,21 @@
 // import puppeteer from "puppeteer-core";
-import {
-  Page,
-  Browser,
-  Frame,
-  ScreenshotOptions,
-  executablePath,
-  LaunchOptions,
-  FileChooser,
-} from "puppeteer-core";
-import fsSync from "fs";
+import { Page, Browser, Frame, ScreenshotOptions, executablePath, LaunchOptions, FileChooser } from 'puppeteer-core';
+import fsSync from 'fs';
 
-
-
-import { EventEmitter } from "events";
-import fs from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import { FingerprintInjector } from "fingerprint-injector";
-import {
-  BrowserFingerprintWithHeaders,
-  FingerprintGenerator,
-} from "fingerprint-generator";
-import { CONFIG } from "./config.js";
+import { EventEmitter } from 'events';
+import fs from 'fs/promises';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import { FingerprintInjector } from 'fingerprint-injector';
+import { BrowserFingerprintWithHeaders, FingerprintGenerator } from 'fingerprint-generator';
+import { CONFIG } from './config.js';
 import { logger } from '@shared/utils/logger.js';
-import { Buffer } from "buffer";
-import { sessionFocusEmitter } from "./utils.js";
-import puppeteerStealth from "puppeteer-extra"
-import ProxyChain from "proxy-chain";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
+import { Buffer } from 'buffer';
+import { sessionFocusEmitter } from './utils.js';
+import puppeteerStealth from 'puppeteer-extra';
+import ProxyChain from 'proxy-chain';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
 const puppeteer = puppeteerStealth.default;
 // puppeteer.use(StealthPlugin());
 // puppeteer.use(AdblockerPlugin.default({ blockTrackers: true }));
@@ -36,12 +23,7 @@ const puppeteer = puppeteerStealth.default;
 declare global {
   interface Window {
     _mouseTrackingInjected?: boolean;
-    updateMousePosition?: (
-      x: number,
-      y: number,
-      viewportWidth: number,
-      viewportHeight: number
-    ) => void;
+    updateMousePosition?: (x: number, y: number, viewportWidth: number, viewportHeight: number) => void;
   }
 }
 
@@ -49,13 +31,9 @@ declare global {
 export interface SessionConfig {
   fps?: number;
   clip?: { x: number; y: number; width: number; height: number };
-  interactionMode?:
-    | "general_navigation"
-    | "captcha_slider"
-    | "form_input"
-    | string;
-  touchMode?: "touchpad" | "touch";
-  
+  interactionMode?: 'general_navigation' | 'captcha_slider' | 'form_input' | string;
+  touchMode?: 'touchpad' | 'touch';
+
   // 文件上传状态
   uploadStates?: {
     [filename: string]: {
@@ -64,7 +42,7 @@ export interface SessionConfig {
       totalChunks: number;
       receivedChunks: number;
       fileSize: number;
-    }
+    };
   };
 }
 
@@ -80,9 +58,9 @@ export interface BrowserOptions {
   // 指纹相关选项
   fingerprintOptions?: {
     enabled?: boolean; // 是否启用指纹注入
-    devices?: ("desktop" | "mobile")[];
-    operatingSystems?: ("windows" | "macos" | "linux" | "android" | "ios")[];
-    browsers?: ("chrome" | "firefox" | "safari" | "edge")[];
+    devices?: ('desktop' | 'mobile')[];
+    operatingSystems?: ('windows' | 'macos' | 'linux' | 'android' | 'ios')[];
+    browsers?: ('chrome' | 'firefox' | 'safari' | 'edge')[];
   };
 
   // 状态持久化参数
@@ -98,7 +76,7 @@ export interface BrowserOptions {
       expires?: number;
       httpOnly?: boolean;
       secure?: boolean;
-      sameSite?: "Strict" | "Lax" | "None";
+      sameSite?: 'Strict' | 'Lax' | 'None';
     }>;
     origins?: Array<{
       origin: string;
@@ -159,8 +137,8 @@ interface ConnectionInfo {
 // 默认会话配置
 const DEFAULT_SESSION_CONFIG: SessionConfig = {
   fps: 15, // 默认帧率
-  interactionMode: "general_navigation",
-  touchMode: "touchpad", // 默认模式
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad', // 默认模式
   // clip 默认为 undefined (全屏)
 };
 
@@ -189,11 +167,7 @@ class BrowserService extends EventEmitter {
    * @param sharedUserData 是否共享用户数据目录
    * @returns userDataDir 路径
    */
-  private calculateUserDataDir(
-    userId: number | undefined,
-    sessionId: string,
-    sharedUserData: boolean = false
-  ): string {
+  private calculateUserDataDir(userId: number | undefined, sessionId: string, sharedUserData: boolean = false): string {
     // 基础目录
     const baseDir = path.join(process.cwd(), 'data', 'user-data');
 
@@ -315,9 +289,7 @@ class BrowserService extends EventEmitter {
       logger.info(`已清除断开连接计时器 (sessionId: ${sessionId})`);
     }
 
-    const previousTotalTime = this.connections.has(sessionId)
-      ? this.connections.get(sessionId)!.totalConnectedTime
-      : 0;
+    const previousTotalTime = this.connections.has(sessionId) ? this.connections.get(sessionId)!.totalConnectedTime : 0;
 
     this.connections.set(sessionId, {
       connectedAt: now,
@@ -352,9 +324,7 @@ class BrowserService extends EventEmitter {
     const connection = this.connections.get(sessionId);
     if (connection) {
       const now = Date.now();
-      const connectionDuration = Math.floor(
-        (now - connection.connectedAt) / 1000
-      );
+      const connectionDuration = Math.floor((now - connection.connectedAt) / 1000);
       connection.totalConnectedTime += connectionDuration;
       // !! 移除 sessionDisconnected emit !!
       this.emit('sessionDisconnected', sessionId, connection.totalConnectedTime);
@@ -364,25 +334,12 @@ class BrowserService extends EventEmitter {
     } else {
       logger.warn(`处理断开连接：找不到连接信息 (sessionId: ${sessionId})`);
     }
-    logger.info(
-      `设置断开连接计时器 (sessionId: ${sessionId}, 超时时间: ${CONFIG.disconnectionTimeout}ms)`
-    );
+    logger.info(`设置断开连接计时器 (sessionId: ${sessionId}, 超时时间: ${CONFIG.disconnectionTimeout}ms)`);
     const timer = setTimeout(() => {
       logger.info(`会话连接超时，准备关闭浏览器 (sessionId: ${sessionId})`);
       this.closeBrowser(sessionId)
-        .then((success) =>
-          logger.info(
-            `超时会话浏览器关闭 ${
-              success ? "成功" : "失败"
-            } (sessionId: ${sessionId})`
-          )
-        )
-        .catch((error) =>
-          logger.error(
-            `关闭超时会话浏览器出错 (sessionId: ${sessionId}):`,
-            error
-          )
-        );
+        .then((success) => logger.info(`超时会话浏览器关闭 ${success ? '成功' : '失败'} (sessionId: ${sessionId})`))
+        .catch((error) => logger.error(`关闭超时会话浏览器出错 (sessionId: ${sessionId}):`, error));
       this.disconnectionTimers.delete(sessionId);
     }, CONFIG.disconnectionTimeout);
     this.disconnectionTimers.set(sessionId, timer);
@@ -391,40 +348,28 @@ class BrowserService extends EventEmitter {
   /**
    * 生成浏览器指纹
    */
-  private generateFingerprint(
-    options: BrowserOptions = {}
-  ): BrowserFingerprintWithHeaders | null {
+  private generateFingerprint(options: BrowserOptions = {}): BrowserFingerprintWithHeaders | null {
     try {
       // 默认启用指纹注入，除非明确指定不启用
       if (options.fingerprintOptions?.enabled === false) {
-        logger.info("根据配置禁用指纹注入");
+        logger.info('根据配置禁用指纹注入');
         return null;
       }
 
       // 创建指纹生成器
       const fingerprintGenerator = new FingerprintGenerator({
-        devices: options.fingerprintOptions?.devices || ["desktop"],
-        operatingSystems: options.fingerprintOptions?.operatingSystems || [
-          "windows",
-          "macos",
-          "linux",
-        ],
-        browsers: options.fingerprintOptions?.browsers || [
-          "chrome",
-          "firefox",
-          "safari",
-        ],
+        devices: options.fingerprintOptions?.devices || ['desktop'],
+        operatingSystems: options.fingerprintOptions?.operatingSystems || ['windows', 'macos', 'linux'],
+        browsers: options.fingerprintOptions?.browsers || ['chrome', 'firefox', 'safari'],
       });
 
       // 生成指纹
       const fingerprint = fingerprintGenerator.getFingerprint();
-      logger.info(
-        `成功生成浏览器指纹: ${fingerprint.fingerprint.navigator.userAgent}`
-      );
+      logger.info(`成功生成浏览器指纹: ${fingerprint.fingerprint.navigator.userAgent}`);
 
       return fingerprint;
     } catch (error) {
-      logger.error("生成浏览器指纹失败:", error);
+      logger.error('生成浏览器指纹失败:', error);
       return null;
     }
   }
@@ -432,10 +377,7 @@ class BrowserService extends EventEmitter {
   /**
    * 启动浏览器实例
    */
-  async launchBrowser(
-    sessionId: string,
-    options: BrowserLaunchOptions = {}
-  ): Promise<BrowserInstance> {
+  async launchBrowser(sessionId: string, options: BrowserLaunchOptions = {}): Promise<BrowserInstance> {
     try {
       logger.info(`开始启动浏览器 (sessionId: ${sessionId})`);
       const timeout = 120000;
@@ -454,8 +396,8 @@ class BrowserService extends EventEmitter {
             // 用户已有活跃的共享浏览器
             const error = new Error(
               `您已有一个活跃的共享数据会话 (ID: ${existingSessionId})。` +
-              `每个用户同时只能有 1 个共享数据会话。` +
-              `请先关闭现有会话，或使用独立会话模式（不设置 sharedUserData）。`
+                `每个用户同时只能有 1 个共享数据会话。` +
+                `请先关闭现有会话，或使用独立会话模式（不设置 sharedUserData）。`
             ) as any;
             error.code = 'SHARED_SESSION_EXISTS';
             error.existingSessionId = existingSessionId;
@@ -492,12 +434,8 @@ class BrowserService extends EventEmitter {
         ...DEFAULT_SESSION_CONFIG,
         ...(options.sessionConfig || {}),
       };
-      logger.info(
-        `Initial session config for ${sessionId}: ${JSON.stringify(
-          initialConfig
-        )}`
-      );
-      if(options.proxy){
+      logger.info(`Initial session config for ${sessionId}: ${JSON.stringify(initialConfig)}`);
+      if (options.proxy) {
         const newProxyUrl = await ProxyChain.anonymizeProxy(options.proxy);
         options.proxy = newProxyUrl;
       }
@@ -505,10 +443,7 @@ class BrowserService extends EventEmitter {
       const puppeteerOptions = await this.convertPuppeteerOptions(options);
       const browserPromise = puppeteer.launch(puppeteerOptions);
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(
-          () => reject(new Error(`启动浏览器超时 (${timeout}ms)`)),
-          timeout
-        );
+        setTimeout(() => reject(new Error(`启动浏览器超时 (${timeout}ms)`)), timeout);
       });
       const browser = await Promise.race([browserPromise, timeoutPromise]);
 
@@ -521,6 +456,16 @@ class BrowserService extends EventEmitter {
           logger.info(`✅ Viewport 已设置: ${options.viewport.width}x${options.viewport.height}`);
         } catch (viewportError) {
           logger.warn('设置 Viewport 失败:', viewportError);
+        }
+      }
+
+      // 设置时区
+      if (options.timezone && primaryPage) {
+        try {
+          await primaryPage.emulateTimezone(options.timezone);
+          logger.info(`✅ 时区已设置: ${options.timezone}`);
+        } catch (timezoneError) {
+          logger.warn('设置时区失败:', timezoneError);
         }
       }
 
@@ -557,7 +502,7 @@ class BrowserService extends EventEmitter {
 
                 // 设置 localStorage
                 await primaryPage.evaluate((items) => {
-                  items.forEach(item => {
+                  items.forEach((item) => {
                     localStorage.setItem(item.name, item.value);
                   });
                 }, origin.localStorage);
@@ -576,26 +521,17 @@ class BrowserService extends EventEmitter {
       // 设置事件监听 (只保留必要的)
       if (fingerprint) {
         try {
-          browser.on(
-            "targetcreated",
-            this.createTargetHandler(sessionId, fingerprint)
-          );
-          browser.on(
-            "targetchanged",
-            this.handleTargetChangeHandler(sessionId)
-          );
-          browser.on("disconnected", this.createDisconnectHandler(sessionId,options.proxy));
+          browser.on('targetcreated', this.createTargetHandler(sessionId, fingerprint));
+          browser.on('targetchanged', this.handleTargetChangeHandler(sessionId));
+          browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy));
           logger.info(`已设置浏览器事件监听 (sessionId: ${sessionId})`);
         } catch (error) {
-          logger.error(
-            `设置指纹事件监听失败 (sessionId: ${sessionId}):`,
-            error
-          );
+          logger.error(`设置指纹事件监听失败 (sessionId: ${sessionId}):`, error);
         }
       } else {
-        browser.on("disconnected", this.createDisconnectHandler(sessionId,options.proxy));
+        browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy));
       }
-      console.log("primaryPage", primaryPage);
+      console.log('primaryPage', primaryPage);
       // if (primaryPage) {
       //   await this.createTargetHandler(
       //     sessionId,
@@ -654,15 +590,10 @@ class BrowserService extends EventEmitter {
         if (session.browser.process() != null) {
           // Check if the process was spawned
           await session.browser.close();
-          logger.info(
-            `Cleaned up potentially dangling browser process for failed launch (sessionId: ${sessionId})`
-          );
+          logger.info(`Cleaned up potentially dangling browser process for failed launch (sessionId: ${sessionId})`);
         }
       } catch (closeError) {
-        logger.warn(
-          `清理失败启动的浏览器时出错 (sessionId: ${sessionId}):`,
-          closeError
-        );
+        logger.warn(`清理失败启动的浏览器时出错 (sessionId: ${sessionId}):`, closeError);
       }
     }
     // Clean up maps regardless of browser closing success
@@ -672,9 +603,7 @@ class BrowserService extends EventEmitter {
       clearTimeout(this.disconnectionTimers.get(sessionId)!);
       this.disconnectionTimers.delete(sessionId);
     }
-    logger.info(
-      `Cleaned up session state for failed launch (sessionId: ${sessionId})`
-    );
+    logger.info(`Cleaned up session state for failed launch (sessionId: ${sessionId})`);
   }
 
   /**
@@ -690,9 +619,7 @@ class BrowserService extends EventEmitter {
       const connection = this.connections.get(sessionId);
       let totalConnectedTime = connection ? connection.totalConnectedTime : 0;
       if (!connection && session.startTime) {
-        totalConnectedTime = Math.floor(
-          (Date.now() - session.startTime) / 1000
-        );
+        totalConnectedTime = Math.floor((Date.now() - session.startTime) / 1000);
       }
 
       // 清理独立会话的用户数据目录（共享会话不会被清理）
@@ -717,9 +644,7 @@ class BrowserService extends EventEmitter {
       }
       // !! 移除 sessionClosed emit !!
       this.emit('sessionClosed', sessionId, totalConnectedTime);
-      logger.info(
-        `浏览器已关闭 (sessionId: ${sessionId}, 总连接时长: ${totalConnectedTime}秒)`
-      );
+      logger.info(`浏览器已关闭 (sessionId: ${sessionId}, 总连接时长: ${totalConnectedTime}秒)`);
       return true;
     } catch (error) {
       logger.error(`关闭浏览器失败 (sessionId: ${sessionId}):`, error);
@@ -752,7 +677,7 @@ class BrowserService extends EventEmitter {
     }
 
     await Promise.all(promises);
-    logger.info("所有浏览器实例已关闭");
+    logger.info('所有浏览器实例已关闭');
 
     // 停止活动报告
     this.stopActivityReporting();
@@ -788,23 +713,22 @@ class BrowserService extends EventEmitter {
     // 将选项转换为 puppeteer-core 选项
     const result: LaunchOptions = {
       args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--remote-allow-origins=*",
-        "--remote-debugging-port=0",
-        "--disable-dev-shm-usage",
-        "--disable-responsive-ui",
-        "--force-device-scale-factor=1",
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--remote-allow-origins=*',
+        '--remote-debugging-port=0',
+        '--disable-dev-shm-usage',
+        '--disable-responsive-ui',
+        '--force-device-scale-factor=1',
         // 已移除 --disable-gpu 以支持 WebGL (反机器人检测需要)
-        "--headless=new",
+        '--headless=new',
         // "--disable-web-security",
-        "--disable-setuid-sandbox",
+        '--disable-setuid-sandbox',
         // 已移除 --use-angle=disabled 以支持 WebGL (反机器人检测需要)
-        "--disable-blink-features=AutomationControlled",
-        "--webrtc-ip-handling-policy=disable_non_proxied_udp",
-        "--force-webrtc-ip-handling-policy",
-        "--timezone=Asia/Shanghai",
-        "--remote-debugging-address=0.0.0.0",
+        '--disable-blink-features=AutomationControlled',
+        '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+        '--force-webrtc-ip-handling-policy',
+        '--remote-debugging-address=0.0.0.0',
       ],
       // headless: options.headless !== undefined ? options.headless : false,
       // headless: false,
@@ -832,12 +756,7 @@ class BrowserService extends EventEmitter {
     }
 
     if (options.viewport) {
-      result.args.push(
-        `--window-size=${options.viewport.width},${options.viewport.height}`
-      );
-    }
-    if (options.timezone) {
-      result.args.push(`--timezone=${options.timezone}`);
+      result.args.push(`--window-size=${options.viewport.width},${options.viewport.height}`);
     }
 
     if (options.defaultViewport) {
@@ -856,49 +775,40 @@ class BrowserService extends EventEmitter {
       };
     }
 
-    logger.info("result", result);
+    logger.info('result', result);
 
     return result;
   }
 
   async injectFocusinScript(sessionId: string, page: Page): Promise<void> {
     // --- BEGIN: Injection and Expose Logic ---
-    const dynamicFunctionName = `_focusHandler_${sessionId.replace(
-      /\W/g,
-      "_"
-    )}`;
+    const dynamicFunctionName = `_focusHandler_${sessionId.replace(/\W/g, '_')}`;
 
     // 1. Inject persistent listener via evaluateOnNewDocument
 
     await page.evaluateOnNewDocument((fnName) => {
       // document.removeEventListener('focusin', handleFocusin);
-      document.addEventListener("focusin", function (event) {
+      document.addEventListener('focusin', function (event) {
         const target = event.target;
-        if (typeof window[fnName] === "function") {
-          console.log("focusin", event.target);
+        if (typeof window[fnName] === 'function') {
+          console.log('focusin', event.target);
           window[fnName](); // Call the dynamic function
         }
       });
     }, dynamicFunctionName);
-    logger.info(
-      `Persistent focus listener script injected for session ${sessionId}.`
-    );
+    logger.info(`Persistent focus listener script injected for session ${sessionId}.`);
 
     // 2. Expose the bridge function *once* for this page/browser context
     try {
       await page.exposeFunction(dynamicFunctionName, () => {
         // Node.js callback - ONLY emits the raw event with sessionId
         // Ensure page/browser isn't closed during async handling if needed
-        logger.info(
-          `Raw focus event triggered via bridge for session ${sessionId}`
-        );
+        logger.info(`Raw focus event triggered via bridge for session ${sessionId}`);
         sessionFocusEmitter.emit(`rawFocusEvent:${sessionId}`);
       });
-      logger.info(
-        `Dynamic focus bridge '${dynamicFunctionName}' exposed for session ${sessionId}.`
-      );
+      logger.info(`Dynamic focus bridge '${dynamicFunctionName}' exposed for session ${sessionId}.`);
     } catch (exposeError: any) {
-      if (exposeError.message.includes("already exists")) {
+      if (exposeError.message.includes('already exists')) {
         logger.warn(
           `Dynamic bridge function '${dynamicFunctionName}' likely already exposed for session ${sessionId}.`
         );
@@ -914,30 +824,28 @@ class BrowserService extends EventEmitter {
       // 为页面注入鼠标指针脚本
       await page
         .evaluateOnNewDocument(() => {
-          const existingCursor = document.getElementById(
-            "remote-cursor-pointer"
-          );
+          const existingCursor = document.getElementById('remote-cursor-pointer');
           if (existingCursor) {
             existingCursor.remove();
           }
 
           // 创建鼠标指针元素
-          const cursor = document.createElement("div");
-          cursor.id = "remote-cursor-pointer";
-          cursor.style.position = "fixed";
-          cursor.style.width = "16px";
-          cursor.style.height = "16px";
-          cursor.style.borderRadius = "50%";
-          cursor.style.backgroundColor = "#ff3b30";
-          cursor.style.transform = "translate(-50%, -50%)";
-          cursor.style.zIndex = "9999999";
-          cursor.style.pointerEvents = "none";
-          cursor.style.cursor = "pointer"; // 添加指针样式
+          const cursor = document.createElement('div');
+          cursor.id = 'remote-cursor-pointer';
+          cursor.style.position = 'fixed';
+          cursor.style.width = '16px';
+          cursor.style.height = '16px';
+          cursor.style.borderRadius = '50%';
+          cursor.style.backgroundColor = '#ff3b30';
+          cursor.style.transform = 'translate(-50%, -50%)';
+          cursor.style.zIndex = '9999999';
+          cursor.style.pointerEvents = 'none';
+          cursor.style.cursor = 'pointer'; // 添加指针样式
 
           // 当DOM加载完成后添加到body
-          if (document.readyState === "loading") {
-            console.log("DOMContentLoaded", document.readyState);
-            document.addEventListener("DOMContentLoaded", () => {
+          if (document.readyState === 'loading') {
+            console.log('DOMContentLoaded', document.readyState);
+            document.addEventListener('DOMContentLoaded', () => {
               document.body.appendChild(cursor);
             });
           } else {
@@ -948,11 +856,11 @@ class BrowserService extends EventEmitter {
 
           // 保存监听器引用
           // window._mouseTrackingListener = newListener;
-          document.addEventListener("click", function (e: MouseEvent) {
-            console.log("click", e.clientX, e.clientY);
+          document.addEventListener('click', function (e: MouseEvent) {
+            console.log('click', e.clientX, e.clientY);
           });
           // 添加新的事件监听器
-          document.addEventListener("mousemove", function (e: MouseEvent) {
+          document.addEventListener('mousemove', function (e: MouseEvent) {
             // 使用原始坐标，无需缩放转换
             const cssX = e.clientX;
             const cssY = e.clientY;
@@ -964,10 +872,9 @@ class BrowserService extends EventEmitter {
             // 传递坐标信息
             // window.updateMousePosition(cssX, cssY, width, height);
           });
-       
         })
         .catch((error) => {
-          console.error("injectMouseTrackingScript error:", error);
+          console.error('injectMouseTrackingScript error:', error);
         });
     } catch (error) {
       console.error(`Failed to inject mouse tracking script for :`, error);
@@ -977,24 +884,20 @@ class BrowserService extends EventEmitter {
   private handleTargetChangeHandler(sessionId: string) {
     return async (target: puppeteer.Target) => {
       console.info(`Target changed:  ${target.type()}`, target.url());
-      if (target.type() === "page") {
+      if (target.type() === 'page') {
         const page = await target.page();
-        if (!page || page.isClosed() || page.url().startsWith("devtools://"))
-          return;
+        if (!page || page.isClosed() || page.url().startsWith('devtools://')) return;
       }
     };
   }
   /**
    * 创建目标创建处理函数 (只注入指纹)
    */
-  private createTargetHandler(
-    sessionId: string,
-    fingerprint: BrowserFingerprintWithHeaders
-  ) {
+  private createTargetHandler(sessionId: string, fingerprint: BrowserFingerprintWithHeaders) {
     return async (target: puppeteer.Target) => {
       console.info(`Target created:  ${target.type()}`, target.url());
       try {
-        if (target.type() !== "page") return;
+        if (target.type() !== 'page') return;
         const page = await target.page();
         page.on('dialog', async (dialog) => {
           await dialog.dismiss();
@@ -1003,14 +906,11 @@ class BrowserService extends EventEmitter {
         //   console.log('File chooser event detected. Preventing file selection.');
         //   await fileChooser.cancel();
         // });
-        
-        if (!page || page.isClosed() || page.url().startsWith("devtools://") || page.url().startsWith("file://"))
+
+        if (!page || page.isClosed() || page.url().startsWith('devtools://') || page.url().startsWith('file://'))
           return;
-        logger.debug(
-          `新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`
-        );
-      
-      
+        logger.debug(`新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`);
+
         await this.injectMouseTrackingScript(page);
         await this.injectFocusinScript(sessionId, page);
         // 禁止修改客户端 console.debug 行为
@@ -1035,29 +935,26 @@ class BrowserService extends EventEmitter {
         });
 
         // 这里注入 focusin 事件监听器 ？
-        logger.info(
-          `成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`
-        );
+        logger.info(`成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`);
         // !! 移除页面监听器添加和截图逻辑 !!
 
-          const fingerprintInjector = new FingerprintInjector();
-        await fingerprintInjector.attachFingerprintToPuppeteer(
-          page,
-          fingerprint
-        );
+        const fingerprintInjector = new FingerprintInjector();
+        await fingerprintInjector.attachFingerprintToPuppeteer(page, fingerprint);
         const currentViewport = await page.viewport();
-       
+
         await page.setViewport({ width: currentViewport.width, height: currentViewport.height });
         await (
           await page.createCDPSession()
-        ).send("Page.setDeviceMetricsOverride", {
+        ).send('Page.setDeviceMetricsOverride', {
           screenHeight: currentViewport.height,
           screenWidth: currentViewport.width,
           width: currentViewport.width,
           height: currentViewport.height,
           mobile: /phone|android|mobile/i.test(fingerprint.fingerprint.navigator.userAgent),
           screenOrientation:
-            currentViewport.height > currentViewport.width ? { angle: 0, type: "portraitPrimary" } : { angle: 90, type: "landscapePrimary" },
+            currentViewport.height > currentViewport.width
+              ? { angle: 0, type: 'portraitPrimary' }
+              : { angle: 90, type: 'landscapePrimary' },
           deviceScaleFactor: fingerprint.fingerprint.screen.devicePixelRatio,
         });
       } catch (error) {
@@ -1069,22 +966,16 @@ class BrowserService extends EventEmitter {
   /**
    * 创建浏览器断开连接处理函数
    */
-  private createDisconnectHandler(sessionId: string,proxy:string) {
+  private createDisconnectHandler(sessionId: string, proxy: string) {
     return () => {
       logger.warn(`浏览器实例已断开连接，将关闭会话 (sessionId: ${sessionId})`);
-      if(proxy){
+      if (proxy) {
         ProxyChain.closeAnonymizedProxy(proxy, true).catch((error) =>
-          logger.error(
-            `关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`,
-            error
-          )
+          logger.error(`关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`, error)
         );
       }
       this.closeBrowser(sessionId).catch((error) =>
-        logger.error(
-          `关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`,
-          error
-        )
+        logger.error(`关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`, error)
       );
     };
   }
@@ -1094,7 +985,7 @@ class BrowserService extends EventEmitter {
    */
   async takeScreenshot(sessionId: string): Promise<string | undefined> {
     try {
-      const screenshotDir = path.join(CONFIG.dataDir, "screenshots");
+      const screenshotDir = path.join(CONFIG.dataDir, 'screenshots');
       await fs.mkdir(screenshotDir, { recursive: true });
       const filename = `${sessionId}-${uuidv4()}.jpeg`; // 使用 jpeg
       const screenshotUrl = `/screenshots/${filename}`;
@@ -1130,11 +1021,11 @@ class BrowserService extends EventEmitter {
       const mainPage = pages.find(
         (p) =>
           !p.isClosed() &&
-          !p.url().startsWith("about:blank") &&
-          !p.url().startsWith("devtools://") &&
-          !p.url().startsWith("chrome-error://") &&
-          !p.url().startsWith("chrome://") &&
-          !p.url().startsWith("file://")
+          !p.url().startsWith('about:blank') &&
+          !p.url().startsWith('devtools://') &&
+          !p.url().startsWith('chrome-error://') &&
+          !p.url().startsWith('chrome://') &&
+          !p.url().startsWith('file://')
       );
       if (!mainPage && pages.length > 0) {
         return pages.find((p) => !p.isClosed()) || null;
@@ -1156,10 +1047,7 @@ class BrowserService extends EventEmitter {
   /**
    * 更新会话配置并发出事件 (保留，因为配置是核心状态)
    */
-  updateSessionConfig(
-    sessionId: string,
-    newConfig: Partial<SessionConfig>
-  ): boolean {
+  updateSessionConfig(sessionId: string, newConfig: Partial<SessionConfig>): boolean {
     const session = this.sessions.get(sessionId);
     if (!session) {
       logger.warn(`更新配置：会话不存在 (sessionId: ${sessionId})`);
@@ -1171,45 +1059,29 @@ class BrowserService extends EventEmitter {
       currentConfig.fps = newConfig.fps;
       changed = true;
     }
-    if (
-      newConfig.clip !== undefined &&
-      JSON.stringify(currentConfig.clip) !== JSON.stringify(newConfig.clip)
-    ) {
+    if (newConfig.clip !== undefined && JSON.stringify(currentConfig.clip) !== JSON.stringify(newConfig.clip)) {
       currentConfig.clip = newConfig.clip;
       changed = true;
     }
-    if (
-      newConfig.interactionMode !== undefined &&
-      currentConfig.interactionMode !== newConfig.interactionMode
-    ) {
+    if (newConfig.interactionMode !== undefined && currentConfig.interactionMode !== newConfig.interactionMode) {
       currentConfig.interactionMode = newConfig.interactionMode;
       if (newConfig.touchMode === undefined) {
         currentConfig.touchMode =
-          currentConfig.interactionMode === "captcha_slider" ||
-          currentConfig.interactionMode === "touch"
-            ? "touch"
-            : "touchpad";
-        logger.debug(
-          `Implicitly updated touchMode to ${currentConfig.touchMode}`
-        );
+          currentConfig.interactionMode === 'captcha_slider' || currentConfig.interactionMode === 'touch'
+            ? 'touch'
+            : 'touchpad';
+        logger.debug(`Implicitly updated touchMode to ${currentConfig.touchMode}`);
       }
       changed = true;
     }
-    if (
-      newConfig.touchMode !== undefined &&
-      currentConfig.touchMode !== newConfig.touchMode
-    ) {
+    if (newConfig.touchMode !== undefined && currentConfig.touchMode !== newConfig.touchMode) {
       currentConfig.touchMode = newConfig.touchMode;
       changed = true;
     }
     if (changed) {
       this.updateSessionActivity(sessionId);
-      logger.info(
-        `会话配置已更新 (sessionId: ${sessionId}): ${JSON.stringify(
-          currentConfig
-        )}`
-      );
-      this.emit("configUpdated", sessionId, { ...currentConfig });
+      logger.info(`会话配置已更新 (sessionId: ${sessionId}): ${JSON.stringify(currentConfig)}`);
+      this.emit('configUpdated', sessionId, { ...currentConfig });
       return true;
     } else {
       logger.debug(`未检测到实际配置更改 (sessionId: ${sessionId})`);
@@ -1220,11 +1092,7 @@ class BrowserService extends EventEmitter {
   /**
    * 获取相对于页面左上角的转换后坐标
    */
-  getTransformedCoordinates(
-    sessionId: string,
-    x: number,
-    y: number
-  ): { tx: number; ty: number } | null {
+  getTransformedCoordinates(sessionId: string, x: number, y: number): { tx: number; ty: number } | null {
     const config = this.getSessionConfig(sessionId);
     if (!config) return null;
     if (config.clip) {

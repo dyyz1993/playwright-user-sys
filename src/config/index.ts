@@ -45,3 +45,4 @@ export const config = {
     prettyPrint: process.env.NODE_ENV !== 'production',
   },
 };
+test

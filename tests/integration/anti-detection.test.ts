@@ -37,8 +37,12 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
-import { db, initDatabase } from '../../src/config/database.js';
 import { getFreePort } from '../helpers/ports.js';
+import {
+  createIsolatedTestDatabase,
+  dropIsolatedTestDatabase,
+  type IsolatedTestDatabase,
+} from '../../src/tests/helpers/isolated-database.js';
 import puppeteer from 'puppeteer-core';
 import type { FastifyInstance } from 'fastify';
 import { execSync } from 'child_process';
@@ -56,6 +60,7 @@ describe('反机器人检测验证测试', () => {
   // 全局变量声明
   // ========================================
 
+  let testDb: IsolatedTestDatabase;
   let managerApp: FastifyInstance;
   let managerHttpPort: number;
   let managerGrpcPort: number;
@@ -91,19 +96,10 @@ describe('反机器人检测验证测试', () => {
     const nodeVersion = process.version;
     console.log(`   当前 Node.js 版本: ${nodeVersion}`);
 
-    // 步骤 2: 创建测试数据库
-    console.log('\n[步骤 2] 准备测试数据库...');
-    // 先销毁现有连接（如果有）
-    try {
-      await db.destroy();
-      console.log('   已销毁现有数据库连接');
-    } catch (e) {
-      // 忽略错误
-    }
-    await initDatabase();
-    const { createTables } = await import('../../src/models/migrations.js');
-    await createTables();
-    console.log('   ✅ 测试数据库准备完成');
+    // 步骤 2: 创建独立测试数据库
+    console.log('\n[步骤 2] 创建独立测试数据库...');
+    testDb = await createIsolatedTestDatabase();
+    console.log(`   ✅ 测试数据库准备完成: ${testDb.dbName}`);
 
     // 步骤 3: 创建测试用户
     console.log('\n[步骤 3] 创建测试用户...');
@@ -204,7 +200,7 @@ describe('反机器人检测验证测试', () => {
     // 步骤 6: 验证机器注册
     console.log('\n[步骤 6] 验证机器注册状态...');
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    const registeredMachines = await db('machines').select('*').where('status', 'online');
+    const registeredMachines = await testDb.db('machines').select('*').where('status', 'online');
     expect(registeredMachines.length).toBe(NUM_MACHINES);
     console.log(`   ✅ 成功注册 ${registeredMachines.length} 台机器`);
 
@@ -235,24 +231,10 @@ describe('反机器人检测验证测试', () => {
       console.log('✅ 管理端服务器已关闭');
     }
 
-    console.log('\n[步骤 3] 清理测试数据...');
-    try {
-      const knex = await import('knex');
-      const adminDb = knex.default({
-        client: 'mysql2',
-        connection: {
-          host: process.env.DB_HOST,
-          port: parseInt(process.env.DB_PORT || '3306'),
-          user: process.env.DB_USER,
-          password: process.env.DB_PASSWORD,
-        },
-      });
-
-      await adminDb.raw(`DROP DATABASE IF EXISTS ${process.env.DB_NAME}`);
-      await adminDb.destroy();
+    console.log('\n[步骤 3] 清理独立测试数据库...');
+    if (testDb) {
+      await dropIsolatedTestDatabase(testDb);
       console.log('✅ 测试数据库已删除');
-    } catch (error) {
-      console.warn('⚠️  清理数据库失败:', error);
     }
 
     console.log('\n========================================');
@@ -265,15 +247,15 @@ describe('反机器人检测验证测试', () => {
   // ========================================
 
   beforeEach(async () => {
-    await db('sessions').del();
-    await db('credit_history').del();
+    await testDb.db('sessions').del();
+    await testDb.db('credit_history').del();
 
     for (const user of testUsers) {
-      await db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
+      await testDb.db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
     }
 
     for (const machine of machineServers) {
-      await db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
+      await testDb.db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
     }
   }, 10000);
 

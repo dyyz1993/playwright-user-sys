@@ -52,8 +52,12 @@ import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
 import { SessionModel } from '../../src/models/session.model.js';
-import { db, initDatabase } from '../../src/config/database.js';
 import { getFreePort } from '../helpers/ports.js';
+import {
+  createIsolatedTestDatabase,
+  dropIsolatedTestDatabase,
+  type IsolatedTestDatabase,
+} from '../../src/tests/helpers/isolated-database.js';
 import puppeteer from 'puppeteer-core';
 import { execSync } from 'child_process';
 
@@ -70,12 +74,12 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
   // 全局变量声明
   // ========================================
 
+  let testDb: IsolatedTestDatabase;
   let testUsers: Array<{ id: number; username: string; token: string; apiKey: string }> = [];
   let machineServers: MachineServer[] = [];
   let managerApp: any;
   let managerHttpPort: number;
   let managerGrpcPort: number;
-  let testDbName: string;
 
   // ========================================
   // beforeAll: 环境准备
@@ -99,11 +103,8 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
 
     // [步骤 2] 准备测试数据库
     console.log('\n[步骤 2] 准备测试数据库...');
-    testDbName = `test_tier_anti_detection_${Date.now()}`;
-    process.env.DB_NAME = testDbName;
-
-    await initDatabase();
-    console.log('   ✅ 测试数据库已创建');
+    testDb = await createIsolatedTestDatabase();
+    console.log(`   ✅ 测试数据库已创建: ${testDb.dbName}`);
 
     // [步骤 3] 启动管理端服务器
     console.log('\n[步骤 3] 启动管理端服务器...');
@@ -206,11 +207,9 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
 
     // [步骤 3] 清理测试数据
     console.log('\n[步骤 3] 清理测试数据...');
-    try {
-      await db.raw(`DROP DATABASE IF EXISTS ${testDbName}`);
+    if (testDb) {
+      await dropIsolatedTestDatabase(testDb);
       console.log('   ✅ 测试数据库已删除');
-    } catch (error) {
-      console.log('   ⚠️  删除数据库失败:', error);
     }
 
     console.log('\n========================================');
@@ -224,18 +223,18 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
 
   beforeEach(async () => {
     // 清理会话和积分历史
-    await db('sessions').del();
-    await db('credit_history').del();
+    await testDb.db('sessions').del();
+    await testDb.db('credit_history').del();
 
     // 重置用户积分
     for (const user of testUsers) {
-      await db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
+      await testDb.db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
     }
 
     // 重置机器实例计数（从数据库获取机器ID）
-    const machines = await db('machines').select('id');
+    const machines = await testDb.db('machines').select('id');
     for (const machine of machines) {
-      await db('machines').where({ id: machine.id }).update({ instance_count: 0 });
+      await testDb.db('machines').where({ id: machine.id }).update({ instance_count: 0 });
     }
   }, 10000);
 

@@ -38,8 +38,11 @@ import { UserModel } from '../../src/models/user.model.js';
 import { MachineModel } from '../../src/models/machine.model.js';
 import { SessionModel } from '../../src/models/session.model.js';
 import { CreditHistoryModel } from '../../src/models/credit-history.model.js';
-import { db, initDatabase } from '../../src/config/database.js';
-import { runMigrations } from '../../src/models/migrations.js';
+import {
+  createIsolatedTestDatabase,
+  dropIsolatedTestDatabase,
+  type IsolatedTestDatabase,
+} from '../../src/tests/helpers/isolated-database.js';
 import { getFreePort } from '../helpers/ports.js';
 import { createTestUser } from '../helpers/factories.js';
 import puppeteer from 'puppeteer-core';

@@ -37,10 +37,13 @@ import { UserModel } from '../../src/models/user.model.js';
 import { MachineModel } from '../../src/models/machine.model.js';
 import { SessionModel } from '../../src/models/session.model.js';
 import { CreditHistoryModel } from '../../src/models/credit-history.model.js';
-import { db, initDatabase } from '../../src/config/database.js';
-import { runMigrations } from '../../src/models/migrations.js';
 import { getFreePort } from '../helpers/ports.js';
 import { createTestUser } from '../helpers/factories.js';
+import {
+  createIsolatedTestDatabase,
+  dropIsolatedTestDatabase,
+  type IsolatedTestDatabase,
+} from '../../src/tests/helpers/isolated-database.js';
 import puppeteer from 'puppeteer-core';
 import type { FastifyInstance } from 'fastify';
 import { execSync } from 'child_process';
@@ -51,6 +54,7 @@ const NUM_MACHINES = 2; // 机器端数量
 const INITIAL_CREDITS = 100; // 初始积分
 
 describe('完整三端架构集成测试', () => {
+  let testDb: IsolatedTestDatabase;
   let managerApp: FastifyInstance;
   let managerHttpPort: number;
   let managerGrpcPort: number;
@@ -112,36 +116,10 @@ describe('完整三端架构集成测试', () => {
     console.log(`   gRPC 端口: ${managerGrpcPort}`);
     console.log(`   数据库: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
 
-    // 创建测试数据库（如果不存在）
-    // 注意：需要先创建数据库，然后再初始化连接
-    const knex = await import('knex');
-    const adminDb = knex.default({
-      client: 'mysql2',
-      connection: {
-        host: process.env.DB_HOST,
-        port: parseInt(process.env.DB_PORT || '3306'),
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-      },
-    });
-
-    try {
-      await adminDb.raw(`DROP DATABASE IF EXISTS ${process.env.DB_NAME}`);
-      await adminDb.raw(`CREATE DATABASE ${process.env.DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-      console.log('✅ 测试数据库创建完成');
-    } catch (error: any) {
-      console.error('❌ 创建数据库失败:', error.message);
-      throw error;
-    } finally {
-      await adminDb.destroy();
-    }
-
-    // 现在数据库已创建，初始化应用数据库连接
-    await initDatabase();
-
-    // 运行数据库迁移
-    await runMigrations();
-    console.log('✅ 数据库迁移完成');
+    // 创建独立测试数据库
+    console.log('\n[步骤 2] 创建独立测试数据库...');
+    testDb = await createIsolatedTestDatabase();
+    console.log(`✅ 测试数据库创建完成: ${testDb.dbName}`);
 
     // 步骤 3: 创建测试用户 (N个)
     console.log(`\n[步骤 3] 创建 ${NUM_USERS} 个测试用户...`);
@@ -286,23 +264,9 @@ describe('完整三端架构集成测试', () => {
 
     // 步骤 3: 清理测试数据
     console.log('\n[步骤 3] 清理测试数据...');
-    try {
-      const knex = await import('knex');
-      const adminDb = knex.default({
-        client: 'mysql2',
-        connection: {
-          host: process.env.DB_HOST,
-          port: parseInt(process.env.DB_PORT || '3306'),
-          user: process.env.DB_USER,
-          password: process.env.DB_PASSWORD,
-        },
-      });
-
-      await adminDb.raw(`DROP DATABASE IF EXISTS ${process.env.DB_NAME}`);
-      await adminDb.destroy();
+    if (testDb) {
+      await dropIsolatedTestDatabase(testDb);
       console.log('✅ 测试数据库已删除');
-    } catch (error) {
-      console.warn('⚠️  清理数据库失败:', error);
     }
 
     console.log('\n========================================');
@@ -315,17 +279,17 @@ describe('完整三端架构集成测试', () => {
    */
   beforeEach(async () => {
     // 清理会话表
-    await db('sessions').del();
-    await db('credit_history').del();
+    await testDb.db('sessions').del();
+    await testDb.db('credit_history').del();
 
     // 重置用户积分
     for (const user of testUsers) {
-      await db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
+      await testDb.db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
     }
 
     // 重置机器实例计数
     for (const machine of machineServers) {
-      await db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
+      await testDb.db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
     }
   }, 10000);
 

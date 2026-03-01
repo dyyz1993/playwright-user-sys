@@ -17,7 +17,7 @@ import { build } from '../../helpers/app.js';
 import { SessionModel } from '../../../models/session.model.js';
 import { generateToken } from '../../../utils/auth.js';
 import { UserRole, SessionStatus } from '@shared/types/index.js';
-import { clearAllTables } from '../../helpers/database.js';
+import { initDatabase } from '../../../config/database.js';
 import { createTestUser, createTestAdmin, createTestMachine } from '../../helpers/factories.js';
 
 // Mock gRPC connectionManager - 集成测试仅Mock外部依赖
@@ -52,7 +52,7 @@ describe('Session Routes集成测试', () => {
   // ========================================
   beforeAll(async () => {
     // 清空测试数据
-    await clearAllTables();
+    await initDatabase();
 
     // 构建应用实例
     app = await build();
@@ -89,7 +89,7 @@ describe('Session Routes集成测试', () => {
 
   // 在所有测试之后清理
   afterAll(async () => {
-    await clearAllTables();
+    await initDatabase();
     await app.close();
   });
 

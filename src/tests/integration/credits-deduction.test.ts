@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { build } from '../../app.js';
-import { clearAllTables } from '../helpers/database.js';
+import { initDatabase } from '../../config/database.js';
 import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
 import { SessionStatus } from '@shared/types/index.js';
@@ -10,7 +10,7 @@ describe('点数扣除集成测试', () => {
   let testUser: any;
 
   beforeAll(async () => {
-    await clearAllTables();
+    await initDatabase();
 
     app = await build();
 
@@ -29,7 +29,6 @@ describe('点数扣除集成测试', () => {
   });
 
   afterAll(async () => {
-    await clearAllTables();
     await app.close();
   });
 

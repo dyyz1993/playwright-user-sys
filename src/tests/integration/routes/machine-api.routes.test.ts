@@ -16,7 +16,7 @@ import { MachineModel } from '../../../models/machine.model.js';
 import { SessionModel } from '../../../models/session.model.js';
 import { generateToken } from '../../../utils/auth.js';
 import { UserRole } from '../../../shared/types/index.js';
-import { clearAllTables } from '../../helpers/database.js';
+import { initDatabase } from '../../../config/database.js';
 import { createTestUser, createTestAdmin, createTestMachine, createTestSession } from '../../helpers/factories.js';
 
 // Mock gRPC connection manager - 集成测试仅Mock外部依赖
@@ -46,7 +46,7 @@ describe('机器管理 API 集成测试', () => {
   // ========================================
   beforeAll(async () => {
     // 清空测试数据
-    await clearAllTables();
+    await initDatabase();
 
     // 构建应用实例
     app = await build();
@@ -81,7 +81,7 @@ describe('机器管理 API 集成测试', () => {
 
   // 在所有测试之后清理
   afterAll(async () => {
-    await clearAllTables();
+    await initDatabase();
     await app.close();
   });
 

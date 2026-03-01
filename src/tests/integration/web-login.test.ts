@@ -13,7 +13,7 @@ import flash from '@fastify/flash';
 import authPlugin from '../../plugins/auth.plugin.js';
 import adminRoutes from '../../routes/admin.routes.js';
 import { UserModel } from '../../models/user.model.js';
-import { clearAllTables } from '../helpers/database.js';
+import { initDatabase } from '../../config/database.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';
 
 // Mock webhook
@@ -27,7 +27,7 @@ describe('Web 管理后台登录集成测试', () => {
   let _testAdmin: any;
 
   beforeAll(async () => {
-    await clearAllTables();
+    await initDatabase();
 
     // 构建带视图引擎的应用（用于管理后台）
     app = Fastify({
@@ -61,7 +61,6 @@ describe('Web 管理后台登录集成测试', () => {
   });
 
   afterAll(async () => {
-    await clearAllTables();
     await app.close();
   });
 

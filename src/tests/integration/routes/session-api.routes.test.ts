@@ -21,7 +21,7 @@ import { UserModel } from '../../../models/user.model.js';
 import { SessionModel } from '../../../models/session.model.js';
 import { generateToken } from '../../../utils/auth.js';
 import { UserRole, SessionStatus } from '../../../shared/types/index.js';
-import { clearAllTables } from '../../helpers/database.js';
+import { initDatabase } from '../../../config/database.js';
 import { createTestUser, createTestAdmin, createTestSession, createTestMachine } from '../../helpers/factories.js';
 import { db } from '../../../config/database.js';
 
@@ -74,7 +74,7 @@ describe('会话管理 API 集成测试', () => {
   // ========================================
   beforeAll(async () => {
     // 清空测试数据
-    await clearAllTables();
+    await initDatabase();
 
     // 构建应用实例
     app = await build();
@@ -128,7 +128,7 @@ describe('会话管理 API 集成测试', () => {
 
   // 在所有测试之后清理
   afterAll(async () => {
-    await clearAllTables();
+    await initDatabase();
     await app.close();
   });
 

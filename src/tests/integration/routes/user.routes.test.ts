@@ -17,7 +17,7 @@ import { build } from '../../helpers/app.js';
 import { UserModel } from '../../../models/user.model.js';
 import { generateToken } from '../../../utils/auth.js';
 import { UserRole } from '@shared/types/index.js';
-import { clearAllTables } from '../../helpers/database.js';
+import { initDatabase } from '../../../config/database.js';
 import { createTestUser, createTestAdmin } from '../../helpers/factories.js';
 
 // Mock webhook - 集成测试仅Mock外部依赖
@@ -38,7 +38,7 @@ describe('User Routes集成测试', () => {
   // ========================================
   beforeAll(async () => {
     // 清空测试数据
-    await clearAllTables();
+    await initDatabase();
 
     // 构建应用实例
     app = await build();
@@ -74,7 +74,7 @@ describe('User Routes集成测试', () => {
 
   // 在所有测试之后清理
   afterAll(async () => {
-    await clearAllTables();
+    await initDatabase();
     await app.close();
   });
 

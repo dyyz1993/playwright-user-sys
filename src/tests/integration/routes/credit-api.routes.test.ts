@@ -24,7 +24,7 @@ import { UserModel } from '../../../models/user.model.js';
 import { SessionModel } from '../../../models/session.model.js';
 import { generateToken } from '../../../utils/auth.js';
 import { SessionStatus, UserRole } from '../../../shared/types/index.js';
-import { clearAllTables } from '../../helpers/database.js';
+import { initDatabase } from '../../../config/database.js';
 import { createTestUser, createTestAdmin, createTestSession, createTestUsers } from '../../helpers/factories.js';
 
 // Mock webhook - 集成测试仅Mock外部依赖
@@ -44,7 +44,7 @@ describe('积分管理 API Routes 集成测试', () => {
   // ========================================
   beforeAll(async () => {
     // 清空测试数据
-    await clearAllTables();
+    await initDatabase();
 
     // 构建应用实例
     app = await build();
@@ -79,7 +79,7 @@ describe('积分管理 API Routes 集成测试', () => {
 
   // 在所有测试之后清理
   afterAll(async () => {
-    await clearAllTables();
+    await initDatabase();
     await app.close();
   });
 
@@ -935,7 +935,7 @@ describe('积分管理 API Routes 集成测试', () => {
   describe('D. 积分统计查询测试', () => {
     beforeEach(async () => {
       // 清空数据后重新创建管理员和用户，确保认证可用
-      await clearAllTables();
+      await initDatabase();
       testAdmin = await createTestAdmin({
         username: `statsadmin_${Date.now()}`,
         password: 'password123',
@@ -1012,7 +1012,7 @@ describe('积分管理 API Routes 集成测试', () => {
   describe('E. 权限控制测试', () => {
     beforeEach(async () => {
       // 清空数据后重新创建管理员和用户，确保认证可用
-      await clearAllTables();
+      await initDatabase();
       testAdmin = await createTestAdmin({
         username: `authadmin_${Date.now()}`,
         password: 'password123',
@@ -1134,7 +1134,7 @@ describe('积分管理 API Routes 集成测试', () => {
   describe('F. 批量操作原子性测试', () => {
     beforeEach(async () => {
       // 清空数据后重新创建管理员和用户，确保认证可用
-      await clearAllTables();
+      await initDatabase();
       testAdmin = await createTestAdmin({
         username: `atomicadmin_${Date.now()}`,
         password: 'password123',
@@ -1287,7 +1287,7 @@ describe('积分管理 API Routes 集成测试', () => {
   describe('G. 边界条件测试', () => {
     beforeEach(async () => {
       // 清空数据后重新创建管理员和用户，确保认证可用
-      await clearAllTables();
+      await initDatabase();
       testAdmin = await createTestAdmin({
         username: `edgeadmin_${Date.now()}`,
         password: 'password123',
@@ -1389,7 +1389,7 @@ describe('积分管理 API Routes 集成测试', () => {
   describe('H. 并发积分操作测试', () => {
     beforeEach(async () => {
       // 清空数据后重新创建管理员和用户，确保认证可用
-      await clearAllTables();
+      await initDatabase();
       testAdmin = await createTestAdmin({
         username: `concurrencyadmin_${Date.now()}`,
         password: 'password123',

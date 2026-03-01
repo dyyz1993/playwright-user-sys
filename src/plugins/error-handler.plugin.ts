@@ -20,7 +20,7 @@ export default fp(async function (fastify: FastifyInstance) {
 
       return reply.status(400).send({
         success: false,
-        error: '请求体不能为空'
+        error: '请求体不能为空',
       });
     }
 
@@ -29,7 +29,7 @@ export default fp(async function (fastify: FastifyInstance) {
       return reply.status(400).send({
         success: false,
         error: '请求参数验证失败',
-        details: error.validation
+        details: error.validation,
       });
     }
 
@@ -39,7 +39,7 @@ export default fp(async function (fastify: FastifyInstance) {
 
     return reply.status(statusCode).send({
       success: false,
-      error: message
+      error: message,
     });
   });
 });

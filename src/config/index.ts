@@ -15,15 +15,18 @@ export const config = {
   // 数据库配置
   database: {
     client: process.env.DB_TYPE === 'mysql' ? 'mysql2' : 'better-sqlite3',
-    connection: process.env.DB_TYPE === 'mysql' ? {
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-    } : {
-      filename: process.env.DB_FILENAME || './data/playwright-user-sys.sqlite',
-    },
+    connection:
+      process.env.DB_TYPE === 'mysql'
+        ? {
+            host: process.env.DB_HOST,
+            port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+          }
+        : {
+            filename: process.env.DB_FILENAME || './data/playwright-user-sys.sqlite',
+          },
     useNullAsDefault: true,
   },
 
@@ -45,4 +48,3 @@ export const config = {
     prettyPrint: process.env.NODE_ENV !== 'production',
   },
 };
-test

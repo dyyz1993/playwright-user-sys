@@ -13,15 +13,17 @@ import { UserRole, UserStatus, SessionCreateOptions } from '../../shared/types/i
  * @param overrides 覆盖默认值
  * @returns 用户对象
  */
-export async function createTestUser(overrides: Partial<{
-  username: string;
-  password: string;
-  email: string;
-  role: UserRole;
-  status: UserStatus;
-  credits: number;
-  webhook_url: string;
-}> = {}) {
+export async function createTestUser(
+  overrides: Partial<{
+    username: string;
+    password: string;
+    email: string;
+    role: UserRole;
+    status: UserStatus;
+    credits: number;
+    webhook_url: string;
+  }> = {}
+) {
   const timestamp = Date.now();
   return UserModel.create({
     username: `testuser_${timestamp}`,
@@ -39,13 +41,15 @@ export async function createTestUser(overrides: Partial<{
  * @param overrides 覆盖默认值
  * @returns 管理员对象
  */
-export async function createTestAdmin(overrides: Partial<{
-  username: string;
-  password: string;
-  email: string;
-  status: UserStatus;
-  credits: number;
-}> = {}) {
+export async function createTestAdmin(
+  overrides: Partial<{
+    username: string;
+    password: string;
+    email: string;
+    status: UserStatus;
+    credits: number;
+  }> = {}
+) {
   const timestamp = Date.now();
   return UserModel.create({
     username: `testadmin_${timestamp}`,
@@ -90,15 +94,17 @@ export async function createTestSession(
  * @param overrides 覆盖默认值
  * @returns 机器对象
  */
-export async function createTestMachine(overrides: Partial<{
-  id: string;
-  hostname: string;
-  ip: string;
-  grpcPort: number;
-  proxyPort: number;
-  max_instances: number;
-  status: 'online' | 'offline' | 'busy';
-}> = {}) {
+export async function createTestMachine(
+  overrides: Partial<{
+    id: string;
+    hostname: string;
+    ip: string;
+    grpcPort: number;
+    proxyPort: number;
+    max_instances: number;
+    status: 'online' | 'offline' | 'busy';
+  }> = {}
+) {
   const timestamp = Date.now();
   return MachineModel.register({
     id: `machine-${timestamp}`,

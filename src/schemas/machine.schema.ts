@@ -29,9 +29,7 @@ export const registerMachineRequestSchema = z.object({
 });
 
 // 注册机器响应模式
-export const registerMachineResponseSchema = successResponseSchema(
-  machineDetailSchema
-);
+export const registerMachineResponseSchema = successResponseSchema(machineDetailSchema);
 
 // 更新机器状态请求模式
 // 注意: API 层统一使用 camelCase，Model 层负责转换为 snake_case
@@ -45,19 +43,13 @@ export const updateMachineStatusRequestSchema = z.object({
 });
 
 // 更新机器状态响应模式
-export const updateMachineStatusResponseSchema = successResponseSchema(
-  machineDetailSchema
-);
+export const updateMachineStatusResponseSchema = successResponseSchema(machineDetailSchema);
 
 // 机器详情响应模式
-export const machineDetailResponseSchema = successResponseSchema(
-  machineDetailSchema
-);
+export const machineDetailResponseSchema = successResponseSchema(machineDetailSchema);
 
 // 机器会话列表响应模式
-export const machineSessiosnResponseSchema = successResponseSchema(
-  z.array(sessionListItemSchema)
-);
+export const machineSessiosnResponseSchema = successResponseSchema(z.array(sessionListItemSchema));
 
 // 标记机器离线响应模式
 export const markMachineOfflineResponseSchema = successResponseSchema(
@@ -79,11 +71,7 @@ export const getAllMachinesResponseSchema = successResponseSchema(
 );
 
 // 获取机器详情响应模式
-export const getMachineByIdResponseSchema = successResponseSchema(
-  machineDetailSchema
-);
+export const getMachineByIdResponseSchema = successResponseSchema(machineDetailSchema);
 
 // 获取机器会话响应模式
-export const getMachineSessionsResponseSchema = successResponseSchema(
-  z.array(sessionListItemSchema)
-);
+export const getMachineSessionsResponseSchema = successResponseSchema(z.array(sessionListItemSchema));

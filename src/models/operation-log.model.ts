@@ -73,11 +73,7 @@ export class OperationLogModel {
       const order = query.order || 'desc';
 
       const [logs, total] = await Promise.all([
-        db('operation_logs')
-          .where({ admin_id: adminId })
-          .orderBy(sort, order)
-          .limit(limit)
-          .offset(offset),
+        db('operation_logs').where({ admin_id: adminId }).orderBy(sort, order).limit(limit).offset(offset),
         db('operation_logs').where({ admin_id: adminId }).count('id as count').first(),
       ]);
 
@@ -116,7 +112,10 @@ export class OperationLogModel {
   }
 
   // 获取针对特定用户的所有操作日志（分页）
-  static async findByTargetUserId(userId: number, query: PaginationQuery = {}): Promise<PaginatedResponse<OperationLog>> {
+  static async findByTargetUserId(
+    userId: number,
+    query: PaginationQuery = {}
+  ): Promise<PaginatedResponse<OperationLog>> {
     try {
       const page = query.page || 1;
       const limit = query.limit || 10;
@@ -125,11 +124,7 @@ export class OperationLogModel {
       const order = query.order || 'desc';
 
       const [logs, total] = await Promise.all([
-        db('operation_logs')
-          .where({ target_user_id: userId })
-          .orderBy(sort, order)
-          .limit(limit)
-          .offset(offset),
+        db('operation_logs').where({ target_user_id: userId }).orderBy(sort, order).limit(limit).offset(offset),
         db('operation_logs').where({ target_user_id: userId }).count('id as count').first(),
       ]);
 
@@ -177,10 +172,7 @@ export class OperationLogModel {
       const order = query.order || 'desc';
 
       const [logs, total] = await Promise.all([
-        db('operation_logs')
-          .orderBy(sort, order)
-          .limit(limit)
-          .offset(offset),
+        db('operation_logs').orderBy(sort, order).limit(limit).offset(offset),
         db('operation_logs').count('id as count').first(),
       ]);
 
@@ -255,22 +247,19 @@ export class OperationLogModel {
 
       // 执行查询
       const [logs, totalResult] = await Promise.all([
-        query.clone()
-          .orderBy('operation_logs.created_at', 'desc')
-          .limit(limit)
-          .offset(offset),
-        query.count('operation_logs.id as count').first()
+        query.clone().orderBy('operation_logs.created_at', 'desc').limit(limit).offset(offset),
+        query.count('operation_logs.id as count').first(),
       ]);
 
       return {
         items: logs.map((log: any) => ({
           ...log,
-          details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null
+          details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
         })),
         total: totalResult ? Number(totalResult.count) : 0,
         page,
         limit,
-        totalPages: Math.ceil((totalResult ? Number(totalResult.count) : 0) / limit)
+        totalPages: Math.ceil((totalResult ? Number(totalResult.count) : 0) / limit),
       };
     } catch (error) {
       console.error('分页查询操作日志失败:', error);
@@ -279,7 +268,7 @@ export class OperationLogModel {
         total: 0,
         page,
         limit,
-        totalPages: 0
+        totalPages: 0,
       };
     }
   }
@@ -312,7 +301,7 @@ export class OperationLogModel {
 
       return {
         total: logs.length,
-        byAction
+        byAction,
       };
     } catch (error) {
       console.error('获取操作统计失败:', error);

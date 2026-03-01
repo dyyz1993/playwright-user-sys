@@ -139,7 +139,7 @@ export class MachineServer {
       await this.stop();
 
       // 等待一小段时间
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // 重新启动服务
       await this.start();
@@ -149,7 +149,7 @@ export class MachineServer {
       logger.error('重启机器端失败:', error);
       // 即使出错，也尝试重新启动
       this.setState(MachineState.STOPPED);
-      this.start().catch(startError => {
+      this.start().catch((startError) => {
         logger.error('重启后启动机器端失败:', startError);
       });
     }
@@ -238,12 +238,12 @@ export class MachineServer {
     }
 
     // 检查是否是 gRPC 连接错误
-    const isGrpcConnectionError = error.message && (
-      error.message.includes('UNAVAILABLE: Connection dropped') ||
-      error.message.includes('UNAVAILABLE: No connection established') ||
-      error.message.includes('ECONNREFUSED') ||
-      error.message.includes('UNAVAILABLE')
-    );
+    const isGrpcConnectionError =
+      error.message &&
+      (error.message.includes('UNAVAILABLE: Connection dropped') ||
+        error.message.includes('UNAVAILABLE: No connection established') ||
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('UNAVAILABLE'));
 
     if (isGrpcConnectionError) {
       logger.warn('检测到 gRPC 连接错误，将尝试重新连接而不是停止服务');
@@ -272,40 +272,43 @@ export class MachineServer {
             return;
           }
 
-          await retry(async (bail: (error: Error) => void, attemptNumber: number) => {
-            try {
-              // 再次检查状态
-              if (this.state === MachineState.SHUTTING_DOWN || this.state === MachineState.STOPPED) {
-                logger.warn('机器端正在停止或已停止，取消重连');
-                bail(new Error('取消重连'));
-                return;
+          await retry(
+            async (bail: (error: Error) => void, attemptNumber: number) => {
+              try {
+                // 再次检查状态
+                if (this.state === MachineState.SHUTTING_DOWN || this.state === MachineState.STOPPED) {
+                  logger.warn('机器端正在停止或已停止，取消重连');
+                  bail(new Error('取消重连'));
+                  return;
+                }
+
+                logger.info(`执行第 ${attemptNumber} 次重连尝试...`);
+                await this.grpcClient.connect();
+                logger.info('重新连接成功');
+
+                // 重连成功，设置状态为运行中
+                this.setState(MachineState.RUNNING);
+              } catch (err) {
+                logger.error(`第 ${attemptNumber} 次重连失败:`, err);
+                throw err; // 抛出错误，触发重试
               }
-
-              logger.info(`执行第 ${attemptNumber} 次重连尝试...`);
-              await this.grpcClient.connect();
-              logger.info('重新连接成功');
-
-              // 重连成功，设置状态为运行中
-              this.setState(MachineState.RUNNING);
-            } catch (err) {
-              logger.error(`第 ${attemptNumber} 次重连失败:`, err);
-              throw err; // 抛出错误，触发重试
+            },
+            {
+              retries: 10, // 最大重试次数
+              factor: 2, // 指数退避因子
+              minTimeout: 1000, // 最小重试间隔（毫秒）
+              maxTimeout: 60000, // 最大重试间隔（毫秒）
+              randomize: true, // 添加随机性，避免集体重试
+              onRetry: (err: Error, attempt: number) => {
+                logger.warn(`重连失败，将进行第 ${attempt} 次重试:`, err);
+              },
             }
-          }, {
-            retries: 10, // 最大重试次数
-            factor: 2,   // 指数退避因子
-            minTimeout: 1000, // 最小重试间隔（毫秒）
-            maxTimeout: 60000, // 最大重试间隔（毫秒）
-            randomize: true,   // 添加随机性，避免集体重试
-            onRetry: (err: Error, attempt: number) => {
-              logger.warn(`重连失败，将进行第 ${attempt} 次重试:`, err);
-            }
-          }).catch((retryError: Error) => {
+          ).catch((retryError: Error) => {
             logger.error('重连失败，已达到最大重试次数:', retryError);
 
             // 进入冷却期
             this.inCooldown = true;
-            logger.warn(`进入重连冷却期，${this.COOLDOWN_PERIOD/1000} 秒后将再次尝试`);
+            logger.warn(`进入重连冷却期，${this.COOLDOWN_PERIOD / 1000} 秒后将再次尝试`);
 
             // 设置冷却定时器
             this.cooldownTimer = setTimeout(() => {
@@ -349,12 +352,13 @@ export class MachineServer {
     }
 
     // 检查是否是 gRPC 连接错误
-    const isGrpcConnectionError = reason && reason.message && (
-      reason.message.includes('UNAVAILABLE: Connection dropped') ||
-      reason.message.includes('UNAVAILABLE: No connection established') ||
-      reason.message.includes('ECONNREFUSED') ||
-      reason.message.includes('UNAVAILABLE')
-    );
+    const isGrpcConnectionError =
+      reason &&
+      reason.message &&
+      (reason.message.includes('UNAVAILABLE: Connection dropped') ||
+        reason.message.includes('UNAVAILABLE: No connection established') ||
+        reason.message.includes('ECONNREFUSED') ||
+        reason.message.includes('UNAVAILABLE'));
 
     if (isGrpcConnectionError) {
       // 创建一个 Error 对象并交给 handleUncaughtException 处理
@@ -382,6 +386,13 @@ export async function stopMachine() {
   if (machineServer) {
     await machineServer.stop();
   }
+}
+
+/**
+ * 获取机器服务实例
+ */
+export function getMachineServer(): MachineServer | undefined {
+  return machineServer;
 }
 
 export default MachineServer;

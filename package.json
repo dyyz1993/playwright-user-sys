@@ -48,7 +48,10 @@
     "test:routes": "vitest run src/tests/integration/routes",
     "test:coverage": "vitest run --coverage",
     "test:integration:init": "bash scripts/init-test-db.sh",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
     "test:api": "node tests/test-api.js",
     "test:login": "node tests/test-login.js",
     "test:web:login": "node tests/test-web-login-flow.cjs",
@@ -92,10 +95,17 @@
       "buffer-equal-constant-time": "npm:scmp@^2.1.0"
     }
   },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
   "devDependencies": {
     "@babel/core": "^7.26.10",
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-typescript": "^7.27.0",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.57.0",
     "@types/http-proxy": "^1.17.16",
     "@types/jest": "^29.5.14",
@@ -105,10 +115,17 @@
     "@types/supertest": "^6.0.3",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
     "axios": "^1.8.4",
     "babel-jest": "^29.7.0",
     "dotenv-cli": "^8.0.0",
+    "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
     "jest": "^29.7.0",
+    "lint-staged": "^16.3.0",
+    "prettier": "^3.8.1",
     "supertest": "^7.1.0",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",

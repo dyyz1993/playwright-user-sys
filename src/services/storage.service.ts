@@ -122,10 +122,7 @@ export class StorageService {
    * @param additionalSessionSize - Optional additional session size to check
    * @returns Storage limit check result
    */
-  static async checkUserStorageLimit(
-    userId: number,
-    additionalSessionSize: number = 0
-  ): Promise<StorageLimitCheck> {
+  static async checkUserStorageLimit(userId: number, additionalSessionSize: number = 0): Promise<StorageLimitCheck> {
     const stats = await this.getUserStorageStats(userId);
 
     // Check total storage limit
@@ -133,7 +130,8 @@ export class StorageService {
       return {
         canCreateSession: false,
         canCreateShared: false,
-        reason: `Total storage limit exceeded. Current: ${this.formatBytes(stats.totalSize)}, ` +
+        reason:
+          `Total storage limit exceeded. Current: ${this.formatBytes(stats.totalSize)}, ` +
           `Limit: ${this.formatBytes(STORAGE_CONFIG.MAX_TOTAL_SIZE_PER_USER)}`,
         stats,
       };
@@ -144,7 +142,8 @@ export class StorageService {
       return {
         canCreateSession: true,
         canCreateShared: false,
-        reason: `Shared storage limit exceeded. Current: ${this.formatBytes(stats.sharedSize)}, ` +
+        reason:
+          `Shared storage limit exceeded. Current: ${this.formatBytes(stats.sharedSize)}, ` +
           `Limit: ${this.formatBytes(STORAGE_CONFIG.MAX_SHARED_SIZE_PER_USER)}`,
         stats,
       };
@@ -154,7 +153,8 @@ export class StorageService {
     const projectedSessionsSize = stats.sessionsSize + additionalSessionSize;
     const projectedTotal = stats.totalSize + additionalSessionSize;
 
-    const canCreateSession = projectedTotal <= STORAGE_CONFIG.MAX_TOTAL_SIZE_PER_USER &&
+    const canCreateSession =
+      projectedTotal <= STORAGE_CONFIG.MAX_TOTAL_SIZE_PER_USER &&
       additionalSessionSize <= STORAGE_CONFIG.MAX_SESSION_SIZE;
 
     // Can always create shared if within limits
@@ -164,9 +164,10 @@ export class StorageService {
       return {
         canCreateSession: false,
         canCreateShared,
-        reason: additionalSessionSize > STORAGE_CONFIG.MAX_SESSION_SIZE
-          ? `Session size exceeds maximum limit of ${this.formatBytes(STORAGE_CONFIG.MAX_SESSION_SIZE)}`
-          : `Insufficient storage space. Available: ${this.formatBytes(STORAGE_CONFIG.MAX_TOTAL_SIZE_PER_USER - stats.totalSize)}`,
+        reason:
+          additionalSessionSize > STORAGE_CONFIG.MAX_SESSION_SIZE
+            ? `Session size exceeds maximum limit of ${this.formatBytes(STORAGE_CONFIG.MAX_SESSION_SIZE)}`
+            : `Insufficient storage space. Available: ${this.formatBytes(STORAGE_CONFIG.MAX_TOTAL_SIZE_PER_USER - stats.totalSize)}`,
         stats,
       };
     }
@@ -247,7 +248,7 @@ export class StorageService {
 
     try {
       const users = await readdir(userDataPath, { withFileTypes: true });
-      const cutoffTime = Date.now() - (STORAGE_CONFIG.SHARED_CLEANUP_AGE_DAYS * 24 * 60 * 60 * 1000);
+      const cutoffTime = Date.now() - STORAGE_CONFIG.SHARED_CLEANUP_AGE_DAYS * 24 * 60 * 60 * 1000;
 
       for (const user of users) {
         if (!user.isDirectory()) continue;
@@ -373,7 +374,7 @@ export class StorageService {
     const { items } = await UserModel.findAll({
       page: 1,
       limit: 10000,
-      ...(search && { search })
+      ...(search && { search }),
     });
 
     // Calculate storage stats for each user
@@ -387,7 +388,7 @@ export class StorageService {
         try {
           if (existsSync(sessionsPath)) {
             const entries = await readdir(sessionsPath, { withFileTypes: true });
-            sessionsCount = entries.filter(e => e.isDirectory()).length;
+            sessionsCount = entries.filter((e) => e.isDirectory()).length;
           }
         } catch (error) {
           // Ignore errors
@@ -400,7 +401,7 @@ export class StorageService {
           sharedSize: stats.sharedSize,
           totalSize: stats.totalSize,
           sessionsCount,
-          isOverLimit: stats.totalSize > STORAGE_CONFIG.MAX_TOTAL_SIZE_PER_USER
+          isOverLimit: stats.totalSize > STORAGE_CONFIG.MAX_TOTAL_SIZE_PER_USER,
         };
       })
     );
@@ -429,7 +430,7 @@ export class StorageService {
       users: paginatedUsers,
       total: userStats.length,
       page,
-      limit
+      limit,
     };
   }
 
@@ -488,7 +489,7 @@ export class StorageService {
         details.push({
           userId,
           username: user.username,
-          freedSpace
+          freedSpace,
         });
         totalFreedSpace += freedSpace;
       }
@@ -497,7 +498,7 @@ export class StorageService {
     return {
       cleanedUsers: details.length,
       freedSpace: totalFreedSpace,
-      details
+      details,
     };
   }
 
@@ -521,7 +522,7 @@ export class StorageService {
 
     try {
       const users = await readdir(userDataPath, { withFileTypes: true });
-      const cutoffTime = Date.now() - (cleanupDays * 24 * 60 * 60 * 1000);
+      const cutoffTime = Date.now() - cleanupDays * 24 * 60 * 60 * 1000;
 
       for (const user of users) {
         if (!user.isDirectory()) continue;
@@ -548,7 +549,9 @@ export class StorageService {
         }
       }
 
-      logger.info(`Admin cleanup completed: ${deletedCount} directories removed, ${this.formatBytes(freedSpace)} freed`);
+      logger.info(
+        `Admin cleanup completed: ${deletedCount} directories removed, ${this.formatBytes(freedSpace)} freed`
+      );
     } catch (error) {
       logger.error(`Failed to cleanup old shared data: ${error}`);
       throw error;
@@ -590,7 +593,7 @@ export class StorageService {
       uploadsSize,
       screenshotsSize,
       tempSize,
-      userStorageSize
+      userStorageSize,
     };
   }
 }

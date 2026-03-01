@@ -257,7 +257,7 @@ describe('SessionModel', () => {
     });
 
     const before = session.last_activity;
-    await new Promise(resolve => setTimeout(resolve, 100)); // 等待一小段时间
+    await new Promise((resolve) => setTimeout(resolve, 100)); // 等待一小段时间
 
     const updated = await SessionModel.updateLastActivity(session.id);
     expect(updated).toBeTruthy();
@@ -330,7 +330,7 @@ describe('SessionModel', () => {
   // ========================================
   it('应该支持按字段排序', async () => {
     await SessionModel.create({ user_id: testUser.id });
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     await SessionModel.create({ user_id: testUser.id });
 
     const result = await SessionModel.findAll({

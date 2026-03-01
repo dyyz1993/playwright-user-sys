@@ -26,12 +26,12 @@ export async function build(): Promise<FastifyInstance> {
   // 配置自定义 validatorCompiler，确保拒绝未知字段而不是删除
   app.setValidatorCompiler(({ schema }) => {
     const ajv = new Ajv({
-      removeAdditional: false,  // 关键：拒绝而不是删除未知字段
+      removeAdditional: false, // 关键：拒绝而不是删除未知字段
       coerceTypes: true,
       useDefaults: true,
       allErrors: false,
     });
-    addFormats(ajv);  // 添加 email、uri 等格式支持
+    addFormats(ajv); // 添加 email、uri 等格式支持
     return ajv.compile(schema);
   });
 

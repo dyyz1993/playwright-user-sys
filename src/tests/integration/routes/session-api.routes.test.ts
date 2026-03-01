@@ -37,7 +37,7 @@ const mockConnectionManager = {
   closeBrowser: vi.fn().mockResolvedValue(undefined),
   launchBrowser: vi.fn().mockResolvedValue({
     port: 3000,
-    browser_ws_endpoint: 'ws://localhost:3000',  // 使用 snake_case 以匹配实际代码
+    browser_ws_endpoint: 'ws://localhost:3000', // 使用 snake_case 以匹配实际代码
   }),
 };
 
@@ -146,7 +146,7 @@ describe('会话管理 API 集成测试', () => {
       const session = await createTestSession(user.id);
 
       // 等待30秒
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // 释放会话
       const response = await app.inject({
@@ -613,12 +613,10 @@ describe('会话管理 API 集成测试', () => {
       ]);
 
       // 并发创建会话
-      const sessions = await Promise.all(
-        users.map(user => createTestSession(user.id))
-      );
+      const sessions = await Promise.all(users.map((user) => createTestSession(user.id)));
 
       expect(sessions).toHaveLength(3);
-      sessions.forEach(session => {
+      sessions.forEach((session) => {
         expect(session.status).toBe(SessionStatus.CREATED);
       });
     });
@@ -636,7 +634,7 @@ describe('会话管理 API 集成测试', () => {
       expect(sessions).toHaveLength(3);
 
       // 验证所有会话ID都不同
-      const ids = sessions.map(s => s.id);
+      const ids = sessions.map((s) => s.id);
       const uniqueIds = new Set(ids);
       expect(uniqueIds.size).toBe(3);
     });
@@ -651,11 +649,9 @@ describe('会话管理 API 集成测试', () => {
       ]);
 
       // 并发释放会话
-      const results = await Promise.all(
-        sessions.map(session => SessionModel.markDisconnected(session.id, 60))
-      );
+      const results = await Promise.all(sessions.map((session) => SessionModel.markDisconnected(session.id, 60)));
 
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result?.status).toBe(SessionStatus.DISCONNECTED);
       });
     });
@@ -672,7 +668,7 @@ describe('会话管理 API 集成测试', () => {
       ]);
 
       // 所有操作都应该成功
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).not.toBeNull();
       });
 
@@ -685,14 +681,12 @@ describe('会话管理 API 集成测试', () => {
       const user = await createTestUser({ credits: 1000 });
 
       // 创建10个会话
-      const sessions = await Promise.all(
-        Array.from({ length: 10 }, () => createTestSession(user.id))
-      );
+      const sessions = await Promise.all(Array.from({ length: 10 }, () => createTestSession(user.id)));
 
       expect(sessions).toHaveLength(10);
 
       // 验证所有会话ID唯一
-      const ids = sessions.map(s => s.id);
+      const ids = sessions.map((s) => s.id);
       const uniqueIds = new Set(ids);
       expect(uniqueIds.size).toBe(10);
     });
@@ -701,11 +695,7 @@ describe('会话管理 API 集成测试', () => {
       const user = await createTestUser({ credits: 300 });
 
       // 创建多个会话
-      await Promise.all([
-        createTestSession(user.id),
-        createTestSession(user.id),
-        createTestSession(user.id),
-      ]);
+      await Promise.all([createTestSession(user.id), createTestSession(user.id), createTestSession(user.id)]);
 
       // 并发查询会话列表
       const results = await Promise.all([
@@ -727,7 +717,7 @@ describe('会话管理 API 集成测试', () => {
       ]);
 
       // 所有查询都应该成功
-      results.forEach(response => {
+      results.forEach((response) => {
         expect(response.statusCode).toBe(200);
         const result = JSON.parse(response.payload);
         expect(result.data.items.length).toBe(3);
@@ -1263,11 +1253,7 @@ describe('会话管理 API 集成测试', () => {
       const result = JSON.parse(response.payload);
 
       result.data.items.forEach((session: any) => {
-        expect([
-          SessionStatus.DISCONNECTED,
-          SessionStatus.EXPIRED,
-          SessionStatus.COMPLETED,
-        ]).toContain(session.status);
+        expect([SessionStatus.DISCONNECTED, SessionStatus.EXPIRED, SessionStatus.COMPLETED]).toContain(session.status);
       });
     });
 
@@ -1471,9 +1457,9 @@ describe('会话管理 API 集成测试', () => {
       const user = await createTestUser();
 
       await createTestSession(user.id);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       await createTestSession(user.id);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       await createTestSession(user.id);
     });
 
@@ -1541,9 +1527,7 @@ describe('会话管理 API 集成测试', () => {
       const result = JSON.parse(response.payload);
 
       if (result.data.items.length > 1) {
-        expect(result.data.items[0].duration).toBeGreaterThanOrEqual(
-          result.data.items[1].duration
-        );
+        expect(result.data.items[0].duration).toBeGreaterThanOrEqual(result.data.items[1].duration);
       }
     });
 
@@ -1569,9 +1553,7 @@ describe('会话管理 API 集成测试', () => {
       const result = JSON.parse(response.payload);
 
       if (result.data.items.length > 1) {
-        expect(result.data.items[0].credits_used).toBeGreaterThanOrEqual(
-          result.data.items[1].credits_used
-        );
+        expect(result.data.items[0].credits_used).toBeGreaterThanOrEqual(result.data.items[1].credits_used);
       }
     });
 
@@ -1732,7 +1714,7 @@ describe('会话管理 API 集成测试', () => {
         createTestSession(user.id),
       ]);
 
-      const sessionIds = sessions.map(s => s.id);
+      const sessionIds = sessions.map((s) => s.id);
 
       const response = await app.inject({
         method: 'POST',
@@ -1755,16 +1737,9 @@ describe('会话管理 API 集成测试', () => {
     it('S-BATCH-02: 批量释放部分成功', async () => {
       const user = await createTestUser();
 
-      const sessions = await Promise.all([
-        createTestSession(user.id),
-        createTestSession(user.id),
-      ]);
+      const sessions = await Promise.all([createTestSession(user.id), createTestSession(user.id)]);
 
-      const sessionIds = [
-        sessions[0].id,
-        sessions[1].id,
-        'non-existent-id',
-      ];
+      const sessionIds = [sessions[0].id, sessions[1].id, 'non-existent-id'];
 
       const response = await app.inject({
         method: 'POST',
@@ -1820,12 +1795,9 @@ describe('会话管理 API 集成测试', () => {
     it('S-BATCH-05: 批量操作正确扣费', async () => {
       const user = await createTestUser({ credits: 200 });
 
-      const sessions = await Promise.all([
-        createTestSession(user.id),
-        createTestSession(user.id),
-      ]);
+      const sessions = await Promise.all([createTestSession(user.id), createTestSession(user.id)]);
 
-      const sessionIds = sessions.map(s => s.id);
+      const sessionIds = sessions.map((s) => s.id);
 
       await app.inject({
         method: 'POST',
@@ -2008,9 +1980,7 @@ describe('会话管理 API 集成测试', () => {
       const user = await createTestUser({ credits: 10000 });
 
       // 创建大量并发会话
-      const sessions = await Promise.all(
-        Array.from({ length: 20 }, () => createTestSession(user.id))
-      );
+      const sessions = await Promise.all(Array.from({ length: 20 }, () => createTestSession(user.id)));
 
       expect(sessions).toHaveLength(20);
     });

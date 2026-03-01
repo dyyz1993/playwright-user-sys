@@ -17,7 +17,6 @@ export default async function routes(fastify: FastifyInstance) {
   fastify.register(machineRoutes, { prefix: '/api/machines' });
   fastify.register(fileRoutes);
 
-
   // 注册管理后台路由
   fastify.register(adminRoutes);
   fastify.register(adminApiRoutes);

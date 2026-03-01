@@ -4,11 +4,11 @@ import { MachineModel, UpdateMachineInput } from '../models/machine.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { sendSuccess, sendError, sendCreated, sendPaginated } from '../utils/response.js';
 import { PaginationQuery } from '@shared/types/index.js';
-import { registerMachineRequestSchema, updateMachineStatusRequestSchema, paginationQuerySchema } from '../schemas/index.js';
-
-
-
-
+import {
+  registerMachineRequestSchema,
+  updateMachineStatusRequestSchema,
+  paginationQuerySchema,
+} from '../schemas/index.js';
 
 // 注册机器
 export async function registerMachine(request: FastifyRequest, reply: FastifyReply) {
@@ -21,7 +21,7 @@ export async function registerMachine(request: FastifyRequest, reply: FastifyRep
     return sendCreated(reply, machine);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return sendError(reply, '无效的请求数据: ' + error.errors.map(e => e.message).join(', '), 400);
+      return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
     request.log.error(error);
@@ -47,7 +47,7 @@ export async function updateMachineStatus(request: FastifyRequest, reply: Fastif
     return sendSuccess(reply, updatedMachine);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return sendError(reply, '无效的请求数据: ' + error.errors.map(e => e.message).join(', '), 400);
+      return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
     request.log.error(error);
@@ -87,17 +87,11 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
             ? b.last_heartbeat.getTime() - a.last_heartbeat.getTime()
             : a.last_heartbeat.getTime() - b.last_heartbeat.getTime();
         } else if (sort === 'active_sessions') {
-          return order === 'desc'
-            ? b.active_sessions - a.active_sessions
-            : a.active_sessions - b.active_sessions;
+          return order === 'desc' ? b.active_sessions - a.active_sessions : a.active_sessions - b.active_sessions;
         } else if (sort === 'cpu_usage') {
-          return order === 'desc'
-            ? b.cpu_usage - a.cpu_usage
-            : a.cpu_usage - b.cpu_usage;
+          return order === 'desc' ? b.cpu_usage - a.cpu_usage : a.cpu_usage - b.cpu_usage;
         } else if (sort === 'memory_usage') {
-          return order === 'desc'
-            ? b.memory_usage - a.memory_usage
-            : a.memory_usage - b.memory_usage;
+          return order === 'desc' ? b.memory_usage - a.memory_usage : a.memory_usage - b.memory_usage;
         }
         // 默认按最后心跳时间排序
         return order === 'desc'
@@ -109,7 +103,7 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
       const paginatedMachines = sortedMachines.slice(offset, offset + limit);
 
       // 转换为 API 响应格式
-      const formattedMachines = paginatedMachines.map(machine => {
+      const formattedMachines = paginatedMachines.map((machine) => {
         // 调试：打印机器的原始字段
         console.log(`[DEBUG] 机器原始数据:`, {
           machine_id: machine.machine_id,
@@ -147,7 +141,7 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return sendError(reply, '无效的查询参数: ' + error.errors.map(e => e.message).join(', '), 400);
+      return sendError(reply, '无效的查询参数: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
     request.log.error(error);
@@ -218,7 +212,7 @@ export async function getMachineSessions(request: FastifyRequest, reply: Fastify
 
     // 从内存中获取会话数据
     const allSessions = memoryStore.getAllSessions();
-    const machineSessions = allSessions.filter(session => session.machine_id === machineId);
+    const machineSessions = allSessions.filter((session) => session.machine_id === machineId);
 
     if (machineSessions.length > 0) {
       // 如果内存中有数据，则使用内存中的数据
@@ -338,7 +332,7 @@ export async function restartMachine(request: FastifyRequest, reply: FastifyRepl
       return sendSuccess(reply, {
         success: true,
         message: '重启命令已发送',
-        id: machineId
+        id: machineId,
       });
     } catch (commandError) {
       request.log.error('发送重启命令失败:', commandError);
@@ -362,7 +356,7 @@ export async function deleteMachine(request: FastifyRequest, reply: FastifyReply
       request.log.warn(`机器不存在: ${machineId}`);
       return reply.status(404).send({
         success: false,
-        error: '机器不存在'
+        error: '机器不存在',
       });
     }
 
@@ -376,7 +370,7 @@ export async function deleteMachine(request: FastifyRequest, reply: FastifyReply
           connectionManager.sendShutdownCommand(machineId);
 
           // 等待一小段时间，确保命令被发送
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
 
           // 然后断开连接
           request.log.info(`断开机器连接: ${machineId}`);
@@ -395,7 +389,7 @@ export async function deleteMachine(request: FastifyRequest, reply: FastifyReply
       request.log.error(`从数据库删除机器失败: ${machineId}`);
       return reply.status(500).send({
         success: false,
-        error: '删除机器失败'
+        error: '删除机器失败',
       });
     }
 
@@ -413,13 +407,13 @@ export async function deleteMachine(request: FastifyRequest, reply: FastifyReply
     return reply.status(200).send({
       success: true,
       message: '机器删除成功',
-      id: machineId
+      id: machineId,
     });
   } catch (error) {
     request.log.error('删除机器失败:', error);
     return reply.status(500).send({
       success: false,
-      error: '删除机器失败'
+      error: '删除机器失败',
     });
   }
 }
@@ -448,14 +442,14 @@ export async function batchHealthCheck(request: FastifyRequest, reply: FastifyRe
 
     const results = await MachineModel.batchHealthCheck(machineIds);
 
-    const healthy = results.filter(r => r.status === 'healthy').length;
-    const unhealthy = results.filter(r => r.status === 'unhealthy').length;
+    const healthy = results.filter((r) => r.status === 'healthy').length;
+    const unhealthy = results.filter((r) => r.status === 'unhealthy').length;
 
     return sendSuccess(reply, {
       total: results.length,
       healthy,
       unhealthy,
-      results
+      results,
     });
   } catch (error) {
     request.log.error(error);

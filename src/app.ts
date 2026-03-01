@@ -27,16 +27,19 @@ let wsProxyService: NativeWebSocketProxyService;
 // 构建应用但不启动
 export async function build(): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: process.env.NODE_ENV !== 'test' ? {
-      level: 'info',
-      transport: {
-        target: 'pino-pretty',
-        options: {
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname',
-        },
-      },
-    } : false,
+    logger:
+      process.env.NODE_ENV !== 'test'
+        ? {
+            level: 'info',
+            transport: {
+              target: 'pino-pretty',
+              options: {
+                translateTime: 'HH:MM:ss Z',
+                ignore: 'pid,hostname',
+              },
+            },
+          }
+        : false,
   });
 
   // 初始化数据库
@@ -94,14 +97,14 @@ export async function start() {
 
     // 启动 gRPC 服务器
     const { startGrpcServer } = await import('./services/machine-grpc.service.js');
-    const grpcPort = parseInt(env.GRPC_PORT+'' || '50051', 10);
+    const grpcPort = parseInt(env.GRPC_PORT + '' || '50051', 10);
     startGrpcServer(grpcPort);
 
     // 注意: 代理服务已移除，使用 SLB 或直接连接机器替代
 
     // 启动机器监控服务
     const { startMachineMonitor } = await import('./services/machine-monitor.service.js');
-    const monitorInterval = parseInt(env.MACHINE_MONITOR_INTERVAL+'' || '30000', 10);
+    const monitorInterval = parseInt(env.MACHINE_MONITOR_INTERVAL + '' || '30000', 10);
     const machineMonitorTimer = await startMachineMonitor(monitorInterval);
 
     // 启动点数监控服务
@@ -131,3 +134,4 @@ export async function start() {
 }
 
 export default fastify;
+// test

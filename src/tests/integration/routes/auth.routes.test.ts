@@ -43,7 +43,7 @@ describe('Auth Routes集成测试', () => {
     // 创建测试用户 (不需要预先哈希密码，UserModel.create会处理)
     const testUser = await UserModel.create({
       username: 'authuser',
-      password: 'password123',  // 明文密码，UserModel.create会哈希
+      password: 'password123', // 明文密码，UserModel.create会哈希
       role: UserRole.USER,
       status: UserStatus.ACTIVE,
       credits: 100,

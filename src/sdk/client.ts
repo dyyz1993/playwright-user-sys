@@ -61,7 +61,11 @@ export class Client {
    * @param body 请求体
    * @returns 响应数据
    */
-  async request<T = any>(method: string, path: string, body?: any): Promise<{ success: boolean; data: T; message?: string }> {
+  async request<T = any>(
+    method: string,
+    path: string,
+    body?: any
+  ): Promise<{ success: boolean; data: T; message?: string }> {
     const url = `${this.baseUrl}${path}`;
 
     const options: any = {

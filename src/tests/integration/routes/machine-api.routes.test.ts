@@ -17,12 +17,7 @@ import { SessionModel } from '../../../models/session.model.js';
 import { generateToken } from '../../../utils/auth.js';
 import { UserRole } from '../../../shared/types/index.js';
 import { clearAllTables } from '../../helpers/database.js';
-import {
-  createTestUser,
-  createTestAdmin,
-  createTestMachine,
-  createTestSession,
-} from '../../helpers/factories.js';
+import { createTestUser, createTestAdmin, createTestMachine, createTestSession } from '../../helpers/factories.js';
 
 // Mock gRPC connection manager - 集成测试仅Mock外部依赖
 vi.mock('../../../services/machine-grpc.service.js', () => ({
@@ -32,7 +27,7 @@ vi.mock('../../../services/machine-grpc.service.js', () => ({
       cpu_usage: 45.5,
       memory_usage: 60.2,
       disk_space: 55.8,
-      active_sessions: 5
+      active_sessions: 5,
     })),
     sendRestartCommand: vi.fn(),
     closeBrowser: vi.fn(),
@@ -98,7 +93,6 @@ describe('机器管理 API 集成测试', () => {
   // A-01: 添加机器（正常情况）
   // ========================================
   describe('POST /api/admin/machines - 添加机器', () => {
-
     it('A-01: 管理员添加机器应该成功', async () => {
       const newMachine = {
         hostname: `test-machine-${Date.now()}`,
@@ -148,9 +142,11 @@ describe('机器管理 API 集成测试', () => {
       const result = JSON.parse(response.payload);
       expect(result.success).toBe(false);
       // 适配不同的错误消息
-      expect(['不能为空', '请求参数验证失败', '必填'].some(msg =>
-        result.error.includes(msg) || result.error.toLowerCase().includes('required')
-      )).toBe(true);
+      expect(
+        ['不能为空', '请求参数验证失败', '必填'].some(
+          (msg) => result.error.includes(msg) || result.error.toLowerCase().includes('required')
+        )
+      ).toBe(true);
     });
 
     it('A-03: 添加机器时IP重复应该返回409', async () => {
@@ -232,7 +228,6 @@ describe('机器管理 API 集成测试', () => {
   // A-02: 获取机器详情
   // ========================================
   describe('GET /api/admin/machines/:id - 获取机器详情', () => {
-
     it('A-07: 获取机器详情应该成功', async () => {
       const machine = await createTestMachine();
 
@@ -399,16 +394,8 @@ describe('机器管理 API 集成测试', () => {
   // B-01: IP地址验证
   // ========================================
   describe('IP 地址字段验证', () => {
-
     it('B-IP-01: 有效IPv4地址应该通过验证', async () => {
-      const validIps = [
-        '192.168.1.1',
-        '10.0.0.1',
-        '172.16.0.1',
-        '127.0.0.1',
-        '0.0.0.0',
-        '255.255.255.255',
-      ];
+      const validIps = ['192.168.1.1', '10.0.0.1', '172.16.0.1', '127.0.0.1', '0.0.0.0', '255.255.255.255'];
 
       // 注意：127.0.0.1, 0.0.0.0 等特殊IP可能在实际使用中有限制
       for (let i = 0; i < validIps.length; i++) {
@@ -483,7 +470,6 @@ describe('机器管理 API 集成测试', () => {
   // B-02: 端口号验证
   // ========================================
   describe('端口号字段验证', () => {
-
     it('B-PORT-01: 有效端口范围应该通过验证', async () => {
       const validPorts = [1, 1024, 8080, 50051, 65535];
 
@@ -570,14 +556,8 @@ describe('机器管理 API 集成测试', () => {
   // B-03: 主机名验证
   // ========================================
   describe('主机名字段验证', () => {
-
     it('B-HOST-01: 有效主机名应该通过验证', async () => {
-      const validHostnames = [
-        'machine-01',
-        'test.server',
-        'server1',
-        'web-server-prod',
-      ];
+      const validHostnames = ['machine-01', 'test.server', 'server1', 'web-server-prod'];
 
       for (let i = 0; i < validHostnames.length; i++) {
         const hostname = validHostnames[i];
@@ -684,7 +664,6 @@ describe('机器管理 API 集成测试', () => {
   // B-05: 实例数量验证
   // ========================================
   describe('实例数量字段验证', () => {
-
     it('B-INSTANCE-01: 有效实例数量应该通过', async () => {
       const response = await app.inject({
         method: 'POST',
@@ -873,7 +852,7 @@ describe('机器管理 API 集成测试', () => {
           Authorization: `Bearer ${adminToken}`,
         },
         payload: {
-          machineIds: machines.map(m => m.id),
+          machineIds: machines.map((m) => m.id),
         },
       });
 
@@ -911,7 +890,7 @@ describe('机器管理 API 集成测试', () => {
           Authorization: `Bearer ${userToken}`,
         },
         payload: {
-          machineIds: machines.map(m => m.id),
+          machineIds: machines.map((m) => m.id),
         },
       });
 
@@ -941,7 +920,7 @@ describe('机器管理 API 集成测试', () => {
           Authorization: `Bearer ${adminToken}`,
         },
         payload: {
-          machineIds: machines.map(m => m.id),
+          machineIds: machines.map((m) => m.id),
         },
       });
 
@@ -978,7 +957,7 @@ describe('机器管理 API 集成测试', () => {
           Authorization: `Bearer ${userToken}`,
         },
         payload: {
-          machineIds: machines.map(m => m.id),
+          machineIds: machines.map((m) => m.id),
         },
       });
 
@@ -990,7 +969,6 @@ describe('机器管理 API 集成测试', () => {
   // C-04: 机器注册流程测试
   // ========================================
   describe('POST /machines/register - 机器注册', () => {
-
     it('C-REGISTER-01: 首次注册应该创建新机器', async () => {
       const machineId = `new-machine-${Date.now()}`;
       const response = await app.inject({
@@ -1213,7 +1191,6 @@ describe('机器管理 API 集成测试', () => {
   // C-07: 超时检测测试
   // ========================================
   describe('超时检测测试', () => {
-
     it('C-TIMEOUT-01: 检查超时机器应该标记为offline', async () => {
       const machine = await createTestMachine();
 
@@ -1408,7 +1385,6 @@ describe('机器管理 API 集成测试', () => {
   // D-03: 清理旧机器
   // ========================================
   describe('POST /machines/cleanup - 清理旧机器', () => {
-
     it('D-CLEANUP-01: 清理旧机器应该成功', async () => {
       // 创建旧机器
       const oldMachine = await createTestMachine();
@@ -1469,7 +1445,6 @@ describe('机器管理 API 集成测试', () => {
   // D-04: 刷新机器状态
   // ========================================
   describe('POST /machines/refresh - 刷新机器状态', () => {
-
     it('D-REFRESH-01: 刷新所有机器状态应该成功', async () => {
       await createTestMachine();
       await createTestMachine();
@@ -1519,7 +1494,6 @@ describe('机器管理 API 集成测试', () => {
   // ========================================
 
   describe('边界条件测试', () => {
-
     it('E-EDGE-01: 创建机器时使用边界值端口', async () => {
       const response = await app.inject({
         method: 'POST',
@@ -1578,7 +1552,6 @@ describe('机器管理 API 集成测试', () => {
   });
 
   describe('并发和数据一致性测试', () => {
-
     it('E-CONCURRENT-01: 多次更新机器状态应该一致', async () => {
       const machine = await createTestMachine();
 
@@ -1609,7 +1582,6 @@ describe('机器管理 API 集成测试', () => {
   });
 
   describe('权限控制综合测试', () => {
-
     it('E-AUTH-01: 所有管理API都需要管理员权限', async () => {
       const machine = await createTestMachine();
       const adminEndpoints = [

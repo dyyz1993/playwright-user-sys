@@ -181,11 +181,7 @@ class MachineConnectionManager extends EventEmitter {
         'grpc.max_reconnect_backoff_ms': 10000, // 最大重连间隔为 10 秒
       };
 
-      const client = new proto.MachineService(
-        address,
-        grpc.credentials.createInsecure(),
-        options
-      );
+      const client = new proto.MachineService(address, grpc.credentials.createInsecure(), options);
 
       // 存储客户端
       this.clients.set(machineId, client);
@@ -308,7 +304,9 @@ class MachineConnectionManager extends EventEmitter {
       const { session_id, status: sessionStatus, duration: reportedDuration } = status;
       // 使用可变变量存储持续时间，以便后续可以修改
       let duration = reportedDuration;
-      logger.info(`收到会话状态更新 (${machineId}, ${session_id}): ${sessionStatus}, 持续时间: ${duration}秒, 数据源: 机器端`);
+      logger.info(
+        `收到会话状态更新 (${machineId}, ${session_id}): ${sessionStatus}, 持续时间: ${duration}秒, 数据源: 机器端`
+      );
 
       // 获取会话信息
       const session = await SessionModel.findById(session_id);
@@ -326,7 +324,9 @@ class MachineConnectionManager extends EventEmitter {
 
         if (calculatedDuration > 0) {
           duration = calculatedDuration;
-          logger.info(`会话状态更新: 根据开始时间计算持续时间 (${session_id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${duration}秒`);
+          logger.info(
+            `会话状态更新: 根据开始时间计算持续时间 (${session_id}): 开始时间=${startTime.toISOString()}, 当前时间=${now.toISOString()}, 持续时间=${duration}秒`
+          );
         }
       }
 
@@ -385,7 +385,9 @@ class MachineConnectionManager extends EventEmitter {
               credits_used: newCreditsUsed,
             });
 
-            logger.info(`会话活动更新，保留最大值 (${session_id}): 持续时间=${newDuration}秒, 消耗点数=${newCreditsUsed}点`);
+            logger.info(
+              `会话活动更新，保留最大值 (${session_id}): 持续时间=${newDuration}秒, 消耗点数=${newCreditsUsed}点`
+            );
           } else {
             // 如果没有值，直接更新
             await SessionModel.update(session_id, {
@@ -456,7 +458,9 @@ class MachineConnectionManager extends EventEmitter {
               status: SessionStatus.ERROR,
               end_time: new Date(),
             });
-            logger.info(`会话已有持续时间和消耗点数，只更新状态和结束时间 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`);
+            logger.info(
+              `会话已有持续时间和消耗点数，只更新状态和结束时间 (${session_id}): 持续时间=${session.duration}秒, 消耗点数=${session.credits_used}点`
+            );
           } else {
             // 如果没有持续时间和消耗点数，更新所有字段
             await SessionModel.update(session_id, {
@@ -465,7 +469,9 @@ class MachineConnectionManager extends EventEmitter {
               duration,
               credits_used: errorMinutes,
             });
-            logger.info(`会话没有持续时间和消耗点数，更新所有字段 (${session_id}): 持续时间=${duration}秒, 消耗点数=${errorMinutes}点`);
+            logger.info(
+              `会话没有持续时间和消耗点数，更新所有字段 (${session_id}): 持续时间=${duration}秒, 消耗点数=${errorMinutes}点`
+            );
           }
 
           // 如果会话已分配机器，减少机器的实例计数
@@ -700,7 +706,7 @@ class MachineConnectionManager extends EventEmitter {
         const request = {
           session_id: sessionId,
           options: protoOptions,
-          user_id: options.userId || 0,  // 传递 userId 用于计算 userDataDir
+          user_id: options.userId || 0, // 传递 userId 用于计算 userDataDir
         };
 
         // 创建 metadata 并设置机器 ID
@@ -853,13 +859,15 @@ const serviceImplementation = {
           status: 'online',
         });
 
-        logger.info(`机器更新数据: ${JSON.stringify({
-          hostname: request.name,
-          ip: request.ip_address,
-          grpcPort: request.grpc_port,
-          proxyPort: request.proxy_port,
-          max_instances: request.max_sessions,
-        })}`);
+        logger.info(
+          `机器更新数据: ${JSON.stringify({
+            hostname: request.name,
+            ip: request.ip_address,
+            grpcPort: request.grpc_port,
+            proxyPort: request.proxy_port,
+            max_instances: request.max_sessions,
+          })}`
+        );
 
         logger.info(`机器已更新: ${request.machine_id}`);
       } else {
@@ -873,14 +881,16 @@ const serviceImplementation = {
           max_instances: request.max_sessions,
         });
 
-        logger.info(`新机器数据: ${JSON.stringify({
-          id: request.machine_id,
-          hostname: request.name,
-          ip: request.ip_address,
-          grpcPort: request.grpc_port,
-          proxyPort: request.proxy_port,
-          max_instances: request.max_sessions,
-        })}`);
+        logger.info(
+          `新机器数据: ${JSON.stringify({
+            id: request.machine_id,
+            hostname: request.name,
+            ip: request.ip_address,
+            grpcPort: request.grpc_port,
+            proxyPort: request.proxy_port,
+            max_instances: request.max_sessions,
+          })}`
+        );
 
         logger.info(`机器已创建: ${request.machine_id}`);
       }
@@ -1135,7 +1145,7 @@ const serviceImplementation = {
         // 即使心跳请求失败，也返回机器在线状态
         callback(null, {
           machine_id,
-          online: true,  // 机器连接存在，所以还是在线的
+          online: true, // 机器连接存在，所以还是在线的
           cpu_usage: 0,
           memory_usage: 0,
           active_sessions: 0,

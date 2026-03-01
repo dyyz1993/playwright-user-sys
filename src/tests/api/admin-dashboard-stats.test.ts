@@ -73,7 +73,7 @@ describe('管理员仪表盘统计功能测试', () => {
       expect(result.data).toHaveProperty('activeSessions');
       expect(result.data).toHaveProperty('totalCredits');
       expect(result.data).toHaveProperty('usedCredits');
-      
+
       // 验证数据类型
       expect(typeof result.data.totalUsers).toBe('number');
       expect(typeof result.data.activeUsers).toBe('number');

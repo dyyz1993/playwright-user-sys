@@ -71,9 +71,8 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
   try {
     // 从内存中获取该机器上的活跃会话
     const allSessions = memoryStore.getAllSessions();
-    const activeSessions = allSessions.filter(s =>
-      s.machine_id === machineId &&
-      (s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED)
+    const activeSessions = allSessions.filter(
+      (s) => s.machine_id === machineId && (s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED)
     );
 
     // 如果内存中没有数据，则从数据库获取
@@ -102,7 +101,7 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
         memoryStore.updateSessionStatus({
           ...session,
           status: SessionStatus.ERROR,
-          last_activity: now
+          last_activity: now,
         });
 
         // 同时在数据库中标记会话为错误状态
@@ -268,21 +267,21 @@ export async function startMachineMonitor(intervalMs: number = 30000): Promise<N
 
   // 设置定时器定期检查
   const mainTimer = setInterval(() => {
-    checkMachineStatus().catch(error => {
+    checkMachineStatus().catch((error) => {
       logger.error('定期机器状态检查失败:', error);
     });
 
     // 每5分钟执行一次强制检查
     const now = new Date();
     if (now.getMinutes() % 5 === 0 && now.getSeconds() < 10) {
-      forceCheckAllMachines().catch(error => {
+      forceCheckAllMachines().catch((error) => {
         logger.error('强制机器状态检查失败:', error);
       });
     }
 
     // 每天凌晨执行一次清理
     if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() < 10) {
-      cleanupOldMachines().catch(error => {
+      cleanupOldMachines().catch((error) => {
         logger.error('清理旧机器记录失败:', error);
       });
     }

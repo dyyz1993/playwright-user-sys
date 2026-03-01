@@ -34,34 +34,24 @@ export class CreditHistoryModel {
 
   // 根据用户 ID 获取点数历史记录
   static async findByUserId(userId: number, limit = 10, offset = 0): Promise<CreditHistory[]> {
-    return db('credit_history')
-      .where('user_id', userId)
-      .orderBy('created_at', 'desc')
-      .limit(limit)
-      .offset(offset);
+    return db('credit_history').where('user_id', userId).orderBy('created_at', 'desc').limit(limit).offset(offset);
   }
 
   // 获取所有点数历史记录
   static async findAll(limit = 10, offset = 0): Promise<CreditHistory[]> {
-    return db('credit_history')
-      .orderBy('created_at', 'desc')
-      .limit(limit)
-      .offset(offset);
+    return db('credit_history').orderBy('created_at', 'desc').limit(limit).offset(offset);
   }
 
   // 获取点数历史记录总数
   static async count(): Promise<number> {
     const result = await db('credit_history').count('id as count').first();
-    return result ? result.count as number : 0;
+    return result ? (result.count as number) : 0;
   }
 
   // 获取用户点数历史记录总数
   static async countByUserId(userId: number): Promise<number> {
-    const result = await db('credit_history')
-      .where('user_id', userId)
-      .count('id as count')
-      .first();
-    return result ? result.count as number : 0;
+    const result = await db('credit_history').where('user_id', userId).count('id as count').first();
+    return result ? (result.count as number) : 0;
   }
 
   // 获取用户已使用的积分总数
@@ -71,6 +61,6 @@ export class CreditHistoryModel {
       .where('action', 'use')
       .sum('amount as total')
       .first();
-    return result ? (result.total as number || 0) : 0;
+    return result ? (result.total as number) || 0 : 0;
   }
 }

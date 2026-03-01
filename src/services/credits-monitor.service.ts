@@ -24,15 +24,15 @@ export async function checkSessionCredits(): Promise<void> {
     logger.info(`当前有 ${connectedMachineIds.length} 台已连接的机器`);
 
     // 过滤出在真正在线的机器上的会话
-    const validSessions = activeSessions.filter(session =>
-      session.machine_id && connectedMachineIds.includes(session.machine_id)
+    const validSessions = activeSessions.filter(
+      (session) => session.machine_id && connectedMachineIds.includes(session.machine_id)
     );
 
     logger.info(`其中 ${validSessions.length} 个会话在真正在线的机器上`);
 
     // 对于不在在线机器上的会话，标记为断开状态
-    const invalidSessions = activeSessions.filter(session =>
-      !session.machine_id || !connectedMachineIds.includes(session.machine_id)
+    const invalidSessions = activeSessions.filter(
+      (session) => !session.machine_id || !connectedMachineIds.includes(session.machine_id)
     );
 
     for (const session of invalidSessions) {
@@ -42,7 +42,9 @@ export async function checkSessionCredits(): Promise<void> {
 
         // 标记会话为已断开
         await SessionModel.markDisconnected(session.id, duration);
-        logger.info(`标记无效会话为已断开 (sessionId: ${session.id}, 机器: ${session.machine_id || '无'}, 持续时间: ${duration}s)`);
+        logger.info(
+          `标记无效会话为已断开 (sessionId: ${session.id}, 机器: ${session.machine_id || '无'}, 持续时间: ${duration}s)`
+        );
       } catch (error) {
         logger.error(`标记无效会话时出错 (${session.id}):`, error);
       }
@@ -88,7 +90,9 @@ export async function checkSessionCredits(): Promise<void> {
 
             // 使用计算的持续时间和已记录的持续时间中的最大值
             duration = Math.max(calculatedDuration, session.duration || 0);
-            logger.debug(`✅点数监控: 会话 ${session.id} 的持续时间计算 - 开始时间: ${startTime.toISOString()}, 当前时间: ${now.toISOString()}, 计算持续时间: ${calculatedDuration}秒, 已记录持续时间: ${session.duration || 0}秒, 最终持续时间: ${duration}秒`);
+            logger.debug(
+              `✅点数监控: 会话 ${session.id} 的持续时间计算 - 开始时间: ${startTime.toISOString()}, 当前时间: ${now.toISOString()}, 计算持续时间: ${calculatedDuration}秒, 已记录持续时间: ${session.duration || 0}秒, 最终持续时间: ${duration}秒`
+            );
           } else {
             // 如果没有开始时间，使用已记录的持续时间
             duration = session.duration || 0;
@@ -108,7 +112,9 @@ export async function checkSessionCredits(): Promise<void> {
           // 计算本次需要新扣除的点数
           const newCreditsToDeduct = Math.max(0, minutes - recordedCreditsUsed);
 
-          logger.info(`点数监控: 会话 ${session.id} 已运行 ${duration} 秒，总消耗 ${minutes} 点，已记录 ${recordedCreditsUsed} 点，本次需扣除 ${newCreditsToDeduct} 点`);
+          logger.info(
+            `点数监控: 会话 ${session.id} 已运行 ${duration} 秒，总消耗 ${minutes} 点，已记录 ${recordedCreditsUsed} 点，本次需扣除 ${newCreditsToDeduct} 点`
+          );
 
           // 累加需要扣除的点数
           totalNewCreditsToDeduct += newCreditsToDeduct;
@@ -118,12 +124,14 @@ export async function checkSessionCredits(): Promise<void> {
             sessionUpdates.push({
               id: session.id,
               duration,
-              credits_used: minutes
+              credits_used: minutes,
             });
           }
         }
 
-        logger.info(`用户 ${user.username} (ID: ${userId}) 共有 ${userSessions.length} 个会话，需要扣除 ${totalNewCreditsToDeduct} 点，当前剩余 ${user.credits} 点`);
+        logger.info(
+          `用户 ${user.username} (ID: ${userId}) 共有 ${userSessions.length} 个会话，需要扣除 ${totalNewCreditsToDeduct} 点，当前剩余 ${user.credits} 点`
+        );
 
         // 第二步：使用事务批量更新会话和扣除点数
         if (totalNewCreditsToDeduct > 0 && sessionUpdates.length > 0) {
@@ -135,7 +143,9 @@ export async function checkSessionCredits(): Promise<void> {
 
               // 扣除用户点数
               await UserModel.deductCredits(userId, totalNewCreditsToDeduct, trx);
-              logger.info(`事务中已扣除用户 ${userId} 的点数: ${totalNewCreditsToDeduct} 点，共 ${sessionUpdates.length} 个会话`);
+              logger.info(
+                `事务中已扣除用户 ${userId} 的点数: ${totalNewCreditsToDeduct} 点，共 ${sessionUpdates.length} 个会话`
+              );
             });
           } catch (error) {
             logger.error(`更新会话和扣除点数事务失败 (userId: ${userId}):`, error);
@@ -153,7 +163,9 @@ export async function checkSessionCredits(): Promise<void> {
 
         // 第四步：检查用户点数是否足够继续运行
         if (updatedUser.credits <= 0) {
-          logger.warn(`点数监控: 用户 ${updatedUser.username} (ID: ${userId}) 点数不足，剩余: ${updatedUser.credits}，正在关闭所有会话`);
+          logger.warn(
+            `点数监控: 用户 ${updatedUser.username} (ID: ${userId}) 点数不足，剩余: ${updatedUser.credits}，正在关闭所有会话`
+          );
 
           // 关闭该用户的所有会话
           for (const session of userSessions) {
@@ -165,7 +177,9 @@ export async function checkSessionCredits(): Promise<void> {
               // 尝试使用直接关闭方法
               logger.info(`尝试直接关闭浏览器 (machineId: ${machineId}, sessionId: ${session.id})`);
               const success = await connectionManager.closeBrowser(machineId, session.id);
-              logger.info(`直接关闭浏览器${success ? '成功' : '失败'} (machineId: ${machineId}, sessionId: ${session.id})`);
+              logger.info(
+                `直接关闭浏览器${success ? '成功' : '失败'} (machineId: ${machineId}, sessionId: ${session.id})`
+              );
 
               if (!success) {
                 // 如果直接关闭失败，尝试发送关闭命令
@@ -194,17 +208,19 @@ export async function checkSessionCredits(): Promise<void> {
             user_id: userId,
             credits_remaining: 0,
             sessions_closed: userSessions.length,
-            closed_at: new Date()
+            closed_at: new Date(),
           });
         } else if (updatedUser.credits < totalNewCreditsToDeduct + 2) {
           // 点数即将不足，发送警告（只发送一次）
-          logger.info(`用户 ${updatedUser.username} (ID: ${userId}) 点数即将不足，剩余: ${updatedUser.credits}，已使用: ${totalNewCreditsToDeduct} 点`);
+          logger.info(
+            `用户 ${updatedUser.username} (ID: ${userId}) 点数即将不足，剩余: ${updatedUser.credits}，已使用: ${totalNewCreditsToDeduct} 点`
+          );
 
           await createWebhookEvent(userId, WebhookEventType.CREDITS_LOW, {
             user_id: userId,
             credits_remaining: updatedUser.credits,
             active_sessions: userSessions.length,
-            warning_at: new Date()
+            warning_at: new Date(),
           });
         }
       } catch (error) {
@@ -223,13 +239,13 @@ export function startCreditsMonitor(intervalMs: number = 10000): NodeJS.Timeout 
   logger.info(`启动点数监控服务，检查间隔: ${intervalMs}ms`);
 
   // 立即执行一次检查
-  checkSessionCredits().catch(error => {
+  checkSessionCredits().catch((error) => {
     logger.error('初始点数检查失败:', error);
   });
 
   // 设置定时器定期检查
   const timer = setInterval(() => {
-    checkSessionCredits().catch(error => {
+    checkSessionCredits().catch((error) => {
       logger.error('定期点数检查失败:', error);
     });
   }, intervalMs);
@@ -247,10 +263,8 @@ export function stopCreditsMonitor(timerId: NodeJS.Timeout): void {
   }
 }
 
-
-
 export default {
   checkSessionCredits,
   startCreditsMonitor,
-  stopCreditsMonitor
+  stopCreditsMonitor,
 };

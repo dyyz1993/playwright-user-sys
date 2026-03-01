@@ -7,21 +7,25 @@ import fp from 'fastify-plugin';
  */
 export default fp(async function (fastify: FastifyInstance) {
   // 添加自定义 JSON 解析器，允许空请求体
-  fastify.addContentTypeParser('application/json', {
-    parseAs: 'string',
-  }, function (req, body, done) {
-    if (body === '') {
-      // 如果请求体为空，返回空对象
-      done(null, {});
-    } else {
-      try {
-        const json = JSON.parse(body as string);
-        done(null, json);
-      } catch (err) {
-        const error = new Error('Invalid JSON');
-        (error as any).statusCode = 400;
-        done(error, undefined);
+  fastify.addContentTypeParser(
+    'application/json',
+    {
+      parseAs: 'string',
+    },
+    function (req, body, done) {
+      if (body === '') {
+        // 如果请求体为空，返回空对象
+        done(null, {});
+      } else {
+        try {
+          const json = JSON.parse(body as string);
+          done(null, json);
+        } catch (err) {
+          const error = new Error('Invalid JSON');
+          (error as any).statusCode = 400;
+          done(error, undefined);
+        }
       }
     }
-  });
+  );
 });

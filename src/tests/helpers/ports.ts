@@ -17,9 +17,7 @@ export async function getFreePort(): Promise<number> {
     // 监听端口 0，让系统自动分配可用端口
     server.listen(0, () => {
       const address = server.address();
-      const port = typeof address === 'string'
-        ? parseInt(address.split(':')[1], 10)
-        : address?.port;
+      const port = typeof address === 'string' ? parseInt(address.split(':')[1], 10) : address?.port;
 
       server.close(() => {
         resolve(port!);
@@ -76,17 +74,14 @@ export async function isPortAvailable(port: number): Promise<boolean> {
  * @param timeout 超时时间（毫秒）
  * @returns Promise<void>
  */
-export async function waitForPort(
-  port: number,
-  timeout: number = 30000
-): Promise<void> {
+export async function waitForPort(port: number, timeout: number = 30000): Promise<void> {
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeout) {
     if (await isPortInUse(port)) {
       return; // 端口已被监听，说明服务已启动
     }
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   throw new Error(`Port ${port} not ready after ${timeout}ms`);
@@ -135,7 +130,7 @@ export class PortAllocator {
    */
   async allocateMany(count: number): Promise<number[]> {
     const ports = await getFreePorts(count);
-    ports.forEach(port => this.allocatedPorts.add(port));
+    ports.forEach((port) => this.allocatedPorts.add(port));
     return ports;
   }
 

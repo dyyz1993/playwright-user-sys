@@ -48,7 +48,7 @@ function getCpuUsage(): number {
       const loadavg = os.loadavg()[0]; // 1分钟平均负载
       const cpuCount = cpus.length;
       // 将负载转换为百分比（负载/CPU核心数）
-      return Math.min(loadavg / cpuCount * 100, 100);
+      return Math.min((loadavg / cpuCount) * 100, 100);
     }
 
     // 计算时间差
@@ -59,7 +59,7 @@ function getCpuUsage(): number {
     lastCpuInfo = { idle, total };
 
     // 计算CPU使用率
-    const cpuUsage = totalDiff > 0 ? 100 - (idleDiff / totalDiff * 100) : 0;
+    const cpuUsage = totalDiff > 0 ? 100 - (idleDiff / totalDiff) * 100 : 0;
 
     // 确保返回值在0-100之间
     return Math.min(Math.max(cpuUsage, 0), 100);
@@ -69,7 +69,7 @@ function getCpuUsage(): number {
     try {
       const loadavg = os.loadavg()[0]; // 1分钟平均负载
       const cpuCount = os.cpus().length;
-      return Math.min(loadavg / cpuCount * 100, 100);
+      return Math.min((loadavg / cpuCount) * 100, 100);
     } catch (e) {
       // 如果连负载也无法获取，返回一个默认值
       return 50; // 默认50%
@@ -123,7 +123,7 @@ export class GrpcClient extends EventEmitter {
   private call: any;
   private connected: boolean = false;
   private heartbeatInterval: NodeJS.Timeout | null = null;
-  private config: MachineConfig;  // 实例级配置
+  private config: MachineConfig; // 实例级配置
 
   constructor(config: MachineConfig = CONFIG) {
     super();
@@ -158,10 +158,7 @@ export class GrpcClient extends EventEmitter {
    * 初始化 gRPC 客户端
    */
   private initClient() {
-    this.client = new proto.MachineService(
-      this.config.managerHost,
-      grpc.credentials.createInsecure()
-    );
+    this.client = new proto.MachineService(this.config.managerHost, grpc.credentials.createInsecure());
   }
 
   /**
@@ -187,29 +184,28 @@ export class GrpcClient extends EventEmitter {
       };
 
       return new Promise((resolve, reject) => {
+        const request = {
+          machine_id: this.config.machineId,
+          name: this.config.machineName,
+          ip_address: this.getLocalIpAddress(),
+          grpc_port: this.config.grpcPort,
+          proxy_port: this.config.proxyPort,
+          max_sessions: this.config.maxSessions,
+          system_info: systemInfo,
+        };
 
-      const request = {
-        machine_id: this.config.machineId,
-        name: this.config.machineName,
-        ip_address: this.getLocalIpAddress(),
-        grpc_port: this.config.grpcPort,
-        proxy_port: this.config.proxyPort,
-        max_sessions: this.config.maxSessions,
-        system_info: systemInfo,
-      };
+        logger.info('注册机器:', request);
 
-      logger.info('注册机器:', request);
-
-      this.client.Register(request, (err: any, response: any) => {
-        if (err) {
-          logger.error('注册失败:', err);
-          reject(err);
-        } else {
-          logger.info('注册成功:', response);
-          resolve(response);
-        }
+        this.client.Register(request, (err: any, response: any) => {
+          if (err) {
+            logger.error('注册失败:', err);
+            reject(err);
+          } else {
+            logger.info('注册成功:', response);
+            resolve(response);
+          }
+        });
       });
-    });
     } catch (error) {
       logger.error('注册时获取系统信息失败:', error);
       // 如果获取磁盘空间失败，使用默认值继续注册
@@ -392,12 +388,13 @@ export class GrpcClient extends EventEmitter {
   async reconnect(): Promise<void> {
     try {
       // 检查机器端状态
-      const machineServer = await import('./index.js').then(m => m.default);
-      const machineState = machineServer.getState();
+      const { getMachineServer } = await import('./index.js');
+      const machineServer = getMachineServer();
+      const machineState = machineServer?.getState();
 
       // 如果机器端正在停止或已停止，不进行重连
-      if (machineState === 'shutting_down' || machineState === 'stopped') {
-        logger.warn(`机器端当前状态为 ${machineState}，取消重连`);
+      if (!machineServer || machineState === 'shutting_down' || machineState === 'stopped') {
+        logger.warn(`机器端当前状态为 ${machineState || 'undefined'}，取消重连`);
         return;
       }
 
@@ -429,12 +426,13 @@ export class GrpcClient extends EventEmitter {
       if (!this.connected) {
         try {
           // 检查机器端状态
-          const machineServer = await import('./index.js').then(m => m.default);
-          const machineState = machineServer.getState();
+          const { getMachineServer } = await import('./index.js');
+          const machineServer = getMachineServer();
+          const machineState = machineServer?.getState();
 
           // 如果机器端正在停止或已停止，不进行重连
-          if (machineState === 'shutting_down' || machineState === 'stopped') {
-            logger.warn(`心跳检测到连接已断开，但机器端当前状态为 ${machineState}，取消重连`);
+          if (!machineServer || machineState === 'shutting_down' || machineState === 'stopped') {
+            logger.warn(`心跳检测到连接已断开，但机器端当前状态为 ${machineState || 'undefined'}，取消重连`);
             return;
           }
 
@@ -508,12 +506,13 @@ export class GrpcClient extends EventEmitter {
 
       try {
         // 检查机器端状态
-        const machineServer = await import('./index.js').then(m => m.default);
-        const machineState = machineServer.getState();
+        const { getMachineServer } = await import('./index.js');
+        const machineServer = getMachineServer();
+        const machineState = machineServer?.getState();
 
         // 如果机器端正在停止或已停止，不进行重连
-        if (machineState === 'shutting_down' || machineState === 'stopped') {
-          logger.warn(`心跳发送失败，但机器端当前状态为 ${machineState}，取消重连`);
+        if (!machineServer || machineState === 'shutting_down' || machineState === 'stopped') {
+          logger.warn(`心跳发送失败，但机器端当前状态为 ${machineState || 'undefined'}，取消重连`);
           return;
         }
 
@@ -550,7 +549,9 @@ export class GrpcClient extends EventEmitter {
         if (session && session.startTime) {
           const now = Date.now();
           finalDuration = Math.floor((now - session.startTime) / 1000);
-          logger.info(`发送会话状态更新时计算持续时间 (sessionId: ${sessionId}): 开始时间=${new Date(session.startTime).toISOString()}, 当前时间=${new Date(now).toISOString()}, 持续时间=${finalDuration}秒`);
+          logger.info(
+            `发送会话状态更新时计算持续时间 (sessionId: ${sessionId}): 开始时间=${new Date(session.startTime).toISOString()}, 当前时间=${new Date(now).toISOString()}, 持续时间=${finalDuration}秒`
+          );
         }
       }
 
@@ -625,11 +626,12 @@ export class GrpcClient extends EventEmitter {
         logger.info(`收到关闭浏览器命令 (sessionId: ${session_id})`);
 
         // 关闭浏览器
-        browserService.closeBrowser(session_id)
-          .then(success => {
+        browserService
+          .closeBrowser(session_id)
+          .then((success) => {
             logger.info(`应管理端要求关闭浏览器${success ? '成功' : '失败'} (sessionId: ${session_id})`);
           })
-          .catch(error => {
+          .catch((error) => {
             logger.error(`应管理端要求关闭浏览器出错 (sessionId: ${session_id}):`, error);
           });
         return;
@@ -774,7 +776,7 @@ export class GrpcClient extends EventEmitter {
     return '127.0.0.1';
   }
 
-    /**
+  /**
    * 获取 CPU 使用率
    */
   private getCpuUsage(): number {
@@ -785,7 +787,7 @@ export class GrpcClient extends EventEmitter {
    * 获取内存使用率
    */
   private getMemoryUsage(): number {
-    return (os.totalmem() - os.freemem()) / os.totalmem() * 100;
+    return ((os.totalmem() - os.freemem()) / os.totalmem()) * 100;
   }
 
   /**
@@ -803,10 +805,10 @@ export class GrpcClient extends EventEmitter {
         command = 'wmic logicaldisk get size';
       } else if (os.platform() === 'darwin') {
         // macOS
-        command = 'df -k / | tail -1 | awk \'{ print $2 }\'';
+        command = "df -k / | tail -1 | awk '{ print $2 }'";
       } else {
         // Linux 和其他类 Unix 系统
-        command = 'df -k / | tail -1 | awk \'{ print $2 }\'';
+        command = "df -k / | tail -1 | awk '{ print $2 }'";
       }
 
       const { stdout } = await execAsync(command);
@@ -814,7 +816,10 @@ export class GrpcClient extends EventEmitter {
       // 解析输出
       if (os.platform() === 'win32') {
         // Windows 输出格式不同，需要特殊处理
-        const lines = stdout.trim().split('\n').filter(line => line.trim() !== 'Size');
+        const lines = stdout
+          .trim()
+          .split('\n')
+          .filter((line) => line.trim() !== 'Size');
         if (lines.length > 0) {
           const size = parseInt(lines[0].trim(), 10);
           return isNaN(size) ? 1000000000 : size;
@@ -1004,7 +1009,7 @@ const serviceImplementation = {
         machine_id: serverConfig.machineId,
         online: true,
         cpu_usage: cpuUsage,
-        memory_usage: (os.totalmem() - os.freemem()) / os.totalmem() * 100,
+        memory_usage: ((os.totalmem() - os.freemem()) / os.totalmem()) * 100,
         active_sessions: browserService.getActiveSessions(),
         max_sessions: serverConfig.maxSessions,
         timestamp: Date.now(),
@@ -1029,7 +1034,7 @@ const serviceImplementation = {
 
       callback(null, {
         success: true,
-        message: '注册成功'
+        message: '注册成功',
       });
     } catch (error: any) {
       logger.error('处理机器注册请求失败:', error);
@@ -1054,8 +1059,8 @@ const serviceImplementation = {
         // 发送响应
         call.write({
           heartbeat_request: {
-            timestamp: Date.now()
-          }
+            timestamp: Date.now(),
+          },
         });
       });
 
@@ -1074,8 +1079,6 @@ const serviceImplementation = {
     }
   },
 };
-
-
 
 // 创建 gRPC 客户端实例
 export const grpcClient = new GrpcClient();
@@ -1096,12 +1099,12 @@ export async function startGrpcClient(): Promise<void> {
     logger.error('启动 gRPC 客户端失败:', error);
 
     // 检查是否是 gRPC 连接错误
-    const isGrpcConnectionError = error.message && (
-      error.message.includes('UNAVAILABLE: Connection dropped') ||
-      error.message.includes('UNAVAILABLE: No connection established') ||
-      error.message.includes('ECONNREFUSED') ||
-      error.message.includes('UNAVAILABLE')
-    );
+    const isGrpcConnectionError =
+      error.message &&
+      (error.message.includes('UNAVAILABLE: Connection dropped') ||
+        error.message.includes('UNAVAILABLE: No connection established') ||
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('UNAVAILABLE'));
 
     if (isGrpcConnectionError) {
       logger.warn('检测到 gRPC 连接错误，将在内部处理而不抛出异常');
@@ -1110,12 +1113,13 @@ export async function startGrpcClient(): Promise<void> {
       setTimeout(async () => {
         try {
           // 检查机器端状态
-          const machineServer = await import('./index.js').then(m => m.default);
-          const machineState = machineServer.getState();
+          const { getMachineServer } = await import('./index.js');
+          const machineServer = getMachineServer();
+          const machineState = machineServer?.getState();
 
           // 如果机器端正在停止或已停止，不进行重连
-          if (machineState === 'shutting_down' || machineState === 'stopped') {
-            logger.warn(`机器端当前状态为 ${machineState}，取消 gRPC 客户端重连`);
+          if (!machineServer || machineState === 'shutting_down' || machineState === 'stopped') {
+            logger.warn(`机器端当前状态为 ${machineState || 'undefined'}，取消 gRPC 客户端重连`);
             return;
           }
 
@@ -1127,10 +1131,11 @@ export async function startGrpcClient(): Promise<void> {
 
           // 如果重连失败，再次尝试，除非机器端正在停止
           try {
-            const machineServer = await import('./index.js').then(m => m.default);
-            const machineState = machineServer.getState();
+            const { getMachineServer: getServer } = await import('./index.js');
+            const server = getServer();
+            const state = server?.getState();
 
-            if (machineState !== 'shutting_down' && machineState !== 'stopped') {
+            if (server && state !== 'shutting_down' && state !== 'stopped') {
               setTimeout(() => startGrpcClient(), 10000); // 10 秒后重试
             }
           } catch (stateError) {

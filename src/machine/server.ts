@@ -12,7 +12,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // 启动机器端服务
-startMachine().catch(error => {
+startMachine().catch((error) => {
   console.error('启动机器端失败:', error);
   process.exit(1);
 });

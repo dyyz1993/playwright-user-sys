@@ -63,7 +63,7 @@ describe('管理员会话管理功能测试', () => {
       status: 'created',
       options: {
         userAgent: 'Mozilla/5.0',
-        viewport: { width: 1280, height: 720 }
+        viewport: { width: 1280, height: 720 },
       },
     });
   });
@@ -134,7 +134,7 @@ describe('管理员会话管理功能测试', () => {
         status: 'created',
         options: {
           userAgent: 'Mozilla/5.0',
-          viewport: { width: 1280, height: 720 }
+          viewport: { width: 1280, height: 720 },
         },
       });
     });
@@ -169,7 +169,7 @@ describe('管理员会话管理功能测试', () => {
         status: 'created',
         options: {
           userAgent: 'Mozilla/5.0',
-          viewport: { width: 1280, height: 720 }
+          viewport: { width: 1280, height: 720 },
         },
       });
 

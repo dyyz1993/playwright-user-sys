@@ -149,10 +149,7 @@ export class UserModel {
    * @param trx 事务对象（可选）
    * @returns 成功扣除点数的用户数量
    */
-  static async batchDeductCredits(
-    userCredits: Map<number, number>,
-    trx?: any
-  ): Promise<number> {
+  static async batchDeductCredits(userCredits: Map<number, number>, trx?: any): Promise<number> {
     try {
       let successCount = 0;
       const queryBuilder = trx || db;
@@ -182,9 +179,7 @@ export class UserModel {
         }
 
         // 扣除点数
-        await queryBuilder('users')
-          .where('id', userId)
-          .decrement('credits', amount);
+        await queryBuilder('users').where('id', userId).decrement('credits', amount);
 
         console.log(`批量扣除: 用户 ${userId} 扣除 ${amount} 点，剩余 ${user.credits - amount} 点`);
         successCount++;
@@ -198,7 +193,9 @@ export class UserModel {
   }
 
   // 获取所有用户（分页）
-  static async findAll(query: PaginationQuery & { search?: string; role?: UserRole; status?: UserStatus } = {}): Promise<PaginatedResponse<User>> {
+  static async findAll(
+    query: PaginationQuery & { search?: string; role?: UserRole; status?: UserStatus } = {}
+  ): Promise<PaginatedResponse<User>> {
     try {
       console.log('开始查询用户数据');
       const page = query.page || 1;
@@ -212,9 +209,8 @@ export class UserModel {
 
       // 搜索条件（用户名或邮箱）
       if (query.search) {
-        queryBuilder = queryBuilder.where(function() {
-          this.where('username', 'like', `%${query.search}%`)
-            .orWhere('email', 'like', `%${query.search}%`);
+        queryBuilder = queryBuilder.where(function () {
+          this.where('username', 'like', `%${query.search}%`).orWhere('email', 'like', `%${query.search}%`);
         });
       }
 
@@ -234,10 +230,7 @@ export class UserModel {
       const total = totalResult ? Number(totalResult.count) : 0;
 
       // 获取分页数据
-      const users = await queryBuilder
-        .orderBy(sort, order)
-        .limit(limit)
-        .offset(offset);
+      const users = await queryBuilder.orderBy(sort, order).limit(limit).offset(offset);
 
       console.log(`找到 ${users.length} 个用户，总数 ${total}`);
 
@@ -297,10 +290,7 @@ export class UserModel {
       const total = totalResult && totalResult.total ? Number(totalResult.total) : 0;
 
       // 获取已使用点数（从会话表中计算）
-      const usedResult = await db('sessions')
-        .whereNotNull('duration')
-        .sum('duration as total_seconds')
-        .first();
+      const usedResult = await db('sessions').whereNotNull('duration').sum('duration as total_seconds').first();
 
       // 将秒数转换为分钟（向上取整）
       const totalSeconds = usedResult && usedResult.total_seconds ? Number(usedResult.total_seconds) : 0;
@@ -331,10 +321,7 @@ export class UserModel {
   static async countNewUsers(days: number = 7): Promise<number> {
     try {
       const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      const result = await db('users')
-        .where('created_at', '>=', cutoffDate)
-        .count('id as count')
-        .first();
+      const result = await db('users').where('created_at', '>=', cutoffDate).count('id as count').first();
       return result ? Number(result.count) : 0;
     } catch (error) {
       console.error('统计新用户数失败:', error);

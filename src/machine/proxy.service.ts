@@ -181,17 +181,17 @@ export class ProxyService {
 
       // !! 路径路由 !!
       if (pathname.startsWith('/ws/') && pathname.endsWith('/events')) {
-          logger.info(`路由到 Events Handler (sessionId: ${sessionId})`);
-          this.wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
-              handleEventsConnection(ws, sessionId!); // 交给处理器
-          });
-          return; // !! 处理 /events 后返回 !!
+        logger.info(`路由到 Events Handler (sessionId: ${sessionId})`);
+        this.wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
+          handleEventsConnection(ws, sessionId!); // 交给处理器
+        });
+        return; // !! 处理 /events 后返回 !!
       } else if (pathname.startsWith('/ws/') && pathname.endsWith('/stream')) {
-          logger.info(`路由到 Stream Handler (sessionId: ${sessionId})`);
-          this.wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
-              handleStreamConnection(ws, sessionId!); // 交给处理器
-          });
-          return; // !! 处理 /stream 后返回 !!
+        logger.info(`路由到 Stream Handler (sessionId: ${sessionId})`);
+        this.wss.handleUpgrade(req, socket, head, (ws: WebSocket) => {
+          handleStreamConnection(ws, sessionId!); // 交给处理器
+        });
+        return; // !! 处理 /stream 后返回 !!
       }
 
       // !! Fallback: 路径不匹配，执行原始代理逻辑 !!
@@ -202,7 +202,8 @@ export class ProxyService {
       const path = sessionManager.getPath(sessionId);
       logger.info(`获取到端口: ${port}, 路径: ${path} 用于 CDP 代理`);
 
-      if (!port || path === null) { // 检查 port 和 path
+      if (!port || path === null) {
+        // 检查 port 和 path
         logger.error(`CDP 代理失败: 会话 ${sessionId} 不存在或缺少路径信息。`);
         socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
         socket.destroy();
@@ -219,12 +220,12 @@ export class ProxyService {
       }, 1000);
 
       const cleanupProxyListeners = () => {
-          if (activityInterval) clearInterval(activityInterval);
-          socket.removeAllListeners('close');
-          socket.removeAllListeners('end');
-          socket.removeAllListeners('error');
-          socket.removeAllListeners('data');
-          logger.debug(`Cleaned up CDP proxy listeners for session ${sessionId}`);
+        if (activityInterval) clearInterval(activityInterval);
+        socket.removeAllListeners('close');
+        socket.removeAllListeners('end');
+        socket.removeAllListeners('error');
+        socket.removeAllListeners('data');
+        logger.debug(`Cleaned up CDP proxy listeners for session ${sessionId}`);
       };
 
       socket.on('close', () => {
@@ -265,7 +266,6 @@ export class ProxyService {
         }
         // 不需要手动 destroy socket, proxy.ws 在出错时会处理
       });
-
     } catch (error) {
       logger.error('处理 WebSocket 升级请求失败:', error);
       if (activityInterval) {
@@ -273,19 +273,19 @@ export class ProxyService {
       }
       // 避免在已知错误（如找不到会话）时重复通知断开
       if (sessionId && !(error instanceof Error && error.message.includes('Session not found'))) {
-         try {
-             sessionManager.handleDisconnection(sessionId);
-         } catch (disconnectError) {
-             logger.error(`Error calling handleDisconnection for ${sessionId} during upgrade error:`, disconnectError);
-         }
+        try {
+          sessionManager.handleDisconnection(sessionId);
+        } catch (disconnectError) {
+          logger.error(`Error calling handleDisconnection for ${sessionId} during upgrade error:`, disconnectError);
+        }
       }
       if (!socket.destroyed) {
-          try {
-            socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-          } catch (writeError) {
-              logger.warn("Failed to write error to socket during upgrade error handling:", writeError);
-          }
-          socket.destroy();
+        try {
+          socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+        } catch (writeError) {
+          logger.warn('Failed to write error to socket during upgrade error handling:', writeError);
+        }
+        socket.destroy();
       }
     }
   }

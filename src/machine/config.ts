@@ -11,7 +11,7 @@ export interface MachineConfig {
 
   // 网络配置
   managerHost: string; // 管理端的地址
-  grpcPort: number;  // 机器端的 gRPC 端口
+  grpcPort: number; // 机器端的 gRPC 端口
   proxyPort: number; // 代理服务器端口
 
   // 浏览器配置
@@ -65,20 +65,20 @@ export function loadConfig(): MachineConfig {
 
     // 网络配置
     managerHost: env.MANAGER_HOST || 'localhost:50051', // 管理端的地址
-    grpcPort: parseInt(env.MACHINE_GRPC_PORT || '50052', 10),  // 机器端的 gRPC 端口
+    grpcPort: parseInt(env.MACHINE_GRPC_PORT || '50052', 10), // 机器端的 gRPC 端口
     proxyPort: parseInt(env.PROXY_PORT || env.HTTP_PORT || '8082', 10), // 代理服务器端口
 
     // 浏览器配置
     maxSessions: parseInt(env.MAX_SESSIONS || '10', 10),
     sessionTimeout: parseInt(env.SESSION_TIMEOUT || '300000', 10), // 5分钟
     // 根据平台自动检测 Chrome 路径
-    chromePath: env.CHROME_PATH || (
-      process.platform === 'darwin'
+    chromePath:
+      env.CHROME_PATH ||
+      (process.platform === 'darwin'
         ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
         : process.platform === 'linux'
           ? '/usr/bin/google-chrome-stable'
-          : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-    ),
+          : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
 
     // 心跳配置
     heartbeatInterval: parseInt(env.HEARTBEAT_INTERVAL || '30000', 10), // 30秒
@@ -96,7 +96,7 @@ export function loadConfig(): MachineConfig {
     dataDir: dataDir,
 
     // 临时文件目录（用于文件上传）
-    tempDir: tempDir
+    tempDir: tempDir,
   };
 }
 

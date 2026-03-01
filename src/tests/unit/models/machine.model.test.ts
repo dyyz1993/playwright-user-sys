@@ -306,9 +306,11 @@ describe('MachineModel', () => {
     });
 
     // 手动更新 last_seen 为很久之前
-    await db('machines').where('id', 'machine-001').update({
-      last_seen: new Date(Date.now() - 10 * 60 * 1000), // 10分钟前
-    });
+    await db('machines')
+      .where('id', 'machine-001')
+      .update({
+        last_seen: new Date(Date.now() - 10 * 60 * 1000), // 10分钟前
+      });
 
     const count = await MachineModel.checkOfflineMachines(5); // 5分钟超时
     expect(count).toBeGreaterThanOrEqual(0);
@@ -331,9 +333,11 @@ describe('MachineModel', () => {
 
     // 标记为离线并更新时间
     await MachineModel.markOffline('machine-001');
-    await db('machines').where('id', 'machine-001').update({
-      last_seen: new Date(Date.now() - 10 * 60 * 1000), // 10分钟前
-    });
+    await db('machines')
+      .where('id', 'machine-001')
+      .update({
+        last_seen: new Date(Date.now() - 10 * 60 * 1000), // 10分钟前
+      });
 
     const cutoffDate = new Date(Date.now() - 5 * 60 * 1000); // 5分钟前
     const count = await MachineModel.deleteOldMachines(cutoffDate);

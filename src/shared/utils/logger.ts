@@ -62,19 +62,21 @@ export const logger = {
       let logMessage = message;
 
       if (args.length > 0) {
-        const formattedArgs = args.map(arg => {
-          if (arg instanceof Error) {
-            return arg.stack || arg.message;
-          }
-          if (typeof arg === 'object') {
-            try {
-              return JSON.stringify(arg);
-            } catch (e) {
-              return String(arg);
+        const formattedArgs = args
+          .map((arg) => {
+            if (arg instanceof Error) {
+              return arg.stack || arg.message;
             }
-          }
-          return String(arg);
-        }).join(' ');
+            if (typeof arg === 'object') {
+              try {
+                return JSON.stringify(arg);
+              } catch (e) {
+                return String(arg);
+              }
+            }
+            return String(arg);
+          })
+          .join(' ');
 
         logMessage = `${logMessage} ${formattedArgs}`;
       }
@@ -99,7 +101,7 @@ export const logger = {
     } catch (error) {
       console.error('\x1b[31m[日志轮转失败]\x1b[0m', error);
     }
-  }
+  },
 };
 
 // 每天凌晨轮转日志文件

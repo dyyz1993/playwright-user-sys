@@ -161,7 +161,7 @@ describe('UserModel', () => {
 
     const user = await UserModel.create({
       username: 'testuser',
-      password: 'password123',  // 明文密码
+      password: 'password123', // 明文密码
     });
 
     const isValid = await UserModel.verifyPassword(user!, 'password123');
@@ -174,7 +174,7 @@ describe('UserModel', () => {
   it('应该拒绝错误的密码', async () => {
     const user = await UserModel.create({
       username: 'testuser',
-      password: 'password123',  // 明文密码
+      password: 'password123', // 明文密码
     });
 
     const isValid = await UserModel.verifyPassword(user!, 'wrongpassword');
@@ -233,9 +233,7 @@ describe('UserModel', () => {
       credits: 10,
     });
 
-    await expect(
-      UserModel.deductCredits(user.id!, 30)
-    ).rejects.toThrow('点数不足');
+    await expect(UserModel.deductCredits(user.id!, 30)).rejects.toThrow('点数不足');
   });
 
   // ========================================

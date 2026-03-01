@@ -136,8 +136,7 @@ describe('点数扣除集成测试', () => {
     const minutes = Math.ceil(duration / 60);
 
     // 应该抛出错误，因为点数不足
-    await expect(UserModel.deductCredits(testUser.id, minutes))
-      .rejects.toThrow('点数不足');
+    await expect(UserModel.deductCredits(testUser.id, minutes)).rejects.toThrow('点数不足');
 
     // 验证点数没有变化
     const updatedUser = await UserModel.findById(testUser.id);

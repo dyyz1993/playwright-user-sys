@@ -18,8 +18,6 @@ interface User {
   role: 'admin' | 'user';
 }
 
-
-
 // 创建会话
 export async function createSession(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -196,7 +194,11 @@ export async function releaseSession(request: FastifyRequest, reply: FastifyRepl
       // 注意：markDisconnected 已经自动扣除了用户积分
       const updatedSession = await SessionModel.markDisconnected(sessionId, duration);
 
-      return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration: updatedSession?.duration || duration }, '会话已释放');
+      return sendSuccess(
+        reply,
+        { id: sessionId, status: SessionStatus.DISCONNECTED, duration: updatedSession?.duration || duration },
+        '会话已释放'
+      );
     }
 
     try {
@@ -210,7 +212,9 @@ export async function releaseSession(request: FastifyRequest, reply: FastifyRepl
       const now = new Date();
       const startTime = new Date(session.start_time);
       const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-      request.log.info(`计算会话持续时间 (${sessionId}): 开始时间=${startTime.toISOString()}, 结束时间=${now.toISOString()}, 持续时间=${duration}秒, 数据源: 管理端`);
+      request.log.info(
+        `计算会话持续时间 (${sessionId}): 开始时间=${startTime.toISOString()}, 结束时间=${now.toISOString()}, 持续时间=${duration}秒, 数据源: 管理端`
+      );
 
       // 计算消耗的点数（每分钟1点）
       // 即使会话只运行了几秒钟，也至少消耗 1 点
@@ -219,7 +223,9 @@ export async function releaseSession(request: FastifyRequest, reply: FastifyRepl
       // 使用 markDisconnected 方法更新会话状态
       // 该方法会同时更新持续时间和消耗点数
       await SessionModel.markDisconnected(sessionId, duration);
-      request.log.info(`使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`);
+      request.log.info(
+        `使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`
+      );
 
       // 如果会话已分配机器，减少机器的实例计数
       await MachineModel.decrementInstanceCount(session.machine_id);
@@ -250,14 +256,20 @@ export async function releaseSession(request: FastifyRequest, reply: FastifyRepl
       // 使用 markDisconnected 方法更新会话状态
       // 该方法会同时更新持续时间和消耗点数
       await SessionModel.markDisconnected(sessionId, duration);
-      request.log.info(`关闭失败，使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`);
+      request.log.info(
+        `关闭失败，使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`
+      );
 
       // 记录错误信息
       request.log.error(`关闭浏览器错误信息: ${machineError.message}`);
 
       // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
 
-      return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration }, '会话已释放（但关闭浏览器实例失败）');
+      return sendSuccess(
+        reply,
+        { id: sessionId, status: SessionStatus.DISCONNECTED, duration },
+        '会话已释放（但关闭浏览器实例失败）'
+      );
     }
   } catch (error) {
     request.log.error(error);
@@ -321,7 +333,11 @@ export async function closeSession(request: FastifyRequest, reply: FastifyReply)
 
     // 检查会话状态
     if (session.status === SessionStatus.DISCONNECTED || session.status === SessionStatus.ERROR) {
-      return sendSuccess(reply, { id: sessionId, status: session.status, duration: session.duration || 0 }, '会话已关闭');
+      return sendSuccess(
+        reply,
+        { id: sessionId, status: session.status, duration: session.duration || 0 },
+        '会话已关闭'
+      );
     }
 
     // 检查会话是否有关联的机器
@@ -335,7 +351,11 @@ export async function closeSession(request: FastifyRequest, reply: FastifyReply)
       // 注意：markDisconnected 已经自动扣除了用户积分
       const updatedSession = await SessionModel.markDisconnected(sessionId, duration);
 
-      return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration: updatedSession?.duration || duration }, '会话已关闭');
+      return sendSuccess(
+        reply,
+        { id: sessionId, status: SessionStatus.DISCONNECTED, duration: updatedSession?.duration || duration },
+        '会话已关闭'
+      );
     }
 
     try {
@@ -357,7 +377,9 @@ export async function closeSession(request: FastifyRequest, reply: FastifyReply)
       // 使用 markDisconnected 方法更新会话状态
       // 该方法会同时更新持续时间和消耗点数
       await SessionModel.markDisconnected(sessionId, duration);
-      request.log.info(`使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`);
+      request.log.info(
+        `使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`
+      );
 
       // 如果会话已分配机器，减少机器的实例计数
       await MachineModel.decrementInstanceCount(session.machine_id);
@@ -388,9 +410,15 @@ export async function closeSession(request: FastifyRequest, reply: FastifyReply)
       // 使用 markDisconnected 方法更新会话状态
       // 该方法会同时更新持续时间和消耗点数
       await SessionModel.markDisconnected(sessionId, duration);
-      request.log.info(`关闭失败，使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`);
+      request.log.info(
+        `关闭失败，使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`
+      );
 
-      return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration }, '会话已关闭（但关闭浏览器实例失败）');
+      return sendSuccess(
+        reply,
+        { id: sessionId, status: SessionStatus.DISCONNECTED, duration },
+        '会话已关闭（但关闭浏览器实例失败）'
+      );
     }
   } catch (error) {
     request.log.error(error);
@@ -431,7 +459,7 @@ export async function getSessionScreenshot(request: FastifyRequest, reply: Fasti
     }
 
     return sendSuccess(reply, {
-      screenshot_url: session.screenshot_url
+      screenshot_url: session.screenshot_url,
     });
   } catch (error) {
     request.log.error(error);

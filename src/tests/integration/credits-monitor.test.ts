@@ -11,7 +11,7 @@ jest.mock('../../services/machine-grpc.service.js', () => ({
     getActiveConnections: jest.fn().mockReturnValue(['test-machine-1']),
     closeBrowser: mockCloseBrowser,
     sendCloseBrowserCommand: jest.fn(),
-  }
+  },
 }));
 
 // 模拟 createWebhookEvent
@@ -19,15 +19,15 @@ jest.mock('../../utils/webhook.js', () => ({
   createWebhookEvent: jest.fn().mockResolvedValue(undefined),
   WebhookEventType: {
     CREDITS_DEPLETED: 'credits_depleted',
-    CREDITS_LOW: 'credits_low'
-  }
+    CREDITS_LOW: 'credits_low',
+  },
 }));
 
 // 模拟 MachineModel
 jest.mock('../../models/machine.model.js', () => ({
   MachineModel: {
     decrementInstanceCount: jest.fn().mockResolvedValue(undefined),
-  }
+  },
 }));
 
 describe('点数监控服务集成测试', () => {

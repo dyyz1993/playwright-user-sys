@@ -184,11 +184,7 @@ describe('SessionController', () => {
 
     await createSession(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '用户未认证',
-      401
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '用户未认证', 401);
   });
 
   // ========================================
@@ -218,11 +214,7 @@ describe('SessionController', () => {
 
     await createSession(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      expect.stringContaining('点数不足'),
-      400
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, expect.stringContaining('点数不足'), 400);
   });
 
   // ========================================
@@ -312,11 +304,7 @@ describe('SessionController', () => {
 
     await getSession(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '无权访问此会话',
-      403
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '无权访问此会话', 403);
   });
 
   // ========================================
@@ -347,11 +335,7 @@ describe('SessionController', () => {
 
     await getSession(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '会话不存在',
-      404
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '会话不存在', 404);
   });
 
   // ========================================
@@ -375,9 +359,7 @@ describe('SessionController', () => {
       credits_used: 2,
     };
 
-    vi.mocked(SessionModel.findById)
-      .mockResolvedValueOnce(mockSession)
-      .mockResolvedValueOnce(mockUpdatedSession);
+    vi.mocked(SessionModel.findById).mockResolvedValueOnce(mockSession).mockResolvedValueOnce(mockUpdatedSession);
     vi.mocked(connectionManager.closeBrowser).mockResolvedValue(undefined);
     vi.mocked(SessionModel.markDisconnected).mockResolvedValue(mockUpdatedSession);
     vi.mocked(createWebhookEvent).mockResolvedValue(undefined);
@@ -528,9 +510,7 @@ describe('SessionController', () => {
       credits_used: 2,
     };
 
-    vi.mocked(SessionModel.findById)
-      .mockResolvedValueOnce(mockSession)
-      .mockResolvedValueOnce(mockUpdatedSession);
+    vi.mocked(SessionModel.findById).mockResolvedValueOnce(mockSession).mockResolvedValueOnce(mockUpdatedSession);
     vi.mocked(connectionManager.closeBrowser).mockRejectedValue(new Error('Connection lost'));
     vi.mocked(SessionModel.markDisconnected).mockResolvedValue(mockUpdatedSession);
     vi.mocked(createWebhookEvent).mockResolvedValue(undefined);
@@ -617,10 +597,7 @@ describe('SessionController', () => {
     await getUserSessions(request, reply);
 
     expect(SessionModel.findByUserId).toHaveBeenCalledWith(1, { page: '1', limit: '10' });
-    expect(sendSuccess).toHaveBeenCalledWith(
-      reply,
-      mockSessions.items
-    );
+    expect(sendSuccess).toHaveBeenCalledWith(reply, mockSessions.items);
   });
 
   // ========================================
@@ -672,10 +649,7 @@ describe('SessionController', () => {
     await getAllSessions(request, reply);
 
     expect(SessionModel.findAll).toHaveBeenCalledWith({ page: '1', limit: '10' });
-    expect(sendSuccess).toHaveBeenCalledWith(
-      reply,
-      mockSessions.items
-    );
+    expect(sendSuccess).toHaveBeenCalledWith(reply, mockSessions.items);
   });
 
   // ========================================
@@ -702,11 +676,7 @@ describe('SessionController', () => {
 
     await getAllSessions(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '无权访问',
-      403
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '无权访问', 403);
   });
 
   // ========================================
@@ -730,9 +700,7 @@ describe('SessionController', () => {
       credits_used: 2,
     };
 
-    vi.mocked(SessionModel.findById)
-      .mockResolvedValueOnce(mockSession)
-      .mockResolvedValueOnce(mockUpdatedSession);
+    vi.mocked(SessionModel.findById).mockResolvedValueOnce(mockSession).mockResolvedValueOnce(mockUpdatedSession);
     vi.mocked(connectionManager.closeBrowser).mockResolvedValue(undefined);
     vi.mocked(SessionModel.markDisconnected).mockResolvedValue(mockUpdatedSession);
     vi.mocked(createWebhookEvent).mockResolvedValue(undefined);
@@ -806,11 +774,7 @@ describe('SessionController', () => {
     await getSessionScreenshot(request, reply);
 
     expect(UserModel.findByApiKey).toHaveBeenCalledWith('invalid-api-key');
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '无效的 API Key',
-      401
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '无效的 API Key', 401);
   });
 
   // ========================================
@@ -851,11 +815,7 @@ describe('SessionController', () => {
 
     await getSessionScreenshot(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '无权访问该会话',
-      403
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '无权访问该会话', 403);
   });
 
   // ========================================
@@ -896,10 +856,6 @@ describe('SessionController', () => {
 
     await getSessionScreenshot(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '会话没有截图',
-      404
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '会话没有截图', 404);
   });
 });

@@ -143,11 +143,14 @@ describe('SessionService', () => {
     expect(MachineModel.findAvailable).toHaveBeenCalled();
     expect(SessionModel.create).toHaveBeenCalled();
     expect(connectionManager.launchBrowser).toHaveBeenCalledWith('machine-001', 'session-001', expect.any(Object));
-    expect(SessionModel.update).toHaveBeenCalledWith('session-001', expect.objectContaining({
-      machine_id: 'machine-001',
-      port: 3000,
-      status: SessionStatus.CREATED,
-    }));
+    expect(SessionModel.update).toHaveBeenCalledWith(
+      'session-001',
+      expect.objectContaining({
+        machine_id: 'machine-001',
+        port: 3000,
+        status: SessionStatus.CREATED,
+      })
+    );
     expect(createWebhookEvent).toHaveBeenCalledWith(1, WebhookEventType.SESSION_CREATED, expect.any(Object));
   });
 
@@ -226,9 +229,12 @@ describe('SessionService', () => {
     const result = await createBrowserSession(1, {}, true);
 
     expect(result.status).toBe(SessionStatus.CONNECTED);
-    expect(SessionModel.update).toHaveBeenCalledWith('session-001', expect.objectContaining({
-      status: SessionStatus.CONNECTED,
-    }));
+    expect(SessionModel.update).toHaveBeenCalledWith(
+      'session-001',
+      expect.objectContaining({
+        status: SessionStatus.CONNECTED,
+      })
+    );
   });
 
   // ========================================

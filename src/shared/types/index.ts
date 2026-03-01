@@ -16,7 +16,6 @@ declare module 'fastify' {
   }
 }
 
-
 // 扩展 Fastify 请求类型
 export interface AuthenticatedRequest extends FastifyRequest {
   user: {
@@ -164,8 +163,6 @@ export interface MachineStatus {
   max_sessions: number;
   last_heartbeat: Date;
 }
-
-
 
 // Webhook 事件类型
 export enum WebhookEventType {

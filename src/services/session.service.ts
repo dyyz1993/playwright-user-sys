@@ -14,8 +14,8 @@ import { env } from '../config/env.js';
  * @param isWebSocketDirect 是否为WebSocket直连模式，默认为false
  */
 export async function createBrowserSession(
-  userId: number, 
-  options: SessionCreateOptions = {}, 
+  userId: number,
+  options: SessionCreateOptions = {},
   isWebSocketDirect = false
 ) {
   // 检查用户是否存在
@@ -103,7 +103,7 @@ export async function createBrowserSession(
       // 测试环境中，机器端在本地运行，需要使用 127.0.0.1
       // 因为 getLocalIpAddress() 可能返回非 localhost 的 IP（如 192.168.x.x）
       // 但机器端实际监听的是 0.0.0.0:proxyPort，本地访问应该用 127.0.0.1
-      const machineIp = process.env.NODE_ENV === 'test' ? '127.0.0.1' : (machine.ip || 'localhost');
+      const machineIp = process.env.NODE_ENV === 'test' ? '127.0.0.1' : machine.ip || 'localhost';
       // 使用机器的实际代理端口，如果没有则使用默认值8082
       const proxyPort = machine.proxyPort || 8082;
       directUrl = `ws://${machineIp}:${proxyPort}?sessionId=${sessionId}`;
@@ -125,9 +125,11 @@ export async function createBrowserSession(
     // 检查是否是共享会话已存在的错误
     // 注意：gRPC 会将业务错误包装成 grpc.status.FAILED_PRECONDITION
     // 所以需要检查错误消息内容而不是 error.code
-    if (error.code === 'SHARED_SESSION_EXISTS' ||
-        error.message?.includes('活跃的共享数据会话') ||
-        error.message?.includes('每个用户同时只能有 1 个共享数据会话')) {
+    if (
+      error.code === 'SHARED_SESSION_EXISTS' ||
+      error.message?.includes('活跃的共享数据会话') ||
+      error.message?.includes('每个用户同时只能有 1 个共享数据会话')
+    ) {
       // 这是预期的业务错误，不需要更新数据库状态
       logger.warn(`共享会话冲突: ${error.message}`);
       // 抛出友好的错误信息
@@ -181,7 +183,9 @@ export async function handleSessionDisconnect(sessionId: string, userId: number,
     const now = new Date();
     const startTime = new Date(session.start_time);
     const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-    logger.info(`计算会话持续时间 (${sessionId}): 开始时间=${startTime.toISOString()}, 结束时间=${now.toISOString()}, 持续时间=${duration}秒`);
+    logger.info(
+      `计算会话持续时间 (${sessionId}): 开始时间=${startTime.toISOString()}, 结束时间=${now.toISOString()}, 持续时间=${duration}秒`
+    );
 
     // 计算消耗的点数（每分钟1点，至少消耗1点）
     const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
@@ -221,4 +225,4 @@ export async function handleSessionDisconnect(sessionId: string, userId: number,
   } catch (error) {
     logger.error(`处理会话断开连接失败 (sessionId: ${sessionId}):`, error);
   }
-} 
+}

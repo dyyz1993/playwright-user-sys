@@ -25,9 +25,7 @@ export function generateToken(payload: { id: number; username: string; role: Use
   }
 
   // 在测试环境中，使用固定的过期时间，避免环境变量问题
-  const expiresIn = process.env.NODE_ENV === 'test'
-    ? '24h'
-    : String(env.JWT_EXPIRES_IN || '1d');
+  const expiresIn = process.env.NODE_ENV === 'test' ? '24h' : String(env.JWT_EXPIRES_IN || '1d');
 
   // 验证 payload 内容
   if (!payload || typeof payload !== 'object') {

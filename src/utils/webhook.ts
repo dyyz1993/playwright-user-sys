@@ -4,13 +4,9 @@ import { WebhookEventModel } from '../models/webhook-event.model.js';
 import { UserModel } from '../models/user.model.js';
 
 // 创建 Webhook 事件
-export async function createWebhookEvent(
-  userId: number,
-  eventType: WebhookEventType,
-  payload: any
-): Promise<void> {
+export async function createWebhookEvent(userId: number, eventType: WebhookEventType, payload: any): Promise<void> {
   const user = await UserModel.findById(userId);
-  
+
   // 只有当用户配置了 webhook URL 时才创建事件
   if (user && user.webhook_url) {
     await WebhookEventModel.create({
@@ -28,7 +24,7 @@ export async function sendWebhookEvent(event: WebhookEvent): Promise<boolean> {
     if (!user || !user.webhook_url) {
       return false;
     }
-    
+
     const response = await fetch(user.webhook_url, {
       method: 'POST',
       headers: {
@@ -42,7 +38,7 @@ export async function sendWebhookEvent(event: WebhookEvent): Promise<boolean> {
       }),
       timeout: 5000, // 5 秒超时
     });
-    
+
     if (response.ok) {
       await WebhookEventModel.markDelivered(event.id);
       return true;
@@ -61,14 +57,14 @@ export async function sendWebhookEvent(event: WebhookEvent): Promise<boolean> {
 export async function processPendingWebhooks(limit: number = 10): Promise<number> {
   const pendingEvents = await WebhookEventModel.findPending(limit);
   let successCount = 0;
-  
+
   for (const event of pendingEvents) {
     const success = await sendWebhookEvent(event);
     if (success) {
       successCount++;
     }
   }
-  
+
   return successCount;
 }
 

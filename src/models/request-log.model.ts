@@ -38,15 +38,15 @@ export class RequestLogModel {
       created_at: new Date(),
       updated_at: new Date(),
     });
-    
+
     return this.findById(id);
   }
-  
+
   // 通过 ID 查找请求日志
   static async findById(id: number): Promise<RequestLog | null> {
     return db('request_logs').where({ id }).first() || null;
   }
-  
+
   // 获取用户的所有请求日志（分页）
   static async findByUserId(userId: number, query: PaginationQuery = {}): Promise<PaginatedResponse<RequestLog>> {
     const page = query.page || 1;
@@ -54,16 +54,12 @@ export class RequestLogModel {
     const offset = (page - 1) * limit;
     const sort = query.sort || 'created_at';
     const order = query.order || 'desc';
-    
+
     const [logs, total] = await Promise.all([
-      db('request_logs')
-        .where({ user_id: userId })
-        .orderBy(sort, order)
-        .limit(limit)
-        .offset(offset),
+      db('request_logs').where({ user_id: userId }).orderBy(sort, order).limit(limit).offset(offset),
       db('request_logs').where({ user_id: userId }).count('id as count').first(),
     ]);
-    
+
     return {
       items: logs,
       total: total ? Number(total.count) : 0,
@@ -72,7 +68,7 @@ export class RequestLogModel {
       totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
     };
   }
-  
+
   // 获取所有错误请求日志（状态码 >= 400）
   static async findErrors(query: PaginationQuery = {}): Promise<PaginatedResponse<RequestLog>> {
     const page = query.page || 1;
@@ -80,16 +76,12 @@ export class RequestLogModel {
     const offset = (page - 1) * limit;
     const sort = query.sort || 'created_at';
     const order = query.order || 'desc';
-    
+
     const [logs, total] = await Promise.all([
-      db('request_logs')
-        .where('status_code', '>=', 400)
-        .orderBy(sort, order)
-        .limit(limit)
-        .offset(offset),
+      db('request_logs').where('status_code', '>=', 400).orderBy(sort, order).limit(limit).offset(offset),
       db('request_logs').where('status_code', '>=', 400).count('id as count').first(),
     ]);
-    
+
     return {
       items: logs,
       total: total ? Number(total.count) : 0,
@@ -98,7 +90,7 @@ export class RequestLogModel {
       totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
     };
   }
-  
+
   // 获取所有请求日志（分页）
   static async findAll(query: PaginationQuery = {}): Promise<PaginatedResponse<RequestLog>> {
     const page = query.page || 1;
@@ -106,15 +98,12 @@ export class RequestLogModel {
     const offset = (page - 1) * limit;
     const sort = query.sort || 'created_at';
     const order = query.order || 'desc';
-    
+
     const [logs, total] = await Promise.all([
-      db('request_logs')
-        .orderBy(sort, order)
-        .limit(limit)
-        .offset(offset),
+      db('request_logs').orderBy(sort, order).limit(limit).offset(offset),
       db('request_logs').count('id as count').first(),
     ]);
-    
+
     return {
       items: logs,
       total: total ? Number(total.count) : 0,
@@ -123,7 +112,7 @@ export class RequestLogModel {
       totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
     };
   }
-  
+
   // 获取请求统计信息
   static async getStats(days: number = 7): Promise<any> {
     // 获取最近 n 天的请求数量
@@ -133,14 +122,14 @@ export class RequestLogModel {
       .whereRaw(`created_at >= datetime('now', '-${days} days')`)
       .groupBy('date')
       .orderBy('date');
-    
+
     // 获取状态码分布
     const statusStats = await db('request_logs')
       .select('status_code')
       .count('id as count')
       .groupBy('status_code')
       .orderBy('status_code');
-    
+
     // 获取路径分布
     const pathStats = await db('request_logs')
       .select('path')
@@ -148,7 +137,7 @@ export class RequestLogModel {
       .groupBy('path')
       .orderBy('count', 'desc')
       .limit(10);
-    
+
     return {
       daily: dailyStats,
       statusCodes: statusStats,

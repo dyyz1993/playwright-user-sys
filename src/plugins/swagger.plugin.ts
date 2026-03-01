@@ -20,12 +20,12 @@ export default fp(async function (fastify: FastifyInstance) {
       servers: [
         {
           url: `http://${env.HOST}:${env.PORT}`,
-          description: 'HTTP Server'
+          description: 'HTTP Server',
         },
         {
           url: `https://${env.HOST}:${env.PORT}`,
-          description: 'HTTPS Server'
-        }
+          description: 'HTTPS Server',
+        },
       ],
       tags: [
         { name: 'auth', description: '认证相关接口' },
@@ -45,16 +45,13 @@ export default fp(async function (fastify: FastifyInstance) {
             type: 'apiKey',
             name: 'Authorization',
             in: 'header',
-          }
-        }
+          },
+        },
       },
-      security: [
-        { apiKey: [] },
-        { bearerAuth: [] }
-      ]
-    }
+      security: [{ apiKey: [] }, { bearerAuth: [] }],
+    },
   });
-  
+
   // 注册 Swagger UI 插件
   await fastify.register(swaggerUI, {
     routePrefix: '/docs',
@@ -64,12 +61,12 @@ export default fp(async function (fastify: FastifyInstance) {
     },
     staticCSP: true,
   });
-  
+
   // 注册 Scalar API 参考插件
   await fastify.register(fastifyScalar, {
     routePrefix: '/reference',
     configuration: {
-      customCss:scalarTheme,
+      customCss: scalarTheme,
     },
   });
 });

@@ -14,7 +14,7 @@ export function success<T>(data: T, message?: string): ApiResponse<T> {
 export function error(message: string, statusCode: number = 400): ApiResponse {
   return {
     success: false,
-    error: message,  // 使用 "error" 字段而不是 "message" 以匹配 errorResponseSchema
+    error: message, // 使用 "error" 字段而不是 "message" 以匹配 errorResponseSchema
   };
 }
 

@@ -139,10 +139,8 @@ export async function createTables() {
 // 初始化管理员账号
 export async function initAdminUser() {
   const hashedPassword = await hashPassword(env.ADMIN_PASSWORD);
-  
-  const adminUser = await db('users')
-    .where({ username: env.ADMIN_USERNAME })
-    .first();
+
+  const adminUser = await db('users').where({ username: env.ADMIN_USERNAME }).first();
 
   if (!adminUser) {
     await db('users').insert({
@@ -158,15 +156,13 @@ export async function initAdminUser() {
     console.log(`✅ 管理员账号 ${env.ADMIN_USERNAME} 创建成功`);
   } else {
     // 强制更新密码和角色，确保可以通过环境变量重置
-    await db('users')
-      .where({ id: adminUser.id })
-      .update({
-        password: hashedPassword,
-        role: UserRole.ADMIN,
-        status: UserStatus.ACTIVE,
-        updated_at: new Date(),
-      });
-    
+    await db('users').where({ id: adminUser.id }).update({
+      password: hashedPassword,
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+      updated_at: new Date(),
+    });
+
     console.log(`✅ 管理员账号 ${env.ADMIN_USERNAME} 已更新 (确保密码与环境变量同步)`);
   }
 }

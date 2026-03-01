@@ -185,11 +185,7 @@ describe('UserController', () => {
 
     await createUser(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '用户名已存在',
-      409
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '用户名已存在', 409);
   });
 
   // ========================================
@@ -220,11 +216,7 @@ describe('UserController', () => {
     await createUser(request, reply);
 
     // Zod validation should fail and trigger error response
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      expect.stringContaining('无效的请求数据'),
-      400
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, expect.stringContaining('无效的请求数据'), 400);
   });
 
   // ========================================
@@ -372,11 +364,7 @@ describe('UserController', () => {
 
     await getUserById(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '无效的用户 ID',
-      400
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '无效的用户 ID', 400);
   });
 
   // ========================================
@@ -407,11 +395,7 @@ describe('UserController', () => {
 
     await getUserById(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '用户不存在',
-      404
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '用户不存在', 404);
   });
 
   // ========================================
@@ -502,11 +486,7 @@ describe('UserController', () => {
 
     await updateUser(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '用户不存在',
-      404
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '用户不存在', 404);
   });
 
   // ========================================
@@ -548,10 +528,7 @@ describe('UserController', () => {
 
     expect(UserModel.resetApiKey).toHaveBeenCalledWith(1);
     expect(OperationLogModel.create).toHaveBeenCalled();
-    expect(sendSuccess).toHaveBeenCalledWith(
-      reply,
-      { api_key: newApiKey }
-    );
+    expect(sendSuccess).toHaveBeenCalledWith(reply, { api_key: newApiKey });
   });
 
   // ========================================
@@ -629,11 +606,7 @@ describe('UserController', () => {
 
     await deleteUser(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '不允许删除管理员账号',
-      403
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '不允许删除管理员账号', 403);
     expect(UserModel.delete).not.toHaveBeenCalled();
   });
 
@@ -665,11 +638,7 @@ describe('UserController', () => {
 
     await deleteUser(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '用户不存在',
-      404
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '用户不存在', 404);
   });
 
   // ========================================
@@ -713,9 +682,6 @@ describe('UserController', () => {
     await getUserSessionStats(request, reply);
 
     expect(SessionModel.getUserSessionStats).toHaveBeenCalledWith(1);
-    expect(sendSuccess).toHaveBeenCalledWith(
-      reply,
-      mockStats
-    );
+    expect(sendSuccess).toHaveBeenCalledWith(reply, mockStats);
   });
 });

@@ -1,6 +1,5 @@
 // 开发模式启动脚本 - 支持 tsconfig paths
 import { register } from 'tsconfig-paths';
-import { tsx } from 'tsx';
 
 // 注册 tsconfig paths
 register({

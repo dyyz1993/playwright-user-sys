@@ -167,7 +167,7 @@ describe('管理员用户管理功能测试', () => {
 
     test('获取不存在的用户应该失败', async () => {
       const nonExistentUserId = 99999;
-      
+
       const response = await app.inject({
         method: 'GET',
         url: `/api/admin/users/${nonExistentUserId}`,
@@ -227,7 +227,7 @@ describe('管理员用户管理功能测试', () => {
 
     test('更新不存在的用户应该失败', async () => {
       const nonExistentUserId = 99999;
-      
+
       const response = await app.inject({
         method: 'PUT',
         url: `/api/admin/users/${nonExistentUserId}`,
@@ -313,7 +313,7 @@ describe('管理员用户管理功能测试', () => {
 
     test('删除不存在的用户应该失败', async () => {
       const nonExistentUserId = 99999;
-      
+
       const response = await app.inject({
         method: 'DELETE',
         url: `/api/admin/users/${nonExistentUserId}`,

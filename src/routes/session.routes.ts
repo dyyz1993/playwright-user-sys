@@ -10,110 +10,136 @@ import {
   getAllSessionsResponseSchema,
   errorResponseSchema,
   idParamSchema,
-  getSessionScreenshotResponseSchema
+  getSessionScreenshotResponseSchema,
 } from '../schemas/index.js';
 
-
 export default async function sessionRoutes(fastify: FastifyInstance): Promise<void> {
-
   // 创建会话
-  fastify.post('/', {
-    onRequest: [fastify.verifyJWTOrApiKey],
-    schema: {
-      body: zodToJsonSchema(createSessionRequestSchema),
-      response: {
-        201: zodToJsonSchema(createSessionResponseSchema),
-        400: zodToJsonSchema(errorResponseSchema),
-        401: zodToJsonSchema(errorResponseSchema),
-        403: zodToJsonSchema(errorResponseSchema),
+  fastify.post(
+    '/',
+    {
+      onRequest: [fastify.verifyJWTOrApiKey],
+      schema: {
+        body: zodToJsonSchema(createSessionRequestSchema),
+        response: {
+          201: zodToJsonSchema(createSessionResponseSchema),
+          400: zodToJsonSchema(errorResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+          403: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['sessions'],
       },
-      tags: ['sessions'],
     },
-  }, sessionController.createSession);
+    sessionController.createSession
+  );
 
   // 获取会话信息
-  fastify.get('/:id', {
-    onRequest: [fastify.verifyJWTOrApiKey],
-    schema: {
-      params: zodToJsonSchema(idParamSchema),
-      response: {
-        200: zodToJsonSchema(getSessionResponseSchema),
-        400: zodToJsonSchema(errorResponseSchema),
-        401: zodToJsonSchema(errorResponseSchema),
-        404: zodToJsonSchema(errorResponseSchema),
+  fastify.get(
+    '/:id',
+    {
+      onRequest: [fastify.verifyJWTOrApiKey],
+      schema: {
+        params: zodToJsonSchema(idParamSchema),
+        response: {
+          200: zodToJsonSchema(getSessionResponseSchema),
+          400: zodToJsonSchema(errorResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+          404: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['sessions'],
       },
-      tags: ['sessions'],
     },
-  }, sessionController.getSession);
+    sessionController.getSession
+  );
 
   // 获取用户的所有会话
-  fastify.get('/', {
-    onRequest: [fastify.verifyJWTOrApiKey],
-    schema: {
-      response: {
-        200: zodToJsonSchema(getUserSessionsResponseSchema),
-        401: zodToJsonSchema(errorResponseSchema),
+  fastify.get(
+    '/',
+    {
+      onRequest: [fastify.verifyJWTOrApiKey],
+      schema: {
+        response: {
+          200: zodToJsonSchema(getUserSessionsResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['sessions'],
       },
-      tags: ['sessions'],
     },
-  }, sessionController.getUserSessions);
+    sessionController.getUserSessions
+  );
 
   // 释放会话
-  fastify.post('/:id/release', {
-    onRequest: [fastify.verifyJWTOrApiKey],
-    schema: {
-      params: zodToJsonSchema(idParamSchema),
-      response: {
-        200: zodToJsonSchema(releaseSessionResponseSchema),
-        400: zodToJsonSchema(errorResponseSchema),
-        401: zodToJsonSchema(errorResponseSchema),
-        404: zodToJsonSchema(errorResponseSchema),
+  fastify.post(
+    '/:id/release',
+    {
+      onRequest: [fastify.verifyJWTOrApiKey],
+      schema: {
+        params: zodToJsonSchema(idParamSchema),
+        response: {
+          200: zodToJsonSchema(releaseSessionResponseSchema),
+          400: zodToJsonSchema(errorResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+          404: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['sessions'],
       },
-      tags: ['sessions'],
     },
-  }, sessionController.releaseSession);
+    sessionController.releaseSession
+  );
 
   // 关闭会话（管理员）
-  fastify.post('/:id/close', {
-    onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
-    schema: {
-      params: zodToJsonSchema(idParamSchema),
-      response: {
-        200: zodToJsonSchema(releaseSessionResponseSchema),
-        400: zodToJsonSchema(errorResponseSchema),
-        401: zodToJsonSchema(errorResponseSchema),
-        403: zodToJsonSchema(errorResponseSchema),
-        404: zodToJsonSchema(errorResponseSchema),
+  fastify.post(
+    '/:id/close',
+    {
+      onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
+      schema: {
+        params: zodToJsonSchema(idParamSchema),
+        response: {
+          200: zodToJsonSchema(releaseSessionResponseSchema),
+          400: zodToJsonSchema(errorResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+          403: zodToJsonSchema(errorResponseSchema),
+          404: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['sessions', 'admin'],
       },
-      tags: ['sessions', 'admin'],
     },
-  }, sessionController.closeSession);
+    sessionController.closeSession
+  );
 
   // 获取所有会话（管理员）
-  fastify.get('/admin/all', {
-    onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
-    schema: {
-      response: {
-        200: zodToJsonSchema(getAllSessionsResponseSchema),
-        401: zodToJsonSchema(errorResponseSchema),
-        403: zodToJsonSchema(errorResponseSchema),
+  fastify.get(
+    '/admin/all',
+    {
+      onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
+      schema: {
+        response: {
+          200: zodToJsonSchema(getAllSessionsResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+          403: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['sessions', 'admin'],
       },
-      tags: ['sessions', 'admin'],
     },
-  }, sessionController.getAllSessions);
+    sessionController.getAllSessions
+  );
 
   // 获取会话截图
-  fastify.get('/:id/screenshot', {
-    onRequest: [fastify.verifyJWTOrApiKey],
-    schema: {
-      params: zodToJsonSchema(idParamSchema),
-      response: {
-        200: zodToJsonSchema(getSessionScreenshotResponseSchema),
-        401: zodToJsonSchema(errorResponseSchema),
-        403: zodToJsonSchema(errorResponseSchema),
-        404: zodToJsonSchema(errorResponseSchema),
+  fastify.get(
+    '/:id/screenshot',
+    {
+      onRequest: [fastify.verifyJWTOrApiKey],
+      schema: {
+        params: zodToJsonSchema(idParamSchema),
+        response: {
+          200: zodToJsonSchema(getSessionScreenshotResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+          403: zodToJsonSchema(errorResponseSchema),
+          404: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['sessions'],
       },
-      tags: ['sessions'],
     },
-  }, sessionController.getSessionScreenshot);
+    sessionController.getSessionScreenshot
+  );
 }

@@ -6,46 +6,58 @@ import {
   loginRequestSchema,
   loginResponseSchema,
   currentUserResponseSchema,
-  errorResponseSchema
+  errorResponseSchema,
 } from '../schemas/index.js';
 
 export default async function authRoutes(fastify: FastifyInstance) {
   // 登录
-  fastify.post('/login', {
-    schema: {
-      body: zodToJsonSchema(loginRequestSchema),
-      response: {
-        200: zodToJsonSchema(loginResponseSchema),
-        400: zodToJsonSchema(errorResponseSchema),
-        401: zodToJsonSchema(errorResponseSchema),
+  fastify.post(
+    '/login',
+    {
+      schema: {
+        body: zodToJsonSchema(loginRequestSchema),
+        response: {
+          200: zodToJsonSchema(loginResponseSchema),
+          400: zodToJsonSchema(errorResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['auth'],
       },
-      tags: ['auth'],
     },
-  }, authController.login);
+    authController.login
+  );
 
   // 获取当前用户信息
-  fastify.get('/me', {
-    onRequest: [fastify.verifyJWT],
-    schema: {
-      response: {
-        200: zodToJsonSchema(currentUserResponseSchema),
-        401: zodToJsonSchema(errorResponseSchema),
+  fastify.get(
+    '/me',
+    {
+      onRequest: [fastify.verifyJWT],
+      schema: {
+        response: {
+          200: zodToJsonSchema(currentUserResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['auth'],
+        security: [{ bearerAuth: [] }],
       },
-      tags: ['auth'],
-      security: [{ bearerAuth: [] }],
     },
-  }, authController.getCurrentUser);
+    authController.getCurrentUser
+  );
 
   // 验证 Token 有效性（支持 JWT Token 或 API Key，用于 SDK 集成测试）
-  fastify.get('/verify', {
-    onRequest: [fastify.verifyJWTOrApiKey],
-    schema: {
-      response: {
-        200: zodToJsonSchema(currentUserResponseSchema),
-        401: zodToJsonSchema(errorResponseSchema),
+  fastify.get(
+    '/verify',
+    {
+      onRequest: [fastify.verifyJWTOrApiKey],
+      schema: {
+        response: {
+          200: zodToJsonSchema(currentUserResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['auth'],
+        security: [{ bearerAuth: [] }, { apiKey: [] }],
       },
-      tags: ['auth'],
-      security: [{ bearerAuth: [] }, { apiKey: [] }],
     },
-  }, authController.getCurrentUser);
+    authController.getCurrentUser
+  );
 }

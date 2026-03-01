@@ -6,7 +6,6 @@ import { sendSuccess, sendError } from '../utils/response.js';
 import { UserStatus } from '@shared/types/index.js';
 import { adminLoginRequestSchema } from '../schemas/admin.schema.js';
 
-
 // 登录控制器
 export async function login(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -50,7 +49,7 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return sendError(reply, '无效的请求数据: ' + error.errors.map(e => e.message).join(', '), 400);
+      return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
     request.log.error(error);

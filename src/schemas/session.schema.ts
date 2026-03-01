@@ -32,38 +32,46 @@ const storageStateSchema = z.object({
 });
 
 // 会话选项模式
-export const sessionOptionsSchema = z.object({
-  userAgent: z.string().optional(),
-  proxy: z.string().optional(),
-  cookies: z.record(z.string()).optional(),
-  localStorage: z.record(z.string()).optional(),
-  viewport: z.object({
-    width: z.number(),
-    height: z.number(),
-  }).optional(),
-}).nullable();
+export const sessionOptionsSchema = z
+  .object({
+    userAgent: z.string().optional(),
+    proxy: z.string().optional(),
+    cookies: z.record(z.string()).optional(),
+    localStorage: z.record(z.string()).optional(),
+    viewport: z
+      .object({
+        width: z.number(),
+        height: z.number(),
+      })
+      .optional(),
+  })
+  .nullable();
 
 // 创建会话请求模式
-export const createSessionRequestSchema = z.object({
-  userAgent: z.string().optional(),
-  proxy: z.string().optional(),
-  cookies: z.record(z.string()).optional(),
-  localStorage: z.record(z.string()).optional(),
-  viewport: z.object({
-    width: z.number().int().positive(),
-    height: z.number().int().positive(),
-  }).optional(),
-  // 新增参数
-  storageStatePath: z.string().optional(),
-  storageState: storageStateSchema.optional(),
-  // 共享用户数据目录
-  // 当 sharedUserData 为 true 时，所有会话共享同一个用户数据目录
-  // 当 sharedUserData 为 false 或未设置时，每个会话有独立的用户数据目录
-  sharedUserData: z.boolean().optional(),
-  // @deprecated userDataDir 已废弃，出于安全考虑不再允许客户端指定任意路径
-  // 请使用 sharedUserData 参数控制是否共享用户数据目录
-  userDataDir: z.string().optional(),
-}).strict();  // 严格模式：拒绝未知字段如 "options"
+export const createSessionRequestSchema = z
+  .object({
+    userAgent: z.string().optional(),
+    proxy: z.string().optional(),
+    cookies: z.record(z.string()).optional(),
+    localStorage: z.record(z.string()).optional(),
+    viewport: z
+      .object({
+        width: z.number().int().positive(),
+        height: z.number().int().positive(),
+      })
+      .optional(),
+    // 新增参数
+    storageStatePath: z.string().optional(),
+    storageState: storageStateSchema.optional(),
+    // 共享用户数据目录
+    // 当 sharedUserData 为 true 时，所有会话共享同一个用户数据目录
+    // 当 sharedUserData 为 false 或未设置时，每个会话有独立的用户数据目录
+    sharedUserData: z.boolean().optional(),
+    // @deprecated userDataDir 已废弃，出于安全考虑不再允许客户端指定任意路径
+    // 请使用 sharedUserData 参数控制是否共享用户数据目录
+    userDataDir: z.string().optional(),
+  })
+  .strict(); // 严格模式：拒绝未知字段如 "options"
 
 // 会话基本信息模式
 export const sessionBaseSchema = z.object({
@@ -99,9 +107,7 @@ export const createSessionResponseSchema = successResponseSchema(
 );
 
 // 会话详情响应模式
-export const sessionDetailResponseSchema = successResponseSchema(
-  sessionDetailSchema
-);
+export const sessionDetailResponseSchema = successResponseSchema(sessionDetailSchema);
 
 // 释放会话响应模式
 export const releaseSessionResponseSchema = successResponseSchema(
@@ -118,23 +124,17 @@ export const sessionListItemSchema = sessionDetailSchema.extend({
 });
 
 // 获取用户会话响应模式
-export const getUserSessionsResponseSchema = paginatedResponseSchema(
-  sessionListItemSchema
-);
+export const getUserSessionsResponseSchema = paginatedResponseSchema(sessionListItemSchema);
 
 // 获取所有会话响应模式
-export const getAllSessionsResponseSchema = paginatedResponseSchema(
-  sessionListItemSchema
-);
+export const getAllSessionsResponseSchema = paginatedResponseSchema(sessionListItemSchema);
 
 // 获取会话响应模式
-export const getSessionResponseSchema = successResponseSchema(
-  sessionDetailSchema
-);
+export const getSessionResponseSchema = successResponseSchema(sessionDetailSchema);
 
 // 获取会话截图响应模式
 export const getSessionScreenshotResponseSchema = successResponseSchema(
   z.object({
-    screenshot_url: z.string()
+    screenshot_url: z.string(),
   })
 );

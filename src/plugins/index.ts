@@ -23,9 +23,7 @@ import { logger } from '@shared/utils/logger.js';
 
 export default fp(async function (fastify: FastifyInstance) {
   logger.info('开始注册所有插件...');
-  
 
-  
   // 注册 CORS 插件
   await fastify.register(cors, {
     origin: true,
@@ -76,8 +74,8 @@ export default fp(async function (fastify: FastifyInstance) {
       // secure: process.env.NODE_ENV === 'production',
       secure: false,
       // httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 天
-    }
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
+    },
   });
 
   // 注册 Flash 插件
@@ -86,40 +84,40 @@ export default fp(async function (fastify: FastifyInstance) {
   // 注册视图引擎
   await fastify.register(view, {
     engine: {
-      ejs: ejs
+      ejs: ejs,
     },
     root: path.join(rootDir, 'src/views'),
     viewExt: 'ejs',
     layout: 'layouts/main',
-    includeViewExtension: true
+    includeViewExtension: true,
   });
 
   // 注册静态文件插件
   await fastify.register(staticFiles, {
     root: path.join(rootDir, 'src/public'),
-    prefix: '/public/'
+    prefix: '/public/',
   });
 
   // 注册截图静态文件插件
   await fastify.register(staticFiles, {
     root: path.join(rootDir, 'data/screenshots'),
     prefix: '/screenshots/',
-    decorateReply: false // 避免与上面的静态文件插件冲突
+    decorateReply: false, // 避免与上面的静态文件插件冲突
   });
-  
+
   // 注册上传文件静态文件插件
   await fastify.register(staticFiles, {
     root: path.join(rootDir, 'data/uploads'),
     prefix: '/uploads/',
-    decorateReply: false // 避免与其他静态文件插件冲突
+    decorateReply: false, // 避免与其他静态文件插件冲突
   });
-  
+
   // 注册临时文件静态文件插件
   await fastify.register(staticFiles, {
     root: path.join(rootDir, 'data/temp'),
     prefix: '/temp/',
-    decorateReply: false // 避免与其他静态文件插件冲突
+    decorateReply: false, // 避免与其他静态文件插件冲突
   });
-  
+
   logger.info('所有插件注册完成');
 });

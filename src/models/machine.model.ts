@@ -112,7 +112,7 @@ export class MachineModel {
     console.log(`更新机器数据 (${id}):`, updateData);
 
     // 移除未定义的字段
-    Object.keys(updateData).forEach(key => {
+    Object.keys(updateData).forEach((key) => {
       if (updateData[key] === undefined) {
         delete updateData[key];
       }
@@ -141,10 +141,7 @@ export class MachineModel {
       const order = query.order || 'desc';
 
       const [machines, total] = await Promise.all([
-        db('machines')
-          .orderBy(sort, order)
-          .limit(limit)
-          .offset(offset),
+        db('machines').orderBy(sort, order).limit(limit).offset(offset),
         db('machines').count('id as count').first(),
       ]);
 
@@ -257,13 +254,10 @@ export class MachineModel {
   // 检查并标记超时的机器为离线
   static async checkOfflineMachines(timeoutMinutes: number = 5): Promise<number> {
     const cutoffDate = new Date(Date.now() - timeoutMinutes * 60 * 1000);
-    const result = await db('machines')
-      .where('status', 'online')
-      .where('last_seen', '<', cutoffDate)
-      .update({
-        status: 'offline',
-        updated_at: new Date(),
-      });
+    const result = await db('machines').where('status', 'online').where('last_seen', '<', cutoffDate).update({
+      status: 'offline',
+      updated_at: new Date(),
+    });
 
     return result;
   }
@@ -309,10 +303,7 @@ export class MachineModel {
   static async deleteOldMachines(cutoffDate: Date): Promise<number> {
     try {
       // 只删除离线状态的机器
-      const result = await db('machines')
-        .where('status', 'offline')
-        .where('last_seen', '<', cutoffDate)
-        .delete();
+      const result = await db('machines').where('status', 'offline').where('last_seen', '<', cutoffDate).delete();
 
       return result;
     } catch (error) {
@@ -325,9 +316,7 @@ export class MachineModel {
   static async delete(id: string): Promise<boolean> {
     try {
       // 删除机器记录
-      const result = await db('machines')
-        .where({ id })
-        .delete();
+      const result = await db('machines').where({ id }).delete();
 
       return result > 0;
     } catch (error) {
@@ -350,10 +339,7 @@ export class MachineModel {
   // 统计在线机器数
   static async countOnline(): Promise<number> {
     try {
-      const result = await db('machines')
-        .where('status', 'online')
-        .count('id as count')
-        .first();
+      const result = await db('machines').where('status', 'online').count('id as count').first();
       return result ? Number(result.count) : 0;
     } catch (error) {
       console.error('统计在线机器数失败:', error);
@@ -387,10 +373,13 @@ export class MachineModel {
   }
 
   // 获取机器详情（包含活跃会话数）
-  static async getDetailById(id: string): Promise<(MachineInfo & {
-    activeSessions: number;
-    healthStatus?: string;
-  }) | null> {
+  static async getDetailById(id: string): Promise<
+    | (MachineInfo & {
+        activeSessions: number;
+        healthStatus?: string;
+      })
+    | null
+  > {
     try {
       const machine = await this.findById(id);
       if (!machine) return null;
@@ -399,14 +388,12 @@ export class MachineModel {
       const { SessionModel } = await import('./session.model.js');
       const activeSessions = await SessionModel.paginate(1, 999, {
         filters: {
-          status: 'active'
-        }
+          status: 'active',
+        },
       });
 
       // 过滤出该机器的活跃会话
-      const machineActiveSessions = activeSessions.items.filter(
-        (s: any) => s.machine_id === id
-      ).length;
+      const machineActiveSessions = activeSessions.items.filter((s: any) => s.machine_id === id).length;
 
       // 计算健康状态
       let healthStatus = 'unknown';
@@ -428,7 +415,7 @@ export class MachineModel {
       return {
         ...machine,
         activeSessions: machineActiveSessions,
-        healthStatus
+        healthStatus,
       };
     } catch (error) {
       console.error('获取机器详情失败:', error);
@@ -460,7 +447,7 @@ export class MachineModel {
           status: 'unhealthy',
           grpcConnected: false,
           error: '机器不存在',
-          checkedAt: new Date()
+          checkedAt: new Date(),
         };
       }
 
@@ -479,7 +466,7 @@ export class MachineModel {
             grpcConnected: false,
             error: '机器未连接',
             responseTime: Date.now() - startTime,
-            checkedAt: new Date()
+            checkedAt: new Date(),
           };
         }
 
@@ -498,7 +485,7 @@ export class MachineModel {
             memoryUsage: machineStatus.memory_usage || machine.memoryUsage || 0,
             diskUsage: machineStatus.disk_space || machine.diskUsage || 0,
           },
-          checkedAt: new Date()
+          checkedAt: new Date(),
         };
       } catch (grpcError: any) {
         return {
@@ -506,7 +493,7 @@ export class MachineModel {
           status: 'unhealthy',
           grpcConnected: false,
           error: grpcError.message || 'gRPC 连接失败',
-          checkedAt: new Date()
+          checkedAt: new Date(),
         };
       }
     } catch (error: any) {
@@ -516,24 +503,26 @@ export class MachineModel {
         status: 'unhealthy',
         grpcConnected: false,
         error: error.message || '健康检查失败',
-        checkedAt: new Date()
+        checkedAt: new Date(),
       };
     }
   }
 
   // 批量健康检查
-  static async batchHealthCheck(ids: string[]): Promise<Array<{
-    machineId: string;
-    status: 'healthy' | 'unhealthy';
-    error?: string;
-  }>> {
+  static async batchHealthCheck(ids: string[]): Promise<
+    Array<{
+      machineId: string;
+      status: 'healthy' | 'unhealthy';
+      error?: string;
+    }>
+  > {
     const results = await Promise.all(
       ids.map(async (id) => {
         const result = await this.healthCheck(id);
         return {
           machineId: id,
           status: result.status,
-          error: result.error
+          error: result.error,
         };
       })
     );

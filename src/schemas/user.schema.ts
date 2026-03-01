@@ -36,9 +36,7 @@ export const loginResponseSchema = successResponseSchema(
 );
 
 // 当前用户信息响应模式
-export const currentUserResponseSchema = successResponseSchema(
-  userDetailSchema.omit({ status: true })
-);
+export const currentUserResponseSchema = successResponseSchema(userDetailSchema.omit({ status: true }));
 
 // 创建用户请求模式
 export const createUserRequestSchema = z.object({
@@ -52,9 +50,7 @@ export const createUserRequestSchema = z.object({
 });
 
 // 创建用户响应模式
-export const createUserResponseSchema = successResponseSchema(
-  userDetailSchema.omit({ created_at: true })
-);
+export const createUserResponseSchema = successResponseSchema(userDetailSchema.omit({ created_at: true }));
 
 // 更新用户请求模式
 export const updateUserRequestSchema = z.object({

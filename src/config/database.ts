@@ -16,7 +16,7 @@ const createDatabaseConfig = () => {
     return {
       client: 'better-sqlite3',
       connection: {
-        filename: dbPath
+        filename: dbPath,
       },
       useNullAsDefault: true,
       // SQLite 不需要连接池，移除这些设置

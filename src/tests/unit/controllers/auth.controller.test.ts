@@ -137,11 +137,7 @@ describe('AuthController', () => {
 
     await login(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '用户名或密码错误',
-      401
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '用户名或密码错误', 401);
   });
 
   // ========================================
@@ -175,11 +171,7 @@ describe('AuthController', () => {
 
     await login(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '用户名或密码错误',
-      401
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '用户名或密码错误', 401);
   });
 
   // ========================================
@@ -213,11 +205,7 @@ describe('AuthController', () => {
 
     await login(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '用户账号已被禁用',
-      403
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '用户账号已被禁用', 403);
   });
 
   // ========================================
@@ -313,11 +301,7 @@ describe('AuthController', () => {
 
     await getCurrentUser(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '用户未登录',
-      401
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '用户未登录', 401);
   });
 
   // ========================================
@@ -344,10 +328,6 @@ describe('AuthController', () => {
 
     await getCurrentUser(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(
-      reply,
-      '用户不存在',
-      404
-    );
+    expect(sendError).toHaveBeenCalledWith(reply, '用户不存在', 404);
   });
 });

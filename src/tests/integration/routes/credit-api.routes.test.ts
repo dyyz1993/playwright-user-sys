@@ -88,7 +88,6 @@ describe('积分管理 API Routes 集成测试', () => {
   // ========================================
 
   describe('A. 积分操作核心功能', () => {
-
     describe('POST /api/admin/users/:id/credits - 添加积分', () => {
       let userForCredits: any;
 
@@ -657,7 +656,6 @@ describe('积分管理 API Routes 集成测试', () => {
   // ========================================
 
   describe('B. 积分余额约束测试 (核心约束 - 必须全部通过)', () => {
-
     it('B-CONSTRAINT-01: 积分余额不能为负 - 扣除超过余额', async () => {
       const user = await createTestUser({
         username: `negtest1_${Date.now()}`,
@@ -810,7 +808,6 @@ describe('积分管理 API Routes 集成测试', () => {
   // ========================================
 
   describe('C. 金额类型验证测试', () => {
-
     let userForAmount: any;
 
     beforeEach(async () => {
@@ -916,7 +913,6 @@ describe('积分管理 API Routes 集成测试', () => {
     });
 
     it('C-AMOUNT-06: amount为非数字字符串应该返回400', async () => {
-
       const response = await app.inject({
         method: 'POST',
         url: `/api/admin/users/${userForAmount?.id}/credits`,
@@ -937,7 +933,6 @@ describe('积分管理 API Routes 集成测试', () => {
   // ========================================
 
   describe('D. 积分统计查询测试', () => {
-
     beforeEach(async () => {
       // 清空数据后重新创建管理员和用户，确保认证可用
       await clearAllTables();
@@ -1015,7 +1010,6 @@ describe('积分管理 API Routes 集成测试', () => {
   // ========================================
 
   describe('E. 权限控制测试', () => {
-
     beforeEach(async () => {
       // 清空数据后重新创建管理员和用户，确保认证可用
       await clearAllTables();
@@ -1070,7 +1064,7 @@ describe('积分管理 API Routes 集成测试', () => {
           Authorization: `Bearer ${userToken}`,
         },
         payload: {
-          userIds: users.map(u => u.id),
+          userIds: users.map((u) => u.id),
           credits: 50,
         },
       });
@@ -1104,7 +1098,7 @@ describe('积分管理 API Routes 集成测试', () => {
         url: '/api/admin/users/batch-recharge',
         // 不传 Authorization
         payload: {
-          userIds: users.map(u => u.id),
+          userIds: users.map((u) => u.id),
           credits: 50,
         },
       });
@@ -1138,7 +1132,6 @@ describe('积分管理 API Routes 集成测试', () => {
   // ========================================
 
   describe('F. 批量操作原子性测试', () => {
-
     beforeEach(async () => {
       // 清空数据后重新创建管理员和用户，确保认证可用
       await clearAllTables();
@@ -1156,7 +1149,7 @@ describe('积分管理 API Routes 集成测试', () => {
     it('F-ATOMIC-01: 批量充值部分失败不影响其他用户', async () => {
       const users = await createTestUsers(5);
       const userIds = [
-        ...users.map(u => u.id),
+        ...users.map((u) => u.id),
         999999, // 不存在的用户
         888888, // 不存在的用户
       ];
@@ -1276,7 +1269,7 @@ describe('积分管理 API Routes 集成测试', () => {
           Authorization: `Bearer ${adminToken}`,
         },
         payload: {
-          userIds: users.map(u => u.id),
+          userIds: users.map((u) => u.id),
           credits: 50,
           reason: '批量测试',
         },
@@ -1292,7 +1285,6 @@ describe('积分管理 API Routes 集成测试', () => {
   // ========================================
 
   describe('G. 边界条件测试', () => {
-
     beforeEach(async () => {
       // 清空数据后重新创建管理员和用户，确保认证可用
       await clearAllTables();
@@ -1333,7 +1325,7 @@ describe('积分管理 API Routes 集成测试', () => {
 
     it('G-EDGE-02: 批量充值大量用户应该成功', async () => {
       const users = await createTestUsers(50);
-      const userIds = users.map(u => u.id);
+      const userIds = users.map((u) => u.id);
 
       const response = await app.inject({
         method: 'POST',
@@ -1395,7 +1387,6 @@ describe('积分管理 API Routes 集成测试', () => {
   // ========================================
 
   describe('H. 并发积分操作测试', () => {
-
     beforeEach(async () => {
       // 清空数据后重新创建管理员和用户，确保认证可用
       await clearAllTables();
@@ -1443,7 +1434,7 @@ describe('积分管理 API Routes 集成测试', () => {
       const promises = [];
       for (let i = 0; i < 10; i++) {
         promises.push(
-          UserModel.deductCredits(user!.id, 10).catch(err => {
+          UserModel.deductCredits(user!.id, 10).catch((err) => {
             // 预期有些会失败
             return null;
           })
@@ -1470,9 +1461,7 @@ describe('积分管理 API Routes 集成测试', () => {
       // 并发操作
       for (let i = 0; i < 5; i++) {
         promises.push(UserModel.addCredits(user!.id, 10));
-        promises.push(
-          UserModel.deductCredits(user!.id, 5).catch(err => null)
-        );
+        promises.push(UserModel.deductCredits(user!.id, 5).catch((err) => null));
       }
 
       await Promise.all(promises);
@@ -1526,9 +1515,7 @@ describe('积分管理 API Routes 集成测试', () => {
       // 大量并发操作
       const promises = [];
       for (let i = 0; i < 50; i++) {
-        promises.push(
-          UserModel.addCredits(user!.id, 1).catch(err => null)
-        );
+        promises.push(UserModel.addCredits(user!.id, 1).catch((err) => null));
       }
 
       // 设置超时，防止死锁
@@ -1536,10 +1523,7 @@ describe('积分管理 API Routes 集成测试', () => {
         setTimeout(() => reject(new Error('Timeout')), 10000);
       });
 
-      await Promise.race([
-        Promise.all(promises),
-        timeoutPromise,
-      ]);
+      await Promise.race([Promise.all(promises), timeoutPromise]);
 
       // 如果到这里没有超时，说明没有死锁
       expect(true).toBe(true);

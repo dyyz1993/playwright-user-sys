@@ -90,7 +90,7 @@ export class SessionModel {
         .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED])
         .update({
           status: SessionStatus.DISCONNECTED,
-          updated_at: new Date() // 自动更新时间戳
+          updated_at: new Date(), // 自动更新时间戳
         });
       logger.info(`数据库层面：机器 ${machineId} 有 ${result} 个会话被标记为 DISCONNECTED`);
       return result; // 返回更新的行数
@@ -165,13 +165,11 @@ export class SessionModel {
       const queryBuilder = trx || db;
 
       for (const update of updates) {
-        await queryBuilder('sessions')
-          .where('id', update.id)
-          .update({
-            duration: update.duration,
-            credits_used: update.credits_used,
-            updated_at: new Date()
-          });
+        await queryBuilder('sessions').where('id', update.id).update({
+          duration: update.duration,
+          credits_used: update.credits_used,
+          updated_at: new Date(),
+        });
         count++;
       }
 
@@ -181,9 +179,6 @@ export class SessionModel {
       throw error;
     }
   }
-
-
-
 
   // 标记会话已连接
   static async markConnected(id: string): Promise<Session | null> {
@@ -224,7 +219,9 @@ export class SessionModel {
         // 将其转换为 ISO 格式以正确解析
         const startTime = new Date(rawStartTime.replace(' ', 'T') + '.000Z');
         finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
-        logger.info(`根据开始时间计算持续时间 (${id}): 原始时间=${rawStartTime}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
+        logger.info(
+          `根据开始时间计算持续时间 (${id}): 原始时间=${rawStartTime}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`
+        );
       } else {
         // 降级处理：使用 Date 对象（可能有8小时时差）
         const startTime = new Date(session.start_time);
@@ -243,14 +240,21 @@ export class SessionModel {
     // 至少消耗 1 点（即使 duration = 0）
     const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
 
-    logger.info(`标记会话已断开 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${initialCreditsUsed}点`);
+    logger.info(
+      `标记会话已断开 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${initialCreditsUsed}点`
+    );
 
     try {
       // 使用数据库条件更新确保幂等性
       // 只更新非终态的会话，避免并发重复扣费
       const updateResult = await db('sessions')
         .where({ id })
-        .whereNotIn('status', [SessionStatus.DISCONNECTED, SessionStatus.ERROR, SessionStatus.EXPIRED, SessionStatus.COMPLETED])
+        .whereNotIn('status', [
+          SessionStatus.DISCONNECTED,
+          SessionStatus.ERROR,
+          SessionStatus.EXPIRED,
+          SessionStatus.COMPLETED,
+        ])
         .update({
           status: SessionStatus.DISCONNECTED,
           end_time: new Date(),
@@ -281,7 +285,9 @@ export class SessionModel {
           const balanceAfter = user ? user.credits - creditsToDeduct : 0;
 
           await UserModel.deductCredits(userId, creditsToDeduct);
-          logger.info(`🔴 扣除点数: ${creditsToDeduct} 点, 用户 ${userId} (初始${initialCreditsUsed} -> ${creditsUsed})`);
+          logger.info(
+            `🔴 扣除点数: ${creditsToDeduct} 点, 用户 ${userId} (初始${initialCreditsUsed} -> ${creditsUsed})`
+          );
 
           // 创建积分历史记录
           const { CreditHistoryModel } = await import('./credit-history.model.js');
@@ -333,7 +339,9 @@ export class SessionModel {
       }
       // 使用 Math.ceil 确保即使只有 1ms 也计算为 1 秒
       finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
-      logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${session.start_time}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
+      logger.info(
+        `根据开始时间计算持续时间 (${id}): 开始时间=${session.start_time}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`
+      );
     }
 
     // 确保持续时间不为负数（时区问题可能导致负数）
@@ -345,7 +353,9 @@ export class SessionModel {
     // 计算消耗的点数（每分钟1点）
     const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
 
-    logger.info(`标记会话已过期 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${previousCreditsUsed}点`);
+    logger.info(
+      `标记会话已过期 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${previousCreditsUsed}点`
+    );
 
     await db('sessions').where({ id }).update({
       status: SessionStatus.EXPIRED,
@@ -396,7 +406,9 @@ export class SessionModel {
       }
       // 使用 Math.ceil 确保即使只有 1ms 也计算为 1 秒
       finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
-      logger.info(`根据开始时间计算持续时间 (${id}): 开始时间=${session.start_time}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`);
+      logger.info(
+        `根据开始时间计算持续时间 (${id}): 开始时间=${session.start_time}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`
+      );
     }
 
     // 确保持续时间不为负数（时区问题可能导致负数）
@@ -408,7 +420,9 @@ export class SessionModel {
     // 计算消耗的点数（每分钟1点）
     const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
 
-    logger.info(`标记会话错误 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${previousCreditsUsed}点`);
+    logger.info(
+      `标记会话错误 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${previousCreditsUsed}点`
+    );
 
     await db('sessions').where({ id }).update({
       status: SessionStatus.ERROR,
@@ -442,18 +456,28 @@ export class SessionModel {
       const offset = (page - 1) * limit;
 
       // 验证并过滤排序字段和方向，使用默认值代替无效值
-      const validSortFields = ['id', 'user_id', 'machine_id', 'status', 'port', 'duration', 'credits_used', 'start_time', 'end_time', 'created_at', 'updated_at'];
-      const sort = validSortFields.includes(query.sort || '') ? (query.sort || 'created_at') : 'created_at';
+      const validSortFields = [
+        'id',
+        'user_id',
+        'machine_id',
+        'status',
+        'port',
+        'duration',
+        'credits_used',
+        'start_time',
+        'end_time',
+        'created_at',
+        'updated_at',
+      ];
+      const sort = validSortFields.includes(query.sort || '') ? query.sort || 'created_at' : 'created_at';
 
       const validOrders = ['asc', 'desc'];
-      const order = validOrders.includes(query.order?.toLowerCase() || '') ? (query.order?.toLowerCase() || 'desc') : 'desc';
+      const order = validOrders.includes(query.order?.toLowerCase() || '')
+        ? query.order?.toLowerCase() || 'desc'
+        : 'desc';
 
       const [sessions, total] = await Promise.all([
-        db('sessions')
-          .where({ user_id: userId })
-          .orderBy(sort, order)
-          .limit(limit)
-          .offset(offset),
+        db('sessions').where({ user_id: userId }).orderBy(sort, order).limit(limit).offset(offset),
         db('sessions').where({ user_id: userId }).count('id as count').first(),
       ]);
 
@@ -462,7 +486,11 @@ export class SessionModel {
           try {
             return {
               ...session,
-              options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+              options: session.options
+                ? typeof session.options === 'string'
+                  ? JSON.parse(session.options)
+                  : session.options
+                : null,
               // 将日期字符串转换为 Date 对象
               start_time: session.start_time ? new Date(session.start_time) : null,
               end_time: session.end_time ? new Date(session.end_time) : null,
@@ -508,17 +536,18 @@ export class SessionModel {
   static async findActiveSessions(): Promise<Session[]> {
     try {
       console.log('开始查询活跃会话');
-      const sessions = await db('sessions').whereIn('status', [
-        SessionStatus.CREATED,
-        SessionStatus.CONNECTED,
-      ]);
+      const sessions = await db('sessions').whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED]);
       console.log(`找到 ${sessions.length} 个活跃会话`);
 
       return sessions.map((session: any) => {
         try {
           return {
             ...session,
-            options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+            options: session.options
+              ? typeof session.options === 'string'
+                ? JSON.parse(session.options)
+                : session.options
+              : null,
           };
         } catch (error) {
           console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
@@ -545,7 +574,11 @@ export class SessionModel {
         try {
           return {
             ...session,
-            options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+            options: session.options
+              ? typeof session.options === 'string'
+                ? JSON.parse(session.options)
+                : session.options
+              : null,
           };
         } catch (error) {
           console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
@@ -580,7 +613,11 @@ export class SessionModel {
         try {
           return {
             ...session,
-            options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+            options: session.options
+              ? typeof session.options === 'string'
+                ? JSON.parse(session.options)
+                : session.options
+              : null,
           };
         } catch (error) {
           console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
@@ -605,17 +642,28 @@ export class SessionModel {
       const offset = (page - 1) * limit;
 
       // 验证并过滤排序字段和方向，使用默认值代替无效值
-      const validSortFields = ['id', 'user_id', 'machine_id', 'status', 'port', 'duration', 'credits_used', 'start_time', 'end_time', 'created_at', 'updated_at'];
-      const sort = validSortFields.includes(query.sort || '') ? (query.sort || 'created_at') : 'created_at';
+      const validSortFields = [
+        'id',
+        'user_id',
+        'machine_id',
+        'status',
+        'port',
+        'duration',
+        'credits_used',
+        'start_time',
+        'end_time',
+        'created_at',
+        'updated_at',
+      ];
+      const sort = validSortFields.includes(query.sort || '') ? query.sort || 'created_at' : 'created_at';
 
       const validOrders = ['asc', 'desc'];
-      const order = validOrders.includes(query.order?.toLowerCase() || '') ? (query.order?.toLowerCase() || 'desc') : 'desc';
+      const order = validOrders.includes(query.order?.toLowerCase() || '')
+        ? query.order?.toLowerCase() || 'desc'
+        : 'desc';
 
       const [sessions, total] = await Promise.all([
-        db('sessions')
-          .orderBy(sort, order)
-          .limit(limit)
-          .offset(offset),
+        db('sessions').orderBy(sort, order).limit(limit).offset(offset),
         db('sessions').count('id as count').first(),
       ]);
 
@@ -626,7 +674,11 @@ export class SessionModel {
           try {
             return {
               ...session,
-              options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+              options: session.options
+                ? typeof session.options === 'string'
+                  ? JSON.parse(session.options)
+                  : session.options
+                : null,
               // 将日期字符串转换为 Date 对象
               start_time: session.start_time ? new Date(session.start_time) : null,
               end_time: session.end_time ? new Date(session.end_time) : null,
@@ -679,7 +731,9 @@ export class SessionModel {
   }
 
   // 获取用户的会话消耗统计
-  static async getUserSessionStats(userId: number): Promise<{ total_sessions: number; total_duration: number; total_credits_used: number }> {
+  static async getUserSessionStats(
+    userId: number
+  ): Promise<{ total_sessions: number; total_duration: number; total_credits_used: number }> {
     try {
       console.log(`开始查询用户 ${userId} 的会话消耗统计`);
 
@@ -695,19 +749,21 @@ export class SessionModel {
       const creditsResult = await db('sessions').where({ user_id: userId }).sum('credits_used as total').first();
       const total_credits_used = creditsResult && creditsResult.total ? Number(creditsResult.total) : 0;
 
-      console.log(`用户 ${userId} 的会话统计: 总会话数=${total_sessions}, 总时长=${total_duration}秒, 总消耗点数=${total_credits_used}点`);
+      console.log(
+        `用户 ${userId} 的会话统计: 总会话数=${total_sessions}, 总时长=${total_duration}秒, 总消耗点数=${total_credits_used}点`
+      );
 
       return {
         total_sessions,
         total_duration,
-        total_credits_used
+        total_credits_used,
       };
     } catch (error) {
       console.error(`获取用户会话统计失败 (userId: ${userId}):`, error);
       return {
         total_sessions: 0,
         total_duration: 0,
-        total_credits_used: 0
+        total_credits_used: 0,
       };
     }
   }
@@ -728,7 +784,11 @@ export class SessionModel {
         try {
           return {
             ...session,
-            options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+            options: session.options
+              ? typeof session.options === 'string'
+                ? JSON.parse(session.options)
+                : session.options
+              : null,
           };
         } catch (error) {
           console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
@@ -757,7 +817,11 @@ export class SessionModel {
         try {
           return {
             ...session,
-            options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+            options: session.options
+              ? typeof session.options === 'string'
+                ? JSON.parse(session.options)
+                : session.options
+              : null,
           };
         } catch (error) {
           console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
@@ -851,9 +915,7 @@ export class SessionModel {
   // 计算已使用点数
   static async sumUsedCredits(): Promise<number> {
     try {
-      const result = await db('sessions')
-        .sum('credits_used as total')
-        .first();
+      const result = await db('sessions').sum('credits_used as total').first();
       return result && result.total ? Number(result.total) : 0;
     } catch (error) {
       console.error('计算已使用点数失败:', error);
@@ -886,7 +948,7 @@ export class SessionModel {
           query = query.whereIn('sessions.status', [
             SessionStatus.DISCONNECTED,
             SessionStatus.EXPIRED,
-            SessionStatus.COMPLETED
+            SessionStatus.COMPLETED,
           ]);
         } else if (status === 'error') {
           query = query.where('sessions.status', SessionStatus.ERROR);
@@ -923,7 +985,7 @@ export class SessionModel {
             builder.whereIn('sessions.status', [
               SessionStatus.DISCONNECTED,
               SessionStatus.EXPIRED,
-              SessionStatus.COMPLETED
+              SessionStatus.COMPLETED,
             ]);
           } else if (status === 'error') {
             builder.where('sessions.status', SessionStatus.ERROR);
@@ -949,17 +1011,18 @@ export class SessionModel {
       const totalResult = await countQuery.count('* as count').first();
 
       // 执行数据查询
-      const sessions = await query
-        .orderBy('sessions.created_at', 'desc')
-        .limit(limit)
-        .offset(offset);
+      const sessions = await query.orderBy('sessions.created_at', 'desc').limit(limit).offset(offset);
 
       return {
         items: sessions.map((session: any) => {
           try {
             return {
               ...session,
-              options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+              options: session.options
+                ? typeof session.options === 'string'
+                  ? JSON.parse(session.options)
+                  : session.options
+                : null,
             };
           } catch (error) {
             console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
@@ -987,10 +1050,7 @@ export class SessionModel {
   }
 
   // 获取会话统计
-  static async getStats(filters?: {
-    startDate?: Date;
-    endDate?: Date;
-  }): Promise<{
+  static async getStats(filters?: { startDate?: Date; endDate?: Date }): Promise<{
     total: number;
     active: number;
     ended: number;
@@ -1006,7 +1066,8 @@ export class SessionModel {
     }>;
   }> {
     try {
-      let query = db('sessions').select('sessions.*', 'users.username')
+      let query = db('sessions')
+        .select('sessions.*', 'users.username')
         .leftJoin('users', 'sessions.user_id', 'users.id');
 
       if (filters?.startDate) {
@@ -1023,18 +1084,12 @@ export class SessionModel {
 
       // 统计数据
       const total = sessions.length;
-      const active = sessions.filter((s: any) =>
-        ['created', 'connected'].includes(s.status)
-      ).length;
-      const ended = sessions.filter((s: any) =>
-        ['disconnected', 'expired', 'completed'].includes(s.status)
-      ).length;
+      const active = sessions.filter((s: any) => ['created', 'connected'].includes(s.status)).length;
+      const ended = sessions.filter((s: any) => ['disconnected', 'expired', 'completed'].includes(s.status)).length;
       const error = sessions.filter((s: any) => s.status === 'error').length;
 
-      const totalCreditsUsed = sessions.reduce((sum, s: any) =>
-        sum + (s.credits_used || 0), 0);
-      const totalDuration = sessions.reduce((sum, s: any) =>
-        sum + (s.duration || 0), 0);
+      const totalCreditsUsed = sessions.reduce((sum, s: any) => sum + (s.credits_used || 0), 0);
+      const totalDuration = sessions.reduce((sum, s: any) => sum + (s.duration || 0), 0);
       const avgDuration = total > 0 ? Math.round(totalDuration / total) : 0;
 
       // 按用户分组统计
@@ -1046,7 +1101,7 @@ export class SessionModel {
             user_id: userId,
             username: s.username,
             sessionCount: 0,
-            creditsUsed: 0
+            creditsUsed: 0,
           });
         }
         const user = byUserMap.get(userId);
@@ -1062,7 +1117,7 @@ export class SessionModel {
         totalCreditsUsed,
         totalDuration,
         avgDuration,
-        byUser: Array.from(byUserMap.values())
+        byUser: Array.from(byUserMap.values()),
       };
     } catch (error) {
       logger.error('获取会话统计失败:', error);
@@ -1074,16 +1129,19 @@ export class SessionModel {
         totalCreditsUsed: 0,
         totalDuration: 0,
         avgDuration: 0,
-        byUser: []
+        byUser: [],
       };
     }
   }
 
   // 获取会话详情(包含用户和机器信息)
-  static async getDetailById(id: string): Promise<(Session & {
-    username: string;
-    machine_name?: string;
-  }) | null> {
+  static async getDetailById(id: string): Promise<
+    | (Session & {
+        username: string;
+        machine_name?: string;
+      })
+    | null
+  > {
     try {
       const session = await db('sessions')
         .select('sessions.*', 'users.username', 'machines.hostname as machine_name')
@@ -1147,7 +1205,7 @@ export class SessionModel {
           query = query.whereIn('sessions.status', [
             SessionStatus.DISCONNECTED,
             SessionStatus.EXPIRED,
-            SessionStatus.COMPLETED
+            SessionStatus.COMPLETED,
           ]);
         } else if (status === 'error') {
           query = query.where('sessions.status', SessionStatus.ERROR);
@@ -1187,7 +1245,7 @@ export class SessionModel {
             builder.whereIn('sessions.status', [
               SessionStatus.DISCONNECTED,
               SessionStatus.EXPIRED,
-              SessionStatus.COMPLETED
+              SessionStatus.COMPLETED,
             ]);
           } else if (status === 'error') {
             builder.where('sessions.status', SessionStatus.ERROR);
@@ -1213,17 +1271,18 @@ export class SessionModel {
       const totalResult = await countQuery.count('* as count').first();
 
       // 执行数据查询
-      const sessions = await query
-        .orderBy(`sessions.${validSortField}`, validOrder)
-        .limit(limit)
-        .offset(offset);
+      const sessions = await query.orderBy(`sessions.${validSortField}`, validOrder).limit(limit).offset(offset);
 
       return {
         items: sessions.map((session: any) => {
           try {
             return {
               ...session,
-              options: session.options ? (typeof session.options === 'string' ? JSON.parse(session.options) : session.options) : null,
+              options: session.options
+                ? typeof session.options === 'string'
+                  ? JSON.parse(session.options)
+                  : session.options
+                : null,
             };
           } catch (error) {
             logger.error(`解析会话选项失败 (ID: ${session.id}):`, error);

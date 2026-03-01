@@ -65,7 +65,7 @@ describe('管理员添加点数功能测试', () => {
       // 获取用户初始点数
       const initialUser = await UserModel.findById(testUserId);
       const initialCredits = initialUser?.credits || 0;
-      
+
       // 发送添加点数请求
       const response = await app.inject({
         method: 'POST',
@@ -87,30 +87,27 @@ describe('管理员添加点数功能测试', () => {
       expect(result.data).toHaveProperty('id', testUserId);
       expect(result.data).toHaveProperty('username', 'testuser');
       expect(result.data).toHaveProperty('credits', initialCredits + 50);
-      
+
       // 验证数据库中的点数已更新
       const updatedUser = await UserModel.findById(testUserId);
       expect(updatedUser?.credits).toBe(initialCredits + 50);
-      
+
       // 验证操作日志已创建
       const logs = await OperationLogModel.findByAdminId(adminId);
-      const log = logs.items.find((l: any) => 
-        l.action === '添加点数' && 
-        l.target_user_id === testUserId
-      );
-      
+      const log = logs.items.find((l: any) => l.action === '添加点数' && l.target_user_id === testUserId);
+
       expect(log).toBeTruthy();
       if (log) {
         expect(log.details).toHaveProperty('amount', 50);
         expect(log.details).toHaveProperty('reason', '测试添加点数');
       }
     });
-    
+
     test('普通用户无法为其他用户添加点数', async () => {
       // 获取用户初始点数
       const initialUser = await UserModel.findById(testUserId);
       const initialCredits = initialUser?.credits || 0;
-      
+
       // 发送添加点数请求（使用普通用户令牌）
       const response = await app.inject({
         method: 'POST',
@@ -129,17 +126,17 @@ describe('管理员添加点数功能测试', () => {
       const result = JSON.parse(response.payload);
       expect(result.success).toBe(false);
       expect(result.error).toBeTruthy();
-      
+
       // 验证数据库中的点数未更新
       const updatedUser = await UserModel.findById(testUserId);
       expect(updatedUser?.credits).toBe(initialCredits);
     });
-    
+
     test('添加无效的点数金额应该失败', async () => {
       // 获取用户初始点数
       const initialUser = await UserModel.findById(testUserId);
       const initialCredits = initialUser?.credits || 0;
-      
+
       // 发送添加点数请求（使用负数点数）
       const response = await app.inject({
         method: 'POST',
@@ -158,15 +155,15 @@ describe('管理员添加点数功能测试', () => {
       const result = JSON.parse(response.payload);
       expect(result.success).toBe(false);
       expect(result.error).toContain('无效的点数金额');
-      
+
       // 验证数据库中的点数未更新
       const updatedUser = await UserModel.findById(testUserId);
       expect(updatedUser?.credits).toBe(initialCredits);
     });
-    
+
     test('为不存在的用户添加点数应该失败', async () => {
       const nonExistentUserId = 99999;
-      
+
       // 发送添加点数请求（使用不存在的用户ID）
       const response = await app.inject({
         method: 'POST',
@@ -186,12 +183,12 @@ describe('管理员添加点数功能测试', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('用户不存在');
     });
-    
+
     test('未授权访问应该失败', async () => {
       // 获取用户初始点数
       const initialUser = await UserModel.findById(testUserId);
       const initialCredits = initialUser?.credits || 0;
-      
+
       // 发送添加点数请求（不带令牌）
       const response = await app.inject({
         method: 'POST',
@@ -206,7 +203,7 @@ describe('管理员添加点数功能测试', () => {
       expect(response.statusCode).toBe(401);
       const result = JSON.parse(response.payload);
       expect(result.success).toBe(false);
-      
+
       // 验证数据库中的点数未更新
       const updatedUser = await UserModel.findById(testUserId);
       expect(updatedUser?.credits).toBe(initialCredits);

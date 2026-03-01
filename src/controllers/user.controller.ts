@@ -3,15 +3,14 @@ import { z } from 'zod';
 import { UserModel, CreateUserInput, UpdateUserInput } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { sendSuccess, sendError, sendCreated, sendNoContent, sendPaginated } from '../utils/response.js';
-import { UserRole, PaginationQuery, IdParams, AuthenticatedRequest, AuthenticatedRequestWithParams } from '@shared/types/index.js';
 import {
-  createUserRequestSchema,
-  updateUserRequestSchema,
-  paginationQuerySchema,
-
-} from '../schemas/index.js';
-
-
+  UserRole,
+  PaginationQuery,
+  IdParams,
+  AuthenticatedRequest,
+  AuthenticatedRequestWithParams,
+} from '@shared/types/index.js';
+import { createUserRequestSchema, updateUserRequestSchema, paginationQuerySchema } from '../schemas/index.js';
 
 // 创建用户
 export async function createUser(request: AuthenticatedRequest, reply: FastifyReply) {
@@ -41,7 +40,7 @@ export async function createUser(request: AuthenticatedRequest, reply: FastifyRe
         credits: userData.credits || 0,
       },
       target_user_id: user.id,
-    }).catch(logError => {
+    }).catch((logError) => {
       request.log.error('记录操作日志失败:', logError);
     });
 
@@ -57,7 +56,7 @@ export async function createUser(request: AuthenticatedRequest, reply: FastifyRe
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return sendError(reply, '无效的请求数据: ' + error.errors.map(e => e.message).join(', '), 400);
+      return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
     request.log.error(error);
@@ -72,7 +71,7 @@ export async function getAllUsers(request: AuthenticatedRequest, reply: FastifyR
     const users = await UserModel.findAll(query);
 
     // 移除敏感信息
-    const sanitizedUsers = users.items.map(user => ({
+    const sanitizedUsers = users.items.map((user) => ({
       id: user.id,
       username: user.username,
       email: user.email,
@@ -88,7 +87,7 @@ export async function getAllUsers(request: AuthenticatedRequest, reply: FastifyR
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return sendError(reply, '无效的查询参数: ' + error.errors.map(e => e.message).join(', '), 400);
+      return sendError(reply, '无效的查询参数: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
     request.log.error(error);
@@ -155,7 +154,7 @@ export async function updateUser(request: AuthenticatedRequestWithParams<IdParam
       action: '更新用户',
       details: userData,
       target_user_id: userId,
-    }).catch(logError => {
+    }).catch((logError) => {
       request.log.error('记录操作日志失败:', logError);
     });
 
@@ -170,7 +169,7 @@ export async function updateUser(request: AuthenticatedRequestWithParams<IdParam
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return sendError(reply, '无效的请求数据: ' + error.errors.map(e => e.message).join(', '), 400);
+      return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
     request.log.error(error);
@@ -201,7 +200,7 @@ export async function resetApiKey(request: AuthenticatedRequestWithParams<IdPara
       admin_id: adminId,
       action: '重置用户 API Key',
       target_user_id: userId,
-    }).catch(logError => {
+    }).catch((logError) => {
       request.log.error('记录操作日志失败:', logError);
     });
 
@@ -253,7 +252,7 @@ export async function deleteUser(request: AuthenticatedRequestWithParams<IdParam
       action: '删除用户',
       details: { username: existingUser.username },
       target_user_id: userId,
-    }).catch(logError => {
+    }).catch((logError) => {
       request.log.error('记录操作日志失败:', logError);
     });
 

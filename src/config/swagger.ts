@@ -36,5 +36,4 @@ export const swaggerOptions: FastifySwaggerOptions = {
   },
 };
 
-
 export default { swaggerOptions };

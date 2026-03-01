@@ -84,21 +84,24 @@ class MemoryStoreService extends EventEmitter {
    */
   private startCleanupTimer(): void {
     // 每小时清理一次过期数据
-    this.cleanupTimer = setInterval(() => {
-      try {
-        console.log('开始清理过期数据...');
+    this.cleanupTimer = setInterval(
+      () => {
+        try {
+          console.log('开始清理过期数据...');
 
-        // 清理过期会话，保留 24 小时内的数据
-        this.cleanupOldSessions(24 * 60 * 60 * 1000);
+          // 清理过期会话，保留 24 小时内的数据
+          this.cleanupOldSessions(24 * 60 * 60 * 1000);
 
-        // 清理长时间离线的机器数据，保留 7 天内的数据
-        this.cleanupOfflineMachines(7 * 24 * 60 * 60 * 1000);
+          // 清理长时间离线的机器数据，保留 7 天内的数据
+          this.cleanupOfflineMachines(7 * 24 * 60 * 60 * 1000);
 
-        console.log('数据清理完成');
-      } catch (error) {
-        console.error('清理过期数据时出错:', error);
-      }
-    }, 60 * 60 * 1000); // 1 小时
+          console.log('数据清理完成');
+        } catch (error) {
+          console.error('清理过期数据时出错:', error);
+        }
+      },
+      60 * 60 * 1000
+    ); // 1 小时
   }
 
   /**
@@ -106,18 +109,21 @@ class MemoryStoreService extends EventEmitter {
    */
   private startConsistencyCheckTimer(): void {
     // 每 5 分钟检查一次数据一致性
-    this.consistencyCheckTimer = setInterval(async () => {
-      try {
-        console.log('开始数据一致性检查...');
+    this.consistencyCheckTimer = setInterval(
+      async () => {
+        try {
+          console.log('开始数据一致性检查...');
 
-        // 检查机器和会话数据的一致性
-        await this.checkDataConsistency();
+          // 检查机器和会话数据的一致性
+          await this.checkDataConsistency();
 
-        console.log('数据一致性检查完成');
-      } catch (error) {
-        console.error('数据一致性检查时出错:', error);
-      }
-    }, 5 * 60 * 1000); // 5 分钟
+          console.log('数据一致性检查完成');
+        } catch (error) {
+          console.error('数据一致性检查时出错:', error);
+        }
+      },
+      5 * 60 * 1000
+    ); // 5 分钟
   }
 
   /**
@@ -127,7 +133,9 @@ class MemoryStoreService extends EventEmitter {
     const existingStatus = this.machines.get(status.machine_id);
 
     // 调试日志
-    console.log(`[MemoryStore] updateMachineStatus: machine_id=${status.machine_id}, grpc_port=${status.grpc_port}, has_grpc_port=${'grpc_port' in status}`);
+    console.log(
+      `[MemoryStore] updateMachineStatus: machine_id=${status.machine_id}, grpc_port=${status.grpc_port}, has_grpc_port=${'grpc_port' in status}`
+    );
 
     // 创建新的状态对象
     const newStatus: MachineRealTimeStatus = {
@@ -191,7 +199,7 @@ class MemoryStoreService extends EventEmitter {
    * 获取在线机器状态
    */
   getOnlineMachines(): MachineRealTimeStatus[] {
-    return Array.from(this.machines.values()).filter(m => m.online);
+    return Array.from(this.machines.values()).filter((m) => m.online);
   }
 
   /**
@@ -206,7 +214,7 @@ class MemoryStoreService extends EventEmitter {
    */
   getMachineStats(): { total: number; online: number; offline: number } {
     const machines = Array.from(this.machines.values());
-    const online = machines.filter(m => m.online).length;
+    const online = machines.filter((m) => m.online).length;
 
     return {
       total: machines.length,
@@ -226,10 +234,11 @@ class MemoryStoreService extends EventEmitter {
     const machine = this.machines.get(session.machine_id);
     if (machine) {
       // 重新计算该机器上的活跃会话数
-      const activeSessions = Array.from(this.sessions.values())
-        .filter(s => s.machine_id === session.machine_id &&
-                (s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED))
-        .length;
+      const activeSessions = Array.from(this.sessions.values()).filter(
+        (s) =>
+          s.machine_id === session.machine_id &&
+          (s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED)
+      ).length;
 
       machine.active_sessions = activeSessions;
       this.machines.set(session.machine_id, machine);
@@ -247,8 +256,9 @@ class MemoryStoreService extends EventEmitter {
    * 获取活跃会话
    */
   getActiveSessions(): SessionRealTimeStatus[] {
-    return Array.from(this.sessions.values())
-      .filter(s => s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED);
+    return Array.from(this.sessions.values()).filter(
+      (s) => s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED
+    );
   }
 
   /**
@@ -263,19 +273,19 @@ class MemoryStoreService extends EventEmitter {
    */
   getSessionStats(): { total: number; active: number; completed: number; error: number; expired: number } {
     const sessions = Array.from(this.sessions.values());
-    const active = sessions.filter(s =>
-      s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED
+    const active = sessions.filter(
+      (s) => s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED
     ).length;
-    const completed = sessions.filter(s => s.status === SessionStatus.COMPLETED).length;
-    const error = sessions.filter(s => s.status === SessionStatus.ERROR).length;
-    const expired = sessions.filter(s => s.status === SessionStatus.EXPIRED).length;
+    const completed = sessions.filter((s) => s.status === SessionStatus.COMPLETED).length;
+    const error = sessions.filter((s) => s.status === SessionStatus.ERROR).length;
+    const expired = sessions.filter((s) => s.status === SessionStatus.EXPIRED).length;
 
     return {
       total: sessions.length,
       active,
       completed,
       error,
-      expired
+      expired,
     };
   }
 
@@ -362,12 +372,14 @@ class MemoryStoreService extends EventEmitter {
 
       // 检查会话状态
       const activeSessions = await SessionModel.findActiveSessions();
-      const activeSessionIds = new Set(activeSessions.map(s => s.id));
+      const activeSessionIds = new Set(activeSessions.map((s) => s.id));
 
       // 检查内存中的活跃会话是否在数据库中也是活跃的
       for (const [sessionId, session] of this.sessions.entries()) {
-        if ((session.status === SessionStatus.CREATED || session.status === SessionStatus.CONNECTED) &&
-            !activeSessionIds.has(sessionId)) {
+        if (
+          (session.status === SessionStatus.CREATED || session.status === SessionStatus.CONNECTED) &&
+          !activeSessionIds.has(sessionId)
+        ) {
           console.log(`发现不一致: 会话 ${sessionId} 在内存中标记为活跃，但在数据库中不是活跃的`);
 
           // 更新内存中的状态
@@ -402,7 +414,6 @@ class MemoryStoreService extends EventEmitter {
 
       // 更新每台机器的活跃会话数
       this.updateMachineSessionCounts();
-
     } catch (error) {
       console.error('数据一致性检查失败:', error);
     }
@@ -413,10 +424,10 @@ class MemoryStoreService extends EventEmitter {
    */
   private updateMachineSessionCounts(): void {
     for (const [machineId, machine] of this.machines.entries()) {
-      const machineSessions = Array.from(this.sessions.values())
-        .filter(s => s.machine_id === machineId &&
-                (s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED))
-        .length;
+      const machineSessions = Array.from(this.sessions.values()).filter(
+        (s) =>
+          s.machine_id === machineId && (s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED)
+      ).length;
 
       machine.active_sessions = machineSessions;
       this.machines.set(machineId, machine);
@@ -470,7 +481,7 @@ class MemoryStoreService extends EventEmitter {
             cpu_usage: machine.cpuUsage || 0,
             memory_usage: machine.memoryUsage || 0,
             disk_space: machine.diskUsage || 0,
-            active_sessions: isReallyOnline ? (machine.instanceCount || 0) : 0, // 如果机器离线，活跃会话数为 0
+            active_sessions: isReallyOnline ? machine.instanceCount || 0 : 0, // 如果机器离线，活跃会话数为 0
             max_sessions: machine.maxInstances,
             last_heartbeat: new Date(machine.lastSeen || Date.now()),
           });
@@ -502,7 +513,7 @@ class MemoryStoreService extends EventEmitter {
       console.log(`从数据库加载了 ${activeSessions.length} 个活跃会话`);
 
       // 过滤出在真正在线机器上的会话
-      const validSessions = activeSessions.filter(session => {
+      const validSessions = activeSessions.filter((session) => {
         // 确保 machine_id 不为 null
         if (!session.machine_id) return false;
 
@@ -530,16 +541,18 @@ class MemoryStoreService extends EventEmitter {
 
       // 更新每台机器的活跃会话数
       for (const [machineId, machine] of this.machines.entries()) {
-        const machineSessions = Array.from(this.sessions.values())
-          .filter(s => s.machine_id === machineId &&
-                  (s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED))
-          .length;
+        const machineSessions = Array.from(this.sessions.values()).filter(
+          (s) =>
+            s.machine_id === machineId && (s.status === SessionStatus.CREATED || s.status === SessionStatus.CONNECTED)
+        ).length;
 
         machine.active_sessions = machineSessions;
         this.machines.set(machineId, machine);
       }
 
-      console.log(`内存中现有 ${this.machines.size} 台机器（${this.getOnlineMachines().length} 台在线）和 ${this.sessions.size} 个活跃会话`);
+      console.log(
+        `内存中现有 ${this.machines.size} 台机器（${this.getOnlineMachines().length} 台在线）和 ${this.sessions.size} 个活跃会话`
+      );
     } catch (error) {
       console.error('从数据库加载初始数据失败:', error);
     }

@@ -44,8 +44,12 @@ export async function createIsolatedTestDatabase(): Promise<IsolatedTestDatabase
     await adminDb.destroy();
   }
 
-  const projectRoot = path.resolve(__dirname, '../../../..');
+  const projectRoot = path.resolve(__dirname, '../../..');
   const migrationsDir = path.join(projectRoot, 'migrations');
+
+  console.log(`[测试数据库] __dirname: ${__dirname}`);
+  console.log(`[测试数据库] 项目根目录: ${projectRoot}`);
+  console.log(`[测试数据库] 迁移目录: ${migrationsDir}`);
 
   const db = knex({
     client: 'mysql2',

@@ -172,10 +172,6 @@ describe('会话管理 API 集成测试', () => {
       const user = await createTestUser({ credits: 100 });
       const session = await createTestSession(user.id);
 
-      // 模拟60秒的会话
-      const sessionData = await SessionModel.findById(session.id);
-      // startTime not needed for this test
-
       // 手动标记会话已断开，指定持续时间
       await SessionModel.markDisconnected(session.id, 60);
 

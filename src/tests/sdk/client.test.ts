@@ -200,7 +200,7 @@ describe('SDK 客户端集成测试', () => {
       if (screenshot && screenshot.screenshot_url) {
         expect(screenshot.screenshot_url).toBeDefined();
       }
-    } catch (error) {
+    } catch (_error) {
       // 如果API不支持截图功能，这个测试可能会失败，但不应该影响整体测试
       console.warn('获取截图失败，可能是API不支持此功能');
     } finally {

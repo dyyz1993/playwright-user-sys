@@ -14,7 +14,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../../helpers/app.js';
-import { UserModel } from '../../../models/user.model.js';
 import { SessionModel } from '../../../models/session.model.js';
 import { generateToken } from '../../../utils/auth.js';
 import { UserRole, SessionStatus } from '@shared/types/index.js';

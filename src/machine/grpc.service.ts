@@ -645,8 +645,14 @@ export class GrpcClient extends EventEmitter {
           await browserService.closeAllBrowsers();
           logger.info(`已关闭所有浏览器实例`);
 
-          // 引入机器服务
-          const machineServer = await import('./index.js').then(m => m.default);
+          // 引入机器服务并获取实例
+          const { getMachineServer } = await import('./index.js');
+          const machineServer = getMachineServer();
+
+          if (!machineServer) {
+            logger.error(`无法获取机器服务实例`);
+            return;
+          }
 
           // 重启机器服务
           logger.info(`开始重启机器服务...`);
@@ -667,8 +673,14 @@ export class GrpcClient extends EventEmitter {
           await browserService.closeAllBrowsers();
           logger.info(`已关闭所有浏览器实例`);
 
-          // 引入机器服务
-          const machineServer = await import('./index.js').then(m => m.default);
+          // 引入机器服务并获取实例
+          const { getMachineServer } = await import('./index.js');
+          const machineServer = getMachineServer();
+
+          if (!machineServer) {
+            logger.error(`无法获取机器服务实例`);
+            return;
+          }
 
           // 停止机器服务
           logger.info(`开始停止机器服务...`);
@@ -890,6 +902,11 @@ const serviceImplementation = {
       // 新增：shared_user_data 参数
       if (options.shared_user_data !== undefined) {
         convertedOptions.sharedUserData = options.shared_user_data;
+      }
+
+      // 新增：timezone 参数
+      if (options.timezone) {
+        convertedOptions.timezone = options.timezone;
       }
 
       // 保留向后兼容：如果客户端传递了 user_data_dir（已废弃）

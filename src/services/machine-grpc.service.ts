@@ -683,6 +683,11 @@ class MachineConnectionManager extends EventEmitter {
           protoOptions.shared_user_data = options.sharedUserData;
         }
 
+        // 新增：timezone 参数
+        if (options.timezone) {
+          protoOptions.timezone = options.timezone;
+        }
+
         // 保留向后兼容：如果客户端直接传递了 userDataDir（已废弃）
         if (options.userDataDir) {
           protoOptions.user_data_dir = options.userDataDir;

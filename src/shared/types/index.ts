@@ -129,6 +129,8 @@ export interface SessionCreateOptions {
   // 当 sharedUserData 为 true 时，所有会话共享同一个用户数据目录
   // 当 sharedUserData 为 false 或未设置时，每个会话有独立的用户数据目录
   sharedUserData?: boolean;
+  // 浏览器时区设置
+  timezone?: string;
   // @deprecated 出于安全考虑，不再允许客户端指定任意路径
   userDataDir?: string;
 }

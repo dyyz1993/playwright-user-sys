@@ -95,6 +95,7 @@ message BrowserOptions {
   StorageState storage_state = 7;  // 直接传递存储状态对象
   bool shared_user_data = 8;       // 是否共享用户数据目录
   string user_data_dir = 9;        // @deprecated 用户数据目录路径（已废弃）
+  string timezone = 10;            // 浏览器时区设置
 }
 
 // 视口大小

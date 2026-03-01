@@ -198,8 +198,8 @@ export class UserModel {
   ): Promise<PaginatedResponse<User>> {
     try {
       console.log('开始查询用户数据');
-      const page = query.page || 1;
-      const limit = query.limit || 10;
+      const page = parseInt(query.page || '1', 10);
+      const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
       const sort = query.sort || 'created_at';
       const order = query.order || 'desc';
@@ -247,8 +247,8 @@ export class UserModel {
       return {
         items: [],
         total: 0,
-        page: query.page || 1,
-        limit: query.limit || 10,
+        page: parseInt(query.page || '1', 10),
+        limit: parseInt(query.limit || '10', 10),
         totalPages: 0,
       };
     }
@@ -342,7 +342,7 @@ export class UserModel {
 
   // 分页查询用户
   static async paginate(page: number = 1, limit: number = 10): Promise<PaginatedResponse<User>> {
-    return this.findAll({ page, limit });
+    return this.findAll({ page: String(page), limit: String(limit) });
   }
 }
 

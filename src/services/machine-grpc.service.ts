@@ -245,6 +245,7 @@ class MachineConnectionManager extends EventEmitter {
           name: machine.hostname,
           ip: machine.ip,
           grpc_port: machine.grpcPort || 50052, // 默认值
+          proxy_port: machine.proxyPort || 8080, // 默认值
           cpu_usage: heartbeat.cpu_usage,
           memory_usage: heartbeat.memory_usage,
           disk_space: heartbeat.disk_space || 0,
@@ -258,9 +259,9 @@ class MachineConnectionManager extends EventEmitter {
 
       // 同时更新数据库中的机器状态（作为备份）
       await MachineModel.update(machineId, {
-        cpu_usage: heartbeat.cpu_usage,
-        memory_usage: heartbeat.memory_usage,
-        instance_count: heartbeat.active_sessions,
+        cpuUsage: heartbeat.cpu_usage,
+        memoryUsage: heartbeat.memory_usage,
+        instanceCount: heartbeat.active_sessions,
         status: 'online',
       });
 
@@ -855,7 +856,7 @@ const serviceImplementation = {
           ip: request.ip_address,
           grpcPort: request.grpc_port, // 注意：这里的 grpcPort 将在 MachineModel.update 中被转换为 grpc_port
           proxyPort: request.proxy_port, // 注意：这里的 proxyPort 将在 MachineModel.update 中被转换为 proxy_port
-          max_instances: request.max_sessions,
+          maxInstances: request.max_sessions,
           status: 'online',
         });
 
@@ -865,7 +866,7 @@ const serviceImplementation = {
             ip: request.ip_address,
             grpcPort: request.grpc_port,
             proxyPort: request.proxy_port,
-            max_instances: request.max_sessions,
+            maxInstances: request.max_sessions,
           })}`
         );
 
@@ -878,7 +879,7 @@ const serviceImplementation = {
           ip: request.ip_address,
           grpcPort: request.grpc_port, // 注意：这里的 grpcPort 将在 MachineModel.register 中被转换为 grpc_port
           proxyPort: request.proxy_port, // 注意：这里的 proxyPort 将在 MachineModel.register 中被转换为 proxy_port
-          max_instances: request.max_sessions,
+          maxInstances: request.max_sessions,
         });
 
         logger.info(
@@ -888,7 +889,7 @@ const serviceImplementation = {
             ip: request.ip_address,
             grpcPort: request.grpc_port,
             proxyPort: request.proxy_port,
-            max_instances: request.max_sessions,
+            maxInstances: request.max_sessions,
           })}`
         );
 
@@ -902,6 +903,7 @@ const serviceImplementation = {
         name: request.name,
         ip: request.ip_address,
         grpc_port: request.grpc_port,
+        proxy_port: request.proxy_port || 8080, // 默认值
         cpu_usage: 0,
         memory_usage: 0,
         disk_space: 0,

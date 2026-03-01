@@ -1,8 +1,8 @@
-import { FastifySwaggerOptions } from '@fastify/swagger';
+import type { FastifyDynamicSwaggerOptions } from '@fastify/swagger';
 import { env } from './env.js';
 
 // Swagger 配置
-export const swaggerOptions: FastifySwaggerOptions = {
+export const swaggerOptions: FastifyDynamicSwaggerOptions = {
   swagger: {
     info: {
       title: 'Playwright 用户管理系统 API',

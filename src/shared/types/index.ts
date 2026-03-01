@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
+/* eslint-disable no-unused-vars */
 import { FastifyRequest, FastifyReply, RouteGenericInterface } from 'fastify';
 
 // 扩展 FastifyRequest 类型
@@ -7,6 +7,7 @@ declare module 'fastify' {
     verifyJWT: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     verifyAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     verifyApiKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    verifyJWTOrApiKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
   interface FastifyRequest {
     user?: {
@@ -74,12 +75,15 @@ export interface ApiResponse<T = any> {
   message?: string;
 }
 
-// 分页请求参数
+// 分页请求参数（从 URL 查询字符串解析，都是字符串类型）
 export interface PaginationQuery {
-  page?: number;
-  limit?: number;
+  page?: string;
+  limit?: string;
   sort?: string;
-  order?: 'asc' | 'desc';
+  order?: string;
+  search?: string;
+  role?: UserRole;
+  status?: UserStatus;
 }
 
 // 分页响应
@@ -157,6 +161,7 @@ export interface MachineStatus {
   name: string;
   ip: string;
   grpc_port: number;
+  proxy_port: number;
   cpu_usage: number;
   memory_usage: number;
   disk_space: number;

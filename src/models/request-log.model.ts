@@ -49,8 +49,8 @@ export class RequestLogModel {
 
   // 获取用户的所有请求日志（分页）
   static async findByUserId(userId: number, query: PaginationQuery = {}): Promise<PaginatedResponse<RequestLog>> {
-    const page = query.page || 1;
-    const limit = query.limit || 10;
+    const page = parseInt(query.page || '1', 10);
+    const limit = parseInt(query.limit || '10', 10);
     const offset = (page - 1) * limit;
     const sort = query.sort || 'created_at';
     const order = query.order || 'desc';
@@ -71,8 +71,8 @@ export class RequestLogModel {
 
   // 获取所有错误请求日志（状态码 >= 400）
   static async findErrors(query: PaginationQuery = {}): Promise<PaginatedResponse<RequestLog>> {
-    const page = query.page || 1;
-    const limit = query.limit || 10;
+    const page = parseInt(query.page || '1', 10);
+    const limit = parseInt(query.limit || '10', 10);
     const offset = (page - 1) * limit;
     const sort = query.sort || 'created_at';
     const order = query.order || 'desc';
@@ -93,8 +93,8 @@ export class RequestLogModel {
 
   // 获取所有请求日志（分页）
   static async findAll(query: PaginationQuery = {}): Promise<PaginatedResponse<RequestLog>> {
-    const page = query.page || 1;
-    const limit = query.limit || 10;
+    const page = parseInt(query.page || '1', 10);
+    const limit = parseInt(query.limit || '10', 10);
     const offset = (page - 1) * limit;
     const sort = query.sort || 'created_at';
     const order = query.order || 'desc';

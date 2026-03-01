@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { FastifyInstance } from 'fastify';
-import { build } from '../helpers/app';
+import { build } from '../helpers/app.js';
 import { initDatabase } from '../../config/database.js';
-import { Client } from '../../sdk/client';
-import { UserModel } from '../../models/user.model';
-import { SessionModel } from '../../models/session.model';
+import { Client } from '../../sdk/client.js';
+import { UserModel } from '../../models/user.model.js';
+import { SessionModel } from '../../models/session.model.js';
 import { v4 as uuidv4 } from 'uuid';
 import { SessionStatus, UserRole, UserStatus } from '@shared/types/index.js';
 
@@ -62,7 +62,8 @@ describe('SDK 客户端集成测试', () => {
     // 清理创建的会话
     for (const sessionId of createdSessionIds) {
       try {
-        await SessionModel.delete(sessionId);
+        // 使用 markDisconnected 代替 delete，需要提供 duration 参数
+        await SessionModel.markDisconnected(sessionId, 0);
       } catch (error) {
         console.error(`清理会话失败 (${sessionId}):`, error);
       }

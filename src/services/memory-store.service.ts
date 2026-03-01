@@ -14,6 +14,7 @@ interface MachineRealTimeStatus {
   name: string;
   ip: string;
   grpc_port: number;
+  proxy_port: number;
   online: boolean;
   cpu_usage: number;
   memory_usage: number;
@@ -143,6 +144,7 @@ class MemoryStoreService extends EventEmitter {
       name: status.name,
       ip: status.ip,
       grpc_port: status.grpc_port,
+      proxy_port: status.proxy_port || 8080, // 默认值
       online: true, // 收到心跳即为在线
       cpu_usage: status.cpu_usage,
       memory_usage: status.memory_usage,
@@ -477,6 +479,7 @@ class MemoryStoreService extends EventEmitter {
             name: machine.hostname,
             ip: machine.ip,
             grpc_port: machine.grpcPort || 50052, // 默认值
+            proxy_port: machine.proxyPort || 8080, // 默认值
             online: isReallyOnline, // 只有真正有连接的机器才标记为在线
             cpu_usage: machine.cpuUsage || 0,
             memory_usage: machine.memoryUsage || 0,
@@ -497,6 +500,7 @@ class MemoryStoreService extends EventEmitter {
             name: machine.hostname,
             ip: machine.ip,
             grpc_port: machine.grpcPort || 50052, // 默认值
+            proxy_port: machine.proxyPort || 8080, // 默认值
             online: false, // 强制标记为离线
             cpu_usage: machine.cpuUsage || 0,
             memory_usage: machine.memoryUsage || 0,

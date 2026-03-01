@@ -68,7 +68,7 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
         created_at: sessionResult.created_at,
       });
     } catch (serviceError: any) {
-      request.log.error(`创建会话服务错误:`, serviceError);
+      request.log.error({ err: serviceError }, '创建会话服务错误');
 
       // 检查是否是点数不足错误 - 返回 402 (Payment Required)
       if (serviceError.message && serviceError.message.includes('点数不足')) {
@@ -155,7 +155,7 @@ export async function getUserSessions(request: FastifyRequest, reply: FastifyRep
       return sendError(reply, '无效的查询参数: ' + error.errors.map((e: any) => e.message).join(', '), 400);
     }
 
-    request.log.error('获取用户会话失败:', error);
+    request.log.error({ err: error }, '获取用户会话失败');
     return sendError(reply, '获取会话列表失败: ' + (error.message || error), 500);
   }
 }
@@ -241,7 +241,7 @@ export async function releaseSession(request: FastifyRequest, reply: FastifyRepl
 
       return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration }, '会话已释放');
     } catch (machineError: any) {
-      request.log.error(`关闭浏览器实例失败 (sessionId: ${sessionId}):`, machineError);
+      request.log.error({ err: machineError, sessionId }, '关闭浏览器实例失败');
 
       // 计算会话持续时间
       const now = new Date();
@@ -394,7 +394,7 @@ export async function closeSession(request: FastifyRequest, reply: FastifyReply)
 
       return sendSuccess(reply, { id: sessionId, status: SessionStatus.DISCONNECTED, duration }, '会话已关闭');
     } catch (machineError: any) {
-      request.log.error(`关闭浏览器实例失败 (sessionId: ${sessionId}):`, machineError);
+      request.log.error({ err: machineError, sessionId }, '关闭浏览器实例失败');
 
       // 计算会话持续时间
       const now = new Date();

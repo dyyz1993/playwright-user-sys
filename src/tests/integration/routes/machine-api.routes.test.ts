@@ -1115,7 +1115,7 @@ describe('机器管理 API 集成测试', () => {
 
     it('C-STATUS-03: 达到容量时状态转为busy', async () => {
       const machine = await createTestMachine({
-        max_instances: 5,
+        maxInstances: 5,
         instanceCount: 5,
       });
 
@@ -1530,7 +1530,7 @@ describe('机器管理 API 集成测试', () => {
 
     it('E-EDGE-03: 容量临界点测试', async () => {
       const machine = await createTestMachine({
-        max_instances: 10,
+        maxInstances: 10,
         instanceCount: 9, // 90%
       });
 

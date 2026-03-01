@@ -44,7 +44,7 @@ export const requestLogger = fp(async (fastify) => {
         response_time: responseTime,
       });
     } catch (error: any) {
-      request.log.error('记录请求日志失败:', error.message || error);
+      request.log.error({ err: error.message || error }, '记录请求日志失败');
     }
   });
 });

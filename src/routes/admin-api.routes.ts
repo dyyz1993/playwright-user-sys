@@ -47,7 +47,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       // 如果返回已经发送，不再发送新的响应
       if (reply.sent) return;
 
-      request.log.error('认证失败:', error);
+      request.log.error({ err: error }, '认证失败');
       return reply.status(401).send({ success: false, error: '认证失败' });
     }
   };
@@ -112,7 +112,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           },
           target_user_id: user.id,
         }).catch((logError) => {
-          request.log.error('记录操作日志失败:', logError);
+          request.log.error({ err: logError }, '记录操作日志失败');
         });
 
         return reply.status(201).send({
@@ -129,7 +129,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           },
         });
       } catch (error: any) {
-        request.log.error('创建用户失败:', error);
+        request.log.error({ err: error }, '创建用户失败');
         return reply.status(500).send({ success: false, error: '创建用户失败: ' + error.message });
       }
     }
@@ -155,19 +155,14 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
       try {
         const query = userListQuerySchema.parse(request.query);
 
-        const page = parseInt(query.page || '1');
-        const limit = parseInt(query.limit || '20');
-        const sort = query.sort || 'created_at';
-        const order = query.order || 'desc';
-
         const users = await UserModel.findAll({
-          page,
-          limit,
-          sort,
-          order,
+          page: query.page,
+          limit: query.limit,
+          sort: query.sort || 'created_at',
+          order: query.order || 'desc',
           search: query.search,
-          role: query.role as any,
-          status: query.status as any,
+          role: query.role as UserRole | undefined,
+          status: query.status as UserStatus | undefined,
         });
 
         // 移除敏感信息
@@ -194,7 +189,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             .status(400)
             .send({ success: false, error: '无效的查询参数: ' + error.errors.map((e) => e.message).join(', ') });
         }
-        request.log.error('获取用户列表失败:', error);
+        request.log.error({ err: error }, '获取用户列表失败');
         return reply.status(500).send({ success: false, error: '获取用户列表失败: ' + error.message });
       }
     }
@@ -246,7 +241,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           },
         });
       } catch (error: any) {
-        request.log.error('获取用户信息失败:', error);
+        request.log.error({ err: error }, '获取用户信息失败');
         return reply.status(500).send({ success: false, error: '获取用户信息失败: ' + error.message });
       }
     }
@@ -313,7 +308,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           },
           target_user_id: userId,
         }).catch((logError) => {
-          request.log.error('记录操作日志失败:', logError);
+          request.log.error({ err: logError }, '记录操作日志失败');
         });
 
         return reply.send({
@@ -330,7 +325,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           },
         });
       } catch (error: any) {
-        request.log.error('更新用户失败:', error);
+        request.log.error({ err: error }, '更新用户失败');
         return reply.status(500).send({ success: false, error: '更新用户失败: ' + error.message });
       }
     }
@@ -384,7 +379,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           details: { username: existingUser.username },
           target_user_id: userId,
         }).catch((logError) => {
-          request.log.error('记录操作日志失败:', logError);
+          request.log.error({ err: logError }, '记录操作日志失败');
         });
 
         return reply.send({
@@ -392,7 +387,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           message: '用户删除成功',
         });
       } catch (error: any) {
-        request.log.error('删除用户失败:', error);
+        request.log.error({ err: error }, '删除用户失败');
         return reply.status(500).send({ success: false, error: '删除用户失败: ' + error.message });
       }
     }
@@ -456,7 +451,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           },
           target_user_id: userId,
         }).catch((logError) => {
-          request.log.error('记录操作日志失败:', logError);
+          request.log.error({ err: logError }, '记录操作日志失败');
           // 错误已捕获，不影响主流程
         });
 
@@ -470,7 +465,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           },
         });
       } catch (error: any) {
-        request.log.error('添加点数失败:', error);
+        request.log.error({ err: error }, '添加点数失败');
         return reply.status(500).send({ success: false, error: '添加点数失败: ' + error.message });
       }
     }
@@ -525,7 +520,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           action: '重置用户 API Key',
           target_user_id: userId,
         }).catch((logError) => {
-          request.log.error('记录操作日志失败:', logError);
+          request.log.error({ err: logError }, '记录操作日志失败');
         });
 
         return reply.send({
@@ -533,7 +528,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: { api_key: apiKey },
         });
       } catch (error: any) {
-        request.log.error('重置 API Key 失败:', error);
+        request.log.error({ err: error }, '重置 API Key 失败');
         return reply.status(500).send({ success: false, error: '重置 API Key 失败: ' + error.message });
       }
     }
@@ -558,6 +553,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        const adminId = request.user?.id;
         const query = request.query as { search?: string; role?: string; status?: string };
 
         // 构建查询条件
@@ -619,7 +615,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             filters: query,
           },
         }).catch((logError) => {
-          request.log.error('记录操作日志失败:', logError);
+          request.log.error({ err: logError }, '记录操作日志失败');
         });
 
         // 返回 CSV 文件
@@ -628,7 +624,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           .header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`)
           .send(csvContent);
       } catch (error: any) {
-        request.log.error('导出用户列表失败:', error);
+        request.log.error({ err: error }, '导出用户列表失败');
         return reply.status(500).send({ success: false, error: '导出用户列表失败: ' + error.message });
       }
     }
@@ -741,7 +737,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             maxInstances: machineData.maxInstances,
           },
         }).catch((logError) => {
-          request.log.error('记录操作日志失败:', logError);
+          request.log.error({ err: logError }, '记录操作日志失败');
         });
 
         return reply.status(201).send({
@@ -758,7 +754,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           },
         });
       } catch (error: any) {
-        request.log.error('添加机器失败:', error);
+        request.log.error({ err: error }, '添加机器失败');
         return reply.status(500).send({ success: false, error: '添加机器失败: ' + error.message });
       }
     }
@@ -814,7 +810,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: stats,
         });
       } catch (error: any) {
-        request.log.error('获取用户会话消耗统计失败:', error);
+        request.log.error({ err: error }, '获取用户会话消耗统计失败');
         return reply.status(500).send({ success: false, error: '获取用户会话消耗统计失败: ' + error.message });
       }
     }
@@ -899,7 +895,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
               details: { username: existingUser.username },
               target_user_id: userId,
             }).catch((logError) => {
-              request.log.error('记录操作日志失败:', logError);
+              request.log.error({ err: logError }, '记录操作日志失败');
             });
           } catch (error: any) {
             failed.push({ userId, error: error.message || '删除失败' });
@@ -912,7 +908,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: { deleted, failed },
         });
       } catch (error: any) {
-        request.log.error('批量删除用户失败:', error);
+        request.log.error({ err: error }, '批量删除用户失败');
         return reply.status(500).send({ success: false, error: '批量删除用户失败: ' + error.message });
       }
     }
@@ -1007,7 +1003,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
               },
               target_user_id: userId,
             }).catch((logError) => {
-              request.log.error('记录操作日志失败:', logError);
+              request.log.error({ err: logError }, '记录操作日志失败');
             });
           } catch (error: any) {
             failed.push({ userId, error: error.message || '充值失败' });
@@ -1020,7 +1016,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: { recharged, failed },
         });
       } catch (error: any) {
-        request.log.error('批量充值失败:', error);
+        request.log.error({ err: error }, '批量充值失败');
         return reply.status(500).send({ success: false, error: '批量充值失败: ' + error.message });
       }
     }
@@ -1155,7 +1151,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: { released, failed },
         });
       } catch (error: any) {
-        request.log.error('批量结束会话失败:', error);
+        request.log.error({ err: error }, '批量结束会话失败');
         return reply.status(500).send({ success: false, error: '批量结束会话失败: ' + error.message });
       }
     }
@@ -1215,8 +1211,8 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           return reply.status(404).send({ success: false, error: '用户不存在' });
         }
 
-        const page = parseInt(query.page || '1');
-        const limit = parseInt(query.limit || '10');
+        const page = query.page || '1';
+        const limit = query.limit || '10';
 
         // 获取用户操作日志
         const logs = await OperationLogModel.findByTargetUserId(userId, { page, limit });
@@ -1226,7 +1222,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: logs,
         });
       } catch (error: any) {
-        request.log.error('获取用户操作日志失败:', error);
+        request.log.error({ err: error }, '获取用户操作日志失败');
         return reply.status(500).send({ success: false, error: '获取用户操作日志失败: ' + error.message });
       }
     }
@@ -1290,8 +1286,8 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           return reply.status(404).send({ success: false, error: '用户不存在' });
         }
 
-        const page = parseInt(query.page || '1');
-        const limit = parseInt(query.limit || '10');
+        const page = query.page || '1';
+        const limit = query.limit || '10';
 
         // 获取用户会话历史
         const { SessionModel } = await import('../models/session.model.js');
@@ -1302,7 +1298,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: sessions,
         });
       } catch (error: any) {
-        request.log.error('获取用户会话历史失败:', error);
+        request.log.error({ err: error }, '获取用户会话历史失败');
         return reply.status(500).send({ success: false, error: '获取用户会话历史失败: ' + error.message });
       }
     }
@@ -1388,7 +1384,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
               action: '批量重启机器',
               details: { hostname: machine.hostname },
             }).catch((logError) => {
-              request.log.error('记录操作日志失败:', logError);
+              request.log.error({ err: logError }, '记录操作日志失败');
             });
           } catch (error: any) {
             failed.push({ machineId, error: error.message || '重启失败' });
@@ -1401,7 +1397,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: { restarted, failed },
         });
       } catch (error: any) {
-        request.log.error('批量重启机器失败:', error);
+        request.log.error({ err: error }, '批量重启机器失败');
         return reply.status(500).send({ success: false, error: '批量重启机器失败: ' + error.message });
       }
     }
@@ -1494,7 +1490,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: result,
         });
       } catch (error: any) {
-        request.log.error('获取操作日志失败:', error);
+        request.log.error({ err: error }, '获取操作日志失败');
         return reply.status(500).send({ success: false, error: '获取操作日志失败' });
       }
     }
@@ -1554,7 +1550,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
 
         return reply.send({ success: true, data: stats });
       } catch (error: any) {
-        request.log.error('获取操作统计失败:', error);
+        request.log.error({ err: error }, '获取操作统计失败');
         return reply.status(500).send({ success: false, error: '获取操作统计失败' });
       }
     }
@@ -1675,7 +1671,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: result,
         });
       } catch (error: any) {
-        request.log.error('获取会话列表失败:', error);
+        request.log.error({ err: error }, '获取会话列表失败');
         return reply.status(500).send({ success: false, error: '获取会话列表失败: ' + error.message });
       }
     }
@@ -1773,7 +1769,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: stats,
         });
       } catch (error: any) {
-        request.log.error('获取会话统计失败:', error);
+        request.log.error({ err: error }, '获取会话统计失败');
         return reply.status(500).send({ success: false, error: '获取会话统计失败: ' + error.message });
       }
     }
@@ -1836,7 +1832,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: session,
         });
       } catch (error: any) {
-        request.log.error('获取会话详情失败:', error);
+        request.log.error({ err: error }, '获取会话详情失败');
         return reply.status(500).send({ success: false, error: '获取会话详情失败: ' + error.message });
       }
     }
@@ -1905,7 +1901,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           },
         });
       } catch (error: any) {
-        request.log.error('刷新会话状态失败:', error);
+        request.log.error({ err: error }, '刷新会话状态失败');
         return reply.status(500).send({ success: false, error: '刷新会话状态失败: ' + error.message });
       }
     }
@@ -1932,13 +1928,12 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         const now = new Date();
 
         for (let i = 0; i < count; i++) {
-          const sessionId = uuidv4();
+          const _sessionId = uuidv4();
           const startTime = new Date(now.getTime() - Math.random() * 86400000);
           const duration = Math.floor(Math.random() * 3600);
           const endTime = new Date(startTime.getTime() + duration * 1000);
 
           const session = await SessionModel.create({
-            id: sessionId,
             user_id: userId,
             machine_id: null,
             status: 'disconnected',
@@ -1947,7 +1942,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             duration: duration,
             credits_used: Math.floor(Math.random() * 100),
             metadata: {},
-          });
+          } as any);
 
           if (session) {
             sessions.push(session);
@@ -2132,7 +2127,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: result,
         });
       } catch (error: any) {
-        request.log.error('获取存储统计失败:', error);
+        request.log.error({ err: error }, '获取存储统计失败');
         return reply.status(500).send({ success: false, error: '获取存储统计失败: ' + error.message });
       }
     }
@@ -2206,7 +2201,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             freedSpace: result.freedSpace,
           },
         }).catch((logError) => {
-          request.log.error('记录操作日志失败:', logError);
+          request.log.error({ err: logError }, '记录操作日志失败');
         });
 
         return reply.send({
@@ -2214,7 +2209,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: result,
         });
       } catch (error: any) {
-        request.log.error('清理用户数据失败:', error);
+        request.log.error({ err: error }, '清理用户数据失败');
         return reply.status(500).send({ success: false, error: '清理用户数据失败: ' + error.message });
       }
     }
@@ -2267,7 +2262,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             freedSpace: result.freedSpace,
           },
         }).catch((logError) => {
-          request.log.error('记录操作日志失败:', logError);
+          request.log.error({ err: logError }, '记录操作日志失败');
         });
 
         return reply.send({
@@ -2275,7 +2270,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: result,
         });
       } catch (error: any) {
-        request.log.error('清理旧数据失败:', error);
+        request.log.error({ err: error }, '清理旧数据失败');
         return reply.status(500).send({ success: false, error: '清理旧数据失败: ' + error.message });
       }
     }
@@ -2317,7 +2312,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           data: stats,
         });
       } catch (error: any) {
-        request.log.error('获取系统存储统计失败:', error);
+        request.log.error({ err: error }, '获取系统存储统计失败');
         return reply.status(500).send({ success: false, error: '获取系统存储统计失败: ' + error.message });
       }
     }

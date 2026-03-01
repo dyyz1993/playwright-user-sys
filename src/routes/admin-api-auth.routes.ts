@@ -69,7 +69,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
             ip: request.ip,
           },
         }).catch((logError) => {
-          request.log.warn('记录登录操作失败:', logError);
+          request.log.warn({ err: logError }, '记录登录操作失败');
           // 不影响登录流程
         });
 
@@ -84,7 +84,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
           },
         });
       } catch (error: any) {
-        request.log.error('登录失败:', error);
+        request.log.error({ err: error }, '登录失败');
         return reply.status(500).send({ success: false, error: '登录失败: ' + error.message });
       }
     }
@@ -123,7 +123,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
             // 如果返回已经发送，不再发送新的响应
             if (reply.sent) return;
 
-            request.log.error('认证失败:', error);
+            request.log.error({ err: error }, '认证失败');
             return reply.status(401).send({ success: false, error: '认证失败' });
           }
         },
@@ -190,7 +190,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
           },
         });
       } catch (error: any) {
-        request.log.error('获取仪表盘统计数据失败:', error);
+        request.log.error({ err: error }, '获取仪表盘统计数据失败');
         return reply.status(500).send({ success: false, error: '获取仪表盘统计数据失败: ' + error.message });
       }
     }

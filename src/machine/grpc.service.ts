@@ -125,7 +125,7 @@ export class GrpcClient extends EventEmitter {
   constructor(config: MachineConfig = CONFIG) {
     super();
     this.config = config;
-    grpcClientInstance = this;
+    _grpcClientInstance = this;
     this.initClient();
 
     // 监听浏览器服务的会话事件
@@ -835,6 +835,9 @@ export class GrpcClient extends EventEmitter {
     }
   }
 }
+
+// 存储 gRPC 客户端实例，用于全局访问（预留用于将来的全局访问功能）
+let _grpcClientInstance: GrpcClient | null = null;
 
 /**
  * gRPC 服务器实现

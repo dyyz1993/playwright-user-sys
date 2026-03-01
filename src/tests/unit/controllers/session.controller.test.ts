@@ -149,7 +149,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await createSession(request, reply);
+    await createSession(request as any, reply as any);
 
     expect(createBrowserSession).toHaveBeenCalledWith(1, request.body);
     expect(sendCreated).toHaveBeenCalledWith(
@@ -182,7 +182,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await createSession(request, reply);
+    await createSession(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户未认证', 401);
   });
@@ -212,7 +212,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await createSession(request, reply);
+    await createSession(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '点数不足，请联系管理员充值', 402);
   });
@@ -258,7 +258,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSession(request, reply);
+    await getSession(request as any, reply as any);
 
     expect(SessionModel.findById).toHaveBeenCalledWith('session-123');
     expect(sendSuccess).toHaveBeenCalledWith(
@@ -302,7 +302,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSession(request, reply);
+    await getSession(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '无权访问此会话', 403);
   });
@@ -333,7 +333,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSession(request, reply);
+    await getSession(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '会话不存在', 404);
   });
@@ -385,7 +385,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await releaseSession(request, reply);
+    await releaseSession(request as any, reply as any);
 
     expect(connectionManager.closeBrowser).toHaveBeenCalledWith('machine-1', 'session-123');
     expect(SessionModel.markDisconnected).toHaveBeenCalled();
@@ -437,7 +437,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await releaseSession(request, reply);
+    await releaseSession(request as any, reply as any);
 
     expect(sendSuccess).toHaveBeenCalledWith(
       reply,
@@ -490,7 +490,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await releaseSession(request, reply);
+    await releaseSession(request as any, reply as any);
 
     expect(SessionModel.markDisconnected).toHaveBeenCalledWith('session-123', expect.any(Number));
     expect(sendSuccess).toHaveBeenCalled();
@@ -543,7 +543,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await releaseSession(request, reply);
+    await releaseSession(request as any, reply as any);
 
     expect(SessionModel.markDisconnected).toHaveBeenCalled();
     expect(sendSuccess).toHaveBeenCalledWith(
@@ -601,7 +601,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getUserSessions(request, reply);
+    await getUserSessions(request as any, reply as any);
 
     expect(SessionModel.findByUserId).toHaveBeenCalledWith(1, { page: '1', limit: '10' });
     expect(sendSuccess).toHaveBeenCalledWith(reply, mockSessions);
@@ -653,7 +653,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getAllSessions(request, reply);
+    await getAllSessions(request as any, reply as any);
 
     expect(SessionModel.findAll).toHaveBeenCalledWith({ page: '1', limit: '10' });
     expect(sendSuccess).toHaveBeenCalledWith(reply, mockSessions);
@@ -681,7 +681,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getAllSessions(request, reply);
+    await getAllSessions(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '无权访问', 403);
   });
@@ -733,7 +733,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     } as any;
 
-    await closeSession(request, reply);
+    await closeSession(request as any, reply as any);
 
     // 验证会话被标记为断开
     expect(SessionModel.markDisconnected).toHaveBeenCalled();
@@ -779,7 +779,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSessionScreenshot(request, reply);
+    await getSessionScreenshot(request as any, reply as any);
 
     expect(UserModel.findByApiKey).toHaveBeenCalledWith('invalid-api-key');
     expect(sendError).toHaveBeenCalledWith(reply, '无效的 API Key', 401);
@@ -821,7 +821,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSessionScreenshot(request, reply);
+    await getSessionScreenshot(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '无权访问该会话', 403);
   });
@@ -862,7 +862,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSessionScreenshot(request, reply);
+    await getSessionScreenshot(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '会话没有截图', 404);
   });

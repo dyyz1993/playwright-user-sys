@@ -51,7 +51,7 @@ describe('SessionModel', () => {
       ip: '127.0.0.1',
       grpcPort: 50051,
       proxyPort: 8080,
-      max_instances: 10,
+      maxInstances: 10,
     });
   });
 
@@ -107,8 +107,8 @@ describe('SessionModel', () => {
     await SessionModel.create({ user_id: testUser.id });
 
     const result = await SessionModel.findByUserId(testUser.id, {
-      page: 1,
-      limit: 10,
+      page: '1',
+      limit: '10',
     });
 
     expect(result.items.length).toBe(3);
@@ -138,9 +138,11 @@ describe('SessionModel', () => {
     });
 
     // 手动更新 start_time 为 5 分钟前
-    await db('sessions').where('id', session!.id).update({
-      start_time: new Date(Date.now() - 5 * 60 * 1000),
-    });
+    await db('sessions')
+      .where('id', session!.id)
+      .update({
+        start_time: new Date(Date.now() - 5 * 60 * 1000),
+      });
 
     const duration = 5 * 60; // 5分钟 = 300秒
     const updated = await SessionModel.markDisconnected(session!.id, duration);
@@ -267,7 +269,7 @@ describe('SessionModel', () => {
       user_id: testUser.id,
     });
 
-    const before = session.last_activity;
+    const _before = session.last_activity;
     await new Promise((resolve) => setTimeout(resolve, 100)); // 等待一小段时间
 
     const updated = await SessionModel.updateLastActivity(session.id);

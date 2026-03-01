@@ -42,29 +42,29 @@ export default fp(async function (fastify: FastifyInstance) {
       }
 
       // 输出所有 cookie 信息以便调试
-      request.log.info('请求中的 cookie:', request.cookies);
-      request.log.info('NODE_ENV:', process.env.NODE_ENV);
+      request.log.info({ cookies: request.cookies }, '请求中的 cookie');
+      request.log.info({ nodeEnv: process.env.NODE_ENV }, 'NODE_ENV');
 
       // 使用配置中的 JWT 密钥
       // 测试环境使用固定密钥
       const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : String(env.JWT_SECRET);
-      request.log.info('JWT_SECRET:', jwtSecret);
+      request.log.info({ jwtSecret: jwtSecret ? 'set' : 'not set' }, 'JWT_SECRET');
       request.log.info('使用 JWT 密钥验证令牌');
-      request.log.info('Token 前缀:', token?.substring(0, 20) + '...');
+      request.log.info({ tokenPrefix: token?.substring(0, 20) + '...' }, 'Token 前缀');
 
       const decoded = jwt.verify(token, jwtSecret) as any;
-      request.log.info('完整解码后的 token:', JSON.stringify(decoded));
-      request.log.info('令牌验证成功，用户 ID:', decoded?.id);
-      request.log.info('令牌类型:', typeof decoded);
+      request.log.info({ decoded: JSON.stringify(decoded) }, '完整解码后的 token');
+      request.log.info({ userId: decoded?.id }, '令牌验证成功，用户 ID');
+      request.log.info({ tokenType: typeof decoded }, '令牌类型');
 
       const user = await UserModel.findById(decoded.id);
       if (!user) {
-        request.log.warn('找不到用户:', decoded.id);
+        request.log.warn({ userId: decoded.id }, '找不到用户');
         return sendError(reply, '无效的用户', 401);
       }
 
       if (user.status !== UserStatus.ACTIVE) {
-        request.log.warn('用户已被禁用或暂停:', user.username);
+        request.log.warn({ username: user.username }, '用户已被禁用或暂停');
         return sendError(reply, '用户已被禁用或暂停', 403);
       }
 
@@ -75,9 +75,9 @@ export default fp(async function (fastify: FastifyInstance) {
         role: user.role as 'admin' | 'user',
       };
 
-      request.log.info('用户认证成功:', user.username, '角色:', user.role);
+      request.log.info({ username: user.username, role: user.role }, '用户认证成功');
     } catch (error: any) {
-      request.log.error('令牌验证失败:', error.message);
+      request.log.error({ err: error.message }, '令牌验证失败');
       return sendError(reply, '无效的令牌', 401);
     }
   });

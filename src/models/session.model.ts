@@ -10,7 +10,7 @@ export interface Session {
   port: number | null;
   status: SessionStatus;
   options: SessionCreateOptions | null;
-  start_time: Date;
+  start_time: Date | null;
   end_time: Date | null;
   disconnected_at: Date | null;
   duration: number;
@@ -330,10 +330,11 @@ export class SessionModel {
       // 处理 dateStrings: true 导致的时区问题
       // MySQL 返回的时间字符串是 UTC 时间（格式: '2025-12-30 01:44:03'）
       let startTime: Date;
-      if (typeof session.start_time === 'string') {
-        startTime = new Date(session.start_time.replace(' ', 'T') + '.000Z');
+      const startTimeValue = session.start_time as Date | string;
+      if (typeof startTimeValue === 'string') {
+        startTime = new Date(startTimeValue.replace(' ', 'T') + '.000Z');
       } else {
-        startTime = new Date(session.start_time);
+        startTime = new Date(startTimeValue);
       }
       // 使用 Math.ceil 确保即使只有 1ms 也计算为 1 秒
       finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
@@ -397,10 +398,11 @@ export class SessionModel {
       // 处理 dateStrings: true 导致的时区问题
       // MySQL 返回的时间字符串是 UTC 时间（格式: '2025-12-30 01:44:03'）
       let startTime: Date;
-      if (typeof session.start_time === 'string') {
-        startTime = new Date(session.start_time.replace(' ', 'T') + '.000Z');
+      const startTimeValue = session.start_time as Date | string;
+      if (typeof startTimeValue === 'string') {
+        startTime = new Date(startTimeValue.replace(' ', 'T') + '.000Z');
       } else {
-        startTime = new Date(session.start_time);
+        startTime = new Date(startTimeValue);
       }
       // 使用 Math.ceil 确保即使只有 1ms 也计算为 1 秒
       finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);

@@ -41,7 +41,7 @@ export async function createUser(request: AuthenticatedRequest, reply: FastifyRe
       },
       target_user_id: user.id,
     }).catch((logError) => {
-      request.log.error('记录操作日志失败:', logError);
+      request.log.error({ err: logError }, '记录操作日志失败');
     });
 
     return sendCreated(reply, {
@@ -155,7 +155,7 @@ export async function updateUser(request: AuthenticatedRequestWithParams<IdParam
       details: userData,
       target_user_id: userId,
     }).catch((logError) => {
-      request.log.error('记录操作日志失败:', logError);
+      request.log.error({ err: logError }, '记录操作日志失败');
     });
 
     return sendSuccess(reply, {
@@ -201,7 +201,7 @@ export async function resetApiKey(request: AuthenticatedRequestWithParams<IdPara
       action: '重置用户 API Key',
       target_user_id: userId,
     }).catch((logError) => {
-      request.log.error('记录操作日志失败:', logError);
+      request.log.error({ err: logError }, '记录操作日志失败');
     });
 
     return sendSuccess(reply, { api_key: apiKey });
@@ -253,7 +253,7 @@ export async function deleteUser(request: AuthenticatedRequestWithParams<IdParam
       details: { username: existingUser.username },
       target_user_id: userId,
     }).catch((logError) => {
-      request.log.error('记录操作日志失败:', logError);
+      request.log.error({ err: logError }, '记录操作日志失败');
     });
 
     return sendNoContent(reply);

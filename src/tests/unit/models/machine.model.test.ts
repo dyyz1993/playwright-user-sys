@@ -41,7 +41,7 @@ describe('MachineModel', () => {
       ip: '192.168.1.100',
       grpcPort: 50051,
       proxyPort: 8080,
-      max_instances: 10,
+      maxInstances: 10,
     });
 
     expect(machine).toBeTruthy();
@@ -77,7 +77,7 @@ describe('MachineModel', () => {
   // MM-03: 按ID查找机器
   // ========================================
   it('应该通过ID找到机器', async () => {
-    const created = await MachineModel.register({
+    const _created = await MachineModel.register({
       id: 'machine-001',
       hostname: 'test-host',
       ip: '192.168.1.100',
@@ -101,7 +101,7 @@ describe('MachineModel', () => {
   // MM-05: 更新机器信息
   // ========================================
   it('应该成功更新机器信息 (支持 camelCase)', async () => {
-    const created = await MachineModel.register({
+    const _created = await MachineModel.register({
       id: 'machine-001',
       hostname: 'test-host',
       ip: '192.168.1.100',
@@ -169,8 +169,8 @@ describe('MachineModel', () => {
     }
 
     const result = await MachineModel.findAll({
-      page: 1,
-      limit: 10,
+      page: '1',
+      limit: '10',
     });
 
     expect(result.items.length).toBe(10);
@@ -191,7 +191,7 @@ describe('MachineModel', () => {
       id: 'machine-001',
       hostname: 'test-host',
       ip: '192.168.1.100',
-      max_instances: 10,
+      maxInstances: 10,
       instanceCount: 5,
     });
 
@@ -224,7 +224,7 @@ describe('MachineModel', () => {
       id: 'machine-001',
       hostname: 'test-host',
       ip: '192.168.1.100',
-      max_instances: 10,
+      maxInstances: 10,
       instanceCount: 10,
     });
 

@@ -371,8 +371,8 @@ export class StorageService {
 
     // Get all users with optional search filter
     const { items } = await UserModel.findAll({
-      page: 1,
-      limit: 10000,
+      page: '1',
+      limit: '10000',
       ...(search && { search }),
     });
 

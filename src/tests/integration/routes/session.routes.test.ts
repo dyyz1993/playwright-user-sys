@@ -11,7 +11,7 @@
  * - 真实Controller调用
  * - Mock: 仅外部依赖 (gRPC, webhook)
  */
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../../helpers/app.js';
 import { SessionModel } from '../../../models/session.model.js';
@@ -263,7 +263,6 @@ describe('Session Routes集成测试', () => {
         user_id: testUser?.id || 0,
         machine_id: testMachine?.id || '',
         port: 3000,
-        status: SessionStatus.CONNECTED,
         options: {
           userAgent: 'test-agent',
         },
@@ -315,7 +314,6 @@ describe('Session Routes集成测试', () => {
         user_id: testUser?.id || 0,
         machine_id: testMachine?.id || '',
         port: 3000,
-        status: SessionStatus.CONNECTED,
         options: {
           userAgent: 'test-agent',
         },

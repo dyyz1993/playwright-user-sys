@@ -26,7 +26,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
       }
     } catch (error) {
       if (reply.sent) return;
-      request.log.error('认证失败:', error);
+      request.log.error({ err: error }, '认证失败');
       return reply.status(401).send({ success: false, error: '认证失败' });
     }
   };
@@ -82,7 +82,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
 
         return reply.send({ success: true, data: machine });
       } catch (error: any) {
-        request.log.error('获取机器详情失败:', error);
+        request.log.error({ err: error }, '获取机器详情失败');
         return reply.status(500).send({ success: false, error: '获取机器详情失败: ' + error.message });
       }
     }
@@ -176,7 +176,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
             maxInstances: body.maxInstances,
           },
         }).catch((logError) => {
-          request.log.error('记录操作日志失败:', logError);
+          request.log.error({ err: logError }, '记录操作日志失败');
         });
 
         return reply.send({
@@ -185,7 +185,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
           data: updatedMachine,
         });
       } catch (error: any) {
-        request.log.error('更新机器配置失败:', error);
+        request.log.error({ err: error }, '更新机器配置失败');
         return reply.status(500).send({ success: false, error: '更新机器配置失败: ' + error.message });
       }
     }
@@ -239,7 +239,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
 
         return reply.send({ success: true, data: result });
       } catch (error: any) {
-        request.log.error('健康检查失败:', error);
+        request.log.error({ err: error }, '健康检查失败');
         return reply.status(500).send({ success: false, error: '健康检查失败: ' + error.message });
       }
     }
@@ -307,7 +307,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
           },
         });
       } catch (error: any) {
-        request.log.error('批量健康检查失败:', error);
+        request.log.error({ err: error }, '批量健康检查失败');
         return reply.status(500).send({ success: false, error: '批量健康检查失败: ' + error.message });
       }
     }

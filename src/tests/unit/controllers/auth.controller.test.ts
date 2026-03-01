@@ -97,7 +97,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await login(request, reply);
+    await login(request as any, reply as any);
 
     expect(UserModel.findByUsername).toHaveBeenCalledWith('testuser');
     expect(comparePassword).toHaveBeenCalledWith('password123', 'hashed_password');
@@ -134,7 +134,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await login(request, reply);
+    await login(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户名或密码错误', 401);
   });
@@ -168,7 +168,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await login(request, reply);
+    await login(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户名或密码错误', 401);
   });
@@ -182,7 +182,7 @@ describe('AuthController', () => {
       username: 'testuser',
       password: 'hashed_password',
       role: UserRole.USER,
-      status: UserStatus.DISABLED,
+      status: UserStatus.SUSPENDED,
     };
 
     vi.mocked(UserModel.findByUsername).mockResolvedValue(mockUser);
@@ -202,7 +202,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await login(request, reply);
+    await login(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户账号已被禁用', 403);
   });
@@ -227,7 +227,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await login(request, reply);
+    await login(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, expect.stringContaining('无效的请求数据'), 400);
   });
@@ -266,7 +266,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await getCurrentUser(request, reply);
+    await getCurrentUser(request as any, reply as any);
 
     expect(UserModel.findById).toHaveBeenCalledWith(1);
     expect(sendSuccess).toHaveBeenCalledWith(
@@ -298,7 +298,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await getCurrentUser(request, reply);
+    await getCurrentUser(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户未登录', 401);
   });
@@ -325,7 +325,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await getCurrentUser(request, reply);
+    await getCurrentUser(request as any, reply as any);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户不存在', 404);
   });

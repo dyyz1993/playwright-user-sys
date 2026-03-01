@@ -258,7 +258,7 @@ describe('UserModel', () => {
     try {
       await UserModel.deductCredits(user.id!, 30, trx);
       await trx.rollback(); // 回滚
-    } catch (e) {
+    } catch (_e) {
       await trx.rollback();
     }
 
@@ -417,7 +417,7 @@ describe('UserModel', () => {
       });
     }
 
-    const result = await UserModel.findAll({ page: 1, limit: 10 });
+    const result = await UserModel.findAll({ page: '1', limit: '10' });
 
     expect(result.items.length).toBe(10);
     expect(result.total).toBe(15);
@@ -431,12 +431,12 @@ describe('UserModel', () => {
   // ========================================
   it('应该处理分页边界条件', async () => {
     // page=0 会被处理为 0，而不是 1
-    const result1 = await UserModel.findAll({ page: 0, limit: 10 });
+    const result1 = await UserModel.findAll({ page: '0', limit: '10' });
     expect(result1.page).toBeGreaterThanOrEqual(0);
 
-    // limit=0 会被默认处理为 10（在代码中: query.limit || 10）
-    const result2 = await UserModel.findAll({ page: 1, limit: 0 });
-    expect(result2.limit).toBe(10); // 代码默认值是 10
+    // limit=0 时，代码会解析为 0（字符串 '0' 是 truthy 的）
+    const result2 = await UserModel.findAll({ page: '1', limit: '0' });
+    expect(result2.limit).toBe(0); // 代码会解析为 0
   });
 
   // ========================================

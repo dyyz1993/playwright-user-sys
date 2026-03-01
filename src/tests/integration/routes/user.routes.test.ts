@@ -16,7 +16,7 @@ import { FastifyInstance } from 'fastify';
 import { build } from '../../helpers/app.js';
 import { UserModel } from '../../../models/user.model.js';
 import { generateToken } from '../../../utils/auth.js';
-import { UserRole, UserStatus } from '@shared/types/index.js';
+import { UserRole } from '@shared/types/index.js';
 import { clearAllTables } from '../../helpers/database.js';
 import { createTestUser, createTestAdmin } from '../../helpers/factories.js';
 

@@ -7,7 +7,7 @@ export interface CreateMachineInput {
   ip: string;
   grpcPort?: number;
   proxyPort?: number;
-  max_instances?: number;
+  maxInstances?: number;
   instanceCount?: number;
 }
 
@@ -51,7 +51,7 @@ export class MachineModel {
         grpc_port: data.grpcPort,
         proxy_port: data.proxyPort,
         instance_count: data.instanceCount || 0,
-        max_instances: data.max_instances || 10,
+        max_instances: data.maxInstances || 10,
         status: 'online',
         last_seen: db.fn.now(),
         created_at: new Date(),
@@ -134,8 +134,8 @@ export class MachineModel {
   static async findAll(query: PaginationQuery = {}): Promise<PaginatedResponse<MachineInfo>> {
     try {
       console.log('开始查询机器数据');
-      const page = query.page || 1;
-      const limit = query.limit || 10;
+      const page = parseInt(query.page || '1', 10);
+      const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
       const sort = query.sort || 'last_seen';
       const order = query.order || 'desc';
@@ -173,8 +173,8 @@ export class MachineModel {
       return {
         items: [],
         total: 0,
-        page: query.page || 1,
-        limit: query.limit || 10,
+        page: parseInt(query.page || '1', 10),
+        limit: parseInt(query.limit || '10', 10),
         totalPages: 0,
       };
     }
@@ -387,9 +387,7 @@ export class MachineModel {
       // 获取活跃会话数
       const { SessionModel } = await import('./session.model.js');
       const activeSessions = await SessionModel.paginate(1, 999, {
-        filters: {
-          status: 'active',
-        },
+        status: SessionStatus.CREATED,
       });
 
       // 过滤出该机器的活跃会话

@@ -66,8 +66,8 @@ export class OperationLogModel {
   // 获取管理员的所有操作日志（分页）
   static async findByAdminId(adminId: number, query: PaginationQuery = {}): Promise<PaginatedResponse<OperationLog>> {
     try {
-      const page = query.page || 1;
-      const limit = query.limit || 10;
+      const page = parseInt(query.page || '1', 10);
+      const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
       const sort = query.sort || 'created_at';
       const order = query.order || 'desc';
@@ -104,8 +104,8 @@ export class OperationLogModel {
       return {
         items: [],
         total: 0,
-        page: query.page || 1,
-        limit: query.limit || 10,
+        page: parseInt(query.page || '1', 10),
+        limit: parseInt(query.limit || '10', 10),
         totalPages: 0,
       };
     }
@@ -117,8 +117,8 @@ export class OperationLogModel {
     query: PaginationQuery = {}
   ): Promise<PaginatedResponse<OperationLog>> {
     try {
-      const page = query.page || 1;
-      const limit = query.limit || 10;
+      const page = parseInt(query.page || '1', 10);
+      const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
       const sort = query.sort || 'created_at';
       const order = query.order || 'desc';
@@ -155,8 +155,8 @@ export class OperationLogModel {
       return {
         items: [],
         total: 0,
-        page: query.page || 1,
-        limit: query.limit || 10,
+        page: parseInt(query.page || '1', 10),
+        limit: parseInt(query.limit || '10', 10),
         totalPages: 0,
       };
     }
@@ -165,8 +165,8 @@ export class OperationLogModel {
   // 获取所有操作日志（分页）
   static async findAll(query: PaginationQuery = {}): Promise<PaginatedResponse<OperationLog>> {
     try {
-      const page = query.page || 1;
-      const limit = query.limit || 10;
+      const page = parseInt(query.page || '1', 10);
+      const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
       const sort = query.sort || 'created_at';
       const order = query.order || 'desc';
@@ -205,8 +205,8 @@ export class OperationLogModel {
       return {
         items: [],
         total: 0,
-        page: query.page || 1,
-        limit: query.limit || 10,
+        page: parseInt(query.page || '1', 10),
+        limit: parseInt(query.limit || '10', 10),
         totalPages: 0,
       };
     }

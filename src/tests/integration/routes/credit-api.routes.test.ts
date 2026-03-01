@@ -23,7 +23,7 @@ import { build } from '../../helpers/app.js';
 import { UserModel } from '../../../models/user.model.js';
 import { SessionModel } from '../../../models/session.model.js';
 import { generateToken } from '../../../utils/auth.js';
-import { UserRole } from '../../../shared/types/index.js';
+import { SessionStatus, UserRole } from '../../../shared/types/index.js';
 import { clearAllTables } from '../../helpers/database.js';
 import { createTestUser, createTestAdmin, createTestSession, createTestUsers } from '../../helpers/factories.js';
 
@@ -981,7 +981,7 @@ describe('积分管理 API Routes 集成测试', () => {
       const session = await createTestSession(user!.id);
       // 更新会话时长
       await SessionModel.update(session!.id, {
-        status: 'released',
+        status: SessionStatus.DISCONNECTED,
         duration: 300, // 5分钟
       });
 

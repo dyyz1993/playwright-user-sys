@@ -239,8 +239,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
 
         // 使用 findAll 方法支持筛选、搜索和排序
         const { items, total, totalPages } = await UserModel.findAll({
-          page,
-          limit,
+          page: query.page || '1',
+          limit: query.limit || '10',
           sort: sort as any,
           order: order as any,
           ...(query.search && { search: query.search }),
@@ -272,7 +272,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        request.log.error('获取用户列表失败:', error);
+        request.log.error({ err: error }, '获取用户列表失败');
         request.flash('error', '获取用户列表失败: ' + error.message);
         return reply.redirect('/admin');
       }
@@ -334,7 +334,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        request.log.error('获取用户详情失败:', error);
+        request.log.error({ err: error }, '获取用户详情失败');
         request.flash('error', '获取用户详情失败: ' + error.message);
         return reply.redirect('/admin/users');
       }
@@ -407,7 +407,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        request.log.error('获取机器列表失败:', error);
+        request.log.error({ err: error }, '获取机器列表失败');
         request.flash('error', '获取机器列表失败: ' + error.message);
         return reply.redirect('/admin');
       }
@@ -476,7 +476,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        request.log.error('获取机器详情失败:', error);
+        request.log.error({ err: error }, '获取机器详情失败');
         request.flash('error', '获取机器详情失败: ' + error.message);
         return reply.redirect('/admin/machines');
       }
@@ -512,7 +512,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         // 获取用户列表（用于用户筛选）
         const { UserModel } = await import('../models/user.model.js');
         // 使用 findAll 获取所有用户，设置较大的 limit 以获取所有用户
-        const usersResult = await UserModel.findAll({ limit: 10000 });
+        const usersResult = await UserModel.findAll({ limit: '10000' });
         const users = usersResult.items;
 
         // 构建筛选选项
@@ -593,7 +593,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        request.log.error('获取会话列表失败:', error);
+        request.log.error({ err: error }, '获取会话列表失败');
         request.flash('error', '获取会话列表失败: ' + error.message);
         return reply.redirect('/admin');
       }
@@ -633,7 +633,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        request.log.error('获取会话详情失败:', error);
+        request.log.error({ err: error }, '获取会话详情失败');
         request.flash('error', '获取会话详情失败: ' + error.message);
         return reply.redirect('/admin/sessions');
       }
@@ -660,7 +660,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        request.log.error('获取系统设置失败:', error);
+        request.log.error({ err: error }, '获取系统设置失败');
         request.flash('error', '获取系统设置失败: ' + error.message);
         return reply.redirect('/admin');
       }
@@ -687,7 +687,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        request.log.error('加载文件上传页面失败:', error);
+        request.log.error({ err: error }, '加载文件上传页面失败');
         request.flash('error', '加载文件上传页面失败: ' + error.message);
         return reply.redirect('/admin');
       }
@@ -883,7 +883,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       } catch (error: any) {
         console.error('[PROFILE ERROR] Error details:', error);
         console.error('[PROFILE ERROR] Error stack:', error.stack);
-        request.log.error('获取个人资料失败:', error);
+        request.log.error({ err: error }, '获取个人资料失败');
         request.flash('error', '获取个人资料失败: ' + error.message);
         return reply.redirect('/admin');
       }
@@ -979,7 +979,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        request.log.error('获取操作日志失败:', error);
+        request.log.error({ err: error }, '获取操作日志失败');
         request.flash('error', '获取操作日志失败: ' + error.message);
         return reply.redirect('/admin');
       }
@@ -1006,7 +1006,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        request.log.error('加载存储管理页面失败:', error);
+        request.log.error({ err: error }, '加载存储管理页面失败');
         request.flash('error', '加载存储管理页面失败: ' + error.message);
         return reply.redirect('/admin');
       }

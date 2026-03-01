@@ -60,16 +60,14 @@ describe('管理员会话管理功能测试', () => {
     });
 
     // 创建测试会话
-    testSessionId = uuidv4();
-    await SessionModel.create({
-      id: testSessionId,
+    const session = await SessionModel.create({
       user_id: testUserId,
-      status: 'created',
       options: {
         userAgent: 'Mozilla/5.0',
         viewport: { width: 1280, height: 720 },
       },
     });
+    testSessionId = session!.id;
   });
 
   afterAll(async () => {
@@ -131,16 +129,14 @@ describe('管理员会话管理功能测试', () => {
 
     beforeEach(async () => {
       // 创建一个用于关闭的测试会话
-      sessionToCloseId = uuidv4();
-      await SessionModel.create({
-        id: sessionToCloseId,
+      const session = await SessionModel.create({
         user_id: testUserId,
-        status: 'created',
         options: {
           userAgent: 'Mozilla/5.0',
           viewport: { width: 1280, height: 720 },
         },
       });
+      sessionToCloseId = session!.id;
     });
 
     test('管理员可以关闭会话', async () => {
@@ -166,16 +162,14 @@ describe('管理员会话管理功能测试', () => {
     test('普通用户无法关闭其他用户的会话', async () => {
       // 创建另一个用户的会话
       const otherUserId = adminId; // 使用管理员ID作为"其他用户"
-      const otherSessionId = uuidv4();
-      await SessionModel.create({
-        id: otherSessionId,
+      const otherSession = await SessionModel.create({
         user_id: otherUserId,
-        status: 'created',
         options: {
           userAgent: 'Mozilla/5.0',
           viewport: { width: 1280, height: 720 },
         },
       });
+      const otherSessionId = otherSession!.id;
 
       const response = await app.inject({
         method: 'POST',

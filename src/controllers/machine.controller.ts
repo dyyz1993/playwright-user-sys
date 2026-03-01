@@ -13,7 +13,12 @@ import {
 // 注册机器
 export async function registerMachine(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const machineData = registerMachineRequestSchema.parse(request.body);
+    const machineData = registerMachineRequestSchema.parse(request.body) as {
+      id: string;
+      hostname: string;
+      ip: string;
+      max_instances?: number;
+    };
 
     // 注册机器
     const machine = await MachineModel.register(machineData);
@@ -72,8 +77,8 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
     if (memoryMachines.length > 0) {
       console.log(`[DEBUG] 使用内存数据，机器数量: ${memoryMachines.length}`);
       // 处理分页
-      const page = query.page || 1;
-      const limit = query.limit || 10;
+      const page = parseInt(query.page || '1', 10);
+      const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
 
       // 排序
@@ -335,11 +340,11 @@ export async function restartMachine(request: FastifyRequest, reply: FastifyRepl
         id: machineId,
       });
     } catch (commandError) {
-      request.log.error('发送重启命令失败:', commandError);
+      request.log.error({ err: commandError }, '发送重启命令失败');
       return sendError(reply, '发送重启命令失败: ' + (commandError as Error).message, 500);
     }
   } catch (error) {
-    request.log.error('重启机器失败:', error);
+    request.log.error({ err: error }, '重启机器失败');
     return sendError(reply, '重启机器失败', 500);
   }
 }
@@ -377,7 +382,7 @@ export async function deleteMachine(request: FastifyRequest, reply: FastifyReply
           await connectionManager.removeConnection(machineId);
         }
       } catch (error) {
-        request.log.error(`断开机器连接失败 (${machineId}):`, error);
+        request.log.error({ err: error, machineId }, '断开机器连接失败');
         // 继续删除操作，即使断开连接失败
       }
     }
@@ -399,7 +404,7 @@ export async function deleteMachine(request: FastifyRequest, reply: FastifyReply
       request.log.info(`从内存存储中移除机器: ${machineId}`);
       memoryStore.removeMachine(machineId);
     } catch (error) {
-      request.log.error(`从内存存储中移除机器失败 (${machineId}):`, error);
+      request.log.error({ err: error, machineId }, '从内存存储中移除机器失败');
       // 继续返回成功响应，因为数据库中的机器已经删除
     }
 
@@ -410,7 +415,7 @@ export async function deleteMachine(request: FastifyRequest, reply: FastifyReply
       id: machineId,
     });
   } catch (error) {
-    request.log.error('删除机器失败:', error);
+    request.log.error({ err: error }, '删除机器失败');
     return reply.status(500).send({
       success: false,
       error: '删除机器失败',

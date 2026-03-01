@@ -1,4 +1,4 @@
-import machineServer from './index.js';
+import { startMachine } from './index.js';
 import { logger } from '@shared/utils/logger.js';
 import { existsSync } from 'fs';
 
@@ -43,7 +43,7 @@ async function main() {
 
   // 启动机器服务
   try {
-    await machineServer.start();
+    await startMachine();
   } catch (error) {
     logger.error('启动失败:', error);
     process.exit(1);

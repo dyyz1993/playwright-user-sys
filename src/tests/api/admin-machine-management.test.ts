@@ -60,11 +60,13 @@ describe('管理员机器管理功能测试', () => {
       id: testMachineId,
       hostname: 'test-machine',
       ip: '192.168.1.100',
-      status: 'online',
+      maxInstances: 5,
+    });
+    // 更新机器状态
+    await MachineModel.update(testMachineId, {
       cpuUsage: 10,
       memoryUsage: 20,
       diskUsage: 30,
-      maxInstances: 5,
     });
   });
 
@@ -183,11 +185,13 @@ describe('管理员机器管理功能测试', () => {
         id: machineToMarkOfflineId,
         hostname: 'machine-to-mark-offline',
         ip: '192.168.1.101',
-        status: 'online',
+        maxInstances: 5,
+      });
+      // 更新机器状态
+      await MachineModel.update(machineToMarkOfflineId, {
         cpuUsage: 10,
         memoryUsage: 20,
         diskUsage: 30,
-        maxInstances: 5,
       });
     });
 

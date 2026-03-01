@@ -101,7 +101,8 @@ export async function createTestMachine(
     ip: string;
     grpcPort: number;
     proxyPort: number;
-    max_instances: number;
+    maxInstances: number;
+    instanceCount: number;
     status: 'online' | 'offline' | 'busy';
   }> = {}
 ) {
@@ -112,8 +113,7 @@ export async function createTestMachine(
     ip: '127.0.0.1',
     grpcPort: 50051,
     proxyPort: 8080,
-    max_instances: 10,
-    status: 'online',
+    maxInstances: 10,
     ...overrides,
   });
 }

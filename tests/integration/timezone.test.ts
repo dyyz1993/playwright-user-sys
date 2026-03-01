@@ -9,7 +9,7 @@
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 
 // 类型定义，避免直接导入 BrowserService
 type BrowserService = {

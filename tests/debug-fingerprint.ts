@@ -4,12 +4,22 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import { URL } from 'url';
+import net from 'net';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const htmlDir = path.join(__dirname, '../html');
 const testPagePath = path.join(htmlDir, 'fingerprint-test.html');
+
+declare global {
+  interface Window {
+    fingerprintReady?: boolean;
+    fingerprintHash?: string;
+    fingerprintData?: unknown;
+    init?: () => void;
+  }
+}
 
 const server = http.createServer(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
@@ -23,7 +33,8 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(0, '127.0.0.1', async () => {
-  const port = server.address().port;
+  const address = server.address() as net.AddressInfo;
+  const port = address.port;
   const url = `http://127.0.0.1:${port}/`;
   console.log('Server started:', url);
   console.log('Test page path:', testPagePath);
@@ -45,7 +56,7 @@ server.listen(0, '127.0.0.1', async () => {
 
   // Enable console logging
   page.on('console', (msg) => console.log('[Browser console]', msg.text()));
-  page.on('pageerror', (err) => console.error('[Browser error]', err.message));
+  page.on('pageerror', (err: Error) => console.error('[Browser error]', err.message));
 
   console.log('Navigating to:', url);
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 });
@@ -69,7 +80,8 @@ server.listen(0, '127.0.0.1', async () => {
 
     console.log('SUCCESS! Fingerprint result:', result);
   } catch (e) {
-    console.error('FAILED:', e.message);
+    const error = e as Error;
+    console.error('FAILED:', error.message);
 
     const debugInfo = await page.evaluate(() => ({
       ready: window.fingerprintReady,

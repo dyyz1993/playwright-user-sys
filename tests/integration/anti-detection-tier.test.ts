@@ -52,6 +52,7 @@ import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
 import { SessionModel } from '../../src/models/session.model.js';
+import { UserRole } from '../../src/shared/types/index.js';
 import { getFreePort } from '../helpers/ports.js';
 import {
   createIsolatedTestDatabase,
@@ -134,7 +135,7 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
       const user = await UserModel.create({
         username,
         password: 'test123',
-        role: 'user',
+        role: UserRole.USER,
         credits: INITIAL_CREDITS,
       });
 
@@ -586,14 +587,15 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
           return { error: 'WebGL 不可用' };
         }
 
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        const webgl = gl as WebGLRenderingContext;
+        const debugInfo = webgl.getExtension('WEBGL_debug_renderer_info');
         if (!debugInfo) {
           return { error: 'WEBGL_debug_renderer_info 不可用' };
         }
 
         return {
-          vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
-          renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
+          vendor: webgl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+          renderer: webgl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
         };
       });
 
@@ -814,7 +816,7 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
           const offer = await pc.createOffer({ offerToReceiveAudio: true });
           await pc.setLocalDescription(offer);
 
-          return new Promise((resolve) => {
+          return new Promise<{ error?: string; sdp?: string; foundLocalIps?: number }>((resolve) => {
             setTimeout(() => {
               const candidates = pc.localDescription.sdp;
               pc.close();

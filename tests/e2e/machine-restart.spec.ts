@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures';
+import { test, expect } from '../fixtures.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';

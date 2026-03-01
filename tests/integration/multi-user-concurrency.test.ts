@@ -38,11 +38,7 @@ import { UserModel } from '../../src/models/user.model.js';
 import { MachineModel } from '../../src/models/machine.model.js';
 import { SessionModel } from '../../src/models/session.model.js';
 import { CreditHistoryModel } from '../../src/models/credit-history.model.js';
-import {
-  createIsolatedTestDatabase,
-  dropIsolatedTestDatabase,
-  type IsolatedTestDatabase,
-} from '../../src/tests/helpers/isolated-database.js';
+import { createIsolatedTestDatabase, type IsolatedTestDatabase } from '../../src/tests/helpers/isolated-database.js';
 import { getFreePort } from '../helpers/ports.js';
 import { createTestUser } from '../helpers/factories.js';
 import puppeteer from 'puppeteer-core';
@@ -62,9 +58,10 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
   // 全局变量声明
   // ========================================
 
+  let testDb: IsolatedTestDatabase;
   let managerApp: FastifyInstance;
-  let managerHttpPort: number;
-  let managerGrpcPort: number;
+  let managerHttpPort = 0;
+  let managerGrpcPort = 0;
   let machineServers: Array<{
     server: MachineServer;
     grpcPort: number;
@@ -95,60 +92,17 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       try {
         execSync('nvm use 20', { stdio: 'inherit' });
         console.log('   ✅ 已切换到 Node.js 20');
-      } catch (nvmError) {
+      } catch (_nvmError) {
         console.warn('   ⚠️  nvm 命令不可用，使用当前 Node.js 版本');
       }
-    } catch (error) {
+    } catch (_error) {
       console.warn('   ⚠️  无法切换 Node.js 版本，使用当前版本');
     }
 
-    // 步骤 2: 创建 MySQL 测试数据库
-    console.log('\n[步骤 2] 创建 MySQL 测试数据库...');
-    process.env.NODE_ENV = 'test';
-    process.env.DB_TYPE = 'mysql';
-    process.env.DB_NAME = 'playwright_test_user_sys'; // 使用相同的数据库避免连接池冲突
-    process.env.DB_HOST = process.env.DB_HOST || 'mysql.19930810.xyz';
-    process.env.DB_PORT = process.env.DB_PORT || '3306';
-    process.env.DB_USER = process.env.DB_USER || 'root';
-    process.env.DB_PASSWORD = process.env.DB_PASSWORD || '';
-    // 注意：JWT_SECRET、JWT_EXPIRES_IN、INSTANCE_TIMEOUT、MACHINE_MONITOR_INTERVAL
-    // 等配置使用 .env.test 或 GitHub Actions 环境变量，不再硬编码覆盖
-    // 增加连接池大小以支持并发测试
-    process.env.DB_POOL_MIN = '5';
-    process.env.DB_POOL_MAX = '20';
-
-    managerHttpPort = parseInt(process.env.PORT || '3000', 10);
-    managerGrpcPort = parseInt(process.env.GRPC_PORT || '50051', 10);
-
-    console.log(`   HTTP 端口: ${managerHttpPort}`);
-    console.log(`   gRPC 端口: ${managerGrpcPort}`);
-    console.log(`   数据库: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
-
-    const knex = await import('knex');
-    const adminDb = knex.default({
-      client: 'mysql2',
-      connection: {
-        host: process.env.DB_HOST,
-        port: parseInt(process.env.DB_PORT || '3306'),
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-      },
-    });
-
-    try {
-      await adminDb.raw(`DROP DATABASE IF EXISTS ${process.env.DB_NAME}`);
-      await adminDb.raw(`CREATE DATABASE ${process.env.DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-      console.log('✅ 测试数据库创建完成');
-    } catch (error: any) {
-      console.error('❌ 创建数据库失败:', error.message);
-      throw error;
-    } finally {
-      await adminDb.destroy();
-    }
-
-    await initDatabase();
-    await runMigrations();
-    console.log('✅ 数据库迁移完成');
+    // 步骤 2: 创建独立测试数据库
+    console.log('\n[步骤 2] 创建独立测试数据库...');
+    testDb = await createIsolatedTestDatabase();
+    console.log(`✅ 测试数据库创建完成: ${testDb.dbName}`);
 
     // 步骤 3: 创建测试用户 (5个)
     console.log(`\n[步骤 3] 创建 ${NUM_USERS} 个测试用户...`);
@@ -309,17 +263,17 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
 
   beforeEach(async () => {
     // 清理会话和积分历史
-    await db('sessions').del();
-    await db('credit_history').del();
+    await testDb.db('sessions').del();
+    await testDb.db('credit_history').del();
 
     // 重置用户积分
     for (const user of testUsers) {
-      await db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
+      await testDb.db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
     }
 
     // 重置机器实例计数
     for (const machine of machineServers) {
-      await db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
+      await testDb.db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
     }
 
     console.log('✅ 测试数据已重置');

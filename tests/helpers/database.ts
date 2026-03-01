@@ -240,12 +240,13 @@ export async function closeDatabase(): Promise<void> {
 export async function withTransaction<T>(callback: (trx: Knex.Transaction) => Promise<T>): Promise<T> {
   const db = getTestDbConnection();
 
+  const trx = await db.transaction();
   try {
-    const result = await db.transaction(callback);
-    await db.rollback(); // 测试环境总是回滚
+    const result = await callback(trx);
+    await trx.rollback();
     return result;
   } catch (error) {
-    await db.rollback();
+    await trx.rollback();
     throw error;
   }
 }

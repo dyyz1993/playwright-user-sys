@@ -8,7 +8,7 @@
  * - 实时状态同步
  */
 
-import { test, expect } from '../fixtures';
+import { test, expect } from '../fixtures.js';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
@@ -174,7 +174,7 @@ test.describe('MemoryStore 内存状态验证', () => {
     // 第一次采样
     const response1 = await apiRequest('/api/machines');
     const result1 = await response1.json();
-    const machines1 = result1.data || result;
+    const machines1 = result1.data || result1;
     const machine1 = machines1[0];
 
     // 轮询等待心跳更新（最多35秒）
@@ -184,7 +184,7 @@ test.describe('MemoryStore 内存状态验证', () => {
     // 第二次采样
     const response2 = await apiRequest('/api/machines');
     const result2 = await response2.json();
-    const machines2 = result2.data?.items || result2.data || result;
+    const machines2 = result2.data?.items || result2.data || result2;
     const machine2 = machines2.find((m: any) => m.id === machine1.id);
 
     expect(machine2).toBeDefined();
@@ -399,7 +399,7 @@ test.describe('实时状态同步验证', () => {
     // 获取初始状态
     const response1 = await apiRequest('/api/machines');
     const result1 = await response1.json();
-    const machines1 = result1.data || result;
+    const machines1 = result1.data || result1;
 
     // 轮询等待心跳更新（最多35秒）
     const heartbeatReceived = await waitForHeartbeatData(apiRequest);
@@ -408,7 +408,7 @@ test.describe('实时状态同步验证', () => {
     // 获取更新后的状态
     const response2 = await apiRequest('/api/machines');
     const result2 = await response2.json();
-    const machines2 = result2.data || result;
+    const machines2 = result2.data || result2;
 
     // 验证状态已更新
     expect(machines2.length).toBe(machines1.length);
@@ -571,7 +571,7 @@ test.describe('性能验证', () => {
     // 第一次采样
     const response1 = await apiRequest('/api/machines');
     const result1 = await response1.json();
-    const machines1 = result1.data?.items || result1.data || result;
+    const machines1 = result1.data?.items || result1.data || result1;
     const machine1 = machines1[0];
 
     // 短暂等待（5秒）以观察内存变化
@@ -580,7 +580,7 @@ test.describe('性能验证', () => {
     // 第二次采样
     const response2 = await apiRequest('/api/machines');
     const result2 = await response2.json();
-    const machines2 = result2.data?.items || result2.data || result;
+    const machines2 = result2.data?.items || result2.data || result2;
     const machine2 = machines2.find((m: any) => m.id === machine1.id);
 
     expect(machine2).toBeDefined();
@@ -601,7 +601,7 @@ test.describe('性能验证', () => {
   test('PERF-MEM02: CPU 使用应该稳定', async ({ testEnv, apiRequest }) => {
     const response1 = await apiRequest('/api/machines');
     const result1 = await response1.json();
-    const machines1 = result1.data?.items || result1.data || result;
+    const machines1 = result1.data?.items || result1.data || result1;
     const machine1 = machines1[0];
 
     // 短暂等待（5秒）以观察 CPU 变化
@@ -609,7 +609,7 @@ test.describe('性能验证', () => {
 
     const response2 = await apiRequest('/api/machines');
     const result2 = await response2.json();
-    const machines2 = result2.data?.items || result2.data || result;
+    const machines2 = result2.data?.items || result2.data || result2;
     const machine2 = machines2.find((m: any) => m.id === machine1.id);
 
     expect(machine2).toBeDefined();

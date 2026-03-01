@@ -31,9 +31,10 @@ import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
 import { SessionModel } from '../../src/models/session.model.js';
-import { db } from '../../src/config/database.js';
+import { UserRole } from '../../src/shared/types/index.js';
 import { getFreePort } from '../helpers/ports.js';
 import { createTestUser } from '../helpers/factories.js';
+import { createIsolatedTestDatabase, type IsolatedTestDatabase } from '../../src/tests/helpers/isolated-database.js';
 import puppeteer from 'puppeteer-core';
 import type { FastifyInstance } from 'fastify';
 import { execSync } from 'child_process';
@@ -54,6 +55,7 @@ describe('浏览器启动参数集成测试', () => {
   // 全局变量声明
   // ========================================
 
+  let testDb: IsolatedTestDatabase;
   let managerApp: FastifyInstance;
   let managerHttpPort: number;
   let managerGrpcPort: number;
@@ -89,12 +91,10 @@ describe('浏览器启动参数集成测试', () => {
     const nodeVersion = process.version;
     console.log(`   当前 Node.js 版本: ${nodeVersion}`);
 
-    // 步骤 2: 创建测试数据库
-    console.log('\n[步骤 2] 准备测试数据库...');
-    // 数据库连接已在 database.ts 模块加载时创建
-    const { createTables } = await import('../../src/models/migrations.js');
-    await createTables();
-    console.log('   ✅ 测试数据库准备完成');
+    // 步骤 2: 创建独立测试数据库
+    console.log('\n[步骤 2] 创建独立测试数据库...');
+    testDb = await createIsolatedTestDatabase();
+    console.log(`   ✅ 测试数据库准备完成: ${testDb.dbName}`);
 
     // 步骤 3: 创建测试用户
     console.log('\n[步骤 3] 创建测试用户...');
@@ -105,7 +105,7 @@ describe('浏览器启动参数集成测试', () => {
       const userData = {
         username: `browser_param_user_${Date.now()}_${i}`,
         password: 'password123',
-        role: 'user',
+        role: UserRole.USER,
         credits: INITIAL_CREDITS,
         email: `test_${Date.now()}_${i}@example.com`,
       };
@@ -199,7 +199,7 @@ describe('浏览器启动参数集成测试', () => {
     // 步骤 6: 验证机器注册
     console.log('\n[步骤 6] 验证机器注册状态...');
     await new Promise((resolve) => setTimeout(resolve, 2000)); // 等待注册完成
-    const registeredMachines = await db('machines').select('*').where('status', 'online');
+    const registeredMachines = await testDb.db('machines').select('*').where('status', 'online');
     expect(registeredMachines.length).toBe(NUM_MACHINES);
     console.log(`   ✅ 成功注册 ${registeredMachines.length} 台机器`);
 
@@ -264,17 +264,17 @@ describe('浏览器启动参数集成测试', () => {
 
   beforeEach(async () => {
     // 清理会话表
-    await db('sessions').del();
-    await db('credit_history').del();
+    await testDb.db('sessions').del();
+    await testDb.db('credit_history').del();
 
     // 重置用户积分
     for (const user of testUsers) {
-      await db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
+      await testDb.db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
     }
 
     // 重置机器实例计数
     for (const machine of machineServers) {
-      await db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
+      await testDb.db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
     }
   }, 10000);
 

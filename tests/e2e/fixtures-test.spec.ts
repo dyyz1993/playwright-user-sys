@@ -10,7 +10,7 @@
  * 4. 自动清理：停止所有机器
  */
 
-import { test, expect } from '../fixtures';
+import { test, expect } from '../fixtures.js';
 
 test.describe('Fixtures 功能验证', () => {
   test('应该自动启动管理端和机器服务', async ({ page, testEnv }) => {

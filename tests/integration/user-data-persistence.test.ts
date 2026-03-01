@@ -145,7 +145,7 @@ describe('用户数据持久化集成测试', () => {
     console.log('\n[步骤 3] 创建测试用户...');
     const { generateToken } = await import('../../src/utils/auth.js');
     for (let i = 0; i < NUM_USERS; i++) {
-      const user = await createTestUser(INITIAL_CREDITS);
+      const user = await createTestUser({ credits: INITIAL_CREDITS });
       // 生成 JWT token
       const token = generateToken({
         id: user.id,

@@ -53,6 +53,7 @@ import {
 import puppeteer from 'puppeteer-core';
 import type { FastifyInstance } from 'fastify';
 import { execSync } from 'child_process';
+import { UserRole } from '@/shared/types/index.js';
 
 // Mock webhook - 安全测试仅Mock外部依赖
 vi.mock('../../src/utils/webhook.js', () => ({
@@ -381,7 +382,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
 
       // Layer 2: Database - 验证没有创建异常用户
       console.log('\n[步骤 2] 验证数据库中无异常用户...');
-      const users = await db('users').select('username');
+      const users = await testDb.db('users').select('username');
       const dangerousUsers = users.filter(
         (u: any) => u.username.includes("'") || u.username.includes('--') || u.username.includes('/*')
       );
@@ -485,7 +486,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       const forgedToken = generateToken({
         id: 999, // 不存在的用户ID
         username: 'hacker',
-        role: 'admin',
+        role: UserRole.ADMIN,
       });
 
       // 在测试环境中，伪造的token会被接受
@@ -748,7 +749,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       const user = testUsers[0];
 
       console.log('\n[步骤 1] 设置用户积分为0...');
-      await db('users').where({ id: user.id }).update({ credits: 0 });
+      await testDb.db('users').where({ id: user.id }).update({ credits: 0 });
 
       const userAfterSet = await UserModel.findById(user.id);
       expect(userAfterSet!.credits).toBe(0);

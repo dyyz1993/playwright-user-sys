@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { createSessionRequestSchema } from '../../src/schemas/session.schema';
+import { createSessionRequestSchema } from '../../src/schemas/session.schema.js';
 
 describe('浏览器选项 Schema 验证', () => {
   it('应该接受 storageStatePath 参数', () => {

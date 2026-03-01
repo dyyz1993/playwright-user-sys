@@ -213,14 +213,15 @@ async function runAntiDetectionTests() {
         return { error: 'WebGL 不可用' };
       }
 
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      const webgl = gl as WebGLRenderingContext;
+      const debugInfo = webgl.getExtension('WEBGL_debug_renderer_info');
       if (!debugInfo) {
         return { error: 'WEBGL_debug_renderer_info 不可用' };
       }
 
       return {
-        vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
-        renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
+        vendor: webgl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+        renderer: webgl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
       };
     });
 

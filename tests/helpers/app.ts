@@ -6,7 +6,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import { build as buildApp } from '../../src/app.js';
 import { getTestDbConnection, closeDatabase } from './database.js';
-import { logger } from '../../src/utils/logger.js';
+import { logger } from '../../src/shared/utils/logger.js';
 
 /**
  * 测试应用配置选项

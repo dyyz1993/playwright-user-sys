@@ -79,8 +79,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
-import { db, initDatabase } from '../../src/config/database.js';
+import { UserRole } from '../../src/shared/types/index.js';
 import { getFreePort } from '../helpers/ports.js';
+import { createIsolatedTestDatabase, type IsolatedTestDatabase } from '../../src/tests/helpers/isolated-database.js';
 import puppeteer from 'puppeteer-core';
 import type { FastifyInstance } from 'fastify';
 import { execSync } from 'child_process';
@@ -98,6 +99,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
   // 全局变量声明
   // ========================================
 
+  let testDb: IsolatedTestDatabase;
   let managerApp: FastifyInstance;
   let managerHttpPort: number;
   let managerGrpcPort: number;
@@ -133,18 +135,10 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     const nodeVersion = process.version;
     console.log(`   当前 Node.js 版本: ${nodeVersion}`);
 
-    // 步骤 2: 创建测试数据库
-    console.log('\n[步骤 2] 准备测试数据库...');
-    try {
-      await db.destroy();
-      console.log('   已销毁现有数据库连接');
-    } catch (e) {
-      // 忽略错误
-    }
-    await initDatabase();
-    const { createTables } = await import('../../src/models/migrations.js');
-    await createTables();
-    console.log('   ✅ 测试数据库准备完成');
+    // 步骤 2: 创建独立测试数据库
+    console.log('\n[步骤 2] 创建独立测试数据库...');
+    testDb = await createIsolatedTestDatabase();
+    console.log(`   ✅ 测试数据库准备完成: ${testDb.dbName}`);
 
     // 步骤 3: 创建测试用户
     console.log('\n[步骤 3] 创建测试用户...');
@@ -154,7 +148,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
       const userData = {
         username: `anti_detection_advanced_user_${Date.now()}_${i}`,
         password: 'password123',
-        role: 'user',
+        role: UserRole.USER,
         credits: INITIAL_CREDITS,
         email: `test_advanced_${Date.now()}_${i}@example.com`,
       };
@@ -245,7 +239,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     // 步骤 6: 验证机器注册
     console.log('\n[步骤 6] 验证机器注册状态...');
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    const registeredMachines = await db('machines').select('*').where('status', 'online');
+    const registeredMachines = await testDb.db('machines').select('*').where('status', 'online');
     expect(registeredMachines.length).toBe(NUM_MACHINES);
     console.log(`   ✅ 成功注册 ${registeredMachines.length} 台机器`);
 
@@ -306,15 +300,15 @@ describe('高级反机器人检测验证测试 (2025)', () => {
   // ========================================
 
   beforeEach(async () => {
-    await db('sessions').del();
-    await db('credit_history').del();
+    await testDb.db('sessions').del();
+    await testDb.db('credit_history').del();
 
     for (const user of testUsers) {
-      await db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
+      await testDb.db('users').where({ id: user.id }).update({ credits: INITIAL_CREDITS });
     }
 
     for (const machine of machineServers) {
-      await db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
+      await testDb.db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
     }
   }, 10000);
 
@@ -651,7 +645,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     const pushInfo = await page.evaluate(() => {
       return {
         pushManagerExists: typeof (window as any).PushManager === 'function',
-        hasSwPush: typeof navigator.serviceWorker?.push === 'function',
+        hasSwPush: typeof (navigator.serviceWorker as any)?.push === 'function',
       };
     });
 
@@ -733,17 +727,18 @@ describe('高级反机器人检测验证测试 (2025)', () => {
         return { error: 'WebGL 不可用' };
       }
 
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      const webgl = gl as WebGLRenderingContext;
+      const debugInfo = webgl.getExtension('WEBGL_debug_renderer_info');
 
       return {
-        vendor: debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : null,
-        renderer: debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : null,
-        webglVersion: gl.getParameter(gl.VERSION),
-        shadingLanguageVersion: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
-        maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
-        maxViewportDims: gl.getParameter(gl.MAX_VIEWPORT_DIMS),
-        maxRenderBufferSize: gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),
-        extensions: gl.getSupportedExtensions()?.slice(0, 10) || [],
+        vendor: debugInfo ? webgl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : null,
+        renderer: debugInfo ? webgl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : null,
+        webglVersion: webgl.getParameter(webgl.VERSION),
+        shadingLanguageVersion: webgl.getParameter(webgl.SHADING_LANGUAGE_VERSION),
+        maxTextureSize: webgl.getParameter(webgl.MAX_TEXTURE_SIZE),
+        maxViewportDims: webgl.getParameter(webgl.MAX_VIEWPORT_DIMS),
+        maxRenderBufferSize: webgl.getParameter(webgl.MAX_RENDERBUFFER_SIZE),
+        extensions: webgl.getSupportedExtensions()?.slice(0, 10) || [],
       };
     });
 
@@ -1766,10 +1761,11 @@ describe('高级反机器人检测验证测试 (2025)', () => {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       if (gl) {
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        const webgl = gl as WebGLRenderingContext;
+        const debugInfo = webgl.getExtension('WEBGL_debug_renderer_info');
         results.webglDebugInfo = !!debugInfo;
         if (debugInfo) {
-          const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+          const renderer = webgl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
           results.webglRenderer = !renderer?.includes('SwiftShader');
         }
       }
@@ -1870,14 +1866,14 @@ describe('高级反机器人检测验证测试 (2025)', () => {
       });
 
       // 等待页面加载
-      await page.waitForTimeout(5000);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
       // 截图
       const screenshot = await page.screenshot({ encoding: 'base64' });
       console.log(`   页面已加载，截图大小: ${screenshot.length} bytes`);
 
       // 尝试读取检测结果
-      const检测结果 = await page.evaluate(() => {
+      const detectionResults = await page.evaluate(() => {
         const rows = document.querySelectorAll('table tr');
         const results: Record<string, string> = {};
 
@@ -1896,7 +1892,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
       });
 
       console.log('\n   检测结果:');
-      for (const [key, value] of Object.entries(检测结果)) {
+      for (const [key, value] of Object.entries(detectionResults)) {
         console.log(`     ${key}: ${value}`);
       }
 
@@ -1927,7 +1923,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
         timeout: 60000,
       });
 
-      await page.waitForTimeout(5000);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
       const result = await page.evaluate(() => {
         const resultDiv = document.querySelector('#result');
@@ -1967,7 +1963,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
         timeout: 60000,
       });
 
-      await page.waitForTimeout(10000);
+      await new Promise((resolve) => setTimeout(resolve, 10000));
 
       // 截图
       const screenshot = await page.screenshot({ encoding: 'base64' });
@@ -2073,10 +2069,11 @@ describe('高级反机器人检测验证测试 (2025)', () => {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       if (gl) {
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        const webgl = gl as WebGLRenderingContext;
+        const debugInfo = webgl.getExtension('WEBGL_debug_renderer_info');
         reportData.webgl = {
-          vendor: debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : null,
-          renderer: debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : null,
+          vendor: debugInfo ? webgl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : null,
+          renderer: debugInfo ? webgl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : null,
         };
       }
 
@@ -2198,9 +2195,10 @@ describe('高级反机器人检测验证测试 (2025)', () => {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       if (gl) {
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        const webgl = gl as WebGLRenderingContext;
+        const debugInfo = webgl.getExtension('WEBGL_debug_renderer_info');
         if (debugInfo) {
-          const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+          const renderer = webgl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
           if (renderer && (renderer.includes('SwiftShader') || renderer.includes('VMware'))) {
             riskScore += 10;
             riskFactors.push('Suspicious WebGL renderer');

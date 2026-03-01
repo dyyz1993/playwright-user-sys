@@ -7,9 +7,8 @@ import { UserModel } from '../../src/models/user.model.js';
 import { MachineModel } from '../../src/models/machine.model.js';
 import { SessionModel } from '../../src/models/session.model.js';
 import { CreditHistoryModel } from '../../src/models/credit-history.model.js';
-import { SessionStatus } from '../../src/shared/types/index.js';
+import { SessionStatus, UserRole } from '../../src/shared/types/index.js';
 import { getFreePort } from './ports.js';
-import type { Machine } from '../../src/shared/types/index.js';
 
 /**
  * 生成随机用户名
@@ -37,7 +36,7 @@ export async function createTestUser(overrides: Partial<any> = {}): Promise<any>
   const defaultUser = {
     username: generateUsername('user'),
     password: 'password123',
-    role: 'user',
+    role: UserRole.USER,
     credits: 100,
     email: `test_${Date.now()}@example.com`,
     webhook_url: null,
@@ -218,7 +217,7 @@ export async function createClosedSession(
 
   return createTestSession(userId, machineId, {
     ...overrides,
-    status: SessionStatus.CLOSED,
+    status: SessionStatus.DISCONNECTED,
     start_time: startTime,
     end_time: new Date(),
     duration,
@@ -238,7 +237,7 @@ export async function createClosedSession(
 export async function createCreditHistory(
   userId: number,
   amount: number,
-  action: 'add' | 'use' | 'freeze' | 'unfreeze',
+  action: 'add' | 'use' | 'deduct',
   overrides: Partial<any> = {}
 ): Promise<any> {
   const defaultHistory = {

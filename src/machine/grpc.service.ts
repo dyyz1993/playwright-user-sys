@@ -111,10 +111,8 @@ const packageDefinition = protoLoader.loadSync(protoPath, {
 
 const proto = grpc.loadPackageDefinition(packageDefinition).machine as any;
 
-/**
- * gRPC 客户端类
- * 负责与管理端通信
- */
+let _grpcClientInstance: GrpcClient | null = null;
+
 export class GrpcClient extends EventEmitter {
   private client: any;
   private call: any;
@@ -836,12 +834,6 @@ export class GrpcClient extends EventEmitter {
   }
 }
 
-// 存储 gRPC 客户端实例，用于全局访问（预留用于将来的全局访问功能）
-let _grpcClientInstance: GrpcClient | null = null;
-
-/**
- * gRPC 服务器实现
- */
 const serviceImplementation = {
   // 启动浏览器实例
   LaunchBrowser: async (call: any, callback: any) => {

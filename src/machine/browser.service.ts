@@ -141,7 +141,7 @@ const DEFAULT_SESSION_CONFIG: SessionConfig = {
 /**
  * 浏览器服务类 - 专注于核心浏览器管理和能力提供
  */
-class BrowserService extends EventEmitter {
+export class BrowserService extends EventEmitter {
   private sessions: Map<string, SessionInfo> = new Map();
   private connections: Map<string, ConnectionInfo> = new Map();
   private disconnectionTimers: Map<string, NodeJS.Timeout> = new Map();

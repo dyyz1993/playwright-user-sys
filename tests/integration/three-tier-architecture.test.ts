@@ -565,7 +565,7 @@ describe('完整三端架构集成测试', () => {
 
     // 搜索操作
     console.log('\n[步骤 5] 测试搜索操作...');
-    await page.fill('#kw', 'Playwright测试');
+    await page.type('#kw', 'Playwright测试');
     await page.click('#su');
 
     // 等待搜索结果

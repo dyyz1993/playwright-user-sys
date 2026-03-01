@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { v4 as uuidv4 } from 'uuid';
+import { UserRole } from '../../src/shared/types/index.js';
 
 /**
  * 安全漏洞测试套件
@@ -22,7 +23,7 @@ async function createTestUser(overrides: any = {}) {
     username: `test_${Date.now()}_${Math.random().toString(36).substring(7)}`,
     password: await hashPassword('TestPassword123'),
     email: `test_${Date.now()}@example.com`,
-    role: 'user',
+    role: UserRole.USER,
     status: 'active',
     credits: 100,
     api_key: uuidv4(),
@@ -200,7 +201,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
       // 步骤 1: 创建普通用户
       const regularUser = await createTestUser({
         username: `regular_${Date.now()}`,
-        role: 'user',
+        role: UserRole.USER,
       });
 
       try {
@@ -209,7 +210,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
         const userToken = generateToken({
           id: regularUser.id,
           username: regularUser.username,
-          role: 'user',
+          role: UserRole.USER,
         });
 
         // 步骤 3: 尝试访问管理员端点 - 获取所有用户
@@ -231,7 +232,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
           data: {
             username: `hacked_${Date.now()}`,
             password: 'Hacked123',
-            role: 'admin',
+            role: UserRole.ADMIN,
           },
         });
 
@@ -793,7 +794,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
           Authorization: `Bearer ${generateToken({
             id: userA.id,
             username: userA.username,
-            role: 'user',
+            role: UserRole.USER,
           })}`,
         },
       });
@@ -848,7 +849,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
             Authorization: `Bearer ${generateToken({
               id: userA.id,
               username: userA.username,
-              role: 'admin',
+              role: UserRole.ADMIN,
             })}`,
           },
         });

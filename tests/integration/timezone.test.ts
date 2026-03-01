@@ -33,7 +33,7 @@ describe('Timezone Integration Tests', () => {
   beforeAll(async () => {
     // 动态导入 BrowserService 实例
     const { browserService: service } = await import('../../src/machine/browser.service.js');
-    browserService = service as BrowserService;
+    browserService = service as unknown as BrowserService;
   });
 
   afterAll(async () => {

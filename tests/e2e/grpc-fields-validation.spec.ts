@@ -13,7 +13,7 @@
  * - P2: 统计监控 (可选)
  */
 
-import { test, expect } from '../fixtures';
+import { test, expect } from '../fixtures.js';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';

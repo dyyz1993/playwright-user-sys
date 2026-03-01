@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { StorageService } from '../../src/services/storage.service';
-import { STORAGE_CONFIG } from '../../src/config/storage.config';
+import { StorageService } from '../../src/services/storage.service.js';
+import { STORAGE_CONFIG } from '../../src/config/storage.config.js';
 import { mkdir, writeFile, rm } from 'fs/promises';
 import { join } from 'path';
 

@@ -47,6 +47,17 @@ export default [
       'preserve-caught-error': 'warn',
       'no-case-declarations': 'warn',
       'no-async-promise-executor': 'warn',
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['../../../*', '../../../../*', '../../../../../*'],
+              message: '禁止使用三层及以上相对路径导入，请使用 @ 别名代替。例如：使用 "@/xxx" 代替 "../../../xxx"',
+            },
+          ],
+        },
+      ],
     },
   },
   {

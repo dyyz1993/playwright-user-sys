@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app.js';
+import { clearAllTables } from '../helpers/database.js';
 import { UserModel } from '../../models/user.model.js';
 import { OperationLogModel } from '../../models/operation-log.model.js';
 import { generateToken, hashPassword } from '../../utils/auth.js';
@@ -12,9 +13,9 @@ describe('管理员添加点数功能测试', () => {
   let testUserId: number;
   let adminId: number;
 
-  // 在所有测试之前设置应用和创建测试用户
   beforeAll(async () => {
-    // 构建应用实例
+    await clearAllTables();
+
     app = await build();
 
     // 创建测试管理员用户
@@ -54,8 +55,8 @@ describe('管理员添加点数功能测试', () => {
     });
   });
 
-  // 在所有测试之后关闭应用
   afterAll(async () => {
+    await clearAllTables();
     await app.close();
   });
 

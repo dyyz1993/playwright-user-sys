@@ -407,24 +407,16 @@ describe('MemoryStoreService', () => {
   // MS-15: 数据一致性检查
   // ========================================
   it('应该检查数据一致性', async () => {
-    const { MachineModel } = await import('../../../models/machine.model.js');
+    const { connectionManager } = await import('../../../services/machine-grpc.service.js');
+
+    vi.mocked(connectionManager.getActiveConnections).mockReturnValue([]);
+
     const { SessionModel } = await import('../../../models/session.model.js');
-
-    vi.mocked(MachineModel.findAll).mockResolvedValue({
-      items: [],
-      total: 0,
-      page: 1,
-      limit: 10,
-      totalPages: 0,
-    });
-
-    vi.mocked(MachineModel.update).mockResolvedValue(null);
     vi.mocked(SessionModel.findActiveSessions).mockResolvedValue([]);
 
     await service.checkDataConsistency();
 
-    // Verify methods were called
-    expect(MachineModel.findAll).toHaveBeenCalled();
+    expect(connectionManager.getActiveConnections).toHaveBeenCalled();
     expect(SessionModel.findActiveSessions).toHaveBeenCalled();
   });
 

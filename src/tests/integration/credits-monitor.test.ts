@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
+import { clearAllTables } from '../helpers/database.js';
 import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
 import { SessionStatus } from '@shared/types/index.js';
@@ -34,9 +35,9 @@ describe('点数监控服务集成测试', () => {
   let testUser: any;
   let testMachineId = 'test-machine-1';
 
-  // 在所有测试前创建测试用户
   beforeAll(async () => {
-    // 创建测试用户
+    await clearAllTables();
+
     const username = `test_user_${Date.now()}`;
 
     testUser = await UserModel.create({
@@ -50,12 +51,8 @@ describe('点数监控服务集成测试', () => {
     expect(testUser.credits).toBe(10);
   });
 
-  // 在所有测试后清理
   afterAll(async () => {
-    // 删除测试用户
-    if (testUser) {
-      await UserModel.delete(testUser.id);
-    }
+    await clearAllTables();
   });
 
   it('应该正确计算并扣除新增的点数', async () => {

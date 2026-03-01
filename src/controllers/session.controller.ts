@@ -9,6 +9,7 @@ import { createWebhookEvent } from '../utils/webhook.js';
 import { createSessionRequestSchema, paginationQuerySchema } from '../schemas/index.js';
 import { env } from '../config/env.js';
 import { createBrowserSession } from '../services/session.service.js';
+import { connectionManager } from '../services/machine-grpc.service.js';
 // URL 导入已移除，因为不再需要解析 URL
 
 // 会话控制器中使用的类型定义
@@ -203,7 +204,6 @@ export async function releaseSession(request: FastifyRequest, reply: FastifyRepl
 
     try {
       // 向机器发送关闭浏览器实例的请求
-      const { connectionManager } = await import('../services/machine-grpc.service.js');
       request.log.info(`向机器 ${session.machine_id} 发送关闭浏览器请求 (sessionId: ${sessionId})`);
 
       await connectionManager.closeBrowser(session.machine_id, sessionId);
@@ -360,7 +360,6 @@ export async function closeSession(request: FastifyRequest, reply: FastifyReply)
 
     try {
       // 向机器发送关闭浏览器实例的请求
-      const { connectionManager } = await import('../services/machine-grpc.service.js');
       request.log.info(`向机器 ${session.machine_id} 发送关闭浏览器请求 (sessionId: ${sessionId})`);
 
       await connectionManager.closeBrowser(session.machine_id, sessionId);

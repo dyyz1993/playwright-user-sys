@@ -5,8 +5,8 @@
  * 注意: 此测试使用 MySQL 数据库
  * better-sqlite3 需要编译原生模块，在某些环境下可能无法工作
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { db } from '../../../config/database.js';
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
+import { db, initDatabase } from '../../../config/database.js';
 import { SessionModel } from '../../../models/session.model.js';
 import { UserModel } from '../../../models/user.model.js';
 import { MachineModel } from '../../../models/machine.model.js';
@@ -20,6 +20,14 @@ vi.mock('../../../utils/webhook.js', () => ({
 }));
 
 describe('SessionModel', () => {
+  beforeAll(async () => {
+    await initDatabase();
+  });
+
+  afterAll(async () => {
+    await db.destroy();
+  });
+
   let testUser: any;
   let testMachine: any;
 
@@ -293,15 +301,21 @@ describe('SessionModel', () => {
   it('应该检查并标记超时的会话', async () => {
     const oldSession = await SessionModel.create({
       user_id: testUser.id,
-      start_time: new Date(Date.now() - 35 * 60 * 1000), // 35分钟前
     });
+
+    // 手动更新 start_time 为 35 分钟前
+    await db('sessions')
+      .where('id', oldSession!.id)
+      .update({
+        start_time: new Date(Date.now() - 35 * 60 * 1000),
+      });
 
     const timeoutMs = 30 * 60 * 1000; // 30分钟超时
     const count = await SessionModel.checkExpiredSessions(timeoutMs);
 
     expect(count).toBeGreaterThan(0);
 
-    const updated = await SessionModel.findById(oldSession.id);
+    const updated = await SessionModel.findById(oldSession!.id);
     expect(updated).toBeTruthy();
     expect(updated!.status).toBe(SessionStatus.EXPIRED);
   });

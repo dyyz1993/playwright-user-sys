@@ -51,16 +51,10 @@ export default defineConfig({
    * 5. 设置 baseURL 指向管理端
    */
   webServer: {
-    // 管理端启动命令
     command: 'NODE_ENV=test npx tsx src/server.ts',
-    // 端口配置（使用固定端口，或者设为0动态分配）
     port: 3000,
-    // 重用已存在的服务器（开发时有用）
-    // 测试环境始终启动新服务器，避免依赖外部服务
-    reuseExistingServer: false,
-    // 启动超时
+    reuseExistingServer: true,
     timeout: 120 * 1000,
-    // 环境变量
     env: {
       NODE_ENV: 'test',
       TEST_ENV: 'true',

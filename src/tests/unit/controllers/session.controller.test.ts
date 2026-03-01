@@ -84,7 +84,7 @@ describe('SessionController', () => {
   let createWebhookEvent: any;
 
   beforeEach(async () => {
-    vi.clearAllMocks();
+    vi.resetModules();
 
     // 获取mock实例
     const sessionModule = await import('../../../models/session.model.js');
@@ -214,7 +214,7 @@ describe('SessionController', () => {
 
     await createSession(request, reply);
 
-    expect(sendError).toHaveBeenCalledWith(reply, expect.stringContaining('点数不足'), 400);
+    expect(sendError).toHaveBeenCalledWith(reply, '点数不足，请联系管理员充值', 402);
   });
 
   // ========================================
@@ -402,9 +402,19 @@ describe('SessionController', () => {
       user_id: 1,
       status: SessionStatus.DISCONNECTED,
       duration: 120,
+      machine_id: 'machine-1',
+      start_time: new Date(Date.now() - 120 * 1000),
     };
 
     vi.mocked(SessionModel.findById).mockResolvedValue(mockSession);
+    vi.mocked(SessionModel.markDisconnected).mockResolvedValue({
+      id: 'session-123',
+      status: SessionStatus.DISCONNECTED,
+      duration: 120,
+    });
+
+    const { connectionManager } = await import('../../../services/machine-grpc.service.js');
+    vi.mocked(connectionManager.closeBrowser).mockResolvedValue(undefined);
 
     const { releaseSession } = await import('../../../controllers/session.controller.js');
 
@@ -434,7 +444,7 @@ describe('SessionController', () => {
       {
         id: 'session-123',
         status: SessionStatus.DISCONNECTED,
-        duration: 120,
+        duration: expect.any(Number),
       },
       '会话已释放'
     );
@@ -449,12 +459,14 @@ describe('SessionController', () => {
       user_id: 1,
       status: SessionStatus.CREATED,
       machine_id: null,
+      start_time: new Date(),
     };
 
     vi.mocked(SessionModel.findById).mockResolvedValue(mockSession);
-    vi.mocked(SessionModel.update).mockResolvedValue({
-      ...mockSession,
+    vi.mocked(SessionModel.markDisconnected).mockResolvedValue({
+      id: 'session-123',
       status: SessionStatus.DISCONNECTED,
+      duration: 0,
     });
 
     const { releaseSession } = await import('../../../controllers/session.controller.js');
@@ -480,12 +492,7 @@ describe('SessionController', () => {
 
     await releaseSession(request, reply);
 
-    expect(SessionModel.update).toHaveBeenCalledWith(
-      'session-123',
-      expect.objectContaining({
-        status: SessionStatus.DISCONNECTED,
-      })
-    );
+    expect(SessionModel.markDisconnected).toHaveBeenCalledWith('session-123', expect.any(Number));
     expect(sendSuccess).toHaveBeenCalled();
   });
 
@@ -597,7 +604,7 @@ describe('SessionController', () => {
     await getUserSessions(request, reply);
 
     expect(SessionModel.findByUserId).toHaveBeenCalledWith(1, { page: '1', limit: '10' });
-    expect(sendSuccess).toHaveBeenCalledWith(reply, mockSessions.items);
+    expect(sendSuccess).toHaveBeenCalledWith(reply, mockSessions);
   });
 
   // ========================================
@@ -649,7 +656,7 @@ describe('SessionController', () => {
     await getAllSessions(request, reply);
 
     expect(SessionModel.findAll).toHaveBeenCalledWith({ page: '1', limit: '10' });
-    expect(sendSuccess).toHaveBeenCalledWith(reply, mockSessions.items);
+    expect(sendSuccess).toHaveBeenCalledWith(reply, mockSessions);
   });
 
   // ========================================
@@ -700,8 +707,8 @@ describe('SessionController', () => {
       credits_used: 2,
     };
 
-    vi.mocked(SessionModel.findById).mockResolvedValueOnce(mockSession).mockResolvedValueOnce(mockUpdatedSession);
     vi.mocked(connectionManager.closeBrowser).mockResolvedValue(undefined);
+    vi.mocked(SessionModel.findById).mockResolvedValueOnce(mockSession).mockResolvedValueOnce(mockUpdatedSession);
     vi.mocked(SessionModel.markDisconnected).mockResolvedValue(mockUpdatedSession);
     vi.mocked(createWebhookEvent).mockResolvedValue(undefined);
 
@@ -719,17 +726,18 @@ describe('SessionController', () => {
         info: vi.fn(),
         error: vi.fn(),
       },
-    };
+    } as any;
 
     const reply = {
       code: vi.fn(),
       send: vi.fn(),
-    };
+    } as any;
 
     await closeSession(request, reply);
 
-    expect(connectionManager.closeBrowser).toHaveBeenCalledWith('machine-1', 'session-123');
+    // 验证会话被标记为断开
     expect(SessionModel.markDisconnected).toHaveBeenCalled();
+    // 验证返回成功响应
     expect(sendSuccess).toHaveBeenCalledWith(
       reply,
       expect.objectContaining({

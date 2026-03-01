@@ -5,16 +5,23 @@
  * 注意: 此测试使用 MySQL 数据库
  * better-sqlite3 需要编译原生模块，在某些环境下可能无法工作
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { db } from '../../../config/database.js';
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
+import { db, initDatabase } from '../../../config/database.js';
 import { UserModel } from '../../../models/user.model.js';
 import { hashPassword } from '../../../utils/auth.js';
 import { UserRole, UserStatus } from '../../../shared/types/index.js';
 import { clearAllTables } from '../../helpers/database.js';
 
 describe('UserModel', () => {
+  beforeAll(async () => {
+    await initDatabase();
+  });
+
+  afterAll(async () => {
+    await db.destroy();
+  });
+
   beforeEach(async () => {
-    // 清空数据
     await clearAllTables();
   });
 

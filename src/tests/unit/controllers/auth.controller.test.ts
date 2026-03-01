@@ -110,8 +110,7 @@ describe('AuthController', () => {
           username: 'testuser',
         }),
         token: 'mock-jwt-token',
-      }),
-      200
+      })
     );
   });
 
@@ -230,8 +229,7 @@ describe('AuthController', () => {
 
     await login(request, reply);
 
-    // Zod验证会抛出错误，被catch并返回400或500
-    expect(reply.code).toHaveBeenCalled();
+    expect(sendError).toHaveBeenCalledWith(reply, expect.stringContaining('无效的请求数据'), 400);
   });
 
   // ========================================
@@ -274,10 +272,11 @@ describe('AuthController', () => {
     expect(sendSuccess).toHaveBeenCalledWith(
       reply,
       expect.objectContaining({
-        id: 1,
-        username: 'testuser',
-      }),
-      200
+        user: expect.objectContaining({
+          id: 1,
+          username: 'testuser',
+        }),
+      })
     );
   });
 

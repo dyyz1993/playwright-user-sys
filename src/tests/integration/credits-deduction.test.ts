@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { build } from '../../app.js';
+import { clearAllTables } from '../helpers/database.js';
 import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,9 +11,9 @@ describe('点数扣除集成测试', () => {
   let testUser: any;
   let apiKey: string;
 
-  // 在所有测试前创建测试用户
   beforeAll(async () => {
-    // 构建应用但不启动
+    await clearAllTables();
+
     app = await build();
 
     // 创建测试用户
@@ -32,14 +33,8 @@ describe('点数扣除集成测试', () => {
     expect(testUser.credits).toBe(100);
   });
 
-  // 在所有测试后清理
   afterAll(async () => {
-    // 删除测试用户
-    if (testUser) {
-      await UserModel.delete(testUser.id);
-    }
-
-    // 关闭应用
+    await clearAllTables();
     await app.close();
   });
 

@@ -13,6 +13,7 @@ const wsConnectQuerySchema = z.object({
   width: z.coerce.number().optional(),
   height: z.coerce.number().optional(),
   proxy: z.string().optional(),
+  proxyBypass: z.string().optional(),
   userAgent: z.string().optional(),
   cookies: z.record(z.string(), z.string()).optional(),
   localStorage: z.record(z.string(), z.string()).optional(),
@@ -131,6 +132,7 @@ export class NativeWebSocketProxyService {
       const sessionOptions = {
         userAgent: validatedParams.userAgent,
         proxy: validatedParams.proxy,
+        proxyBypass: validatedParams.proxyBypass,
         cookies: validatedParams.cookies,
         localStorage: validatedParams.localStorage,
         viewport:

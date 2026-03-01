@@ -906,6 +906,11 @@ const serviceImplementation = {
         convertedOptions.timezone = options.timezone;
       }
 
+      // 新增：proxy_bypass 参数
+      if (options.proxy_bypass) {
+        convertedOptions.proxyBypass = options.proxy_bypass;
+      }
+
       // 保留向后兼容：如果客户端传递了 user_data_dir（已废弃）
       if (options.user_data_dir) {
         convertedOptions.userDataDir = options.user_data_dir;

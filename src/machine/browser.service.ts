@@ -46,6 +46,7 @@ export interface SessionConfig {
 export interface BrowserOptions {
   userAgent?: string;
   proxy?: string;
+  proxyBypass?: string;
   viewport?: { width: number; height: number };
   args?: string[];
   defaultViewport?: { width: number; height: number };
@@ -776,6 +777,10 @@ export class BrowserService extends EventEmitter {
 
     if (options.proxy) {
       result.args.push(`--proxy-server=${options.proxy}`);
+    }
+
+    if (options.proxyBypass) {
+      result.args.push(`--proxy-bypass-list=${options.proxyBypass}`);
     }
 
     if (options.viewport) {

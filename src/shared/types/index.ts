@@ -105,6 +105,7 @@ export type TypedHandler<T = any, U = any> = (
 export interface SessionCreateOptions {
   userAgent?: string;
   proxy?: string;
+  proxyBypass?: string;
   cookies?: Record<string, string>;
   localStorage?: Record<string, string>;
   viewport?: {

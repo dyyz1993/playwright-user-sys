@@ -96,6 +96,7 @@ message BrowserOptions {
   bool shared_user_data = 8;       // 是否共享用户数据目录
   string user_data_dir = 9;        // @deprecated 用户数据目录路径（已废弃）
   string timezone = 10;            // 浏览器时区设置
+  string proxy_bypass = 11;        // 绕过代理的地址列表
 }
 
 // 视口大小

@@ -20,18 +20,20 @@ describe('管理员权限验证测试', () => {
     // 构建应用实例
     app = await build();
 
-    // 创建测试管理员用户
+    // 创建测试管理员用户（使用唯一用户名）
+    const adminUsername = `testadmin_${Date.now()}`;
     const adminUser = await UserModel.create({
-      username: 'testadmin',
+      username: adminUsername,
       password: await hashPassword('password123'),
       role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,
       credits: 1000,
     });
 
-    // 创建测试普通用户
+    // 创建测试普通用户（使用唯一用户名）
+    const regularUsername = `testuser_${Date.now()}`;
     const regularUser = await UserModel.create({
-      username: 'testuser',
+      username: regularUsername,
       password: await hashPassword('password123'),
       role: UserRole.USER,
       status: UserStatus.ACTIVE,
@@ -72,9 +74,9 @@ describe('管理员权限验证测试', () => {
             Authorization: `Bearer ${adminToken}`,
           },
           payload: {
-            username: 'newuser',
+            username: `newuser_${Date.now()}`,
             password: 'password123',
-            email: 'newuser@example.com',
+            email: `newuser_${Date.now()}@example.com`,
             role: 'user',
             credits: 50,
           },
@@ -93,9 +95,9 @@ describe('管理员权限验证测试', () => {
             Authorization: `Bearer ${userToken}`,
           },
           payload: {
-            username: 'newuser2',
+            username: `newuser2_${Date.now()}`,
             password: 'password123',
-            email: 'newuser2@example.com',
+            email: `newuser2_${Date.now()}@example.com`,
             role: 'user',
             credits: 50,
           },

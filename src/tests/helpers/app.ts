@@ -4,6 +4,7 @@ import errorHandlerPlugin from '../../plugins/error-handler.plugin.js';
 import userRoutes from '../../routes/user.routes.js';
 import authRoutes from '../../routes/auth.routes.js';
 import adminApiRoutes from '../../routes/admin-api.routes.js';
+import adminApiAuthRoutes from '../../routes/admin-api-auth.routes.js';
 import sessionRoutes from '../../routes/session.routes.js';
 import machineRoutes from '../../routes/machine.routes.js';
 import adminMachineApiRoutes from '../../routes/admin-machine-api.routes.js';
@@ -24,6 +25,7 @@ export async function build(): Promise<FastifyInstance> {
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(userRoutes, { prefix: '/api/users' });
   await app.register(adminApiRoutes);
+  await app.register(adminApiAuthRoutes);
   await app.register(sessionRoutes, { prefix: '/api/sessions' });
   await app.register(machineRoutes, { prefix: '/api/machines' });
   await app.register(adminMachineApiRoutes); // 添加机器管理API路由

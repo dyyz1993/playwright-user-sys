@@ -47,7 +47,8 @@ export default fp(async function (fastify: FastifyInstance) {
 
       // 使用配置中的 JWT 密钥
       // 测试环境使用固定密钥
-      const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : String(env.JWT_SECRET);
+      const jwtSecret =
+        process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
       request.log.info({ jwtSecret: jwtSecret ? 'set' : 'not set' }, 'JWT_SECRET');
       request.log.info('使用 JWT 密钥验证令牌');
       request.log.info({ tokenPrefix: token?.substring(0, 20) + '...' }, 'Token 前缀');
@@ -140,7 +141,8 @@ export default fp(async function (fastify: FastifyInstance) {
         const token = authHeader!.split(' ')[1];
 
         // 使用配置中的 JWT 密钥
-        const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : String(env.JWT_SECRET);
+        const jwtSecret =
+          process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
         const decoded = jwt.verify(token, jwtSecret) as any;
 
         const user = await UserModel.findById(decoded.id);

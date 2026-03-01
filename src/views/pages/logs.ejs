@@ -31,11 +31,20 @@
         <div class="ml-4">
           <select id="action-filter" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
             <option value="">所有操作</option>
-            <option value="login">登录</option>
-            <option value="create_user">创建用户</option>
-            <option value="add_credits">添加算力</option>
-            <option value="create_session">创建会话</option>
-            <option value="end_session">结束会话</option>
+            <option value="登录" <%= filters.action === '登录' ? 'selected' : '' %>>登录</option>
+            <option value="创建用户" <%= filters.action === '创建用户' ? 'selected' : '' %>>创建用户</option>
+            <option value="更新用户" <%= filters.action === '更新用户' ? 'selected' : '' %>>更新用户</option>
+            <option value="删除用户" <%= filters.action === '删除用户' ? 'selected' : '' %>>删除用户</option>
+            <option value="添加点数" <%= filters.action === '添加点数' ? 'selected' : '' %>>添加点数</option>
+            <option value="批量充值" <%= filters.action === '批量充值' ? 'selected' : '' %>>批量充值</option>
+            <option value="重置用户 API Key" <%= filters.action === '重置用户 API Key' ? 'selected' : '' %>>重置 API Key</option>
+            <option value="批量删除用户" <%= filters.action === '批量删除用户' ? 'selected' : '' %>>批量删除用户</option>
+            <option value="添加机器" <%= filters.action === '添加机器' ? 'selected' : '' %>>添加机器</option>
+            <option value="更新机器配置" <%= filters.action === '更新机器配置' ? 'selected' : '' %>>更新机器配置</option>
+            <option value="批量重启机器" <%= filters.action === '批量重启机器' ? 'selected' : '' %>>批量重启机器</option>
+            <option value="导出用户列表" <%= filters.action === '导出用户列表' ? 'selected' : '' %>>导出用户列表</option>
+            <option value="清理用户存储" <%= filters.action === '清理用户存储' ? 'selected' : '' %>>清理用户存储</option>
+            <option value="清理旧数据" <%= filters.action === '清理旧数据' ? 'selected' : '' %>>清理旧数据</option>
           </select>
         </div>
       </div>
@@ -44,11 +53,11 @@
         <div>
           <label for="date-range" class="block text-sm font-medium text-gray-700 mb-1">日期范围</label>
           <select id="date-range" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
-            <option value="all">所有时间</option>
-            <option value="today">今天</option>
-            <option value="yesterday">昨天</option>
-            <option value="week">本周</option>
-            <option value="month">本月</option>
+            <option value="all" <%= filters.dateRange === 'all' ? 'selected' : '' %>>所有时间</option>
+            <option value="today" <%= filters.dateRange === 'today' ? 'selected' : '' %>>今天</option>
+            <option value="yesterday" <%= filters.dateRange === 'yesterday' ? 'selected' : '' %>>昨天</option>
+            <option value="week" <%= filters.dateRange === 'week' ? 'selected' : '' %>>本周</option>
+            <option value="month" <%= filters.dateRange === 'month' ? 'selected' : '' %>>本月</option>
           </select>
         </div>
       </div>
@@ -94,25 +103,41 @@
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <% if (log.action === 'login') { %>
+                <% if (log.action === '登录') { %>
                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                     登录
                   </span>
-                <% } else if (log.action === 'create_user') { %>
+                <% } else if (log.action === '创建用户') { %>
                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                     创建用户
                   </span>
-                <% } else if (log.action === 'add_credits') { %>
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                    添加算力
+                <% } else if (log.action === '更新用户') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                    更新用户
                   </span>
-                <% } else if (log.action === 'create_session') { %>
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                    创建会话
-                  </span>
-                <% } else if (log.action === 'end_session') { %>
+                <% } else if (log.action === '删除用户' || log.action === '批量删除用户') { %>
                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                    结束会话
+                    <%= log.action %>
+                  </span>
+                <% } else if (log.action === '添加点数' || log.action === '批量充值') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    <%= log.action %>
+                  </span>
+                <% } else if (log.action === '添加机器' || log.action === '更新机器配置' || log.action === '批量重启机器') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                    <%= log.action %>
+                  </span>
+                <% } else if (log.action === '重置用户 API Key') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                    重置 API Key
+                  </span>
+                <% } else if (log.action === '导出用户列表') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-cyan-100 text-cyan-800">
+                    导出用户列表
+                  </span>
+                <% } else if (log.action === '清理用户存储' || log.action === '清理旧数据') { %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                    <%= log.action %>
                   </span>
                 <% } else { %>
                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
@@ -222,28 +247,18 @@
     });
   });
 
-  // 操作筛选
+  // 操作筛选 - 通过后端 API
   const actionFilter = document.getElementById('action-filter');
-  actionFilter?.addEventListener('change', () => {
+  actionFilter?.addEventListener('change', async () => {
     const selectedAction = actionFilter.value;
-    const rows = document.querySelectorAll('tbody tr');
-
-    rows.forEach(row => {
-      const actionCell = row.querySelector('td:nth-child(3) span');
-      let action = '';
-
-      if (actionCell.textContent.trim() === '登录') action = 'login';
-      else if (actionCell.textContent.trim() === '创建用户') action = 'create_user';
-      else if (actionCell.textContent.trim() === '添加算力') action = 'add_credits';
-      else if (actionCell.textContent.trim() === '创建会话') action = 'create_session';
-      else if (actionCell.textContent.trim() === '结束会话') action = 'end_session';
-
-      if (selectedAction === '' || action === selectedAction) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
+    const url = new URL(window.location.href);
+    if (selectedAction) {
+      url.searchParams.set('action', selectedAction);
+    } else {
+      url.searchParams.delete('action');
+    }
+    url.searchParams.set('page', '1');
+    window.location.href = url.toString();
   });
 
   // 日期范围筛选 - 通过后端 API

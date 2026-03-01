@@ -225,41 +225,58 @@ export class OperationLogModel {
     try {
       const offset = (page - 1) * limit;
 
-      // 构建查询
-      let query = db('operation_logs')
-        .select('operation_logs.*', 'users.username', 'users.role')
-        .leftJoin('users', 'operation_logs.admin_id', 'users.id');
+      // 构建基础查询条件
+      let baseQuery = db('operation_logs');
 
       // 应用筛选条件
       if (filters?.action) {
-        query = query.where('operation_logs.action', filters.action);
+        baseQuery = baseQuery.where('action', filters.action);
       }
 
       if (filters?.startDate) {
-        query = query.where('operation_logs.created_at', '>=', filters.startDate);
+        baseQuery = baseQuery.where('created_at', '>=', filters.startDate);
       }
 
       if (filters?.endDate) {
         const endDate = new Date(filters.endDate);
         endDate.setHours(23, 59, 59, 999);
-        query = query.where('operation_logs.created_at', '<=', endDate);
+        baseQuery = baseQuery.where('created_at', '<=', endDate);
       }
 
-      // 执行查询
-      const [logs, totalResult] = await Promise.all([
-        query.clone().orderBy('operation_logs.created_at', 'desc').limit(limit).offset(offset),
-        query.count('operation_logs.id as count').first(),
-      ]);
+      // 先获取总数
+      const totalResult = await baseQuery.clone().count('id as count').first();
+      const total = totalResult ? Number(totalResult.count) : 0;
+
+      // 再获取分页数据（带 join）
+      const logs = await db('operation_logs')
+        .select('operation_logs.*', 'users.username', 'users.role')
+        .leftJoin('users', 'operation_logs.admin_id', 'users.id')
+        .modify((query) => {
+          if (filters?.action) {
+            query.where('operation_logs.action', filters.action);
+          }
+          if (filters?.startDate) {
+            query.where('operation_logs.created_at', '>=', filters.startDate);
+          }
+          if (filters?.endDate) {
+            const endDate = new Date(filters.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            query.where('operation_logs.created_at', '<=', endDate);
+          }
+        })
+        .orderBy('operation_logs.created_at', 'desc')
+        .limit(limit)
+        .offset(offset);
 
       return {
         items: logs.map((log: any) => ({
           ...log,
           details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
         })),
-        total: totalResult ? Number(totalResult.count) : 0,
+        total,
         page,
         limit,
-        totalPages: Math.ceil((totalResult ? Number(totalResult.count) : 0) / limit),
+        totalPages: Math.ceil(total / limit),
       };
     } catch (error) {
       console.error('分页查询操作日志失败:', error);

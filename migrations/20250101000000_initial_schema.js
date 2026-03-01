@@ -72,13 +72,12 @@ export async function up(knex) {
   // 创建操作日志表
   await knex.schema.createTable('operation_logs', table => {
     table.increments('id').primary();
-    table.integer('user_id').unsigned();
+    table.integer('admin_id').unsigned().notNullable();
     table.string('action', 50).notNullable();
-    table.string('resource_type', 50);
-    table.string('resource_id', 100);
     table.text('details');
-    table.string('ip_address', 45);
+    table.integer('target_user_id').unsigned();
     table.timestamp('created_at').defaultTo(knex.fn.now());
+    table.timestamp('updated_at').defaultTo(knex.fn.now());
   });
 
   // 创建请求日志表

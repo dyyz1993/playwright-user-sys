@@ -13,6 +13,7 @@ describe('管理员机器管理功能测试', () => {
   let adminToken: string;
   let userToken: string;
   let testMachineId: string;
+  let _testAdmin: any;
 
   // 在所有测试之前设置应用和创建测试用户
   beforeAll(async () => {
@@ -23,7 +24,7 @@ describe('管理员机器管理功能测试', () => {
     app = await build();
 
     // 创建测试管理员用户
-    const adminUser = await UserModel.create({
+    _testAdmin = await UserModel.create({
       username: 'testadmin',
       password: await hashPassword('password123'),
       role: UserRole.ADMIN,
@@ -42,9 +43,9 @@ describe('管理员机器管理功能测试', () => {
 
     // 生成JWT令牌
     adminToken = generateToken({
-      id: adminUser?.id || 0,
-      username: adminUser?.username || '',
-      role: (adminUser?.role as UserRole) || UserRole.ADMIN,
+      id: _testAdmin?.id || 0,
+      username: _testAdmin?.username || '',
+      role: (_testAdmin?.role as UserRole) || UserRole.ADMIN,
     });
 
     userToken = generateToken({

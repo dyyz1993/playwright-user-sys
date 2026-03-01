@@ -174,8 +174,7 @@ describe('会话管理 API 集成测试', () => {
 
       // 模拟60秒的会话
       const sessionData = await SessionModel.findById(session.id);
-      const startTime = new Date(sessionData!.start_time);
-      // endTime would be startTime + 60 seconds, but not needed for this test
+      // startTime not needed for this test
 
       // 手动标记会话已断开，指定持续时间
       await SessionModel.markDisconnected(session.id, 60);

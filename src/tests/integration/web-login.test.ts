@@ -10,7 +10,6 @@ import Fastify, { FastifyInstance } from 'fastify';
 import pointOfView from '@fastify/view';
 import ejs from 'ejs';
 import flash from '@fastify/flash';
-import { env } from '../../config/env.js';
 import authPlugin from '../../plugins/auth.plugin.js';
 import adminRoutes from '../../routes/admin.routes.js';
 import { UserModel } from '../../models/user.model.js';

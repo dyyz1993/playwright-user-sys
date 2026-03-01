@@ -24,13 +24,6 @@ vi.mock('../../utils/webhook.js', () => ({
   },
 }));
 
-// 模拟 MachineModel
-vi.mock('../../models/machine.model.js', () => ({
-  MachineModel: {
-    decrementInstanceCount: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
 describe('点数监控服务集成测试', () => {
   let testUser: any;
   let testMachineId = 'test-machine-1';

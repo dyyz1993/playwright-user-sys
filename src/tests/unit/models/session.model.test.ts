@@ -52,7 +52,6 @@ describe('SessionModel', () => {
       grpcPort: 50051,
       proxyPort: 8080,
       max_instances: 10,
-      status: 'online',
     });
   });
 
@@ -136,11 +135,15 @@ describe('SessionModel', () => {
   it('应该标记会话为已断开并计算持续时间', async () => {
     const session = await SessionModel.create({
       user_id: testUser.id,
-      start_time: new Date(Date.now() - 5 * 60 * 1000), // 5分钟前
+    });
+
+    // 手动更新 start_time 为 5 分钟前
+    await db('sessions').where('id', session!.id).update({
+      start_time: new Date(Date.now() - 5 * 60 * 1000),
     });
 
     const duration = 5 * 60; // 5分钟 = 300秒
-    const updated = await SessionModel.markDisconnected(session.id, duration);
+    const updated = await SessionModel.markDisconnected(session!.id, duration);
 
     expect(updated).toBeTruthy();
     expect(updated!.status).toBe(SessionStatus.DISCONNECTED);
@@ -280,11 +283,11 @@ describe('SessionModel', () => {
     // 创建会话并手动更新统计数据
     const session = await SessionModel.create({
       user_id: testUser.id,
-      status: SessionStatus.DISCONNECTED,
     });
 
-    // 手动更新统计数据
-    await db('sessions').where('id', session.id).update({
+    // 手动更新状态和统计数据
+    await db('sessions').where('id', session!.id).update({
+      status: SessionStatus.DISCONNECTED,
       duration: 300,
       credits_used: 5,
     });

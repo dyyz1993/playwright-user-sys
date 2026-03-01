@@ -16,9 +16,8 @@ import { FastifyInstance } from 'fastify';
 import { build } from '../../helpers/app.js';
 import { UserModel } from '../../../models/user.model.js';
 import { SessionModel } from '../../../models/session.model.js';
-import { MachineModel } from '../../../models/machine.model.js';
 import { generateToken } from '../../../utils/auth.js';
-import { UserRole, UserStatus, SessionStatus } from '@shared/types/index.js';
+import { UserRole, SessionStatus } from '@shared/types/index.js';
 import { clearAllTables } from '../../helpers/database.js';
 import { createTestUser, createTestAdmin, createTestMachine } from '../../helpers/factories.js';
 

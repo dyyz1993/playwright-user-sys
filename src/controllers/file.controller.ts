@@ -2,8 +2,6 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { sendSuccess, sendError } from '../utils/response.js';
 import fs from 'fs';
 import path from 'path';
-import { env } from '../config/env.js';
-import { WebSocket } from 'ws';
 
 // 确保上传目录存在
 const uploadDir = path.join(process.cwd(), 'data', 'uploads');

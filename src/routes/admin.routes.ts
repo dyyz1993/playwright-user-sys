@@ -851,6 +851,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         // 获取当前用户的详细信息
         const { UserModel } = await import('../models/user.model.js');
         const { CreditHistoryModel } = await import('../models/credit-history.model.js');
+        const { SessionModel } = await import('../models/session.model.js');
 
         const user = await UserModel.findById(request.user!.id);
         if (!user) {
@@ -861,8 +862,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         // 获取积分使用历史
         const creditHistory = await CreditHistoryModel.findByUserId(user.id, 5);
 
-        // 暂时将已使用的积分设为 0（因为数据库表结构可能不匹配）
-        const usedCredits = 0;
+        // 获取用户已使用的积分（从会话统计中获取）
+        const sessionStats = await SessionModel.getUserSessionStats(user.id);
+        const usedCredits = sessionStats.total_credits_used;
 
         return reply.view('pages/profile', {
           title: '个人资料',
@@ -885,6 +887,55 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         console.error('[PROFILE ERROR] Error stack:', error.stack);
         request.log.error({ err: error }, '获取个人资料失败');
         request.flash('error', '获取个人资料失败: ' + error.message);
+        return reply.redirect('/admin');
+      }
+    }
+  );
+
+  // 积分历史页面
+  fastify.get(
+    '/admin/credits/history',
+    {
+      onRequest: [fastify.verifyJWT],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const query = request.query as {
+          page?: string;
+          limit?: string;
+          dateRange?: string;
+        };
+        const page = parseInt(query.page || '1');
+        const limit = parseInt(query.limit || '20');
+
+        const { CreditHistoryModel } = await import('../models/credit-history.model.js');
+        const { UserModel } = await import('../models/user.model.js');
+
+        const offset = (page - 1) * limit;
+        const history = await CreditHistoryModel.findAll(limit, offset);
+        const totalRecords = await CreditHistoryModel.count();
+
+        const users = await UserModel.findAll({ limit: '10000' });
+        const userMap = new Map(users.items.map((u) => [u.id, u.username]));
+
+        const historyWithUsername = history.map((record) => ({
+          ...record,
+          username: userMap.get(record.user_id) || null,
+        }));
+
+        return reply.view('pages/credits-history', {
+          title: '积分历史',
+          subtitle: '查看积分变动记录',
+          user: request.user,
+          history: historyWithUsername,
+          page,
+          limit,
+          totalRecords,
+          flash: request.flash,
+        });
+      } catch (error: any) {
+        request.log.error({ err: error }, '获取积分历史失败');
+        request.flash('error', '获取积分历史失败: ' + error.message);
         return reply.redirect('/admin');
       }
     }

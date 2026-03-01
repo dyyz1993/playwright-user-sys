@@ -1,5 +1,4 @@
 import { FastifyInstance } from 'fastify';
-import { FastifyReply, FastifyRequest } from 'fastify';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import userController from '../controllers/user.controller.js';
 import { UserModel } from '../models/user.model.js';

@@ -1,5 +1,4 @@
 import { FastifyInstance } from 'fastify';
-import { FastifyReply, FastifyRequest } from 'fastify';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import authController from '../controllers/auth.controller.js';
 import {

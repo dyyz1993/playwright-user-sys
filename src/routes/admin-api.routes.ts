@@ -1073,7 +1073,6 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
 
         const { SessionModel } = await import('../models/session.model.js');
         const { MachineModel } = await import('../models/machine.model.js');
-        const { UserModel } = await import('../models/user.model.js');
         const { connectionManager } = await import('../services/machine-grpc.service.js');
         const { createWebhookEvent } = await import('../utils/webhook.js');
         const { SessionStatus, WebhookEventType } = await import('@shared/types/index.js');
@@ -1121,7 +1120,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
               const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
 
               // 计算消耗的点数（每分钟1点）
-              const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+              const _minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
 
               // 使用 markDisconnected 方法更新会话状态
               await SessionModel.markDisconnected(sessionId, duration);
@@ -1138,7 +1137,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
               // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
 
               released.push(sessionId);
-            } catch (machineError: any) {
+            } catch (_machineError) {
               // 即使关闭失败，也将会话标记为结束
               const now = new Date();
               const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);

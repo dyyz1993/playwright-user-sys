@@ -90,7 +90,7 @@ export class Client {
         if (errorData.error) {
           errorMessage = errorData.error;
         }
-      } catch (e) {
+      } catch {
         // 忽略解析错误
       }
 

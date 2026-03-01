@@ -236,7 +236,6 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
 
         // 获取用户列表
         const { UserModel } = await import('../models/user.model.js');
-        const { UserRole, UserStatus } = await import('@shared/types/index.js');
 
         // 使用 findAll 方法支持筛选、搜索和排序
         const { items, total, totalPages } = await UserModel.findAll({
@@ -714,7 +713,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // 调试端点 - 查看所有 cookies
-  fastify.get('/admin/debug/cookies', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/admin/debug/cookies', async (request: FastifyRequest, _reply: FastifyReply) => {
     return {
       cookies: request.cookies,
       headers: request.headers,
@@ -723,7 +722,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // 调试端点 - 手动验证 JWT
-  fastify.post('/admin/debug/verify-token', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/admin/debug/verify-token', async (request: FastifyRequest, _reply: FastifyReply) => {
     const jwt = (await import('jsonwebtoken')).default;
     const { env } = await import('../config/env.js');
 
@@ -766,7 +765,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     {
       onRequest: [fastify.verifyJWT],
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest, _reply: FastifyReply) => {
       return {
         message: 'Authentication successful',
         user: request.user,
@@ -780,7 +779,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     {
       onRequest: [fastify.verifyJWT],
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest, _reply: FastifyReply) => {
       const { UserModel } = await import('../models/user.model.js');
       const user = await UserModel.findById(request.user!.id);
       return {

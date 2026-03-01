@@ -23,7 +23,7 @@ import { build } from '../../helpers/app.js';
 import { UserModel } from '../../../models/user.model.js';
 import { SessionModel } from '../../../models/session.model.js';
 import { generateToken } from '../../../utils/auth.js';
-import { UserRole, UserStatus } from '../../../shared/types/index.js';
+import { UserRole } from '../../../shared/types/index.js';
 import { clearAllTables } from '../../helpers/database.js';
 import { createTestUser, createTestAdmin, createTestSession, createTestUsers } from '../../helpers/factories.js';
 

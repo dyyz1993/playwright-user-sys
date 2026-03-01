@@ -19,7 +19,8 @@ describe('Chromium 锁文件清理', () => {
   let tempDir: string;
   let userDataDir: string;
 
-  const LOCK_FILES = ['SingletonLock', 'SingletonSocket', 'SingletonCookie'];
+  const LOCK_FILES = ['SingletonLock', 'SingletonSocket', 'SingletonCookie', 'lockfile'];
+  const LOCK_SUBDIRS = ['', 'Default', 'System Profile', 'Service State'];
 
   beforeEach(() => {
     tempDir = join(tmpdir(), `chromium-lock-test-${Date.now()}`);
@@ -110,6 +111,68 @@ describe('Chromium 锁文件清理', () => {
       }).not.toThrow();
 
       expect(existsSync(newDir)).toBe(true);
+    });
+
+    it('应该清理子目录中的锁文件', async () => {
+      const { browserService } = await import('../../src/machine/browser.service.js');
+
+      const defaultDir = join(userDataDir, 'Default');
+      mkdirSync(defaultDir, { recursive: true });
+
+      const lockPath = join(defaultDir, 'SingletonLock');
+      writeFileSync(lockPath, '32505-f9dfd5d81529');
+
+      expect(existsSync(lockPath)).toBe(true);
+
+      (browserService as any).ensureUserDataDir(userDataDir);
+
+      expect(existsSync(lockPath)).toBe(false);
+    });
+
+    it('应该清理所有子目录中的所有锁文件', async () => {
+      const { browserService } = await import('../../src/machine/browser.service.js');
+
+      for (const subDir of LOCK_SUBDIRS) {
+        if (!subDir) continue;
+        const dirPath = join(userDataDir, subDir);
+        mkdirSync(dirPath, { recursive: true });
+
+        for (const lockFile of LOCK_FILES) {
+          const lockPath = join(dirPath, lockFile);
+          writeFileSync(lockPath, `mock-content-${subDir}-${lockFile}`);
+        }
+      }
+
+      for (const subDir of LOCK_SUBDIRS) {
+        if (!subDir) continue;
+        for (const lockFile of LOCK_FILES) {
+          expect(existsSync(join(userDataDir, subDir, lockFile))).toBe(true);
+        }
+      }
+
+      (browserService as any).ensureUserDataDir(userDataDir);
+
+      for (const subDir of LOCK_SUBDIRS) {
+        if (!subDir) continue;
+        for (const lockFile of LOCK_FILES) {
+          expect(existsSync(join(userDataDir, subDir, lockFile))).toBe(false);
+        }
+      }
+    });
+
+    it('当子目录不存在时，应该正常工作', async () => {
+      const { browserService } = await import('../../src/machine/browser.service.js');
+
+      expect(() => {
+        (browserService as any).ensureUserDataDir(userDataDir);
+      }).not.toThrow();
+
+      for (const subDir of LOCK_SUBDIRS) {
+        if (!subDir) continue;
+        for (const lockFile of LOCK_FILES) {
+          expect(existsSync(join(userDataDir, subDir, lockFile))).toBe(false);
+        }
+      }
     });
   });
 

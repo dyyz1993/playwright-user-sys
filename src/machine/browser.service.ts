@@ -189,8 +189,18 @@ export class BrowserService extends EventEmitter {
   /**
    * Chromium 锁文件列表
    * 这些文件在浏览器异常退出后会残留，导致新实例无法启动
+   * SingletonLock: 主锁文件，记录进程 ID 和主机名
+   * SingletonSocket: Unix socket 文件
+   * SingletonCookie: 随机生成的 cookie 文件
+   * lockfile: 新版 Chromium 使用的锁文件
+   * Service State/目录下的锁文件也需要清理
    */
-  private static readonly CHROMIUM_LOCK_FILES = ['SingletonLock', 'SingletonSocket', 'SingletonCookie'];
+  private static readonly CHROMIUM_LOCK_FILES = ['SingletonLock', 'SingletonSocket', 'SingletonCookie', 'lockfile'];
+
+  /**
+   * 需要清理锁文件的子目录列表
+   */
+  private static readonly CHROMIUM_LOCK_SUBDIRS = ['', 'Default', 'System Profile', 'Service State'];
 
   /**
    * 确保 userDataDir 目录存在，并清理残留的锁文件
@@ -213,18 +223,26 @@ export class BrowserService extends EventEmitter {
   /**
    * 清理 Chromium 残留的锁文件
    * Docker 容器重启后，这些锁文件会残留，导致新的浏览器实例无法启动
+   * 需要清理根目录和子目录中的所有锁文件
    * @param userDataDir 用户数据目录路径
    */
   private cleanLockFiles(userDataDir: string): void {
-    for (const lockFile of BrowserService.CHROMIUM_LOCK_FILES) {
-      const lockPath = path.join(userDataDir, lockFile);
-      try {
-        if (fsSync.existsSync(lockPath)) {
-          fsSync.unlinkSync(lockPath);
-          logger.info(`已清理残留锁文件: ${lockPath}`);
+    for (const subDir of BrowserService.CHROMIUM_LOCK_SUBDIRS) {
+      const dirPath = subDir ? path.join(userDataDir, subDir) : userDataDir;
+      if (!fsSync.existsSync(dirPath)) {
+        continue;
+      }
+
+      for (const lockFile of BrowserService.CHROMIUM_LOCK_FILES) {
+        const lockPath = path.join(dirPath, lockFile);
+        try {
+          if (fsSync.existsSync(lockPath)) {
+            fsSync.unlinkSync(lockPath);
+            logger.info(`已清理残留锁文件: ${lockPath}`);
+          }
+        } catch (error) {
+          logger.warn(`清理锁文件失败 (${lockPath}):`, error);
         }
-      } catch (error) {
-        logger.warn(`清理锁文件失败 (${lockPath}):`, error);
       }
     }
   }

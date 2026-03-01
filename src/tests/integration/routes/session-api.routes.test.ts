@@ -63,11 +63,11 @@ describe('会话管理 API 集成测试', () => {
   let app: FastifyInstance;
   let testAdmin: any;
   let testUser: any;
-  let anotherUser: any;
+  let _anotherUser: any;
   let adminToken: string;
   let userToken: string;
-  let anotherUserToken: string;
-  let testMachine: any;
+  let _anotherUserToken: string;
+  let _testMachine: any;
 
   // ========================================
   // 测试初始化
@@ -107,20 +107,20 @@ describe('会话管理 API 集成测试', () => {
     });
 
     // 创建另一个测试用户
-    anotherUser = await createTestUser({
+    _anotherUser = await createTestUser({
       username: 'anotheruser',
       password: 'password123',
       credits: 50,
     });
 
-    anotherUserToken = generateToken({
-      id: anotherUser?.id || 0,
-      username: anotherUser?.username || '',
+    _anotherUserToken = generateToken({
+      id: _anotherUser?.id || 0,
+      username: _anotherUser?.username || '',
       role: UserRole.USER,
     });
 
     // 创建测试机器
-    testMachine = await createTestMachine({
+    _testMachine = await createTestMachine({
       id: 'test-machine-1',
       hostname: 'test-machine',
     });
@@ -157,7 +157,7 @@ describe('会话管理 API 集成测试', () => {
       });
 
       expect(response.statusCode).toBe(200);
-      const result = JSON.parse(response.payload);
+      // result is used for debugging but not needed for assertions
 
       // 验证消耗了1点
       const updatedSession = await SessionModel.findById(session.id);
@@ -175,7 +175,7 @@ describe('会话管理 API 集成测试', () => {
       // 模拟60秒的会话
       const sessionData = await SessionModel.findById(session.id);
       const startTime = new Date(sessionData!.start_time);
-      const endTime = new Date(startTime.getTime() + 60 * 1000);
+      // endTime would be startTime + 60 seconds, but not needed for this test
 
       // 手动标记会话已断开，指定持续时间
       await SessionModel.markDisconnected(session.id, 60);

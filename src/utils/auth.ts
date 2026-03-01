@@ -45,7 +45,7 @@ export function generateToken(payload: { id: number; username: string; role: Use
   }
 
   return jwt.sign(payload, secret, {
-    expiresIn,
+    expiresIn: expiresIn as string,
   });
 }
 

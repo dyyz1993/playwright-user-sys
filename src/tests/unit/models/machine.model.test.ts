@@ -41,7 +41,7 @@ describe('MachineModel', () => {
       ip: '192.168.1.100',
       grpcPort: 50051,
       proxyPort: 8080,
-      maxInstances: 10,
+      max_instances: 10,
     });
 
     expect(machine).toBeTruthy();
@@ -191,7 +191,7 @@ describe('MachineModel', () => {
       id: 'machine-001',
       hostname: 'test-host',
       ip: '192.168.1.100',
-      maxInstances: 10,
+      max_instances: 10,
       instanceCount: 5,
     });
 
@@ -224,7 +224,7 @@ describe('MachineModel', () => {
       id: 'machine-001',
       hostname: 'test-host',
       ip: '192.168.1.100',
-      maxInstances: 10,
+      max_instances: 10,
       instanceCount: 10,
     });
 

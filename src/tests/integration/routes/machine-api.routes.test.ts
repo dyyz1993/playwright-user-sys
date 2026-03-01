@@ -150,7 +150,7 @@ describe('机器管理 API 集成测试', () => {
     });
 
     it('A-03: 添加机器时IP重复应该返回409', async () => {
-      const existingMachine = await createTestMachine({
+      const _existingMachine = await createTestMachine({
         ip: '192.168.1.200',
       });
 
@@ -399,7 +399,7 @@ describe('机器管理 API 集成测试', () => {
 
       // 注意：127.0.0.1, 0.0.0.0 等特殊IP可能在实际使用中有限制
       for (let i = 0; i < validIps.length; i++) {
-        const ip = validIps[i];
+        const _ip = validIps[i];
         const response = await app.inject({
           method: 'POST',
           url: '/api/admin/machines',

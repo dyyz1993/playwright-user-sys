@@ -51,7 +51,7 @@ describe('SessionModel', () => {
       ip: '127.0.0.1',
       grpcPort: 50051,
       proxyPort: 8080,
-      maxInstances: 10,
+      max_instances: 10,
       status: 'online',
     });
   });

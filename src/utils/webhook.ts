@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
-import { WebhookEventType, WebhookEvent } from '@shared/types/index.js';
-import { WebhookEventModel } from '../models/webhook-event.model.js';
+import { WebhookEventType } from '@shared/types/index.js';
+import { WebhookEvent, WebhookEventModel } from '../models/webhook-event.model.js';
 import { UserModel } from '../models/user.model.js';
 
 // 创建 Webhook 事件

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { success, error } from '../../utils/response';
+import { success, error } from '../../utils/response.js';
 
 describe('响应工具函数测试', () => {
   // 测试成功响应格式

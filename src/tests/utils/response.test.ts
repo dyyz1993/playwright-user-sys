@@ -1,3 +1,4 @@
+import { describe, test, expect } from 'vitest';
 import { success, error } from '../../utils/response';
 
 describe('响应工具函数测试', () => {

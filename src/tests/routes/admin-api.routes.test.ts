@@ -1,3 +1,4 @@
+import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app.js';
 import { clearAllTables } from '../helpers/database.js';

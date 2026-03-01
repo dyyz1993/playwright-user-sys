@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app';
 import { Client } from '../../sdk/client';

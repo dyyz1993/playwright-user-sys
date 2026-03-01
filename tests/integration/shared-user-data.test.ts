@@ -6,7 +6,7 @@
  * - sharedUserData=true: 所有会话共享同一个用户数据目录
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 

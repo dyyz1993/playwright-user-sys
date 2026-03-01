@@ -3,6 +3,7 @@
  * 测试 /admin 路由（HTML 页面）能正常加载并显示所有必需的数据
  */
 
+import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app.js';
 import { clearAllTables } from '../helpers/database.js';

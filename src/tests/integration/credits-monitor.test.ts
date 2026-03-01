@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { clearAllTables } from '../helpers/database.js';
 import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
@@ -6,18 +6,18 @@ import { SessionStatus } from '@shared/types/index.js';
 import { checkSessionCredits } from '../../services/credits-monitor.service.js';
 
 // 模拟 connectionManager
-const mockCloseBrowser = jest.fn().mockResolvedValue(true);
-jest.mock('../../services/machine-grpc.service.js', () => ({
+const mockCloseBrowser = vi.fn().mockResolvedValue(true);
+vi.mock('../../services/machine-grpc.service.js', () => ({
   connectionManager: {
-    getActiveConnections: jest.fn().mockReturnValue(['test-machine-1']),
+    getActiveConnections: vi.fn().mockReturnValue(['test-machine-1']),
     closeBrowser: mockCloseBrowser,
-    sendCloseBrowserCommand: jest.fn(),
+    sendCloseBrowserCommand: vi.fn(),
   },
 }));
 
 // 模拟 createWebhookEvent
-jest.mock('../../utils/webhook.js', () => ({
-  createWebhookEvent: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../utils/webhook.js', () => ({
+  createWebhookEvent: vi.fn().mockResolvedValue(undefined),
   WebhookEventType: {
     CREDITS_DEPLETED: 'credits_depleted',
     CREDITS_LOW: 'credits_low',
@@ -25,9 +25,9 @@ jest.mock('../../utils/webhook.js', () => ({
 }));
 
 // 模拟 MachineModel
-jest.mock('../../models/machine.model.js', () => ({
+vi.mock('../../models/machine.model.js', () => ({
   MachineModel: {
-    decrementInstanceCount: jest.fn().mockResolvedValue(undefined),
+    decrementInstanceCount: vi.fn().mockResolvedValue(undefined),
   },
 }));
 

@@ -8,31 +8,32 @@
 import { UserModel } from '../src/models/user.model.js';
 import { SessionModel } from '../src/models/session.model.js';
 import { SessionStatus } from '@shared/types/index.js';
+import { vi } from 'vitest';
 
 // 模拟 machine-grpc.service.js 模块
-jest.mock('../src/services/machine-grpc.service.js', () => ({
+vi.mock('../src/services/machine-grpc.service.js', () => ({
   connectionManager: {
     getActiveConnections: () => ['test-machine-1'],
     closeBrowser: async () => true,
     sendCloseBrowserCommand: () => {},
   }
-}), { virtual: true });
+}));
 
 // 模拟 webhook.js 模块
-jest.mock('../src/utils/webhook.js', () => ({
+vi.mock('../src/utils/webhook.js', () => ({
   createWebhookEvent: async () => {},
   WebhookEventType: {
     CREDITS_DEPLETED: 'credits_depleted',
     CREDITS_LOW: 'credits_low'
   }
-}), { virtual: true });
+}));
 
 // 模拟 MachineModel
-jest.mock('../src/models/machine.model.js', () => ({
+vi.mock('../src/models/machine.model.js', () => ({
   MachineModel: {
     decrementInstanceCount: async () => {},
   }
-}), { virtual: true });
+}));
 
 // 导入被测试的函数（必须在模拟之后导入）
 import { checkSessionCredits } from '../src/services/credits-monitor.service.js';

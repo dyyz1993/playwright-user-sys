@@ -114,8 +114,8 @@ describe('MachineModel', () => {
     });
 
     expect(updated).toBeTruthy();
-    expect(updated!.cpuUsage).toBe(75.5);
-    expect(updated!.memoryUsage).toBe(60.2);
+    expect(Number(updated!.cpuUsage)).toBe(75.5);
+    expect(Number(updated!.memoryUsage)).toBe(60.2);
     expect(updated!.instanceCount).toBe(5);
   });
 

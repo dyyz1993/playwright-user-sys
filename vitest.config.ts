@@ -15,7 +15,9 @@ export default defineConfig({
     environment: 'node',
     include: ['src/tests/**/*.test.ts', 'tests/**/*.test.ts'],
     exclude: ['node_modules', 'dist'],
-    testTimeout: 30000, // 30秒超时
+    testTimeout: 60000, // 60秒超时
+    hookTimeout: 60000, // 60秒 hook 超时
+    globalSetup: ['./src/tests/globalSetup.ts'], // 全局初始化，在所有测试之前运行
     setupFiles: ['./src/tests/setup.ts'], // 全局设置文件，确保环境变量在模块加载前设置
     fileParallelism: false, // 禁用文件并行执行，避免数据隔离问题
     // 针对三层架构集成测试的配置

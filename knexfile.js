@@ -31,6 +31,28 @@ const config = {
     useNullAsDefault: true,
   },
   
+  test: {
+    client: 'mysql2',
+    connection: {
+      host: process.env.DB_HOST || 'REDACTED_INTERNAL_HOST',
+      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || 'REDACTED_PASSWORD',
+      database: 'playwright_test_user_sys',
+    },
+    migrations: {
+      directory: path.join(__dirname, 'migrations'),
+    },
+    seeds: {
+      directory: path.join(__dirname, 'seeds'),
+    },
+    useNullAsDefault: true,
+    pool: {
+      min: 1,
+      max: 5,
+    },
+  },
+  
   production: {
     client: process.env.DB_TYPE === 'mysql' ? 'mysql2' : 'better-sqlite3',
     connection: process.env.DB_TYPE === 'mysql' ? {

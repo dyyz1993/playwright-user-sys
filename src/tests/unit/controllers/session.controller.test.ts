@@ -44,17 +44,17 @@ vi.mock('../../../services/machine-grpc.service.js', () => ({
 }));
 
 vi.mock('../../../utils/response.js', () => ({
-  sendSuccess: vi.fn((reply, data, message, statusCode) => {
+  sendSuccess: vi.fn((reply, _data, _message, _statusCode) => {
     reply.status = vi.fn().mockReturnValue(reply);
     reply.send = vi.fn().mockReturnValue(reply);
     return reply;
   }),
-  sendError: vi.fn((reply, message, statusCode) => {
+  sendError: vi.fn((reply, _message, _statusCode) => {
     reply.status = vi.fn().mockReturnValue(reply);
     reply.send = vi.fn().mockReturnValue(reply);
     return reply;
   }),
-  sendCreated: vi.fn((reply, data, message) => {
+  sendCreated: vi.fn((reply, _data, _message) => {
     reply.status = vi.fn().mockReturnValue(reply);
     reply.send = vi.fn().mockReturnValue(reply);
     return reply;

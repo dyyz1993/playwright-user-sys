@@ -24,7 +24,7 @@ vi.mock('../../utils/webhook.js', () => ({
 
 describe('Web 管理后台登录集成测试', () => {
   let app: FastifyInstance;
-  let testAdmin: any;
+  let _testAdmin: any;
 
   beforeAll(async () => {
     await clearAllTables();
@@ -57,7 +57,7 @@ describe('Web 管理后台登录集成测试', () => {
       status: UserStatus.ACTIVE,
       credits: 999999,
     });
-    testAdmin = result;
+    _testAdmin = result;
   });
 
   afterAll(async () => {

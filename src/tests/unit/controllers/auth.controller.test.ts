@@ -23,12 +23,12 @@ vi.mock('../../../utils/auth.js', () => ({
 }));
 
 vi.mock('../../../utils/response.js', () => ({
-  sendSuccess: vi.fn((reply, data, code) => {
+  sendSuccess: vi.fn((reply, _data, _code) => {
     reply.code = vi.fn().mockReturnValue(reply);
     reply.send = vi.fn().mockReturnValue(reply);
     return reply;
   }),
-  sendError: vi.fn((reply, message, code) => {
+  sendError: vi.fn((reply, _message, _code) => {
     reply.code = vi.fn().mockReturnValue(reply);
     reply.send = vi.fn().mockReturnValue(reply);
     return reply;

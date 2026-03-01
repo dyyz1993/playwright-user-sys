@@ -558,7 +558,6 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const adminId = request.user?.id;
         const query = request.query as { search?: string; role?: string; status?: string };
 
         // 构建查询条件
@@ -1118,9 +1117,6 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
               const now = new Date();
               const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
               const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-
-              // 计算消耗的点数（每分钟1点）
-              const _minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
 
               // 使用 markDisconnected 方法更新会话状态
               await SessionModel.markDisconnected(sessionId, duration);
@@ -2098,7 +2094,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
               const entries = readdirSync(sessionsPath, { withFileTypes: true });
               sessionsCount = entries.filter((e: any) => e.isDirectory()).length;
             }
-          } catch (error) {
+          } catch {
             // Ignore
           }
 

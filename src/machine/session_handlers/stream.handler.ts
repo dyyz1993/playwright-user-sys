@@ -114,8 +114,8 @@ function startStreamLoop(streamInfo: StreamInfo) {
 export async function handleStreamConnection(ws: WebSocket, sessionId: string): Promise<void> {
   logger.info(`Handling new '/stream' WebSocket connection for session ${sessionId}`);
 
-  let page: Page | null = null;
-  let initialConfig: SessionConfig | null = null;
+  let page: Page | null;
+  let initialConfig: SessionConfig | null;
 
   try {
     page = await browserService.getSessionPage(sessionId);

@@ -148,7 +148,7 @@ export class MachineModel {
       console.log(`找到 ${machines.length} 台机器，总数 ${total ? total.count : 0}`);
 
       return {
-        items: machines.map((machine: any) => ({
+        items: machines.map((machine) => ({
           id: machine.id,
           hostname: machine.hostname,
           ip: machine.ip,
@@ -268,7 +268,7 @@ export class MachineModel {
       const machines = await db('machines').where({ status });
 
       return {
-        items: machines.map((machine: any) => ({
+        items: machines.map((machine) => ({
           id: machine.id,
           hostname: machine.hostname,
           ip: machine.ip,
@@ -352,7 +352,7 @@ export class MachineModel {
     try {
       const machines = await db('machines').orderBy('last_seen', 'desc');
 
-      return machines.map((machine: any) => ({
+      return machines.map((machine) => ({
         id: machine.id,
         hostname: machine.hostname,
         ip: machine.ip,
@@ -391,7 +391,7 @@ export class MachineModel {
       });
 
       // 过滤出该机器的活跃会话
-      const machineActiveSessions = activeSessions.items.filter((s: any) => s.machine_id === id).length;
+      const machineActiveSessions = activeSessions.items.filter((s) => s.machine_id === id).length;
 
       // 计算健康状态
       let healthStatus = 'unknown';
@@ -485,7 +485,7 @@ export class MachineModel {
           },
           checkedAt: new Date(),
         };
-      } catch (grpcError: any) {
+      } catch (grpcError) {
         return {
           machineId: id,
           status: 'unhealthy',
@@ -494,7 +494,7 @@ export class MachineModel {
           checkedAt: new Date(),
         };
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('健康检查失败:', error);
       return {
         machineId: id,

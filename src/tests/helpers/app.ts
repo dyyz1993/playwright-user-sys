@@ -14,14 +14,6 @@ import adminMachineApiRoutes from '../../routes/admin-machine-api.routes.js';
 export async function build(): Promise<FastifyInstance> {
   const app = Fastify({
     logger: false, // 测试时禁用日志
-    ajv: {
-      customOptions: {
-        removeAdditional: false, // 关键：拒绝而不是删除未知字段
-        coerceTypes: true,
-        useDefaults: true,
-        allErrors: false,
-      },
-    },
   });
 
   // 注册插件

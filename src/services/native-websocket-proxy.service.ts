@@ -1,6 +1,5 @@
 import * as http from 'http';
 import * as url from 'url';
-import { WebSocket } from 'ws';
 import { z } from 'zod';
 import httpProxy from 'http-proxy';
 import { UserModel } from '../models/user.model.js';
@@ -44,7 +43,7 @@ export class NativeWebSocketProxyService {
     });
 
     // 代理错误处理
-    this.proxy.on('error', (err: Error, req: http.IncomingMessage, socket: any, proxyRes: any) => {
+    this.proxy.on('error', (err: Error, req: http.IncomingMessage, socket: any, _proxyRes: unknown) => {
       const sessionId = (req as any).sessionId || '未知';
       logger.error(`WebSocket代理错误 (sessionId: ${sessionId}):`, err);
 

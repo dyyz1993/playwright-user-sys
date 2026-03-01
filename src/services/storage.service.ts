@@ -150,7 +150,6 @@ export class StorageService {
     }
 
     // Check if adding a new session would exceed limits
-    const projectedSessionsSize = stats.sessionsSize + additionalSessionSize;
     const projectedTotal = stats.totalSize + additionalSessionSize;
 
     const canCreateSession =
@@ -390,7 +389,7 @@ export class StorageService {
             const entries = await readdir(sessionsPath, { withFileTypes: true });
             sessionsCount = entries.filter((e) => e.isDirectory()).length;
           }
-        } catch (error) {
+        } catch {
           // Ignore errors
         }
 

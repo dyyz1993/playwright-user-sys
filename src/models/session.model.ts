@@ -58,12 +58,10 @@ export class SessionModel {
 
     let optionsJson = null;
     if (data.options) {
-      // Validate that options can be serialized to JSON
       try {
         optionsJson = JSON.stringify(data.options);
-        // Verify it can be parsed back
         JSON.parse(optionsJson);
-      } catch (error) {
+      } catch {
         throw new Error('Invalid options format: must be valid JSON');
       }
     }

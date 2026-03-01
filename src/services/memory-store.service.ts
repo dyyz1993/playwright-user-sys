@@ -133,10 +133,12 @@ class MemoryStoreService extends EventEmitter {
   updateMachineStatus(status: MachineStatus): void {
     const existingStatus = this.machines.get(status.machine_id);
 
-    // 调试日志
-    console.log(
-      `[MemoryStore] updateMachineStatus: machine_id=${status.machine_id}, grpc_port=${status.grpc_port}, has_grpc_port=${'grpc_port' in status}`
-    );
+    // 调试日志 - 只显示有值的字段
+    const logFields: string[] = [`machine_id=${status.machine_id}`];
+    if (status.grpc_port !== undefined) logFields.push(`grpc_port=${status.grpc_port}`);
+    if (status.cpu_usage !== undefined) logFields.push(`cpu_usage=${status.cpu_usage}`);
+    if (status.memory_usage !== undefined) logFields.push(`memory_usage=${status.memory_usage}`);
+    console.log(`[MemoryStore] updateMachineStatus: ${logFields.join(', ')}`);
 
     // 创建新的状态对象
     const newStatus: MachineRealTimeStatus = {
@@ -154,8 +156,10 @@ class MemoryStoreService extends EventEmitter {
       last_heartbeat: status.last_heartbeat || new Date(),
     };
 
-    // 调试日志
-    console.log(`[MemoryStore] newStatus.grpc_port=${newStatus.grpc_port}`);
+    // 调试日志 - 显示最终状态
+    console.log(
+      `[MemoryStore] 机器状态已更新: ${newStatus.machine_id}, grpc_port=${newStatus.grpc_port ?? '未设置'}, online=${newStatus.online}`
+    );
 
     // 更新状态
     this.machines.set(status.machine_id, newStatus);

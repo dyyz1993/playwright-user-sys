@@ -961,9 +961,9 @@ describe('积分管理 API Routes 集成测试', () => {
 
     it('D-STATS-02: 积分统计应该计算所有用户总和', async () => {
       // 创建已知积分的用户
-      const user1 = await createTestUser({ username: `sumtest1_${Date.now()}`, credits: 100 });
-      const user2 = await createTestUser({ username: `sumtest2_${Date.now()}`, credits: 200 });
-      const user3 = await createTestUser({ username: `sumtest3_${Date.now()}`, credits: 150 });
+      const _user1 = await createTestUser({ username: `sumtest1_${Date.now()}`, credits: 100 });
+      const _user2 = await createTestUser({ username: `sumtest2_${Date.now()}`, credits: 200 });
+      const _user3 = await createTestUser({ username: `sumtest3_${Date.now()}`, credits: 150 });
 
       const stats = await UserModel.getCreditsStats();
 
@@ -1434,14 +1434,14 @@ describe('积分管理 API Routes 集成测试', () => {
       const promises = [];
       for (let i = 0; i < 10; i++) {
         promises.push(
-          UserModel.deductCredits(user!.id, 10).catch((err) => {
+          UserModel.deductCredits(user!.id, 10).catch((_err) => {
             // 预期有些会失败
             return null;
           })
         );
       }
 
-      const results = await Promise.all(promises);
+      await Promise.all(promises);
 
       // 验证余额（在当前实现中可能为负）
       const finalUser = await UserModel.findById(user!.id);
@@ -1461,7 +1461,7 @@ describe('积分管理 API Routes 集成测试', () => {
       // 并发操作
       for (let i = 0; i < 5; i++) {
         promises.push(UserModel.addCredits(user!.id, 10));
-        promises.push(UserModel.deductCredits(user!.id, 5).catch((err) => null));
+        promises.push(UserModel.deductCredits(user!.id, 5).catch((_err) => null));
       }
 
       await Promise.all(promises);
@@ -1515,7 +1515,7 @@ describe('积分管理 API Routes 集成测试', () => {
       // 大量并发操作
       const promises = [];
       for (let i = 0; i < 50; i++) {
-        promises.push(UserModel.addCredits(user!.id, 1).catch((err) => null));
+        promises.push(UserModel.addCredits(user!.id, 1).catch((_err) => null));
       }
 
       // 设置超时，防止死锁

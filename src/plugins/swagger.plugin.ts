@@ -1,9 +1,7 @@
 import fp from 'fastify-plugin';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
-import { swaggerOptions } from '../config/swagger.js';
 import { FastifyInstance } from 'fastify';
-// import { scalarOptions } from '../config/swagger.js';
 import fastifyScalar from '@scalar/fastify-api-reference';
 import scalarTheme from './scalar-theme.js';
 import { env } from '../config/env.js';

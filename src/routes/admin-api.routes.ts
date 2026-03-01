@@ -2064,7 +2064,6 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const adminId = request.user?.id;
         const query = request.query as {
           userId?: number;
           page?: number;

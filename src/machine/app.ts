@@ -6,13 +6,14 @@ import { startGrpcServer, GrpcClient, setGrpcServerConfig } from './grpc.service
 import retry from 'async-retry';
 
 // 机器端状态枚举
-// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 export enum MachineState {
+  /* eslint-disable no-unused-vars */
   STARTING = 'starting',
   RUNNING = 'running',
   RECONNECTING = 'reconnecting',
   SHUTTING_DOWN = 'shutting_down',
   STOPPED = 'stopped',
+  /* eslint-enable no-unused-vars */
 }
 
 /**
@@ -274,7 +275,7 @@ export class MachineServer {
           }
 
           await retry(
-            async (bail: (_error: Error) => void, attemptNumber: number) => {
+            async (bail: (error: Error) => void, attemptNumber: number) => {
               try {
                 // 再次检查状态
                 if (this.state === MachineState.SHUTTING_DOWN || this.state === MachineState.STOPPED) {

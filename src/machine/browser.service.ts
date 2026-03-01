@@ -19,7 +19,7 @@ const puppeteer = puppeteerStealth.default;
 declare global {
   interface Window {
     _mouseTrackingInjected?: boolean;
-    updateMousePosition?: (_x: number, _y: number, _viewportWidth: number, _viewportHeight: number) => void;
+    updateMousePosition?: (x: number, y: number, viewportWidth: number, viewportHeight: number) => void;
   }
 }
 
@@ -186,7 +186,13 @@ class BrowserService extends EventEmitter {
   }
 
   /**
-   * 确保 userDataDir 目录存在
+   * Chromium 锁文件列表
+   * 这些文件在浏览器异常退出后会残留，导致新实例无法启动
+   */
+  private static readonly CHROMIUM_LOCK_FILES = ['SingletonLock', 'SingletonSocket', 'SingletonCookie'];
+
+  /**
+   * 确保 userDataDir 目录存在，并清理残留的锁文件
    * @param userDataDir 用户数据目录路径
    */
   private ensureUserDataDir(userDataDir: string): void {
@@ -195,9 +201,30 @@ class BrowserService extends EventEmitter {
         fsSync.mkdirSync(userDataDir, { recursive: true });
         logger.info(`已创建用户数据目录: ${userDataDir}`);
       }
+
+      this.cleanLockFiles(userDataDir);
     } catch (error) {
       logger.error(`创建用户数据目录失败 (${userDataDir}):`, error);
       throw error;
+    }
+  }
+
+  /**
+   * 清理 Chromium 残留的锁文件
+   * Docker 容器重启后，这些锁文件会残留，导致新的浏览器实例无法启动
+   * @param userDataDir 用户数据目录路径
+   */
+  private cleanLockFiles(userDataDir: string): void {
+    for (const lockFile of BrowserService.CHROMIUM_LOCK_FILES) {
+      const lockPath = path.join(userDataDir, lockFile);
+      try {
+        if (fsSync.existsSync(lockPath)) {
+          fsSync.unlinkSync(lockPath);
+          logger.info(`已清理残留锁文件: ${lockPath}`);
+        }
+      } catch (error) {
+        logger.warn(`清理锁文件失败 (${lockPath}):`, error);
+      }
     }
   }
 
@@ -785,7 +812,6 @@ class BrowserService extends EventEmitter {
     await page.evaluateOnNewDocument((fnName) => {
       // document.removeEventListener('focusin', handleFocusin);
       document.addEventListener('focusin', function (event) {
-        const _target = event.target;
         if (typeof window[fnName] === 'function') {
           console.log('focusin', event.target);
           window[fnName](); // Call the dynamic function

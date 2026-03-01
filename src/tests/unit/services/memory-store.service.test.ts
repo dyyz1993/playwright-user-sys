@@ -433,7 +433,7 @@ describe('MemoryStoreService', () => {
       active_sessions: 0,
       max_sessions: 10,
       last_heartbeat: new Date(),
-    } as any);
+    });
 
     // 添加活跃会话
     service.updateSessionStatus({

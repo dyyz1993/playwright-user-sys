@@ -66,7 +66,7 @@ function endSession(sessionId) {
   button.disabled = true;
   
   // 发送请求结束会话
-  fetch(`/api/sessions/${sessionId}/end`, {
+  fetch(`/api/sessions/${sessionId}/release`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'

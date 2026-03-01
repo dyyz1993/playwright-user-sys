@@ -1,12 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
-import Ajv from 'ajv';
-import addFormats from 'ajv-formats';
 import authPlugin from '../../plugins/auth.plugin.js';
 import errorHandlerPlugin from '../../plugins/error-handler.plugin.js';
-// 简化测试，移除不必要的插件
-// import corsPlugin from '../../plugins/cors.plugin.js';
-// import swaggerPlugin from '../../plugins/swagger.plugin.js';
-// import sensiblePlugin from '../../plugins/sensible.plugin.js';
 import userRoutes from '../../routes/user.routes.js';
 import authRoutes from '../../routes/auth.routes.js';
 import adminApiRoutes from '../../routes/admin-api.routes.js';
@@ -20,24 +14,17 @@ import adminMachineApiRoutes from '../../routes/admin-machine-api.routes.js';
 export async function build(): Promise<FastifyInstance> {
   const app = Fastify({
     logger: false, // 测试时禁用日志
-  });
-
-  // 配置自定义 validatorCompiler，确保拒绝未知字段而不是删除
-  (app as any).setValidatorCompiler(({ schema }: any) => {
-    const ajv = new Ajv({
-      removeAdditional: false, // 关键：拒绝而不是删除未知字段
-      coerceTypes: true,
-      useDefaults: true,
-      allErrors: false,
-    });
-    (addFormats as any)(ajv); // 添加 email、uri 等格式支持
-    return ajv.compile(schema);
+    ajv: {
+      customOptions: {
+        removeAdditional: false, // 关键：拒绝而不是删除未知字段
+        coerceTypes: true,
+        useDefaults: true,
+        allErrors: false,
+      },
+    },
   });
 
   // 注册插件
-  // 简化测试，只注册必要的插件
-  // await app.register(corsPlugin);
-  // await app.register(sensiblePlugin);
   await app.register(errorHandlerPlugin); // 注册错误处理插件，确保验证错误正确返回
   await app.register(authPlugin);
 

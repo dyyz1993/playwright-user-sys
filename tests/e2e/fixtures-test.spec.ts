@@ -79,7 +79,7 @@ test.describe('Fixtures 功能验证', () => {
     });
 
     // 验证所有进程都在运行
-    testEnv.machines.forEach(machine => {
+    testEnv.machines.forEach((machine) => {
       expect(machine.process.pid).toBeGreaterThan(100);
       expect(machine.process.killed).toBe(false);
     });

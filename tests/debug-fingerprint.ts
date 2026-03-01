@@ -38,14 +38,14 @@ server.listen(0, '127.0.0.1', async () => {
 
   const browser = await puppeteer.launch({
     headless: true,
-    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   });
 
   const page = await browser.newPage();
 
   // Enable console logging
-  page.on('console', msg => console.log('[Browser console]', msg.text()));
-  page.on('pageerror', err => console.error('[Browser error]', err.message));
+  page.on('console', (msg) => console.log('[Browser console]', msg.text()));
+  page.on('pageerror', (err) => console.error('[Browser error]', err.message));
 
   console.log('Navigating to:', url);
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 });
@@ -53,15 +53,18 @@ server.listen(0, '127.0.0.1', async () => {
   console.log('Page loaded, waiting for fingerprint...');
 
   try {
-    await page.waitForFunction(() => {
-      console.log('Checking window.fingerprintReady:', window.fingerprintReady);
-      return window.fingerprintReady === true;
-    }, { timeout: 15000, polling: 500 });
+    await page.waitForFunction(
+      () => {
+        console.log('Checking window.fingerprintReady:', window.fingerprintReady);
+        return window.fingerprintReady === true;
+      },
+      { timeout: 15000, polling: 500 }
+    );
 
     const result = await page.evaluate(() => ({
       ready: window.fingerprintReady,
       hash: window.fingerprintHash,
-      hasData: typeof window.fingerprintData !== 'undefined'
+      hasData: typeof window.fingerprintData !== 'undefined',
     }));
 
     console.log('SUCCESS! Fingerprint result:', result);
@@ -74,7 +77,7 @@ server.listen(0, '127.0.0.1', async () => {
       hasData: typeof window.fingerprintData !== 'undefined',
       url: document.URL,
       readyState: document.readyState,
-      hasInitFunction: typeof window.init === 'function'
+      hasInitFunction: typeof window.init === 'function',
     }));
     console.error('Debug info:', debugInfo);
   }

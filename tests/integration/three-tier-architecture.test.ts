@@ -204,13 +204,13 @@ describe('完整三端架构集成测试', () => {
         maxSessions: 5,
         sessionTimeout: 300000, // 5分钟
         // 根据平台自动检测 Chrome 路径
-        chromePath: process.env.CHROME_PATH || (
-          process.platform === 'darwin'
+        chromePath:
+          process.env.CHROME_PATH ||
+          (process.platform === 'darwin'
             ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             : process.platform === 'linux'
               ? '/usr/bin/google-chrome-stable'
-              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        ),
+              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
         heartbeatInterval: 30000, // 30秒
         disconnectionTimeout: 10000, // 10秒
         activityReportInterval: 3000, // 3秒
@@ -237,7 +237,7 @@ describe('完整三端架构集成测试', () => {
 
     // 步骤 6: 验证机器注册成功
     console.log('\n[步骤 6] 验证机器注册...');
-    await new Promise(resolve => setTimeout(resolve, 3000)); // 等待注册完成
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // 等待注册完成
 
     const machines = await MachineModel.findAll();
     console.log(`   数据库中的机器数量: ${machines.total}`);
@@ -516,7 +516,7 @@ describe('完整三端架构集成测试', () => {
     console.log('\n[步骤 5] 使用puppeteer-core连接Chrome...');
 
     // 等待WebSocket端点准备就绪
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const browser = await puppeteer.connect({
       browserWSEndpoint: responseBody.ws_url,
@@ -565,7 +565,7 @@ describe('完整三端架构集成测试', () => {
     console.log(`   WebSocket URL: ${sessionData.ws_url}`);
 
     // 等待WebSocket端点准备就绪
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 连接到Chrome
     console.log('\n[步骤 2] 连接到Chrome...');
@@ -652,7 +652,7 @@ describe('完整三端架构集成测试', () => {
     console.log(`   会话ID: ${sessionId}`);
 
     // 等待WebSocket端点准备就绪
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 连接到Chrome
     console.log('\n[步骤 2] 连接到Chrome...');
@@ -668,7 +668,7 @@ describe('完整三端架构集成测试', () => {
 
     // 等待一段时间以产生计费（至少5秒）
     console.log('\n[步骤 4] 等待5秒以产生计费...');
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     // 断开浏览器连接
     console.log('\n[步骤 5] 断开浏览器连接...');
@@ -688,7 +688,7 @@ describe('完整三端架构集成测试', () => {
     console.log('   ✅ 会话结束请求成功');
 
     // 等待计费处理
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 验证会话状态
     console.log('\n[步骤 7] 验证会话状态...');

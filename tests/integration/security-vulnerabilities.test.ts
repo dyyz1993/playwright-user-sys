@@ -251,13 +251,13 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
         maxSessions: 5,
         sessionTimeout: 300000,
         // 根据平台自动检测 Chrome 路径
-        chromePath: process.env.CHROME_PATH || (
-          process.platform === 'darwin'
+        chromePath:
+          process.env.CHROME_PATH ||
+          (process.platform === 'darwin'
             ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             : process.platform === 'linux'
               ? '/usr/bin/google-chrome-stable'
-              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        ),
+              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
         heartbeatInterval: 30000,
         disconnectionTimeout: 10000,
         activityReportInterval: 3000,
@@ -284,7 +284,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
 
     // 步骤 6: 验证机器注册成功
     console.log('\n[步骤 6] 验证机器注册...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const machines = await MachineModel.findAll();
     console.log(`   数据库中的机器数量: ${machines.total}`);
@@ -422,10 +422,8 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       // Layer 2: Database - 验证没有创建异常用户
       console.log('\n[步骤 2] 验证数据库中无异常用户...');
       const users = await db('users').select('username');
-      const dangerousUsers = users.filter((u: any) =>
-        u.username.includes("'") ||
-        u.username.includes('--') ||
-        u.username.includes('/*')
+      const dangerousUsers = users.filter(
+        (u: any) => u.username.includes("'") || u.username.includes('--') || u.username.includes('/*')
       );
       expect(dangerousUsers.length).toBe(0);
       console.log('   ✅ 数据库中无包含SQL注入的用户');
@@ -638,7 +636,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
         console.log(`   会话ID: ${sessionId}`);
 
         // 等待会话保存到数据库
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         // 验证会话确实被创建
         const sessionInDb = await SessionModel.findById(sessionId);
@@ -730,7 +728,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
 
         // 每创建10个会话暂停一下
         if (i > 0 && i % 10 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
 
@@ -862,7 +860,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
 
       if (onlineMachines.length === 0) {
         console.log('   ⚠️  无在线机器，等待5秒...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
 
         const machinesRetry = await MachineModel.findAll();
         const onlineRetry = machinesRetry.items.filter((m: any) => m.status === 'online');
@@ -882,26 +880,28 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       console.log(`   用户初始积分: ${initialCredits}`);
 
       // 并发创建会话（使用API Key）
-      const createPromises = Array(concurrentSessions).fill(null).map(() =>
-        managerApp.inject({
-          method: 'POST',
-          url: '/api/sessions',
-          headers: {
-            'x-api-key': user.apiKey,
-          },
-          payload: {}, // 显式发送空对象
-        })
-      );
+      const createPromises = Array(concurrentSessions)
+        .fill(null)
+        .map(() =>
+          managerApp.inject({
+            method: 'POST',
+            url: '/api/sessions',
+            headers: {
+              'x-api-key': user.apiKey,
+            },
+            payload: {}, // 显式发送空对象
+          })
+        );
 
       const createResponses = await Promise.all(createPromises);
-      const successfulCreates = createResponses.filter(r => r.statusCode === 201);
+      const successfulCreates = createResponses.filter((r) => r.statusCode === 201);
 
       console.log(`   成功创建 ${successfulCreates.length} 个会话`);
 
       // Layer 1: API Response - 验证所有请求都成功
       expect(successfulCreates.length).toBe(concurrentSessions);
 
-      const sessionIds = successfulCreates.map(r => {
+      const sessionIds = successfulCreates.map((r) => {
         const data = JSON.parse(r.body);
         return data.data.id; // 响应格式: { success: true, data: { id: ... } }
       });
@@ -913,10 +913,10 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       console.log('   ✅ 创建会话后积分未扣除（后扣费模式）');
 
       console.log('\n[步骤 3] 使用会话3秒...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       console.log('\n[步骤 4] 并发结束所有会话（使用API Key）...');
-      const endPromises = sessionIds.map(sessionId =>
+      const endPromises = sessionIds.map((sessionId) =>
         managerApp.inject({
           method: 'POST',
           url: `/api/sessions/${sessionId}/release`,
@@ -927,14 +927,14 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       );
 
       const endResponses = await Promise.all(endPromises);
-      const successfulEnds = endResponses.filter(r => r.statusCode === 200);
+      const successfulEnds = endResponses.filter((r) => r.statusCode === 200);
 
       console.log(`   成功结束 ${successfulEnds.length} 个会话`);
       expect(successfulEnds.length).toBe(concurrentSessions);
 
       // Layer 3: Database - 验证积分正确扣除
       console.log('\n[步骤 5] 验证积分扣除...');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 等待扣费完成
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // 等待扣费完成
 
       const userAfterEnd = await UserModel.findById(user.id);
       const expectedCharge = concurrentSessions * 1; // 每个会话最少1分钟
@@ -949,7 +949,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       // Layer 4: Credit History - 验证积分历史记录
       console.log('\n[步骤 6] 验证积分历史记录...');
       const history = await CreditHistoryModel.findByUserId(user.id);
-      const sessionEndRecords = history.filter(h => h.action === 'use');
+      const sessionEndRecords = history.filter((h) => h.action === 'use');
 
       expect(sessionEndRecords.length).toBeGreaterThanOrEqual(concurrentSessions);
       console.log(`   ✅ 积分历史记录数: ${sessionEndRecords.length}`);
@@ -1109,7 +1109,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       console.log('   ✅ 创建会话后积分未变（后扣费模式）');
 
       console.log('\n[步骤 3] 立即结束会话（< 1分钟）...');
-      await new Promise(resolve => setTimeout(resolve, 1100)); // 等待1.1秒以确保duration至少为1秒
+      await new Promise((resolve) => setTimeout(resolve, 1100)); // 等待1.1秒以确保duration至少为1秒
 
       const endResponse = await managerApp.inject({
         method: 'POST',
@@ -1126,13 +1126,15 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       console.log(`   release response: ${JSON.stringify(endData).substring(0, 200)}...`);
       // 响应格式: { success: true, data: { id: ..., status: ..., duration: ... } }
       const duration = endData.data?.duration !== undefined ? endData.data.duration : endData.duration;
-      console.log(`   duration: ${duration} (data.duration=${endData.data?.duration}, raw.duration=${endData.duration})`);
+      console.log(
+        `   duration: ${duration} (data.duration=${endData.data?.duration}, raw.duration=${endData.duration})`
+      );
       expect(duration).toBeGreaterThanOrEqual(1); // 至少1秒
       console.log(`   会话时长: ${duration}秒`);
 
       // Layer 2: Database - 验证积分扣除
       console.log('\n[步骤 4] 验证积分扣除...');
-      await new Promise(resolve => setTimeout(resolve, 500)); // 等待扣费
+      await new Promise((resolve) => setTimeout(resolve, 500)); // 等待扣费
 
       const userAfter = await UserModel.findById(user.id);
       const creditsDeducted = initialCredits - userAfter!.credits;

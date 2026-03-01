@@ -243,7 +243,10 @@ describe('Timezone Integration Tests', () => {
 
       // 验证共享目录存在
       const sharedDir = path.join(testDataBaseDir, String(userId), 'shared');
-      const exists = await fs.access(sharedDir).then(() => true).catch(() => false);
+      const exists = await fs
+        .access(sharedDir)
+        .then(() => true)
+        .catch(() => false);
       expect(exists).toBe(true);
 
       await browser.disconnect();

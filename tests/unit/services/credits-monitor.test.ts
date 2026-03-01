@@ -206,7 +206,7 @@ describe('CreditsMonitor - 积分监控', () => {
 
       // 过滤出无效会话
       const invalidSessions = activeSessions.filter(
-        session => !session.machine_id || !mockConnectionManager.getActiveConnections().includes(session.machine_id)
+        (session) => !session.machine_id || !mockConnectionManager.getActiveConnections().includes(session.machine_id)
       );
 
       expect(invalidSessions).toHaveLength(1);
@@ -357,9 +357,7 @@ describe('CreditsMonitor - 积分监控', () => {
     it('应该处理关闭浏览器失败的情况', async () => {
       mockConnectionManager.closeBrowser.mockRejectedValue(new Error('关闭浏览器失败'));
 
-      await expect(
-        mockConnectionManager.closeBrowser('machine-1', 'session-1')
-      ).rejects.toThrow('关闭浏览器失败');
+      await expect(mockConnectionManager.closeBrowser('machine-1', 'session-1')).rejects.toThrow('关闭浏览器失败');
 
       // 应该尝试发送关闭命令
       expect(mockConnectionManager.sendCloseBrowserCommand).not.toHaveBeenCalled();

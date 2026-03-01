@@ -174,13 +174,13 @@ describe('反机器人检测验证测试', () => {
         proxyPort,
         maxSessions: 5,
         sessionTimeout: 300000,
-        chromePath: process.env.CHROME_PATH || (
-          process.platform === 'darwin'
+        chromePath:
+          process.env.CHROME_PATH ||
+          (process.platform === 'darwin'
             ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             : process.platform === 'linux'
               ? '/usr/bin/google-chrome-stable'
-              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        ),
+              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
         heartbeatInterval: 30000,
         disconnectionTimeout: 10000,
         activityReportInterval: 3000,
@@ -203,7 +203,7 @@ describe('反机器人检测验证测试', () => {
 
     // 步骤 6: 验证机器注册
     console.log('\n[步骤 6] 验证机器注册状态...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     const registeredMachines = await db('machines').select('*').where('status', 'online');
     expect(registeredMachines.length).toBe(NUM_MACHINES);
     console.log(`   ✅ 成功注册 ${registeredMachines.length} 台机器`);
@@ -372,7 +372,7 @@ describe('反机器人检测验证测试', () => {
     console.log(`   User-Agent: ${userAgent}`);
 
     const forbiddenStrings = ['HeadlessChrome', 'Selenium', 'Puppeteer', 'Playwright', 'WebDriver'];
-    const foundForbidden = forbiddenStrings.filter(str => userAgent.includes(str));
+    const foundForbidden = forbiddenStrings.filter((str) => userAgent.includes(str));
 
     expect(foundForbidden.length).toBe(0);
     console.log(`   ✅ User-Agent 不包含任何自动化标识`);
@@ -462,7 +462,7 @@ describe('反机器人检测验证测试', () => {
     const pluginsInfo = await page.evaluate(() => {
       return {
         length: navigator.plugins.length,
-        plugins: Array.from(navigator.plugins).map(p => p.name),
+        plugins: Array.from(navigator.plugins).map((p) => p.name),
       };
     });
 
@@ -483,7 +483,7 @@ describe('反机器人检测验证测试', () => {
    * - navigator.languages 是数组
    * - 包含至少一个语言代码
    * - 通常与 navigator.language 匹配
-     *
+   *
    * 修复方法:
    * - 使用指纹注入设置合理语言
    * - 或者手动设置 navigator.languages
@@ -569,20 +569,20 @@ describe('反机器人检测验证测试', () => {
 
     const suspiciousVars = await page.evaluate(() => {
       return {
-        '_WEBDRIVER_ELEM_CACHE': typeof (window as any)._WEBDRIVER_ELEM_CACHE !== 'undefined',
-        'cdc_adoQpoasnfa': typeof (window as any).cdc_adoQpoasnfa !== 'undefined',
-        'cdc_IadQpoasnfa': typeof (window as any).cdc_IadQpoasnfa !== 'undefined',
-        '__driver_evaluate': typeof (window as any).__driver_evaluate !== 'undefined',
-        '__webdriver_evaluate': typeof (window as any).__webdriver_evaluate !== 'undefined',
-        '__selenium_evaluate': typeof (window as any).__selenium_evaluate !== 'undefined',
-        '__fxdriver_evaluate': typeof (window as any).__fxdriver_evaluate !== 'undefined',
-        '__driver_unwrapped': typeof (window as any).__driver_unwrapped !== 'undefined',
-        '__webdriver_unwrapped': typeof (window as any).__webdriver_unwrapped !== 'undefined',
-        '__selenium_unwrapped': typeof (window as any).__selenium_unwrapped !== 'undefined',
-        '__fxdriver_unwrapped': typeof (window as any).__fxdriver_unwrapped !== 'undefined',
-        'callSelenium': typeof (window as any).callSelenium !== 'undefined',
-        '$cdc_asdjflasutopfhvcZLmcfl_': typeof (window as any).$cdc_asdjflasutopfhvcZLmcfl_ !== 'undefined',
-        '$chrome_asyncScriptInfo': typeof (window as any).$chrome_asyncScriptInfo !== 'undefined',
+        _WEBDRIVER_ELEM_CACHE: typeof (window as any)._WEBDRIVER_ELEM_CACHE !== 'undefined',
+        cdc_adoQpoasnfa: typeof (window as any).cdc_adoQpoasnfa !== 'undefined',
+        cdc_IadQpoasnfa: typeof (window as any).cdc_IadQpoasnfa !== 'undefined',
+        __driver_evaluate: typeof (window as any).__driver_evaluate !== 'undefined',
+        __webdriver_evaluate: typeof (window as any).__webdriver_evaluate !== 'undefined',
+        __selenium_evaluate: typeof (window as any).__selenium_evaluate !== 'undefined',
+        __fxdriver_evaluate: typeof (window as any).__fxdriver_evaluate !== 'undefined',
+        __driver_unwrapped: typeof (window as any).__driver_unwrapped !== 'undefined',
+        __webdriver_unwrapped: typeof (window as any).__webdriver_unwrapped !== 'undefined',
+        __selenium_unwrapped: typeof (window as any).__selenium_unwrapped !== 'undefined',
+        __fxdriver_unwrapped: typeof (window as any).__fxdriver_unwrapped !== 'undefined',
+        callSelenium: typeof (window as any).callSelenium !== 'undefined',
+        $cdc_asdjflasutopfhvcZLmcfl_: typeof (window as any).$cdc_asdjflasutopfhvcZLmcfl_ !== 'undefined',
+        $chrome_asyncScriptInfo: typeof (window as any).$chrome_asyncScriptInfo !== 'undefined',
       };
     });
 
@@ -731,8 +731,8 @@ describe('反机器人检测验证测试', () => {
 
       // 检查是否包含明显标识
       const suspiciousPatterns = ['SwiftShader', 'Google SwiftShader', 'VMware', 'VirtualBox'];
-      const isSuspicious = suspiciousPatterns.some(pattern =>
-        webglInfo.renderer?.includes(pattern) || webglInfo.vendor?.includes(pattern)
+      const isSuspicious = suspiciousPatterns.some(
+        (pattern) => webglInfo.renderer?.includes(pattern) || webglInfo.vendor?.includes(pattern)
       );
 
       if (isSuspicious) {
@@ -754,7 +754,7 @@ describe('反机器人检测验证测试', () => {
    * 检测点:
    * - Canvas toDataURL() 能正常工作
    * - 生成的数据合理
-     *
+   *
    * 修复方法:
    * - Canvas 通常在 headless 模式下也能正常工作
    * - 但指纹可能一致，需要随机化
@@ -1177,7 +1177,8 @@ describe('反机器人检测验证测试', () => {
 
       // 2. User-Agent
       const ua = navigator.userAgent;
-      results.userAgent = !ua.includes('HeadlessChrome') &&
+      results.userAgent =
+        !ua.includes('HeadlessChrome') &&
         !ua.includes('Selenium') &&
         !ua.includes('Puppeteer') &&
         !ua.includes('Playwright');
@@ -1193,7 +1194,7 @@ describe('反机器人检测验证测试', () => {
 
       // 6. 自动化特征变量
       const suspiciousVars = ['_WEBDRIVER_ELEM_CACHE', 'cdc_adoQpoasnfa'];
-      results.noSuspiciousVars = !suspiciousVars.some(v => typeof (window as any)[v] !== 'undefined');
+      results.noSuspiciousVars = !suspiciousVars.some((v) => typeof (window as any)[v] !== 'undefined');
 
       // 7. 屏幕尺寸
       results.screenSize = screen.width > 0 && screen.height > 0;
@@ -1224,7 +1225,7 @@ describe('反机器人检测验证测试', () => {
     }
 
     const totalChecks = passCount + failCount;
-    const score = (passCount / totalChecks * 100).toFixed(2);
+    const score = ((passCount / totalChecks) * 100).toFixed(2);
 
     console.log(`\n   总分: ${score}% (${passCount}/${totalChecks} 通过)`);
 

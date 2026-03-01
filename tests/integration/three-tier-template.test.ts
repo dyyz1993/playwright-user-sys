@@ -219,13 +219,13 @@ describe('三端架构集成测试模板', () => {
         maxSessions: 5,
         sessionTimeout: 300000, // 5分钟
         // 根据平台自动检测 Chrome 路径
-        chromePath: process.env.CHROME_PATH || (
-          process.platform === 'darwin'
+        chromePath:
+          process.env.CHROME_PATH ||
+          (process.platform === 'darwin'
             ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             : process.platform === 'linux'
               ? '/usr/bin/google-chrome-stable'
-              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        ),
+              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
         heartbeatInterval: 30000, // 30秒
         disconnectionTimeout: 10000, // 10秒
         activityReportInterval: 3000, // 3秒
@@ -252,7 +252,7 @@ describe('三端架构集成测试模板', () => {
 
     // 步骤 6: 验证机器注册成功
     console.log('\n[步骤 6] 验证机器注册...');
-    await new Promise(resolve => setTimeout(resolve, 3000)); // 等待注册完成
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // 等待注册完成
 
     const machines = await MachineModel.findAll();
     console.log(`   数据库中的机器数量: ${machines.total}`);
@@ -483,7 +483,7 @@ describe('三端架构集成测试模板', () => {
     console.log('\n[步骤 5] 使用puppeteer-core连接Chrome...');
 
     // 等待WebSocket端点准备就绪
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const browser = await puppeteer.connect({
       browserWSEndpoint: responseBody.ws_url,
@@ -532,7 +532,7 @@ describe('三端架构集成测试模板', () => {
     console.log(`   WebSocket URL: ${sessionData.ws_url}`);
 
     // 等待WebSocket端点准备就绪
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 连接到Chrome
     console.log('\n[步骤 2] 连接到Chrome...');

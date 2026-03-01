@@ -25,10 +25,7 @@ const __dirname = path.dirname(__filename);
  * @param apiRequest API 请求函数
  * @param timeoutMs 超时时间（默认10000ms）
  */
-async function waitForOnlineMachine(
-  apiRequest: any,
-  timeoutMs: number = 10000
-): Promise<boolean> {
+async function waitForOnlineMachine(apiRequest: any, timeoutMs: number = 10000): Promise<boolean> {
   const startTime = Date.now();
   const intervalMs = 1000;
 
@@ -44,7 +41,7 @@ async function waitForOnlineMachine(
       }
     }
 
-    await new Promise(resolve => setTimeout(resolve, intervalMs));
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 
   return false;
@@ -55,10 +52,7 @@ async function waitForOnlineMachine(
  * @param apiRequest API 请求函数
  * @param timeoutMs 超时时间（默认35000ms）
  */
-async function waitForHeartbeatData(
-  apiRequest: any,
-  timeoutMs: number = 35000
-): Promise<boolean> {
+async function waitForHeartbeatData(apiRequest: any, timeoutMs: number = 35000): Promise<boolean> {
   const startTime = Date.now();
   const intervalMs = 2000;
 
@@ -69,11 +63,12 @@ async function waitForHeartbeatData(
       const machines = result.data?.items || result.data || result;
 
       // 检查是否有机器有有效的心跳数据（支持驼峰和下划线命名）
-      const hasValidHeartbeat = machines.some((m: any) =>
-        (m.cpuUsage !== null && m.cpuUsage !== undefined) ||
-        (m.memoryUsage !== null && m.memoryUsage !== undefined) ||
-        (m.cpu_usage !== null && m.cpu_usage !== undefined) ||
-        (m.memory_usage !== null && m.memory_usage !== undefined)
+      const hasValidHeartbeat = machines.some(
+        (m: any) =>
+          (m.cpuUsage !== null && m.cpuUsage !== undefined) ||
+          (m.memoryUsage !== null && m.memoryUsage !== undefined) ||
+          (m.cpu_usage !== null && m.cpu_usage !== undefined) ||
+          (m.memory_usage !== null && m.memory_usage !== undefined)
       );
 
       if (hasValidHeartbeat) {
@@ -81,7 +76,7 @@ async function waitForHeartbeatData(
       }
     }
 
-    await new Promise(resolve => setTimeout(resolve, intervalMs));
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 
   return false;
@@ -105,7 +100,7 @@ async function waitForLogContent(
         return true;
       }
     }
-    await new Promise(resolve => setTimeout(resolve, intervalMs));
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 
   return false;
@@ -114,7 +109,6 @@ async function waitForLogContent(
 // ==================== MemoryStore 验证 ====================
 
 test.describe('MemoryStore 内存状态验证', () => {
-
   test('MEM-01: 机器数据应该在内存存储中', async ({ testEnv, apiRequest }) => {
     // 轮询等待机器注册（最多10秒）
     const hasOnlineMachine = await waitForOnlineMachine(apiRequest);
@@ -252,7 +246,6 @@ test.describe('MemoryStore 内存状态验证', () => {
 // ==================== gRPC 连接管理验证 ====================
 
 test.describe('gRPC 连接管理验证', () => {
-
   test('GRPC-01: 机器应该成功建立 gRPC 连接', async ({ testEnv }) => {
     const testMachine = testEnv.machines[0];
 
@@ -334,22 +327,19 @@ test.describe('gRPC 连接管理验证', () => {
 // ==================== IPC 数据传输验证 ====================
 
 test.describe('IPC 数据传输验证', () => {
-
   test('IPC-01: 机器注册数据应该正确传输', async ({ testEnv }) => {
     const testMachine = testEnv.machines[0];
 
     // 从日志中验证注册数据
     const logsDir = path.join(__dirname, '../../logs/test-logs');
-    const logFiles = fs.readdirSync(logsDir)
-      .filter(f => f.startsWith(`machine-0-`))
+    const logFiles = fs
+      .readdirSync(logsDir)
+      .filter((f) => f.startsWith(`machine-0-`))
       .sort()
       .reverse();
 
     if (logFiles.length > 0) {
-      const logContent = fs.readFileSync(
-        path.join(logsDir, logFiles[0]),
-        'utf-8'
-      );
+      const logContent = fs.readFileSync(path.join(logsDir, logFiles[0]), 'utf-8');
 
       // 验证注册数据传输
       expect(logContent).toContain('注册机器');
@@ -366,8 +356,9 @@ test.describe('IPC 数据传输验证', () => {
 
     // 从日志中验证心跳数据
     const logsDir = path.join(__dirname, '../../logs/test-logs');
-    const logFiles = fs.readdirSync(logsDir)
-      .filter(f => f.startsWith(`machine-0-`))
+    const logFiles = fs
+      .readdirSync(logsDir)
+      .filter((f) => f.startsWith(`machine-0-`))
       .sort()
       .reverse();
 
@@ -401,7 +392,6 @@ test.describe('IPC 数据传输验证', () => {
 // ==================== 实时状态同步验证 ====================
 
 test.describe('实时状态同步验证', () => {
-
   test('SYNC-01: 机器状态变化应该实时同步', async ({ apiRequest }) => {
     // 先等待机器注册
     await waitForOnlineMachine(apiRequest);
@@ -482,7 +472,6 @@ test.describe('实时状态同步验证', () => {
 // ==================== 容错和恢复验证 ====================
 
 test.describe('容错和恢复验证', () => {
-
   test('FAULT-01: 机器断开后应该标记为离线', async ({ testEnv }) => {
     // 这个测试需要停止机器服务，暂时跳过
     test.skip(true, '需要实现机器停止测试');
@@ -517,7 +506,6 @@ test.describe('容错和恢复验证', () => {
 // ==================== 数据完整性验证 ====================
 
 test.describe('数据完整性验证', () => {
-
   test('INT-01: 机器 ID 应该唯一', async ({ apiRequest }) => {
     const response = await apiRequest('/api/machines');
     const result = await response.json();
@@ -536,9 +524,7 @@ test.describe('数据完整性验证', () => {
     const machines = result.data?.items || result.data || result;
 
     // 过滤出有端口数据的机器
-    const machinesWithPorts = machines.filter((m: any) =>
-      m.grpcPort !== undefined && m.grpcPort !== null
-    );
+    const machinesWithPorts = machines.filter((m: any) => m.grpcPort !== undefined && m.grpcPort !== null);
 
     if (machinesWithPorts.length >= 2) {
       // 至少有2台机器时才验证端口唯一性
@@ -581,7 +567,6 @@ test.describe('数据完整性验证', () => {
 // ==================== 性能验证 ====================
 
 test.describe('性能验证', () => {
-
   test('PERF-MEM01: 内存使用应该稳定', async ({ testEnv, apiRequest }) => {
     // 第一次采样
     const response1 = await apiRequest('/api/machines');
@@ -590,7 +575,7 @@ test.describe('性能验证', () => {
     const machine1 = machines1[0];
 
     // 短暂等待（5秒）以观察内存变化
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     // 第二次采样
     const response2 = await apiRequest('/api/machines');
@@ -620,7 +605,7 @@ test.describe('性能验证', () => {
     const machine1 = machines1[0];
 
     // 短暂等待（5秒）以观察 CPU 变化
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     const response2 = await apiRequest('/api/machines');
     const result2 = await response2.json();

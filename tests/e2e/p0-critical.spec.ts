@@ -46,7 +46,7 @@ function ensureScreenshotDir() {
     path.join(SCREENSHOT_DIR, 'auth'),
   ];
 
-  dirs.forEach(dir => {
+  dirs.forEach((dir) => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -125,10 +125,8 @@ async function checkNoErrors(page) {
   if (errors.length > 0) {
     console.log('Page errors detected:', errors);
     // 只对严重错误导致测试失败
-    const fatalErrors = errors.filter(e =>
-      e.includes('Uncaught') ||
-      e.includes('TypeError') ||
-      e.includes('ReferenceError')
+    const fatalErrors = errors.filter(
+      (e) => e.includes('Uncaught') || e.includes('TypeError') || e.includes('ReferenceError')
     );
     expect(fatalErrors).toHaveLength(0);
   }
@@ -256,7 +254,7 @@ test.describe('P0-登录认证流程', () => {
     const cookies = await context.cookies();
 
     // 预期: 存在名为 'token' 的Cookie
-    const tokenCookie = cookies.find(c => c.name === 'token');
+    const tokenCookie = cookies.find((c) => c.name === 'token');
     expect(tokenCookie).toBeDefined();
 
     // 预期: Cookie是HttpOnly的
@@ -274,7 +272,7 @@ test.describe('P0-登录认证流程', () => {
 
     // 2. 验证Cookie存在
     let cookies = await context.cookies();
-    expect(cookies.find(c => c.name === 'token')).toBeDefined();
+    expect(cookies.find((c) => c.name === 'token')).toBeDefined();
 
     // 3. 执行登出（直接访问logout URL，会处理GET/POST重定向）
     // 修复: 直接访问logout URL，让服务器处理重定向
@@ -290,7 +288,7 @@ test.describe('P0-登录认证流程', () => {
 
     // 6. 验证Cookie已清除
     cookies = await context.cookies();
-    const tokenCookie = cookies.find(c => c.name === 'token');
+    const tokenCookie = cookies.find((c) => c.name === 'token');
     expect(tokenCookie).toBeUndefined();
 
     // 7. 访问受保护页面验证已登出
@@ -309,12 +307,7 @@ test.describe('P0-登录认证流程', () => {
     await page.context().clearCookies();
 
     // 2. 直接访问受保护的页面
-    const protectedPages = [
-      '/admin',
-      '/admin/users',
-      '/admin/sessions',
-      '/admin/machines',
-    ];
+    const protectedPages = ['/admin', '/admin/users', '/admin/sessions', '/admin/machines'];
 
     for (const path of protectedPages) {
       await page.goto(`${BASE_URL}${path}`);
@@ -358,8 +351,8 @@ test.describe('P0-用户管理核心CRUD', () => {
     await checkNoErrors(page);
 
     // 预期: 显示用户表格或"暂无数据"消息
-    const hasTable = await page.locator('table').count() > 0;
-    const hasEmptyMessage = await page.getByText(/暂无/).count() > 0;
+    const hasTable = (await page.locator('table').count()) > 0;
+    const hasEmptyMessage = (await page.getByText(/暂无/).count()) > 0;
     expect(hasTable || hasEmptyMessage).toBe(true);
   });
 
@@ -371,12 +364,12 @@ test.describe('P0-用户管理核心CRUD', () => {
 
     // 预期: 表头包含必要的列
     const table = page.locator('table').first();
-    if (await table.count() > 0) {
+    if ((await table.count()) > 0) {
       // 修复: 逐个检查表头而不是使用toContainText
       const thElements = await table.locator('th').allTextContents();
       const expectedHeaders = ['用户', '角色', '算力点数', '状态', '注册时间', '操作'];
       for (const header of expectedHeaders) {
-        expect(thElements.some(text => text.includes(header))).toBe(true);
+        expect(thElements.some((text) => text.includes(header))).toBe(true);
       }
     }
   });
@@ -399,11 +392,11 @@ test.describe('P0-用户管理核心CRUD', () => {
     const modal = page.locator('#add-user-modal');
 
     // 检查模态框是否仍然有hidden类，如果有则直接通过JavaScript移除
-    const hasHidden = await modal.evaluate(el => el.classList.contains('hidden'));
+    const hasHidden = await modal.evaluate((el) => el.classList.contains('hidden'));
 
     if (hasHidden) {
       // 使用JavaScript直接显示模态框
-      await modal.evaluate(el => el.classList.remove('hidden'));
+      await modal.evaluate((el) => el.classList.remove('hidden'));
       await page.waitForTimeout(500);
     }
 
@@ -431,7 +424,7 @@ test.describe('P0-用户管理核心CRUD', () => {
     await expect(submitButton).toBeVisible();
 
     // 处理可能的 alert 对话框
-    page.on('dialog', async dialog => {
+    page.on('dialog', async (dialog) => {
       console.log('Dialog detected:', dialog.message());
       await dialog.accept();
     });
@@ -456,7 +449,9 @@ test.describe('P0-用户管理核心CRUD', () => {
     const userExists = pageContent.includes(testUsername);
 
     if (!userExists) {
-      console.log(`Note: User ${testUsername} was not found in the list. This may indicate an API issue, but the test flow itself worked.`);
+      console.log(
+        `Note: User ${testUsername} was not found in the list. This may indicate an API issue, but the test flow itself worked.`
+      );
     }
 
     // 至少验证表单可以填写和提交（流程完整性验证）
@@ -478,10 +473,10 @@ test.describe('P0-用户管理核心CRUD', () => {
     const modal = page.locator('#add-user-modal');
 
     // 检查模态框是否仍然有hidden类，如果有则直接通过JavaScript移除
-    const hasHidden = await modal.evaluate(el => el.classList.contains('hidden'));
+    const hasHidden = await modal.evaluate((el) => el.classList.contains('hidden'));
 
     if (hasHidden) {
-      await modal.evaluate(el => el.classList.remove('hidden'));
+      await modal.evaluate((el) => el.classList.remove('hidden'));
       await page.waitForTimeout(500);
     }
 
@@ -524,7 +519,7 @@ test.describe('P0-用户管理核心CRUD', () => {
 
     // 使用更安全的方式检查和显示模态框
     try {
-      const hasHidden = await editModal.evaluate(el => el.classList.contains('hidden')).catch(() => true);
+      const hasHidden = await editModal.evaluate((el) => el.classList.contains('hidden')).catch(() => true);
 
       if (hasHidden) {
         await page.evaluate(() => {
@@ -566,7 +561,7 @@ test.describe('P0-用户管理核心CRUD', () => {
         const isSaveVisible = await saveButton.isVisible().catch(() => false);
         if (isSaveVisible) {
           // 处理确认对话框
-          page.on('dialog', dialog => {
+          page.on('dialog', (dialog) => {
             dialog.accept();
           });
 
@@ -596,7 +591,7 @@ test.describe('P0-用户管理核心CRUD', () => {
     const deleteButton = page.locator('button.delete-user-btn').first();
 
     // 预期: 删除按钮存在（不实际点击删除，避免删除重要用户）
-    const deleteButtonExists = await deleteButton.count() > 0;
+    const deleteButtonExists = (await deleteButton.count()) > 0;
 
     if (deleteButtonExists) {
       // 验证删除按钮可见
@@ -627,7 +622,7 @@ test.describe('P0-用户管理核心CRUD', () => {
     await page.waitForTimeout(500);
 
     // 预期: 显示包含"admin"的用户
-    const hasAdminUser = await page.getByText('admin').count() > 0;
+    const hasAdminUser = (await page.getByText('admin').count()) > 0;
     expect(hasAdminUser).toBe(true);
 
     // 清空搜索框
@@ -659,7 +654,7 @@ test.describe('P0-用户管理核心CRUD', () => {
     const nextPageLink = page.locator('a[href*="page="]').filter({ hasText: '下一页' }).first();
 
     // 如果数据足够多，验证分页功能
-    if (await nextPageLink.count() > 0 && await nextPageLink.isVisible()) {
+    if ((await nextPageLink.count()) > 0 && (await nextPageLink.isVisible())) {
       // 3. 点击下一页
       await nextPageLink.click();
       await page.waitForLoadState('networkidle');
@@ -691,7 +686,7 @@ test.describe('P0-用户管理核心CRUD', () => {
 
     // 使用更安全的方式检查和显示模态框
     try {
-      const hasHidden = await editModal.evaluate(el => el.classList.contains('hidden')).catch(() => true);
+      const hasHidden = await editModal.evaluate((el) => el.classList.contains('hidden')).catch(() => true);
       if (hasHidden) {
         await page.evaluate(() => {
           const modal = document.getElementById('edit-user-modal');
@@ -714,10 +709,22 @@ test.describe('P0-用户管理核心CRUD', () => {
     const isModalVisible = await editModal.isVisible().catch(() => false);
 
     if (isModalVisible) {
-      const usernameVisible = await page.locator('#edit-username').isVisible({ timeout: 5000 }).catch(() => false);
-      const emailVisible = await page.locator('#edit-email').isVisible().catch(() => false);
-      const roleVisible = await page.locator('#edit-role').isVisible().catch(() => false);
-      const statusVisible = await page.locator('#edit-status').isVisible().catch(() => false);
+      const usernameVisible = await page
+        .locator('#edit-username')
+        .isVisible({ timeout: 5000 })
+        .catch(() => false);
+      const emailVisible = await page
+        .locator('#edit-email')
+        .isVisible()
+        .catch(() => false);
+      const roleVisible = await page
+        .locator('#edit-role')
+        .isVisible()
+        .catch(() => false);
+      const statusVisible = await page
+        .locator('#edit-status')
+        .isVisible()
+        .catch(() => false);
 
       // 至少有一些字段可见
       expect(usernameVisible || emailVisible || roleVisible || statusVisible).toBe(true);
@@ -746,7 +753,7 @@ test.describe('P0-用户管理核心CRUD', () => {
 
     // 使用更安全的方式检查和显示模态框
     try {
-      const hasHidden = await editModal.evaluate(el => el.classList.contains('hidden')).catch(() => true);
+      const hasHidden = await editModal.evaluate((el) => el.classList.contains('hidden')).catch(() => true);
       if (hasHidden) {
         await page.evaluate(() => {
           const modal = document.getElementById('edit-user-modal');
@@ -778,7 +785,7 @@ test.describe('P0-用户管理核心CRUD', () => {
 
       if (isSaveVisible) {
         // 处理确认对话框
-        page.on('dialog', dialog => {
+        page.on('dialog', (dialog) => {
           dialog.accept();
         });
 
@@ -809,7 +816,7 @@ test.describe('P0-用户管理核心CRUD', () => {
 
     // 使用更安全的方式检查和显示模态框
     try {
-      const hasHidden = await editModal.evaluate(el => el.classList.contains('hidden')).catch(() => true);
+      const hasHidden = await editModal.evaluate((el) => el.classList.contains('hidden')).catch(() => true);
       if (hasHidden) {
         await page.evaluate(() => {
           const modal = document.getElementById('edit-user-modal');
@@ -850,7 +857,7 @@ test.describe('P0-用户管理核心CRUD', () => {
 
       if (isSaveVisible) {
         // 处理确认对话框
-        page.on('dialog', dialog => {
+        page.on('dialog', (dialog) => {
           dialog.accept();
         });
 
@@ -909,11 +916,11 @@ test.describe('P0-会话管理核心功能', () => {
     await checkNoErrors(page);
 
     // 修复: 检查页面是否有基本的HTML结构
-    const bodyExists = await page.locator('body').count() > 0;
+    const bodyExists = (await page.locator('body').count()) > 0;
     expect(bodyExists).toBe(true);
 
     // 检查页面是否可交互（任何可点击元素）
-    const hasInteractiveElements = await page.locator('button, a, input, select').count() > 0;
+    const hasInteractiveElements = (await page.locator('button, a, input, select').count()) > 0;
     expect(hasInteractiveElements).toBe(true);
 
     await takeScreenshot(page, 'sessions', 'P0-S01-页面加载成功', 'success');
@@ -930,21 +937,24 @@ test.describe('P0-会话管理核心功能', () => {
 
     // 预期: 表头包含必要列或列表包含必要信息（如果存在表格）
     const table = page.locator('table').first();
-    if (await table.count() > 0) {
+    if ((await table.count()) > 0) {
       const thElements = await table.locator('th').allTextContents();
       // 表格应该至少有4个表头（用户、状态、时间等核心信息）
       expect(thElements.length).toBeGreaterThanOrEqual(4);
 
       // 检查关键列是否存在
       const headersText = thElements.join(' ');
-      const hasKeyInfo = headersText.includes('用户') || headersText.includes('状态') ||
-                        headersText.includes('时间') || headersText.includes('User') ||
-                        headersText.includes('Status');
+      const hasKeyInfo =
+        headersText.includes('用户') ||
+        headersText.includes('状态') ||
+        headersText.includes('时间') ||
+        headersText.includes('User') ||
+        headersText.includes('Status');
       expect(hasKeyInfo).toBe(true);
     } else {
       // 如果没有表格，检查是否有列表项或其他内容
-      const hasContent = await page.locator('tbody tr, .session-item, .list-item').count() > 0;
-      const hasEmptyMessage = await page.getByText(/暂无|没有会话/).count() > 0;
+      const hasContent = (await page.locator('tbody tr, .session-item, .list-item').count()) > 0;
+      const hasEmptyMessage = (await page.getByText(/暂无|没有会话/).count()) > 0;
       expect(hasContent || hasEmptyMessage).toBe(true);
     }
     await takeScreenshot(page, 'sessions', 'P0-S02-显示会话信息', 'success');
@@ -960,9 +970,11 @@ test.describe('P0-会话管理核心功能', () => {
     await page.waitForTimeout(2000);
 
     // 2. 查找状态筛选器（多种可能的定位方式）
-    const statusFilter = page.locator('select[name="status"], select#status-filter, .status-filter, #filter-status').first();
+    const statusFilter = page
+      .locator('select[name="status"], select#status-filter, .status-filter, #filter-status')
+      .first();
 
-    if (await statusFilter.count() > 0 && await statusFilter.isVisible()) {
+    if ((await statusFilter.count()) > 0 && (await statusFilter.isVisible())) {
       // 3. 选择活跃状态
       try {
         await statusFilter.selectOption('active');
@@ -995,20 +1007,25 @@ test.describe('P0-会话管理核心功能', () => {
     await page.waitForTimeout(2000);
 
     // 2. 查找活跃会话的操作按钮（多种可能的定位方式）
-    const actionButton = page.locator(
-      'button:has-text("结束"), button:has-text("释放"), button.end-session-btn, ' +
-      'button:has-text("关闭"), .end-session, .terminate-btn'
-    ).first();
+    const actionButton = page
+      .locator(
+        'button:has-text("结束"), button:has-text("释放"), button.end-session-btn, ' +
+          'button:has-text("关闭"), .end-session, .terminate-btn'
+      )
+      .first();
 
-    if (await actionButton.count() > 0 && await actionButton.isVisible()) {
+    if ((await actionButton.count()) > 0 && (await actionButton.isVisible())) {
       // 3. 点击结束按钮
       await actionButton.click();
       await takeScreenshot(page, 'sessions', 'P0-S04-点击结束会话', 'general');
 
       // 处理确认对话框
       await page.waitForTimeout(500);
-      const confirmButton = page.locator('button').filter({ hasText: /确认|确定|是/ }).first();
-      if (await confirmButton.count() > 0 && await confirmButton.isVisible()) {
+      const confirmButton = page
+        .locator('button')
+        .filter({ hasText: /确认|确定|是/ })
+        .first();
+      if ((await confirmButton.count()) > 0 && (await confirmButton.isVisible())) {
         await confirmButton.click();
       }
 
@@ -1033,12 +1050,14 @@ test.describe('P0-会话管理核心功能', () => {
     await page.waitForTimeout(2000);
 
     // 2. 点击第一个会话的详情链接（多种可能的定位方式）
-    const detailLink = page.locator(
-      'a[href*="/admin/sessions/"], a:has-text("详情"), ' +
-      '.view-details, .session-detail-link, button:has-text("查看")'
-    ).first();
+    const detailLink = page
+      .locator(
+        'a[href*="/admin/sessions/"], a:has-text("详情"), ' +
+          '.view-details, .session-detail-link, button:has-text("查看")'
+      )
+      .first();
 
-    if (await detailLink.count() > 0 && await detailLink.isVisible()) {
+    if ((await detailLink.count()) > 0 && (await detailLink.isVisible())) {
       await detailLink.click();
       await takeScreenshot(page, 'sessions', 'P0-S05-查看会话详情', 'general');
 
@@ -1047,15 +1066,15 @@ test.describe('P0-会话管理核心功能', () => {
       await page.waitForTimeout(1000);
 
       // 预期: 显示会话的详细信息（多种可能的展示方式）
-      const hasModal = await page.locator('.modal, .dialog, #detail-modal').count() > 0;
-      const hasDetails = await page.locator('text=/会话|用户|状态|机器|Session/').count() > 0;
+      const hasModal = (await page.locator('.modal, .dialog, #detail-modal').count()) > 0;
+      const hasDetails = (await page.locator('text=/会话|用户|状态|机器|Session/').count()) > 0;
       const urlChanged = page.url().includes('/sessions/');
 
       expect(hasModal || hasDetails || urlChanged).toBe(true);
       await takeScreenshot(page, 'sessions', 'P0-S05-详情显示成功', 'success');
     } else {
       // 修复: 如果没有详情链接，检查页面是否已经有详情展示
-      const hasDetailsOnPage = await page.locator('text=/会话详情|Session Detail/').count() > 0;
+      const hasDetailsOnPage = (await page.locator('text=/会话详情|Session Detail/').count()) > 0;
       expect(hasDetailsOnPage || true).toBe(true);
       await takeScreenshot(page, 'sessions', 'P0-S05-无详情链接', 'general');
     }
@@ -1071,14 +1090,16 @@ test.describe('P0-会话管理核心功能', () => {
     await page.waitForTimeout(2000);
 
     // 2. 查找用户筛选器（多种可能的定位方式）
-    const userFilter = page.locator(
-      'select[name="user_id"], input[name="user"], input[name="user_id"], ' +
-      '.user-filter, #filter-user, select#user-select'
-    ).first();
+    const userFilter = page
+      .locator(
+        'select[name="user_id"], input[name="user"], input[name="user_id"], ' +
+          '.user-filter, #filter-user, select#user-select'
+      )
+      .first();
 
-    if (await userFilter.count() > 0 && await userFilter.isVisible()) {
+    if ((await userFilter.count()) > 0 && (await userFilter.isVisible())) {
       // 3. 选择或输入一个用户
-      const tagName = await userFilter.evaluate(el => el.tagName);
+      const tagName = await userFilter.evaluate((el) => el.tagName);
       if (tagName === 'SELECT') {
         await userFilter.selectOption({ index: 1 });
       } else {
@@ -1110,15 +1131,18 @@ test.describe('P0-会话管理核心功能', () => {
 
     // 2. 查找分页控件（多种可能的定位方式）
     // 只查找可点击的下一页链接（排除 disabled 按钮）
-    const nextPageLink = page.locator(
-      'a[href*="page="]:not([disabled]), .pagination-next:not([disabled]), ' +
-      '.next-page:not([disabled]), button:has-text("下一页"):not([disabled]), ' +
-      '.pagination button:not([disabled])'
-    ).filter({ hasText: /下一页|Next|>/ }).first();
+    const nextPageLink = page
+      .locator(
+        'a[href*="page="]:not([disabled]), .pagination-next:not([disabled]), ' +
+          '.next-page:not([disabled]), button:has-text("下一页"):not([disabled]), ' +
+          '.pagination button:not([disabled])'
+      )
+      .filter({ hasText: /下一页|Next|>/ })
+      .first();
 
-    const paginationDiv = await page.locator('.pagination, .pager, .page-nav').count() > 0;
+    const paginationDiv = (await page.locator('.pagination, .pager, .page-nav').count()) > 0;
 
-    if (await nextPageLink.count() > 0 && await nextPageLink.isVisible() && await nextPageLink.isEnabled()) {
+    if ((await nextPageLink.count()) > 0 && (await nextPageLink.isVisible()) && (await nextPageLink.isEnabled())) {
       // 3. 点击下一页
       await nextPageLink.click();
       await page.waitForLoadState('networkidle');
@@ -1150,12 +1174,14 @@ test.describe('P0-会话管理核心功能', () => {
     await page.waitForTimeout(2000);
 
     // 2. 查找日期筛选器（多种可能的定位方式）
-    const dateInput = page.locator(
-      'input[type="date"], input[name="date"], input[name="start_date"], ' +
-      'input[placeholder*="日期"], input[placeholder*="时间"], .date-filter'
-    ).first();
+    const dateInput = page
+      .locator(
+        'input[type="date"], input[name="date"], input[name="start_date"], ' +
+          'input[placeholder*="日期"], input[placeholder*="时间"], .date-filter'
+      )
+      .first();
 
-    if (await dateInput.count() > 0 && await dateInput.isVisible()) {
+    if ((await dateInput.count()) > 0 && (await dateInput.isVisible())) {
       // 3. 选择今天的日期
       const today = new Date().toISOString().split('T')[0];
       await dateInput.fill(today);
@@ -1207,10 +1233,10 @@ test.describe('P0-机器管理核心功能', () => {
     await checkNoErrors(page);
 
     // 预期: 显示机器列表（表格或卡片布局或"暂无数据"消息）
-    const hasTable = await page.locator('table').count() > 0;
-    const hasGridCards = await page.locator('.grid').count() > 0;
-    const hasEmptyMessage = await page.getByText(/暂无|没有/).count() > 0;
-    const hasListContent = await page.locator('ul, ol, .list').count() > 0;
+    const hasTable = (await page.locator('table').count()) > 0;
+    const hasGridCards = (await page.locator('.grid').count()) > 0;
+    const hasEmptyMessage = (await page.getByText(/暂无|没有/).count()) > 0;
+    const hasListContent = (await page.locator('ul, ol, .list').count()) > 0;
 
     expect(hasTable || hasGridCards || hasEmptyMessage || hasListContent).toBe(true);
     await takeScreenshot(page, 'machines', 'P0-M01-页面加载成功', 'success');
@@ -1227,22 +1253,25 @@ test.describe('P0-机器管理核心功能', () => {
 
     // 预期: 表头包含必要列或列表包含必要信息（如果存在表格）
     const table = page.locator('table').first();
-    if (await table.count() > 0) {
+    if ((await table.count()) > 0) {
       const thElements = await table.locator('th').allTextContents();
       // 表格应该至少有4个表头（IP、状态、机器等核心信息）
       expect(thElements.length).toBeGreaterThanOrEqual(4);
 
       // 检查关键列是否存在
       const headersText = thElements.join(' ');
-      const hasKeyInfo = headersText.includes('IP') || headersText.includes('状态') ||
-                        headersText.includes('机器') || headersText.includes('Machine') ||
-                        headersText.includes('Status');
+      const hasKeyInfo =
+        headersText.includes('IP') ||
+        headersText.includes('状态') ||
+        headersText.includes('机器') ||
+        headersText.includes('Machine') ||
+        headersText.includes('Status');
       expect(hasKeyInfo).toBe(true);
     } else {
       // 如果没有表格，检查是否有网格卡片或其他内容
-      const hasGridCards = await page.locator('.grid .border.rounded-lg').count() > 0;
-      const hasListItems = await page.locator('tbody tr, .machine-item, .list-item').count() > 0;
-      const hasEmptyMessage = await page.getByText(/暂无|没有机器/).count() > 0;
+      const hasGridCards = (await page.locator('.grid .border.rounded-lg').count()) > 0;
+      const hasListItems = (await page.locator('tbody tr, .machine-item, .list-item').count()) > 0;
+      const hasEmptyMessage = (await page.getByText(/暂无|没有机器/).count()) > 0;
       expect(hasGridCards || hasListItems || hasEmptyMessage).toBe(true);
     }
     await takeScreenshot(page, 'machines', 'P0-M02-显示机器信息', 'success');
@@ -1259,9 +1288,7 @@ test.describe('P0-机器管理核心功能', () => {
 
     // 2. 点击第一个机器的详情链接
     // 查找详情链接: href="/admin/machines/{id}" 或文本"详情"
-    const detailLink = page.locator('a[href*="/admin/machines/"]').or(
-      page.locator('a:has-text("详情")')
-    ).first();
+    const detailLink = page.locator('a[href*="/admin/machines/"]').or(page.locator('a:has-text("详情")')).first();
 
     const linkCount = await detailLink.count();
 
@@ -1276,13 +1303,13 @@ test.describe('P0-机器管理核心功能', () => {
 
       // 预期: URL 已改变或显示详情内容
       const urlChanged = page.url().includes('/admin/machines/');
-      const hasDetails = await page.locator('text=/机器详情|IP地址|最后心跳|活跃会话/').count() > 0;
+      const hasDetails = (await page.locator('text=/机器详情|IP地址|最后心跳|活跃会话/').count()) > 0;
 
       expect(urlChanged || hasDetails).toBe(true);
       await takeScreenshot(page, 'machines', 'P0-M03-详情显示成功', 'success');
     } else {
       // 如果没有详情链接，说明机器卡片已经展示了详情
-      const hasMachineInfo = await page.locator('.machine-card').count() > 0;
+      const hasMachineInfo = (await page.locator('.machine-card').count()) > 0;
       expect(hasMachineInfo).toBe(true);
       await takeScreenshot(page, 'machines', 'P0-M03-卡片已显示详情', 'success');
     }
@@ -1298,20 +1325,25 @@ test.describe('P0-机器管理核心功能', () => {
     await page.waitForTimeout(2000);
 
     // 2. 查找重启按钮（多种可能的定位方式）
-    const restartButton = page.locator(
-      'button:has-text("重启"), button.restart-machine-btn, ' +
-      'button:has-text("重新启动"), .restart-btn, .restart-machine'
-    ).first();
+    const restartButton = page
+      .locator(
+        'button:has-text("重启"), button.restart-machine-btn, ' +
+          'button:has-text("重新启动"), .restart-btn, .restart-machine'
+      )
+      .first();
 
-    if (await restartButton.count() > 0 && await restartButton.isVisible()) {
+    if ((await restartButton.count()) > 0 && (await restartButton.isVisible())) {
       // 3. 点击重启按钮
       await restartButton.click();
       await takeScreenshot(page, 'machines', 'P0-M04-点击重启机器', 'general');
 
       // 处理确认对话框
       await page.waitForTimeout(500);
-      const confirmButton = page.locator('button').filter({ hasText: /确认|确定|是/ }).first();
-      if (await confirmButton.count() > 0 && await confirmButton.isVisible()) {
+      const confirmButton = page
+        .locator('button')
+        .filter({ hasText: /确认|确定|是/ })
+        .first();
+      if ((await confirmButton.count()) > 0 && (await confirmButton.isVisible())) {
         await confirmButton.click();
       }
 
@@ -1336,24 +1368,23 @@ test.describe('P0-机器管理核心功能', () => {
     await page.waitForTimeout(2000);
 
     // 2. 点击详情按钮（多种可能的定位方式）
-    const detailLink = page.locator(
-      'a[href*="/admin/machines/"], a:has-text("详情"), ' +
-      '.view-details, button:has-text("查看")'
-    ).first();
+    const detailLink = page
+      .locator('a[href*="/admin/machines/"], a:has-text("详情"), ' + '.view-details, button:has-text("查看")')
+      .first();
 
-    if (await detailLink.count() > 0 && await detailLink.isVisible()) {
+    if ((await detailLink.count()) > 0 && (await detailLink.isVisible())) {
       await detailLink.click();
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(1000);
 
       // 预期: 显示资源使用情况（多种可能的展示方式）
-      const hasResourceInfo = await page.locator('text=/CPU|内存|磁盘|使用率|资源/').count() > 0;
-      const hasStats = await page.locator('.stats, .metrics, .resource-usage').count() > 0;
+      const hasResourceInfo = (await page.locator('text=/CPU|内存|磁盘|使用率|资源/').count()) > 0;
+      const hasStats = (await page.locator('.stats, .metrics, .resource-usage').count()) > 0;
       expect(hasResourceInfo || hasStats).toBe(true);
       await takeScreenshot(page, 'machines', 'P0-M05-资源使用显示', 'success');
     } else {
       // 修复: 如果没有详情链接，检查页面是否已经有资源信息
-      const hasResourceOnPage = await page.locator('text=/资源|CPU|内存/').count() > 0;
+      const hasResourceOnPage = (await page.locator('text=/资源|CPU|内存/').count()) > 0;
       expect(hasResourceOnPage || true).toBe(true);
       await takeScreenshot(page, 'machines', 'P0-M05-无详情按钮', 'general');
     }
@@ -1369,12 +1400,13 @@ test.describe('P0-机器管理核心功能', () => {
     await page.waitForTimeout(2000);
 
     // 2. 查找状态筛选器（多种可能的定位方式）
-    const statusFilter = page.locator(
-      'select[name="status"], select#status-filter, .status-filter, ' +
-      '#filter-status, .machine-status-filter'
-    ).first();
+    const statusFilter = page
+      .locator(
+        'select[name="status"], select#status-filter, .status-filter, ' + '#filter-status, .machine-status-filter'
+      )
+      .first();
 
-    if (await statusFilter.count() > 0 && await statusFilter.isVisible()) {
+    if ((await statusFilter.count()) > 0 && (await statusFilter.isVisible())) {
       // 3. 选择在线状态
       try {
         await statusFilter.selectOption('online');
@@ -1406,12 +1438,11 @@ test.describe('P0-机器管理核心功能', () => {
     await page.waitForTimeout(2000);
 
     // 2. 查找添加机器按钮（多种可能的定位方式）
-    const addButton = page.locator(
-      'button:has-text("添加"), button#add-machine-btn, ' +
-      'button:has-text("新增"), .add-machine, .add-btn'
-    ).first();
+    const addButton = page
+      .locator('button:has-text("添加"), button#add-machine-btn, ' + 'button:has-text("新增"), .add-machine, .add-btn')
+      .first();
 
-    if (await addButton.count() > 0 && await addButton.isVisible()) {
+    if ((await addButton.count()) > 0 && (await addButton.isVisible())) {
       await addButton.click();
       await takeScreenshot(page, 'machines', 'P0-M07-点击添加机器', 'general');
 
@@ -1420,19 +1451,22 @@ test.describe('P0-机器管理核心功能', () => {
 
       // 3. 填写机器信息（如果有表单）
       const nameInput = page.locator('input[name="name"], input#machine-name, .machine-name').first();
-      if (await nameInput.count() > 0 && await nameInput.isVisible()) {
+      if ((await nameInput.count()) > 0 && (await nameInput.isVisible())) {
         await nameInput.fill(`test_machine_${Date.now()}`);
 
         const ipInput = page.locator('input[name="ip"], input#machine-ip, .machine-ip').first();
-        if (await ipInput.count() > 0) {
+        if ((await ipInput.count()) > 0) {
           await ipInput.fill('192.168.1.100');
         }
 
         await takeScreenshot(page, 'machines', 'P0-M07-填写机器信息', 'general');
 
         // 4. 提交表单
-        const submitButton = page.locator('button[type="submit"]').filter({ hasText: /添加|保存|提交/ }).first();
-        if (await submitButton.count() > 0) {
+        const submitButton = page
+          .locator('button[type="submit"]')
+          .filter({ hasText: /添加|保存|提交/ })
+          .first();
+        if ((await submitButton.count()) > 0) {
           await submitButton.click();
         }
 
@@ -1461,19 +1495,21 @@ test.describe('P0-机器管理核心功能', () => {
     await page.waitForTimeout(2000);
 
     // 2. 找到测试机器并点击删除（多种可能的定位方式）
-    const deleteButton = page.locator(
-      'button.delete-machine-btn, button:has-text("删除"), ' +
-      '.delete-machine, .delete-btn:has-text("删除")'
-    ).first();
+    const deleteButton = page
+      .locator('button.delete-machine-btn, button:has-text("删除"), ' + '.delete-machine, .delete-btn:has-text("删除")')
+      .first();
 
-    if (await deleteButton.count() > 0 && await deleteButton.isVisible()) {
+    if ((await deleteButton.count()) > 0 && (await deleteButton.isVisible())) {
       // 3. 点击删除按钮
       await deleteButton.click();
       await takeScreenshot(page, 'machines', 'P0-M08-点击删除机器', 'general');
 
       await page.waitForTimeout(500);
-      const confirmButton = page.locator('button').filter({ hasText: /确认|确定|是/ }).first();
-      if (await confirmButton.count() > 0 && await confirmButton.isVisible()) {
+      const confirmButton = page
+        .locator('button')
+        .filter({ hasText: /确认|确定|是/ })
+        .first();
+      if ((await confirmButton.count()) > 0 && (await confirmButton.isVisible())) {
         await confirmButton.click();
       }
 
@@ -1578,7 +1614,7 @@ test.describe('P0-权限控制验证', () => {
 
     // 2. 验证Cookie存在
     let cookies = await context.cookies();
-    const tokenCookie = cookies.find(c => c.name === 'token');
+    const tokenCookie = cookies.find((c) => c.name === 'token');
     expect(tokenCookie).toBeDefined();
     await takeScreenshot(page, 'auth', 'P0-A04-Cookie存在', 'success');
 

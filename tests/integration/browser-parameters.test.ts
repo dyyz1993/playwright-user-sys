@@ -169,13 +169,13 @@ describe('浏览器启动参数集成测试', () => {
         proxyPort,
         maxSessions: 5,
         sessionTimeout: 300000,
-        chromePath: process.env.CHROME_PATH || (
-          process.platform === 'darwin'
+        chromePath:
+          process.env.CHROME_PATH ||
+          (process.platform === 'darwin'
             ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             : process.platform === 'linux'
               ? '/usr/bin/google-chrome-stable'
-              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        ),
+              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
         heartbeatInterval: 30000,
         disconnectionTimeout: 10000,
         activityReportInterval: 3000,
@@ -198,7 +198,7 @@ describe('浏览器启动参数集成测试', () => {
 
     // 步骤 6: 验证机器注册
     console.log('\n[步骤 6] 验证机器注册状态...');
-    await new Promise(resolve => setTimeout(resolve, 2000)); // 等待注册完成
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // 等待注册完成
     const registeredMachines = await db('machines').select('*').where('status', 'online');
     expect(registeredMachines.length).toBe(NUM_MACHINES);
     console.log(`   ✅ 成功注册 ${registeredMachines.length} 台机器`);
@@ -333,7 +333,7 @@ describe('浏览器启动参数集成测试', () => {
     console.log('   ✅ 浏览器连接成功');
 
     // 等待一小段时间确保 viewport 已应用
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // 导航到 about:blank 以确保页面已完全加载
     await page.goto('about:blank', { waitUntil: 'domcontentloaded' });
@@ -768,9 +768,7 @@ describe('浏览器启动参数集成测试', () => {
       origins: [
         {
           origin: 'https://example.com',
-          localStorage: [
-            { name: 'directKey', value: 'directValue' },
-          ],
+          localStorage: [{ name: 'directKey', value: 'directValue' }],
         },
       ],
     };

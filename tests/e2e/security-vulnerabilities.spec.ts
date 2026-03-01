@@ -29,7 +29,7 @@ async function createTestUser(overrides: any = {}) {
     webhook_url: null,
     created_at: new Date(),
     updated_at: new Date(),
-    ...overrides
+    ...overrides,
   };
 
   const [id] = await db('users').insert(userData);
@@ -65,7 +65,7 @@ async function createTestSession(userId: number, overrides: any = {}) {
     error_message: null,
     created_at: new Date(),
     updated_at: new Date(),
-    ...overrides
+    ...overrides,
   };
 
   await db('sessions').insert(sessionData);
@@ -100,7 +100,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
       // 步骤 1: 创建第二个用户
       const attackerUser = await createTestUser({
         username: `attacker_${Date.now()}`,
-        credits: 0
+        credits: 0,
       });
 
       try {
@@ -110,14 +110,14 @@ test.describe('TIER 安全漏洞测试套件', () => {
         // 步骤 3: 攻击者使用窃取的 API Key 创建会话
         const createSessionResponse = await request.post(`${API_BASE}/sessions`, {
           headers: {
-            'x-api-key': stolenApiKey
+            'x-api-key': stolenApiKey,
           },
           data: {
             viewport: {
               width: 1920,
-              height: 1080
-            }
-          }
+              height: 1080,
+            },
+          },
         });
 
         // 验证点：API 层 - 攻击者可以使用窃取的 API Key
@@ -154,11 +154,11 @@ test.describe('TIER 安全漏洞测试套件', () => {
       // 步骤 1: 创建用户 A（攻击者）和用户 B（受害者）
       const userA = await createTestUser({
         username: `userA_${Date.now()}`,
-        api_key: uuidv4()
+        api_key: uuidv4(),
       });
       const userB = await createTestUser({
         username: `userB_${Date.now()}`,
-        api_key: uuidv4()
+        api_key: uuidv4(),
       });
 
       try {
@@ -168,8 +168,8 @@ test.describe('TIER 安全漏洞测试套件', () => {
         // 步骤 3: 用户 A 尝试访问用户 B 的会话
         const getSessionResponse = await request.get(`${API_BASE}/sessions/${userBSession.id}`, {
           headers: {
-            'x-api-key': userA.api_key
-          }
+            'x-api-key': userA.api_key,
+          },
         });
 
         // 验证点：API 层 - 检查访问控制
@@ -200,7 +200,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
       // 步骤 1: 创建普通用户
       const regularUser = await createTestUser({
         username: `regular_${Date.now()}`,
-        role: 'user'
+        role: 'user',
       });
 
       try {
@@ -209,14 +209,14 @@ test.describe('TIER 安全漏洞测试套件', () => {
         const userToken = generateToken({
           id: regularUser.id,
           username: regularUser.username,
-          role: 'user'
+          role: 'user',
         });
 
         // 步骤 3: 尝试访问管理员端点 - 获取所有用户
         const getAllUsersResponse = await request.get(`${API_BASE}/admin/users`, {
           headers: {
-            'Authorization': `Bearer ${userToken}`
-          }
+            Authorization: `Bearer ${userToken}`,
+          },
         });
 
         // 验证点：API 层 - 权限检查
@@ -226,13 +226,13 @@ test.describe('TIER 安全漏洞测试套件', () => {
         // 步骤 4: 尝试访问管理员端点 - 创建新用户
         const createUserResponse = await request.post(`${API_BASE}/users`, {
           headers: {
-            'Authorization': `Bearer ${userToken}`
+            Authorization: `Bearer ${userToken}`,
           },
           data: {
             username: `hacked_${Date.now()}`,
             password: 'Hacked123',
-            role: 'admin'
-          }
+            role: 'admin',
+          },
         });
 
         // 验证点：API 层 - 创建用户权限检查
@@ -266,8 +266,8 @@ test.describe('TIER 安全漏洞测试套件', () => {
         // 步骤 3: 使用过期 Token 访问受保护资源
         const response = await request.get(`${API_BASE}/users/me`, {
           headers: {
-            'Authorization': `Bearer ${expiredToken}`
-          }
+            Authorization: `Bearer ${expiredToken}`,
+          },
         });
 
         // 验证点：API 层 - Token 过期检查
@@ -301,7 +301,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
         const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
         // 验证点：安全层 - Session ID 格式检查
-        sessionIds.forEach(id => {
+        sessionIds.forEach((id) => {
           expect(id).toMatch(uuidPattern); // 应该使用 UUID v4
         });
 
@@ -346,11 +346,11 @@ test.describe('TIER 安全漏洞测试套件', () => {
         for (let i = 0; i < maxConcurrentSessions; i++) {
           const response = await request.post(`${API_BASE}/sessions`, {
             headers: {
-              'x-api-key': testUser.api_key
+              'x-api-key': testUser.api_key,
             },
             data: {
-              viewport: { width: 1920, height: 1080 }
-            }
+              viewport: { width: 1920, height: 1080 },
+            },
           });
 
           // 如果请求失败，停止创建
@@ -371,12 +371,11 @@ test.describe('TIER 安全漏洞测试套件', () => {
         const { db } = await import('../../src/config/database.js');
         const userSessions = await db('sessions').where({ user_id: testUser.id }).whereNotNull('machine_id');
         expect(userSessions.length).toBeLessThan(50);
-
       } finally {
         // 清理：释放所有创建的会话
         for (const sessionId of sessionIds) {
           await request.post(`${API_BASE}/sessions/${sessionId}/release`, {
-            headers: { 'x-api-key': testUser.api_key }
+            headers: { 'x-api-key': testUser.api_key },
           });
         }
       }
@@ -397,7 +396,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
         promises.push(
           request.post(`${API_BASE}/sessions`, {
             headers: { 'x-api-key': testUser.api_key },
-            data: { viewport: { width: 1920, height: 1080 } }
+            data: { viewport: { width: 1920, height: 1080 } },
           })
         );
       }
@@ -406,7 +405,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
       const responses = await Promise.all(promises);
 
       // 统计成功创建的会话数
-      const successCount = responses.filter(r => r.status() === 201).length;
+      const successCount = responses.filter((r) => r.status() === 201).length;
 
       // 验证点：业务层 - 积分扣费一致性
       // 期望：只应该创建 1 个会话（积分只够 1 个）
@@ -429,7 +428,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
       // 步骤 2: 尝试创建会话（应该失败，因为积分不足）
       const response = await request.post(`${API_BASE}/sessions`, {
         headers: { 'x-api-key': testUser.api_key },
-        data: { viewport: { width: 1920, height: 1080 } }
+        data: { viewport: { width: 1920, height: 1080 } },
       });
 
       // 验证点：API 层 - 积分不足检查
@@ -451,7 +450,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
       // 步骤 2: 尝试创建会话
       const response = await request.post(`${API_BASE}/sessions`, {
         headers: { 'x-api-key': testUser.api_key },
-        data: { viewport: { width: 1920, height: 1080 } }
+        data: { viewport: { width: 1920, height: 1080 } },
       });
 
       if (response.status() === 201) {
@@ -459,7 +458,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
 
         // 步骤 3: 立即释放会话
         await request.post(`${API_BASE}/sessions/${sessionData.data.id}/release`, {
-          headers: { 'x-api-key': testUser.api_key }
+          headers: { 'x-api-key': testUser.api_key },
         });
 
         // 步骤 4: 检查积分是否正确扣除
@@ -516,7 +515,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
             status: 'created',
             start_time: new Date(),
             created_at: new Date(),
-            updated_at: new Date()
+            updated_at: new Date(),
           });
 
           // 增加机器实例计数
@@ -533,7 +532,6 @@ test.describe('TIER 安全漏洞测试套件', () => {
         // 期望：实例计数不应该超过 max_instances
         // 实际：可能没有限制，导致溢出
         expect(finalInstanceCount).toBeLessThanOrEqual(maxInstances);
-
       } finally {
         // 清理：删除所有创建的会话
         for (const sessionId of sessionIds) {
@@ -542,7 +540,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
 
         // 恢复机器实例计数
         await db('machines').where({ id: machine.id }).update({
-          instance_count: initialInstanceCount
+          instance_count: initialInstanceCount,
         });
       }
     });
@@ -571,7 +569,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
       // 步骤 1: 创建会话
       const session = await createTestSession(testUser.id, {
         status: 'connected',
-        start_time: new Date(Date.now() - 120000) // 2 分钟前开始
+        start_time: new Date(Date.now() - 120000), // 2 分钟前开始
       });
 
       // 步骤 2: 记录初始积分
@@ -585,7 +583,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
       for (let i = 0; i < concurrentRequests; i++) {
         promises.push(
           request.post(`${API_BASE}/sessions/${session.id}/release`, {
-            headers: { 'x-api-key': testUser.api_key }
+            headers: { 'x-api-key': testUser.api_key },
           })
         );
       }
@@ -615,7 +613,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
         status: 'connected',
         machine_id: 'test-machine-1',
         port: 9000,
-        start_time: new Date()
+        start_time: new Date(),
       });
 
       // 步骤 2: 手动将会话状态改为 disconnected
@@ -624,12 +622,12 @@ test.describe('TIER 安全漏洞测试套件', () => {
         status: 'disconnected',
         end_time: new Date(),
         duration: 60,
-        credits_used: 1
+        credits_used: 1,
       });
 
       // 步骤 3: 尝试再次释放会话
       const response = await request.post(`${API_BASE}/sessions/${session.id}/release`, {
-        headers: { 'x-api-key': testUser.api_key }
+        headers: { 'x-api-key': testUser.api_key },
       });
 
       // 验证点：API 层 - 状态检查
@@ -652,14 +650,14 @@ test.describe('TIER 安全漏洞测试套件', () => {
       const session = await createTestSession(testUser.id, {
         status: 'connected',
         start_time: new Date(Date.now() - 59000), // 59 秒前开始
-        credits_used: 0
+        credits_used: 0,
       });
 
       // 步骤 2: 在会话即将达到 1 分钟时释放
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 等待 1 秒
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // 等待 1 秒
 
       await request.post(`${API_BASE}/sessions/${session.id}/release`, {
-        headers: { 'x-api-key': testUser.api_key }
+        headers: { 'x-api-key': testUser.api_key },
       });
 
       // 步骤 3: 检查扣费情况
@@ -678,12 +676,12 @@ test.describe('TIER 安全漏洞测试套件', () => {
       // 步骤 1: 创建会话
       const session = await createTestSession(testUser.id, {
         status: 'connected',
-        start_time: new Date(Date.now() - 120000)
+        start_time: new Date(Date.now() - 120000),
       });
 
       // 步骤 2: 释放会话
       await request.post(`${API_BASE}/sessions/${session.id}/release`, {
-        headers: { 'x-api-key': testUser.api_key }
+        headers: { 'x-api-key': testUser.api_key },
       });
 
       // 步骤 3: 检查积分历史记录
@@ -720,7 +718,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
       // 步骤 4: 直接删除会话（不通过正常流程）
       const session = await createTestSession(testUser.id, {
         machine_id: machine.id,
-        status: 'connected'
+        status: 'connected',
       });
 
       await db('sessions').where({ id: session.id }).delete();
@@ -736,7 +734,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
 
       // 清理：恢复计数
       await db('machines').where({ id: machine.id }).update({
-        instance_count: initialCount
+        instance_count: initialCount,
       });
     });
   });
@@ -764,12 +762,12 @@ test.describe('TIER 安全漏洞测试套件', () => {
 
       // 步骤 1: 用户 B 创建会话
       const userBSession = await createTestSession(userB.id, {
-        status: 'connected'
+        status: 'connected',
       });
 
       // 步骤 2: 用户 A 尝试访问用户 B 的会话
       const response = await request.get(`${API_BASE}/sessions/${userBSession.id}`, {
-        headers: { 'x-api-key': userA.api_key }
+        headers: { 'x-api-key': userA.api_key },
       });
 
       // 验证点：API 层 - 访问控制
@@ -778,7 +776,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
 
       // 步骤 3: 尝试释放用户 B 的会话
       const releaseResponse = await request.post(`${API_BASE}/sessions/${userBSession.id}/release`, {
-        headers: { 'x-api-key': userA.api_key }
+        headers: { 'x-api-key': userA.api_key },
       });
 
       // 验证点：API 层 - 操作权限检查
@@ -792,12 +790,12 @@ test.describe('TIER 安全漏洞测试套件', () => {
       const { generateToken } = await import('../../src/utils/auth.js');
       const response = await request.get(`${API_BASE}/users/${userB.id}`, {
         headers: {
-          'Authorization': `Bearer ${generateToken({
+          Authorization: `Bearer ${generateToken({
             id: userA.id,
             username: userA.username,
-            role: 'user'
-          })}`
-        }
+            role: 'user',
+          })}`,
+        },
       });
 
       // 验证点：API 层 - 权限检查
@@ -811,7 +809,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
 
       // 步骤 1: 获取当前用户信息
       const response = await request.get(`${API_BASE}/users/me`, {
-        headers: { 'x-api-key': userA.api_key }
+        headers: { 'x-api-key': userA.api_key },
       });
 
       expect(response.status()).toBe(200);
@@ -840,19 +838,19 @@ test.describe('TIER 安全漏洞测试套件', () => {
         "1' UNION SELECT * FROM users--",
         "'; DROP TABLE users--",
         "1' AND 1=1--",
-        "admin'--"
+        "admin'--",
       ];
 
       for (const payload of sqlInjectionPayloads) {
         // 步骤 1: 尝试通过用户 ID 参数注入
         const response = await request.get(`${API_BASE}/users/${encodeURIComponent(payload)}`, {
           headers: {
-            'Authorization': `Bearer ${generateToken({
+            Authorization: `Bearer ${generateToken({
               id: userA.id,
               username: userA.username,
-              role: 'admin'
-            })}`
-          }
+              role: 'admin',
+            })}`,
+          },
         });
 
         // 验证点：API 层 - SQL 注入防护
@@ -878,12 +876,12 @@ test.describe('TIER 安全漏洞测试套件', () => {
       const userBSession = await createTestSession(userB.id, {
         status: 'connected',
         machine_id: 'test-machine-1',
-        port: 9000
+        port: 9000,
       });
 
       // 步骤 2: 攻击者（用户 A）尝试直接使用会话 ID
       const response = await request.get(`${API_BASE}/sessions/${userBSession.id}`, {
-        headers: { 'x-api-key': userA.api_key }
+        headers: { 'x-api-key': userA.api_key },
       });
 
       // 验证点：API 层 - 会话归属检查
@@ -892,7 +890,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
 
       // 步骤 3: 检查是否可以获取会话截图
       const screenshotResponse = await request.get(`${API_BASE}/sessions/${userBSession.id}/screenshot`, {
-        headers: { 'x-api-key': userA.api_key }
+        headers: { 'x-api-key': userA.api_key },
       });
 
       // 验证点：API 层 - 截图访问控制

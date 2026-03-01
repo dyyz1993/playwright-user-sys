@@ -71,7 +71,7 @@ async function runAntiDetectionTests() {
     console.log(`   User-Agent: ${userAgent}`);
 
     const forbiddenStrings = ['HeadlessChrome', 'Selenium', 'Puppeteer', 'Playwright', 'WebDriver'];
-    const foundForbidden = forbiddenStrings.filter(str => userAgent.includes(str));
+    const foundForbidden = forbiddenStrings.filter((str) => userAgent.includes(str));
 
     if (foundForbidden.length === 0) {
       console.log('   ✅ 通过: User-Agent 不包含自动化标识');
@@ -98,7 +98,7 @@ async function runAntiDetectionTests() {
     const pluginsInfo = await page.evaluate(() => {
       return {
         length: navigator.plugins.length,
-        plugins: Array.from(navigator.plugins).map(p => p.name),
+        plugins: Array.from(navigator.plugins).map((p) => p.name),
       };
     });
     console.log(`   navigator.plugins.length: ${pluginsInfo.length}`);
@@ -137,20 +137,20 @@ async function runAntiDetectionTests() {
     console.log('\n[测试 6] 自动化特征变量检查...');
     const suspiciousVars = await page.evaluate(() => {
       return {
-        '_WEBDRIVER_ELEM_CACHE': typeof (window as any)._WEBDRIVER_ELEM_CACHE !== 'undefined',
-        'cdc_adoQpoasnfa': typeof (window as any).cdc_adoQpoasnfa !== 'undefined',
-        'cdc_IadQpoasnfa': typeof (window as any).cdc_IadQpoasnfa !== 'undefined',
-        '__driver_evaluate': typeof (window as any).__driver_evaluate !== 'undefined',
-        '__webdriver_evaluate': typeof (window as any).__webdriver_evaluate !== 'undefined',
-        '__selenium_evaluate': typeof (window as any).__selenium_evaluate !== 'undefined',
-        '__fxdriver_evaluate': typeof (window as any).__fxdriver_evaluate !== 'undefined',
-        '__driver_unwrapped': typeof (window as any).__driver_unwrapped !== 'undefined',
-        '__webdriver_unwrapped': typeof (window as any).__webdriver_unwrapped !== 'undefined',
-        '__selenium_unwrapped': typeof (window as any).__selenium_unwrapped !== 'undefined',
-        '__fxdriver_unwrapped': typeof (window as any).__fxdriver_unwrapped !== 'undefined',
-        'callSelenium': typeof (window as any).callSelenium !== 'undefined',
-        '$cdc_asdjflasutopfhvcZLmcfl_': typeof (window as any).$cdc_asdjflasutopfhvcZLmcfl_ !== 'undefined',
-        '$chrome_asyncScriptInfo': typeof (window as any).$chrome_asyncScriptInfo !== 'undefined',
+        _WEBDRIVER_ELEM_CACHE: typeof (window as any)._WEBDRIVER_ELEM_CACHE !== 'undefined',
+        cdc_adoQpoasnfa: typeof (window as any).cdc_adoQpoasnfa !== 'undefined',
+        cdc_IadQpoasnfa: typeof (window as any).cdc_IadQpoasnfa !== 'undefined',
+        __driver_evaluate: typeof (window as any).__driver_evaluate !== 'undefined',
+        __webdriver_evaluate: typeof (window as any).__webdriver_evaluate !== 'undefined',
+        __selenium_evaluate: typeof (window as any).__selenium_evaluate !== 'undefined',
+        __fxdriver_evaluate: typeof (window as any).__fxdriver_evaluate !== 'undefined',
+        __driver_unwrapped: typeof (window as any).__driver_unwrapped !== 'undefined',
+        __webdriver_unwrapped: typeof (window as any).__webdriver_unwrapped !== 'undefined',
+        __selenium_unwrapped: typeof (window as any).__selenium_unwrapped !== 'undefined',
+        __fxdriver_unwrapped: typeof (window as any).__fxdriver_unwrapped !== 'undefined',
+        callSelenium: typeof (window as any).callSelenium !== 'undefined',
+        $cdc_asdjflasutopfhvcZLmcfl_: typeof (window as any).$cdc_asdjflasutopfhvcZLmcfl_ !== 'undefined',
+        $chrome_asyncScriptInfo: typeof (window as any).$chrome_asyncScriptInfo !== 'undefined',
       };
     });
 
@@ -231,8 +231,8 @@ async function runAntiDetectionTests() {
       console.log(`   WebGL Renderer: ${webglInfo.renderer}`);
 
       const suspiciousPatterns = ['SwiftShader', 'Google SwiftShader', 'VMware', 'VirtualBox'];
-      const isSuspicious = suspiciousPatterns.some(pattern =>
-        webglInfo.renderer?.includes(pattern) || webglInfo.vendor?.includes(pattern)
+      const isSuspicious = suspiciousPatterns.some(
+        (pattern) => webglInfo.renderer?.includes(pattern) || webglInfo.vendor?.includes(pattern)
       );
 
       if (isSuspicious) {

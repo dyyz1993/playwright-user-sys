@@ -26,7 +26,6 @@ import { describe, it, expect } from 'vitest';
 import { SessionStatus } from '@shared/types/index.js';
 
 describe('SessionStateMachine - 会话状态机', () => {
-
   describe('有效状态转换', () => {
     it('UNIT-STATE-001: CREATED -> CONNECTED 是合法转换', () => {
       const transition = isValidTransition(SessionStatus.CREATED, SessionStatus.CONNECTED);
@@ -157,11 +156,7 @@ describe('SessionStateMachine - 会话状态机', () => {
     });
 
     it('UNIT-STATE-022: 错误会话流程 CREATED -> ERROR -> COMPLETED', () => {
-      const flow = [
-        SessionStatus.CREATED,
-        SessionStatus.ERROR,
-        SessionStatus.COMPLETED,
-      ];
+      const flow = [SessionStatus.CREATED, SessionStatus.ERROR, SessionStatus.COMPLETED];
 
       for (let i = 0; i < flow.length - 1; i++) {
         const from = flow[i];
@@ -172,12 +167,7 @@ describe('SessionStateMachine - 会话状态机', () => {
     });
 
     it('UNIT-STATE-023: 过期会话流程 CREATED -> CONNECTED -> EXPIRED -> COMPLETED', () => {
-      const flow = [
-        SessionStatus.CREATED,
-        SessionStatus.CONNECTED,
-        SessionStatus.EXPIRED,
-        SessionStatus.COMPLETED,
-      ];
+      const flow = [SessionStatus.CREATED, SessionStatus.CONNECTED, SessionStatus.EXPIRED, SessionStatus.COMPLETED];
 
       for (let i = 0; i < flow.length - 1; i++) {
         const from = flow[i];
@@ -206,16 +196,9 @@ describe('SessionStateMachine - 会话状态机', () => {
 
     it('UNIT-STATE-027: 所有状态都应该有明确的定义', () => {
       const allStatuses = Object.values(SessionStatus);
-      const expectedStatuses = [
-        'created',
-        'connected',
-        'disconnected',
-        'expired',
-        'error',
-        'completed',
-      ];
+      const expectedStatuses = ['created', 'connected', 'disconnected', 'expired', 'error', 'completed'];
 
-      allStatuses.forEach(status => {
+      allStatuses.forEach((status) => {
         expect(expectedStatuses).toContain(status);
       });
     });
@@ -251,31 +234,17 @@ describe('SessionStateMachine - 会话状态机', () => {
   describe('状态转换规则', () => {
     it('UNIT-STATE-031: 应该定义所有合法的状态转换', () => {
       const validTransitions = {
-        [SessionStatus.CREATED]: [
-          SessionStatus.CONNECTED,
-          SessionStatus.ERROR,
-        ],
-        [SessionStatus.CONNECTED]: [
-          SessionStatus.DISCONNECTED,
-          SessionStatus.ERROR,
-          SessionStatus.EXPIRED,
-        ],
-        [SessionStatus.DISCONNECTED]: [
-          SessionStatus.COMPLETED,
-          SessionStatus.ERROR,
-        ],
-        [SessionStatus.EXPIRED]: [
-          SessionStatus.COMPLETED,
-        ],
-        [SessionStatus.ERROR]: [
-          SessionStatus.COMPLETED,
-        ],
+        [SessionStatus.CREATED]: [SessionStatus.CONNECTED, SessionStatus.ERROR],
+        [SessionStatus.CONNECTED]: [SessionStatus.DISCONNECTED, SessionStatus.ERROR, SessionStatus.EXPIRED],
+        [SessionStatus.DISCONNECTED]: [SessionStatus.COMPLETED, SessionStatus.ERROR],
+        [SessionStatus.EXPIRED]: [SessionStatus.COMPLETED],
+        [SessionStatus.ERROR]: [SessionStatus.COMPLETED],
         [SessionStatus.COMPLETED]: [], // 终态
       };
 
       // 验证所有定义的转换都是合法的
       Object.entries(validTransitions).forEach(([from, toList]) => {
-        toList.forEach(to => {
+        toList.forEach((to) => {
           const isValid = isValidTransition(from as SessionStatus, to);
           expect(isValid).toBe(true);
         });
@@ -292,25 +261,11 @@ describe('SessionStateMachine - 会话状态机', () => {
  */
 function isValidTransition(from: SessionStatus, to: SessionStatus): boolean {
   const validTransitions: Record<SessionStatus, SessionStatus[]> = {
-    [SessionStatus.CREATED]: [
-      SessionStatus.CONNECTED,
-      SessionStatus.ERROR,
-    ],
-    [SessionStatus.CONNECTED]: [
-      SessionStatus.DISCONNECTED,
-      SessionStatus.ERROR,
-      SessionStatus.EXPIRED,
-    ],
-    [SessionStatus.DISCONNECTED]: [
-      SessionStatus.COMPLETED,
-      SessionStatus.ERROR,
-    ],
-    [SessionStatus.EXPIRED]: [
-      SessionStatus.COMPLETED,
-    ],
-    [SessionStatus.ERROR]: [
-      SessionStatus.COMPLETED,
-    ],
+    [SessionStatus.CREATED]: [SessionStatus.CONNECTED, SessionStatus.ERROR],
+    [SessionStatus.CONNECTED]: [SessionStatus.DISCONNECTED, SessionStatus.ERROR, SessionStatus.EXPIRED],
+    [SessionStatus.DISCONNECTED]: [SessionStatus.COMPLETED, SessionStatus.ERROR],
+    [SessionStatus.EXPIRED]: [SessionStatus.COMPLETED],
+    [SessionStatus.ERROR]: [SessionStatus.COMPLETED],
     [SessionStatus.COMPLETED]: [], // 终态，不能转换
   };
 

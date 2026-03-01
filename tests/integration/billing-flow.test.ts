@@ -141,7 +141,7 @@ describe('计费流程集成测试', () => {
     await SessionModel.markConnected(session!.id);
 
     // 等待一段时间（确保有时长）
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 标记为已断开
     const disconnectedSession = await SessionModel.markDisconnected(session!.id, 0);
@@ -208,7 +208,7 @@ describe('计费流程集成测试', () => {
     await SessionModel.markConnected(session!.id);
 
     // 等待一段时间
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 标记为错误状态
     const errorSession = await SessionModel.markError(session!.id, 60);
@@ -316,16 +316,13 @@ describe('计费流程集成测试', () => {
     await SessionModel.markConnected(session!.id);
 
     // 等待一段时间
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 标记为已断开（触发扣费）
     await SessionModel.markDisconnected(session!.id, 0);
 
     // 验证积分历史记录
-    const history = await db('credit_history')
-      .where({ user_id: testUser.id })
-      .orderBy('created_at', 'desc')
-      .first();
+    const history = await db('credit_history').where({ user_id: testUser.id }).orderBy('created_at', 'desc').first();
 
     expect(history).toBeTruthy();
     expect(history!.id).toBeGreaterThan(0);
@@ -351,12 +348,10 @@ describe('计费流程集成测试', () => {
     }
 
     // 等待一段时间
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // 同时断开所有会话
-    const disconnectPromises = sessions.map(s =>
-      SessionModel.markDisconnected(s.id, 0)
-    );
+    const disconnectPromises = sessions.map((s) => SessionModel.markDisconnected(s.id, 0));
     await Promise.all(disconnectPromises);
 
     // 验证总扣费
@@ -387,7 +382,7 @@ describe('计费流程集成测试', () => {
     await SessionModel.markConnected(session!.id);
 
     // 等待一段时间
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 标记为已断开
     await SessionModel.markDisconnected(session!.id, 0);

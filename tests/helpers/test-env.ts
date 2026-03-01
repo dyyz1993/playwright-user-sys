@@ -78,10 +78,7 @@ export async function getAvailablePorts(count: number): Promise<number[]> {
 /**
  * 等待服务器就绪
  */
-async function waitForServer(
-  url: string,
-  options: { timeout?: number; retries?: number } = {}
-): Promise<void> {
+async function waitForServer(url: string, options: { timeout?: number; retries?: number } = {}): Promise<void> {
   const { timeout = 30000, retries = 60 } = options;
   const start = Date.now();
 
@@ -93,7 +90,7 @@ async function waitForServer(
     try {
       const response = await fetch(url, {
         method: 'GET',
-        signal: AbortSignal.timeout(2000)
+        signal: AbortSignal.timeout(2000),
       });
       if (response.ok) {
         return;
@@ -102,7 +99,7 @@ async function waitForServer(
       // 继续等待
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   throw new Error(`服务器启动失败: ${url}`);
@@ -188,10 +185,7 @@ export async function startManagerServer(): Promise<TestServer> {
 /**
  * 启动机器服务
  */
-export async function startMachineServer(
-  index: number,
-  managerServer: TestServer
-): Promise<TestServer> {
+export async function startMachineServer(index: number, managerServer: TestServer): Promise<TestServer> {
   console.log(`🚀 启动机器服务 #${index + 1}...`);
 
   // 动态分配端口
@@ -240,7 +234,7 @@ export async function startMachineServer(
   testEnvironment.machines.push(server);
 
   // 等待机器注册到管理端
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   console.log(`✅ 机器服务 #${index + 1} 已启动:`);
   console.log(`   - ID: ${machineId}`);
@@ -255,18 +249,13 @@ export async function startMachineServer(
 /**
  * 启动多个机器服务
  */
-export async function startMachineServers(
-  count: number,
-  managerServer: TestServer
-): Promise<TestServer[]> {
+export async function startMachineServers(count: number, managerServer: TestServer): Promise<TestServer[]> {
   console.log(`🚀 启动 ${count} 个机器服务...`);
 
   const machines: TestServer[] = [];
 
   // 并行启动所有机器
-  const startPromises = Array.from({ length: count }, (_, i) =>
-    startMachineServer(i, managerServer)
-  );
+  const startPromises = Array.from({ length: count }, (_, i) => startMachineServer(i, managerServer));
 
   const startedMachines = await Promise.all(startPromises);
   machines.push(...startedMachines);
@@ -281,9 +270,7 @@ export async function startMachineServers(
 /**
  * 启动完整的测试环境（管理端 + 机器）
  */
-export async function startTestEnvironment(
-  machineCount: number = 2
-): Promise<TestEnvironment> {
+export async function startTestEnvironment(machineCount: number = 2): Promise<TestEnvironment> {
   console.log('════════════════════════════════════════');
   console.log('🧪 启动测试环境');
   console.log('════════════════════════════════════════');
@@ -340,7 +327,7 @@ export async function cleanupTestEnvironment(): Promise<void> {
   // 停止所有机器
   if (testEnvironment.machines.length > 0) {
     console.log(`停止 ${testEnvironment.machines.length} 个机器服务...`);
-    testEnvironment.machines.forEach(machine => {
+    testEnvironment.machines.forEach((machine) => {
       stopServer(machine);
     });
     testEnvironment.machines = [];
@@ -354,7 +341,7 @@ export async function cleanupTestEnvironment(): Promise<void> {
   }
 
   // 等待所有进程退出
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   console.log('✅ 测试环境已清理');
   console.log('════════════════════════════════════════');

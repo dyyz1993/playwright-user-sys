@@ -173,7 +173,7 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
 
     // [步骤 6] 等待机器注册完成
     console.log('\n[步骤 6] 等待机器注册到管理端...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const machines = await db('machines').select('*');
     console.log(`   ✅ 已注册 ${machines.length} 个机器`);
@@ -273,7 +273,7 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
     let session = await SessionModel.findById(sessionData.data.id);
     let retries = 0;
     while (session === null && retries < 30) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       session = await SessionModel.findById(sessionData.data.id);
       retries++;
     }
@@ -368,7 +368,7 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
       console.log(`   User-Agent: ${userAgent}`);
 
       const forbiddenStrings = ['HeadlessChrome', 'Selenium', 'Puppeteer', 'Playwright', 'WebDriver'];
-      const foundForbidden = forbiddenStrings.filter(str => userAgent.includes(str));
+      const foundForbidden = forbiddenStrings.filter((str) => userAgent.includes(str));
 
       // Layer 1: Browser 检测
       expect(foundForbidden.length).toBe(0);
@@ -418,7 +418,7 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
       const pluginsInfo = await page.evaluate(() => {
         return {
           length: navigator.plugins.length,
-          plugins: Array.from(navigator.plugins).map(p => p.name),
+          plugins: Array.from(navigator.plugins).map((p) => p.name),
         };
       });
 
@@ -484,20 +484,20 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
       console.log('\n[检测] 自动化特征变量...');
       const suspiciousVars = await page.evaluate(() => {
         return {
-          '_WEBDRIVER_ELEM_CACHE': typeof (window as any)._WEBDRIVER_ELEM_CACHE !== 'undefined',
-          'cdc_adoQpoasnfa': typeof (window as any).cdc_adoQpoasnfa !== 'undefined',
-          'cdc_IadQpoasnfa': typeof (window as any).cdc_IadQpoasnfa !== 'undefined',
-          '__driver_evaluate': typeof (window as any).__driver_evaluate !== 'undefined',
-          '__webdriver_evaluate': typeof (window as any).__webdriver_evaluate !== 'undefined',
-          '__selenium_evaluate': typeof (window as any).__selenium_evaluate !== 'undefined',
-          '__fxdriver_evaluate': typeof (window as any).__fxdriver_evaluate !== 'undefined',
-          '__driver_unwrapped': typeof (window as any).__driver_unwrapped !== 'undefined',
-          '__webdriver_unwrapped': typeof (window as any).__webdriver_unwrapped !== 'undefined',
-          '__selenium_unwrapped': typeof (window as any).__selenium_unwrapped !== 'undefined',
-          '__fxdriver_unwrapped': typeof (window as any).__fxdriver_unwrapped !== 'undefined',
-          'callSelenium': typeof (window as any).callSelenium !== 'undefined',
-          '$cdc_asdjflasutopfhvcZLmcfl_': typeof (window as any).$cdc_asdjflasutopfhvcZLmcfl_ !== 'undefined',
-          '$chrome_asyncScriptInfo': typeof (window as any).$chrome_asyncScriptInfo !== 'undefined',
+          _WEBDRIVER_ELEM_CACHE: typeof (window as any)._WEBDRIVER_ELEM_CACHE !== 'undefined',
+          cdc_adoQpoasnfa: typeof (window as any).cdc_adoQpoasnfa !== 'undefined',
+          cdc_IadQpoasnfa: typeof (window as any).cdc_IadQpoasnfa !== 'undefined',
+          __driver_evaluate: typeof (window as any).__driver_evaluate !== 'undefined',
+          __webdriver_evaluate: typeof (window as any).__webdriver_evaluate !== 'undefined',
+          __selenium_evaluate: typeof (window as any).__selenium_evaluate !== 'undefined',
+          __fxdriver_evaluate: typeof (window as any).__fxdriver_evaluate !== 'undefined',
+          __driver_unwrapped: typeof (window as any).__driver_unwrapped !== 'undefined',
+          __webdriver_unwrapped: typeof (window as any).__webdriver_unwrapped !== 'undefined',
+          __selenium_unwrapped: typeof (window as any).__selenium_unwrapped !== 'undefined',
+          __fxdriver_unwrapped: typeof (window as any).__fxdriver_unwrapped !== 'undefined',
+          callSelenium: typeof (window as any).callSelenium !== 'undefined',
+          $cdc_asdjflasutopfhvcZLmcfl_: typeof (window as any).$cdc_asdjflasutopfhvcZLmcfl_ !== 'undefined',
+          $chrome_asyncScriptInfo: typeof (window as any).$chrome_asyncScriptInfo !== 'undefined',
         };
       });
 
@@ -605,8 +605,8 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
         console.log(`   WebGL Renderer: ${webglInfo.renderer}`);
 
         const suspiciousPatterns = ['SwiftShader', 'Google SwiftShader', 'VMware', 'VirtualBox'];
-        const isSuspicious = suspiciousPatterns.some(pattern =>
-          webglInfo.renderer?.includes(pattern) || webglInfo.vendor?.includes(pattern)
+        const isSuspicious = suspiciousPatterns.some(
+          (pattern) => webglInfo.renderer?.includes(pattern) || webglInfo.vendor?.includes(pattern)
         );
 
         expect(isSuspicious).toBe(false);
@@ -782,8 +782,9 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
       console.log('\n[检测] WebRTC RTCPeerConnection...');
       const peerConnectionInfo = await page.evaluate(() => {
         return {
-          exists: typeof (window as any).RTCPeerConnection === 'function' ||
-                   typeof (window as any).webkitRTCPeerConnection === 'function',
+          exists:
+            typeof (window as any).RTCPeerConnection === 'function' ||
+            typeof (window as any).webkitRTCPeerConnection === 'function',
         };
       });
 
@@ -821,15 +822,13 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
 
               // 检查是否包含本地 IP 模式
               const localIpPatterns = [
-                /192\.168\.\d+\.\d+/,  // 私有 IP
-                /10\.\d+\.\d+\.\d+/,    // 私有 IP
+                /192\.168\.\d+\.\d+/, // 私有 IP
+                /10\.\d+\.\d+\.\d+/, // 私有 IP
                 /172\.(1[6-9]|2\d|3[01])\.\d+\.\d+/, // 私有 IP
-                /127\.\d+\.\d+\.\d+/,   // 本地回环
-                  ];
+                /127\.\d+\.\d+\.\d+/, // 本地回环
+              ];
 
-              const foundLocalIps = localIpPatterns
-                .map(pattern => pattern.test(candidates))
-                .filter(Boolean);
+              const foundLocalIps = localIpPatterns.map((pattern) => pattern.test(candidates)).filter(Boolean);
 
               resolve({
                 sdp: candidates.substring(0, 200),
@@ -973,8 +972,9 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
         if (Array.isArray(navigator.languages) && navigator.languages.length > 0) passed++;
 
         // 6. 自动化特征变量
-        const hasAutomationVars = typeof (window as any)._WEBDRIVER_ELEM_CACHE !== 'undefined' ||
-                                  typeof (window as any).cdc_adoQpoasnfa !== 'undefined';
+        const hasAutomationVars =
+          typeof (window as any)._WEBDRIVER_ELEM_CACHE !== 'undefined' ||
+          typeof (window as any).cdc_adoQpoasnfa !== 'undefined';
         if (!hasAutomationVars) passed++;
 
         // 7. permissions API

@@ -215,13 +215,13 @@ describe('高级反机器人检测验证测试 (2025)', () => {
         proxyPort,
         maxSessions: 5,
         sessionTimeout: 300000,
-        chromePath: process.env.CHROME_PATH || (
-          process.platform === 'darwin'
+        chromePath:
+          process.env.CHROME_PATH ||
+          (process.platform === 'darwin'
             ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             : process.platform === 'linux'
               ? '/usr/bin/google-chrome-stable'
-              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        ),
+              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
         heartbeatInterval: 30000,
         disconnectionTimeout: 10000,
         activityReportInterval: 3000,
@@ -244,7 +244,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
 
     // 步骤 6: 验证机器注册
     console.log('\n[步骤 6] 验证机器注册状态...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     const registeredMachines = await db('machines').select('*').where('status', 'online');
     expect(registeredMachines.length).toBe(NUM_MACHINES);
     console.log(`   ✅ 成功注册 ${registeredMachines.length} 台机器`);
@@ -401,9 +401,10 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     console.log('\n[检测] WebRTC RTCPeerConnection...');
     const peerConnectionInfo = await page.evaluate(() => {
       return {
-        exists: typeof (window as any).RTCPeerConnection === 'function' ||
-                 typeof (window as any).webkitRTCPeerConnection === 'function' ||
-                 typeof (window as any).mozRTCPeerConnection === 'function',
+        exists:
+          typeof (window as any).RTCPeerConnection === 'function' ||
+          typeof (window as any).webkitRTCPeerConnection === 'function' ||
+          typeof (window as any).mozRTCPeerConnection === 'function',
         hasGenerateCertificate: typeof (window as any).RTCPeerConnection?.generateCertificate === 'function',
       };
     });
@@ -479,9 +480,9 @@ describe('高级反机器人检测验证测试 (2025)', () => {
         return {
           supported: true,
           deviceCount: devices.length,
-          hasAudioInput: devices.some(d => d.kind === 'audioinput'),
-          hasVideoInput: devices.some(d => d.kind === 'videoinput'),
-          hasAudioOutput: devices.some(d => d.kind === 'audiooutput'),
+          hasAudioInput: devices.some((d) => d.kind === 'audioinput'),
+          hasVideoInput: devices.some((d) => d.kind === 'videoinput'),
+          hasAudioOutput: devices.some((d) => d.kind === 'audiooutput'),
         };
       } catch (e) {
         return { supported: false, error: (e as Error).message };
@@ -518,18 +519,18 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     const ipLeakInfo = await page.evaluate(async () => {
       try {
         const pc = new (window as any).RTCPeerConnection({
-          iceServers: [] // 不使用 STUN 服务器
+          iceServers: [], // 不使用 STUN 服务器
         });
 
         // 创建 offers
         const offer = await pc.createOffer({
           offerToReceiveAudio: 1,
-          offerToReceiveVideo: 1
+          offerToReceiveVideo: 1,
         });
         await pc.setLocalDescription(offer);
 
         // 等待 ICE 候选
-        await new Promise<void>(resolve => {
+        await new Promise<void>((resolve) => {
           if (pc.iceGatheringState === 'complete') {
             resolve();
           } else {
@@ -556,18 +557,19 @@ describe('高级反机器人检测验证测试 (2025)', () => {
         pc.close();
 
         // 检查本地 IP 模式
-        const hasLocalIP = candidates.some(c =>
-          c.includes('192.168.') ||
-          c.includes('10.') ||
-          c.includes('172.16.') ||
-          c.includes('127.') ||
-          c.includes('host')
+        const hasLocalIP = candidates.some(
+          (c) =>
+            c.includes('192.168.') ||
+            c.includes('10.') ||
+            c.includes('172.16.') ||
+            c.includes('127.') ||
+            c.includes('host')
         );
 
         return {
           candidateCount: candidates.length,
           hasLocalIP,
-          candidates: candidates.slice(0, 3) // 只返回前 3 个
+          candidates: candidates.slice(0, 3), // 只返回前 3 个
         };
       } catch (e) {
         return { error: (e as Error).message };
@@ -725,9 +727,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     console.log('\n[检测] WebGL 高级指纹...');
     const webglInfo = await page.evaluate(() => {
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl2') ||
-                 canvas.getContext('webgl') ||
-                 canvas.getContext('experimental-webgl');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
       if (!gl) {
         return { error: 'WebGL 不可用' };
@@ -759,8 +759,8 @@ describe('高级反机器人检测验证测试 (2025)', () => {
 
       // 检查虚拟化特征
       const suspiciousPatterns = ['SwiftShader', 'Google SwiftShader', 'VMware', 'VirtualBox', 'llvmpipe'];
-      const isSuspicious = suspiciousPatterns.some(pattern =>
-        webglInfo.renderer?.includes(pattern) || webglInfo.vendor?.includes(pattern)
+      const isSuspicious = suspiciousPatterns.some(
+        (pattern) => webglInfo.renderer?.includes(pattern) || webglInfo.vendor?.includes(pattern)
       );
 
       if (isSuspicious) {
@@ -951,11 +951,30 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     console.log('\n[检测] 字体指纹...');
     const fontInfo = await page.evaluate(() => {
       const testFonts = [
-        'Arial', 'Arial Black', 'Arial Narrow', 'Calibri', 'Cambria',
-        'Cambria Math', 'Comic Sans MS', 'Consolas', 'Courier', 'Courier New',
-        'Georgia', 'Helvetica', 'Impact', 'Lucida Console', 'Lucida Sans Unicode',
-        'Microsoft Sans Serif', 'Palatino Linotype', 'Segoe UI', 'Tahoma',
-        'Times', 'Times New Roman', 'Trebuchet MS', 'Verdana', 'Monaco'
+        'Arial',
+        'Arial Black',
+        'Arial Narrow',
+        'Calibri',
+        'Cambria',
+        'Cambria Math',
+        'Comic Sans MS',
+        'Consolas',
+        'Courier',
+        'Courier New',
+        'Georgia',
+        'Helvetica',
+        'Impact',
+        'Lucida Console',
+        'Lucida Sans Unicode',
+        'Microsoft Sans Serif',
+        'Palatino Linotype',
+        'Segoe UI',
+        'Tahoma',
+        'Times',
+        'Times New Roman',
+        'Trebuchet MS',
+        'Verdana',
+        'Monaco',
       ];
 
       const baseFonts = ['monospace', 'sans-serif', 'serif'];
@@ -1619,7 +1638,8 @@ describe('高级反机器人检测验证测试 (2025)', () => {
 
       // 2. User-Agent
       const ua = navigator.userAgent;
-      results.userAgent = !ua.includes('HeadlessChrome') &&
+      results.userAgent =
+        !ua.includes('HeadlessChrome') &&
         !ua.includes('Selenium') &&
         !ua.includes('Puppeteer') &&
         !ua.includes('Playwright') &&
@@ -1644,9 +1664,9 @@ describe('高级反机器人检测验证测试 (2025)', () => {
         '__selenium_evaluate',
         'callSelenium',
         '$cdc_asdjflasutopfhvcZLmcfl_',
-        '$chrome_asyncScriptInfo'
+        '$chrome_asyncScriptInfo',
       ];
-      results.noSuspiciousVars = !suspiciousVars.some(v => typeof (window as any)[v] !== 'undefined');
+      results.noSuspiciousVars = !suspiciousVars.some((v) => typeof (window as any)[v] !== 'undefined');
 
       // 7. 屏幕尺寸
       results.screenSize = screen.width > 0 && screen.height > 0;
@@ -1671,8 +1691,9 @@ describe('高级反机器人检测验证测试 (2025)', () => {
       results.audioContext = typeof AudioContext === 'function';
 
       // 13. WebRTC
-      results.webrtc = typeof (window as any).RTCPeerConnection === 'function' ||
-                       typeof (window as any).webkitRTCPeerConnection === 'function';
+      results.webrtc =
+        typeof (window as any).RTCPeerConnection === 'function' ||
+        typeof (window as any).webkitRTCPeerConnection === 'function';
 
       // 14. Service Worker
       results.serviceWorker = typeof navigator.serviceWorker === 'object';
@@ -1700,7 +1721,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     }
 
     const totalChecks = passCount + failCount;
-    const score = (passCount / totalChecks * 100).toFixed(2);
+    const score = ((passCount / totalChecks) * 100).toFixed(2);
 
     console.log(`\n   总分: ${score}% (${passCount}/${totalChecks} 通过)`);
 
@@ -1808,7 +1829,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     }
 
     const totalChecks = passCount + failCount;
-    const score = (passCount / totalChecks * 100).toFixed(2);
+    const score = ((passCount / totalChecks) * 100).toFixed(2);
 
     console.log(`\n   总分: ${score}% (${passCount}/${totalChecks} 通过)`);
 
@@ -1845,7 +1866,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     try {
       await page.goto('https://bot.sannysoft.com/', {
         waitUntil: 'networkidle2',
-        timeout: 60000
+        timeout: 60000,
       });
 
       // 等待页面加载
@@ -1860,7 +1881,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
         const rows = document.querySelectorAll('table tr');
         const results: Record<string, string> = {};
 
-        rows.forEach(row => {
+        rows.forEach((row) => {
           const cells = row.querySelectorAll('td');
           if (cells.length >= 2) {
             const key = cells[0]?.textContent?.trim();
@@ -1903,7 +1924,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     try {
       await page.goto('https://arh.antoinevastel.com/bots/areyouheadless', {
         waitUntil: 'networkidle2',
-        timeout: 60000
+        timeout: 60000,
       });
 
       await page.waitForTimeout(5000);
@@ -1920,7 +1941,6 @@ describe('高级反机器人检测验证测试 (2025)', () => {
       } else {
         console.log('   ⚠️  可能被识别为 headless 浏览器');
       }
-
     } catch (error) {
       console.log(`   ⚠️  访问失败: ${(error as Error).message}`);
     }
@@ -1944,7 +1964,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
     try {
       await page.goto('https://www.browserscan.net/', {
         waitUntil: 'networkidle2',
-        timeout: 60000
+        timeout: 60000,
       });
 
       await page.waitForTimeout(10000);
@@ -2026,9 +2046,11 @@ describe('高级反机器人检测验证测试 (2025)', () => {
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
         features: {
-          webgl: !!((document.createElement('canvas')).getContext('webgl') ||
-                     (document.createElement('canvas')).getContext('experimental-webgl')),
-          webgl2: !!((document.createElement('canvas')).getContext('webgl2')),
+          webgl: !!(
+            document.createElement('canvas').getContext('webgl') ||
+            document.createElement('canvas').getContext('experimental-webgl')
+          ),
+          webgl2: !!document.createElement('canvas').getContext('webgl2'),
           webrtc: typeof (window as any).RTCPeerConnection === 'function',
           serviceWorker: typeof navigator.serviceWorker === 'object',
           webassembly: typeof WebAssembly === 'object',
@@ -2150,7 +2172,7 @@ describe('高级反机器人检测验证测试 (2025)', () => {
       }
 
       const suspiciousVars = ['_WEBDRIVER_ELEM_CACHE', 'cdc_adoQpoasnfa'];
-      const foundSuspicious = suspiciousVars.filter(v => typeof (window as any)[v] !== 'undefined');
+      const foundSuspicious = suspiciousVars.filter((v) => typeof (window as any)[v] !== 'undefined');
       if (foundSuspicious.length > 0) {
         riskScore += 20;
         riskFactors.push(`Suspicious variables found: ${foundSuspicious.join(', ')}`);

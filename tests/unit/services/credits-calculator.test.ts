@@ -17,7 +17,6 @@
 import { describe, it, expect } from 'vitest';
 
 describe('CreditsCalculator - 计费算法', () => {
-
   describe('基础计费公式验证', () => {
     it('UNIT-CREDITS-001: 1分钟内应扣1积分', () => {
       const duration = 30; // 30秒
@@ -159,8 +158,8 @@ describe('CreditsCalculator - 计费算法', () => {
 
       const timeline = [
         { time: 0, credits: 100, deducted: 0, totalDuration: 0 },
-        { time: 10, credits: 100, deducted: 0, totalDuration: 10 },   // 未到1分钟
-        { time: 70, credits: 98, deducted: 2, totalDuration: 70 },   // 1分10秒，扣2分
+        { time: 10, credits: 100, deducted: 0, totalDuration: 10 }, // 未到1分钟
+        { time: 70, credits: 98, deducted: 2, totalDuration: 70 }, // 1分10秒，扣2分
         { time: 150, credits: 97, deducted: 1, totalDuration: 150 }, // 再用80秒，再扣1分
       ];
 
@@ -183,11 +182,11 @@ describe('CreditsCalculator - 计费算法', () => {
       let lastCreditsUsed = 0;
 
       const checks = [
-        { duration: 10 },   // credits = Math.ceil(10/60) = 1, 但增量 = 0
-        { duration: 20 },   // credits = Math.ceil(20/60) = 1, 但增量 = 0
-        { duration: 30 },   // credits = Math.ceil(30/60) = 1, 但增量 = 0
-        { duration: 70 },   // credits = Math.ceil(70/60) = 2, 增量 = 2
-        { duration: 150 },  // credits = Math.ceil(150/60) = 3, 增量 = 1
+        { duration: 10 }, // credits = Math.ceil(10/60) = 1, 但增量 = 0
+        { duration: 20 }, // credits = Math.ceil(20/60) = 1, 但增量 = 0
+        { duration: 30 }, // credits = Math.ceil(30/60) = 1, 但增量 = 0
+        { duration: 70 }, // credits = Math.ceil(70/60) = 2, 增量 = 2
+        { duration: 150 }, // credits = Math.ceil(150/60) = 3, 增量 = 1
       ];
 
       checks.forEach(({ duration }) => {
@@ -255,10 +254,10 @@ describe('CreditsCalculator - 计费算法', () => {
     });
 
     it('应该是单调递增的', () => {
-      const credits1 = Math.max(1, Math.ceil(60 / 60));   // 1分钟 = 1积分
-      const credits2 = Math.max(1, Math.ceil(61 / 60));   // 61秒 = 2积分
-      const credits3 = Math.max(1, Math.ceil(120 / 60));  // 2分钟 = 2积分
-      const credits4 = Math.max(1, Math.ceil(121 / 60));  // 121秒 = 3积分
+      const credits1 = Math.max(1, Math.ceil(60 / 60)); // 1分钟 = 1积分
+      const credits2 = Math.max(1, Math.ceil(61 / 60)); // 61秒 = 2积分
+      const credits3 = Math.max(1, Math.ceil(120 / 60)); // 2分钟 = 2积分
+      const credits4 = Math.max(1, Math.ceil(121 / 60)); // 121秒 = 3积分
 
       expect(credits2).toBeGreaterThan(credits1);
       expect(credits3).toBeGreaterThanOrEqual(credits2);

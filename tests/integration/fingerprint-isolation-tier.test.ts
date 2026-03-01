@@ -227,7 +227,7 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
 
     // [步骤 6] 等待机器注册
     console.log('\n[步骤 6] 等待机器注册到管理端...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     const machines = await db('machines').select('*');
     console.log(`   ✅ 已注册 ${machines.length} 个机器`);
 
@@ -315,7 +315,10 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
    * 获取浏览器指纹
    * 使用 HTTP 服务器提供 HTML，避免 file:// 和 data: URL 的限制
    */
-  async function getFingerprint(page: Page, instanceId?: string): Promise<{
+  async function getFingerprint(
+    page: Page,
+    instanceId?: string
+  ): Promise<{
     hash: string;
     basic: any;
     canvas: any;
@@ -340,14 +343,17 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
 
     // 等待指纹计算完成
     try {
-      await page.waitForFunction(() => {
-        const ready = (window as any).fingerprintReady === true;
-        const hasHash = typeof (window as any).fingerprintHash === 'string';
-        const hasData = (window as any).fingerprintData !== undefined;
-        const hasBasic = (window as any).fingerprintData?.basic !== undefined;
-        const hasCanvas = (window as any).fingerprintData?.canvas !== undefined;
-        return ready && hasHash && hasData && hasBasic && hasCanvas;
-      }, { timeout: 20000, polling: 100 });
+      await page.waitForFunction(
+        () => {
+          const ready = (window as any).fingerprintReady === true;
+          const hasHash = typeof (window as any).fingerprintHash === 'string';
+          const hasData = (window as any).fingerprintData !== undefined;
+          const hasBasic = (window as any).fingerprintData?.basic !== undefined;
+          const hasCanvas = (window as any).fingerprintData?.canvas !== undefined;
+          return ready && hasHash && hasData && hasBasic && hasCanvas;
+        },
+        { timeout: 20000, polling: 100 }
+      );
     } catch (e) {
       // 调试信息：检查页面状态
       const debugInfo = await page.evaluate(() => {
@@ -409,7 +415,7 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
     let session = await SessionModel.findById(sessionData.data.id);
     let retries = 0;
     while (session === null && retries < 30) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       session = await SessionModel.findById(sessionData.data.id);
       retries++;
     }
@@ -536,8 +542,8 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
 
         // 提取厂商关键词
         const vendors = ['intel', 'apple', 'nvidia', 'amd', 'qualcomm', 'arm'];
-        const vendor1Key = vendors.find(v => vendor1.includes(v));
-        const vendor2Key = vendors.find(v => vendor2.includes(v));
+        const vendor1Key = vendors.find((v) => vendor1.includes(v));
+        const vendor2Key = vendors.find((v) => vendor2.includes(v));
 
         if (vendor1Key && vendor1Key === vendor2Key) {
           console.log(`   ⚠️  WebGL 指纹不同，但都是 ${vendor1Key.toUpperCase()} GPU（多 GPU 系统）`);
@@ -614,8 +620,12 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
         console.log('   ✅ 基础指纹完全相同');
       } else {
         console.log('   ⚠️  基础指纹不同（反检测随机化）');
-        console.log(`   Tab 1: platform=${fp1.basic.platform}, language=${fp1.basic.language}, cores=${fp1.basic.hardwareConcurrency}`);
-        console.log(`   Tab 2: platform=${fp2.basic.platform}, language=${fp2.basic.language}, cores=${fp2.basic.hardwareConcurrency}`);
+        console.log(
+          `   Tab 1: platform=${fp1.basic.platform}, language=${fp1.basic.language}, cores=${fp1.basic.hardwareConcurrency}`
+        );
+        console.log(
+          `   Tab 2: platform=${fp2.basic.platform}, language=${fp2.basic.language}, cores=${fp2.basic.hardwareConcurrency}`
+        );
         console.log('   ✅ 这是正常的反检测行为');
       }
 
@@ -813,13 +823,13 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
 
       const tab1 = await browser.newPage();
       // 不再需要 goto，getFingerprint() 会使用 setContent() 加载 HTML
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const fp1 = await getFingerprint(tab1);
       console.log(`   第一次指纹: ${fp1.hash}`);
 
       // 等待一段时间
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // getFingerprint() 会重新加载 HTML，模拟重新打开页面
       const fp2 = await getFingerprint(tab1);

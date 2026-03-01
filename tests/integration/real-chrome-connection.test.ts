@@ -106,12 +106,14 @@ describe('真实Chrome浏览器集成测试', () => {
     console.log(`   路径: ${browserInstance.path}`);
 
     // 严格断言1: 验证启动返回值
-    expect(browserInstance.browserWSEndpoint).toMatch(/^ws:\/\/(127\.0\.0\.1|localhost):\d+\/devtools\/browser\/[a-f0-9-]+$/);
+    expect(browserInstance.browserWSEndpoint).toMatch(
+      /^ws:\/\/(127\.0\.0\.1|localhost):\d+\/devtools\/browser\/[a-f0-9-]+$/
+    );
     expect(browserInstance.port).toBeGreaterThanOrEqual(1024);
     expect(browserInstance.port).toBeLessThan(65536);
     // path 实际上是 WebSocket endpoint 的 pathname，格式为 /devtools/browser/uuid
     expect(browserInstance.path).toMatch(/^\/devtools\/browser\/[a-f0-9-]+$/);
-    expect(browserInstance.path.length).toBeGreaterThanOrEqual(20);  // 至少包含 /devtools/browser/ 和 UUID
+    expect(browserInstance.path.length).toBeGreaterThanOrEqual(20); // 至少包含 /devtools/browser/ 和 UUID
 
     // 严格断言2: 验证启动耗时
     expect(metrics.chromeLaunch).toBeGreaterThan(50); // 至少50ms
@@ -166,7 +168,7 @@ describe('真实Chrome浏览器集成测试', () => {
 
     // 获取页面
     const pages = await browser.pages();
-    expect(pages.length).toBeGreaterThanOrEqual(1);  // 至少有一个初始页面
+    expect(pages.length).toBeGreaterThanOrEqual(1); // 至少有一个初始页面
     const page = pages[0];
 
     // ===== 步骤4: 跳转到百度 =====
@@ -215,15 +217,15 @@ describe('真实Chrome浏览器集成测试', () => {
     // 严格断言13: 验证窗口尺寸
     const viewport = page.viewport();
     expect(viewport).not.toBeNull();
-    expect(viewport!.width).toBeGreaterThanOrEqual(800);  // 默认视口至少 800px
-    expect(viewport!.height).toBeGreaterThanOrEqual(600);  // 默认视口至少 600px
+    expect(viewport!.width).toBeGreaterThanOrEqual(800); // 默认视口至少 800px
+    expect(viewport!.height).toBeGreaterThanOrEqual(600); // 默认视口至少 600px
     console.log(`   窗口尺寸: ${viewport!.width}x${viewport!.height}`);
 
     // ===== 步骤5: 等待一段时间以产生计费 =====
     console.log('\n📋 步骤5: 等待3秒以产生计费...');
     // 注意：duration 是从 session.start_time 开始计算的
     // 所以这里等待3秒，但实际 duration 可能更长（包括之前的步骤）
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     console.log('✅ 等待完成');
 
     // ===== 步骤6: 断开会话并验证计费 =====
@@ -239,7 +241,7 @@ describe('真实Chrome浏览器集成测试', () => {
     const updatedSession = await SessionModel.findById(session.id);
     expect(updatedSession).not.toBeNull();
     expect(updatedSession!.status).toBe(SessionStatus.DISCONNECTED);
-    expect(updatedSession!.duration).toBeGreaterThanOrEqual(3);  // 至少等待了3秒
+    expect(updatedSession!.duration).toBeGreaterThanOrEqual(3); // 至少等待了3秒
     // credits_used 是根据总持续时间计算的：Math.max(1, Math.ceil(duration / 60))
     // 由于从会话创建到断开包括了所有步骤（浏览器启动、页面跳转等），duration 可能远超3秒
     expect(updatedSession!.credits_used).toBeGreaterThanOrEqual(1); // 至少1积分
@@ -252,15 +254,19 @@ describe('真实Chrome浏览器集成测试', () => {
     // 严格断言15: 验证积分扣除
     const finalUser = await UserModel.findById(testUser.id);
     const creditsDeducted = initialCredits - finalUser.credits;
-    console.log(`   🔍 调试信息: initialCredits=${initialCredits}, finalUser.credits=${finalUser.credits}, creditsDeducted=${creditsDeducted}`);
-    console.log(`   🔍 调试信息: updatedSession.credits_used=${updatedSession!.credits_used}, session.user_id=${updatedSession!.user_id}, testUser.id=${testUser.id}`);
+    console.log(
+      `   🔍 调试信息: initialCredits=${initialCredits}, finalUser.credits=${finalUser.credits}, creditsDeducted=${creditsDeducted}`
+    );
+    console.log(
+      `   🔍 调试信息: updatedSession.credits_used=${updatedSession!.credits_used}, session.user_id=${updatedSession!.user_id}, testUser.id=${testUser.id}`
+    );
     expect(creditsDeducted).toBe(updatedSession!.credits_used); // 扣除的积分应等于 credits_used
     expect(finalUser.credits).toBe(initialCredits - updatedSession!.credits_used);
     console.log(`   积分变化: ${initialCredits} -> ${finalUser.credits} (扣除${creditsDeducted}积分)`);
 
     // 严格断言16: 验证积分历史记录
     const creditHistory = await CreditHistoryModel.findByUserId(testUser.id);
-    expect(creditHistory.length).toBeGreaterThanOrEqual(1);  // 至少有一条使用记录
+    expect(creditHistory.length).toBeGreaterThanOrEqual(1); // 至少有一条使用记录
     const latestHistory = creditHistory[0];
     expect(latestHistory.action).toBe('use');
     expect(latestHistory.amount).toBe(updatedSession!.credits_used);
@@ -325,7 +331,7 @@ describe('真实Chrome浏览器集成测试', () => {
 
       // 等待指定时长
       console.log(`   等待 ${tc.waitSeconds} 秒...`);
-      await new Promise(resolve => setTimeout(resolve, tc.waitSeconds * 1000));
+      await new Promise((resolve) => setTimeout(resolve, tc.waitSeconds * 1000));
 
       // 断开会话 (使用数据库返回的 session.id)
       await SessionModel.markConnected(session.id);
@@ -339,7 +345,9 @@ describe('真实Chrome浏览器集成测试', () => {
       const creditsDeducted = initialCredits - finalUser.credits;
       expect(creditsDeducted).toBe(expectedCredits);
       expect(updatedSession!.credits_used).toBe(expectedCredits);
-      console.log(`   实际扣除: ${creditsDeducted}积分 (期望: ${expectedCredits}积分), 持续时间: ${updatedSession!.duration}秒`);
+      console.log(
+        `   实际扣除: ${creditsDeducted}积分 (期望: ${expectedCredits}积分), 持续时间: ${updatedSession!.duration}秒`
+      );
 
       console.log(`✅ 测试用例通过: ${tc.description}`);
     }
@@ -450,7 +458,7 @@ describe('真实Chrome浏览器集成测试', () => {
     await page.type('#kw', 'Playwright测试');
 
     // 验证输入值
-    const inputValue = await page.$eval('#kw', el => (el as HTMLInputElement).value);
+    const inputValue = await page.$eval('#kw', (el) => (el as HTMLInputElement).value);
     expect(inputValue).toBe('Playwright测试');
 
     // 点击搜索按钮并处理可能的导航超时
@@ -469,7 +477,7 @@ describe('真实Chrome浏览器集成测试', () => {
 
     // 验证URL或输入值
     const url = page.url();
-    const finalInputValue = await page.$eval('#kw', el => (el as HTMLInputElement).value).catch(() => '');
+    const finalInputValue = await page.$eval('#kw', (el) => (el as HTMLInputElement).value).catch(() => '');
 
     // 如果没有跳转到搜索结果页，至少验证输入值还在
     if (url.includes('baidu.com')) {

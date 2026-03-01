@@ -308,14 +308,14 @@ class StorageManagementPage {
 
     // 先尝试直接查找
     let row = await this.page.locator(`table tbody tr:has-text("${username}")`).first();
-    let exists = await row.count() > 0;
+    let exists = (await row.count()) > 0;
 
     // 如果没找到且启用搜索，使用搜索功能
     if (!exists && useSearch) {
       console.log(`   用户未在当前页面，尝试搜索...`);
       await this.searchUser(username);
       row = await this.page.locator(`table tbody tr:has-text("${username}")`).first();
-      exists = await row.count() > 0;
+      exists = (await row.count()) > 0;
     }
 
     if (!exists) {
@@ -332,7 +332,9 @@ class StorageManagementPage {
     const totalSize = await row.locator('td:nth-child(5)').textContent();
     const status = await row.locator('td:nth-child(7)').textContent();
 
-    console.log(`   ✅ 用户存储信息: sessions=${sessionsSize}, shared=${sharedSize}, total=${totalSize}, status=${status}`);
+    console.log(
+      `   ✅ 用户存储信息: sessions=${sessionsSize}, shared=${sharedSize}, total=${totalSize}, status=${status}`
+    );
 
     return {
       independentSize: sessionsSize?.trim() || '0 B',
@@ -361,7 +363,9 @@ class StorageManagementPage {
     // 等待弹窗出现
     await this.page.waitForSelector('.modal, .dialog, [role="dialog"]', { timeout: 5000 });
     // 点击确认按钮
-    const confirmButton = this.page.locator('button:has-text("确认"), button:has-text("确定"), button:has-text("OK")').first();
+    const confirmButton = this.page
+      .locator('button:has-text("确认"), button:has-text("确定"), button:has-text("OK")')
+      .first();
     await confirmButton.click();
     console.log('   ✅ 清理弹窗已确认');
   }
@@ -382,7 +386,7 @@ class StorageManagementPage {
   async getWarningMessage() {
     console.log('[步骤] 获取警告消息');
     const warningElement = await this.page.locator('.warning, .alert, [role="alert"]').first();
-    const exists = await warningElement.count() > 0;
+    const exists = (await warningElement.count()) > 0;
     if (!exists) {
       console.log('   ⚠️  未找到警告消息');
       return null;
@@ -421,7 +425,7 @@ class StorageManagementPage {
   async getSuccessMessage() {
     console.log('[步骤] 获取成功消息');
     const successElement = await this.page.locator('.success, .alert-success, [data-role="success"]').first();
-    const exists = await successElement.count() > 0;
+    const exists = (await successElement.count()) > 0;
     if (!exists) {
       console.log('   ⚠️  未找到成功消息');
       return null;
@@ -608,9 +612,11 @@ test.describe('管理后台存储管理 UI 测试', () => {
     await expect(page.locator('th:has-text("操作")').first()).toBeVisible();
 
     // 等待表格数据加载完成（等待"加载中..."消失）
-    await page.waitForSelector('table tbody tr:has-text("加载中...")', { state: 'hidden', timeout: 10000 }).catch(() => {
-      console.log('   ⚠️  加载提示可能已消失或不存在');
-    });
+    await page
+      .waitForSelector('table tbody tr:has-text("加载中...")', { state: 'hidden', timeout: 10000 })
+      .catch(() => {
+        console.log('   ⚠️  加载提示可能已消失或不存在');
+      });
 
     // 获取用户存储列表
     const users = await storagePage.getUserStorageList();
@@ -688,7 +694,7 @@ test.describe('管理后台存储管理 UI 测试', () => {
       // 验证状态是具体的字符串
       const validStatuses = ['正常', '超限', 'normal', 'exceeded'];
       const lowerStatus = userStorage.status.toLowerCase();
-      expect(validStatuses.some(s => lowerStatus.includes(s))).toBe(true);
+      expect(validStatuses.some((s) => lowerStatus.includes(s))).toBe(true);
       console.log(`   ✅ 状态: ${userStorage.status}`);
 
       console.log(`   存储详情:`);
@@ -737,7 +743,9 @@ test.describe('管理后台存储管理 UI 测试', () => {
     console.log(`   ✅ 清理前有 shared 数据: >= 30 MB`);
 
     // 检查是否有清理按钮
-    const cleanupButton = await page.locator(`table tbody tr:has-text("${testUser!.username}") .cleanup-user-btn`).count();
+    const cleanupButton = await page
+      .locator(`table tbody tr:has-text("${testUser!.username}") .cleanup-user-btn`)
+      .count();
     console.log(`   清理按钮数量: ${cleanupButton}`);
 
     if (cleanupButton === 0) {
@@ -755,7 +763,7 @@ test.describe('管理后台存储管理 UI 测试', () => {
     await page.waitForTimeout(500);
 
     // 检查是否弹出确认对话框
-    const hasDialog = await page.locator('#cleanup-modal:not(.hidden)').count() > 0;
+    const hasDialog = (await page.locator('#cleanup-modal:not(.hidden)').count()) > 0;
     console.log(`   清理对话框出现: ${hasDialog}`);
 
     if (hasDialog) {
@@ -769,7 +777,7 @@ test.describe('管理后台存储管理 UI 测试', () => {
       await page.waitForTimeout(3000);
 
       // 验证对话框已关闭
-      const dialogStillVisible = await page.locator('#cleanup-modal:not(.hidden)').count() > 0;
+      const dialogStillVisible = (await page.locator('#cleanup-modal:not(.hidden)').count()) > 0;
       expect(dialogStillVisible).toBe(false);
       console.log('   ✅ 对话框已关闭');
     } else {
@@ -827,7 +835,7 @@ test.describe('管理后台存储管理 UI 测试', () => {
 
     // 验证测试用户在列表中
     const testUserRow = await page.locator(`table tbody tr:has-text("${testUser!.username}")`).first();
-    const isVisible = await testUserRow.count() > 0;
+    const isVisible = (await testUserRow.count()) > 0;
     expect(isVisible).toBe(true);
     console.log(`   ✅ 找到测试用户: ${testUser!.username}`);
 

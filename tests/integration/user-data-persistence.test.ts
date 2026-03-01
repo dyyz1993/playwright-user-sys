@@ -195,13 +195,13 @@ describe('用户数据持久化集成测试', () => {
         maxSessions: 5,
         sessionTimeout: 300000, // 5分钟
         // 根据平台自动检测 Chrome 路径
-        chromePath: process.env.CHROME_PATH || (
-          process.platform === 'darwin'
+        chromePath:
+          process.env.CHROME_PATH ||
+          (process.platform === 'darwin'
             ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             : process.platform === 'linux'
               ? '/usr/bin/google-chrome-stable'
-              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        ),
+              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
         heartbeatInterval: 30000, // 30秒
         disconnectionTimeout: 10000, // 10秒
         activityReportInterval: 3000, // 3秒
@@ -224,7 +224,7 @@ describe('用户数据持久化集成测试', () => {
 
     // 步骤 6: 验证机器注册成功
     console.log('\n[步骤 6] 验证机器注册...');
-    await new Promise(resolve => setTimeout(resolve, 3000)); // 等待注册完成
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // 等待注册完成
 
     const registeredMachines = await MachineModel.findAll();
     expect(registeredMachines.total).toBe(NUM_MACHINES);
@@ -303,9 +303,7 @@ describe('用户数据持久化集成测试', () => {
     }
 
     // 清理所有活跃会话，确保测试之间不互相影响
-    const activeSessions = await db('sessions')
-      .whereIn('status', ['created', 'connected'])
-      .select();
+    const activeSessions = await db('sessions').whereIn('status', ['created', 'connected']).select();
 
     for (const session of activeSessions) {
       try {
@@ -356,7 +354,7 @@ describe('用户数据持久化集成测试', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify({
         url: 'https://example.com',
@@ -399,12 +397,12 @@ describe('用户数据持久化集成测试', () => {
     await fetch(`http://localhost:${managerHttpPort}/api/sessions/${sessionId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
     });
 
     // 步骤 5: 验证目录被清理（需要等待异步清理完成）
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 注意：目录清理需要在机器端验证，这里暂时验证会话状态
     const releasedSession = await SessionModel.findById(sessionId);
@@ -433,7 +431,7 @@ describe('用户数据持久化集成测试', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify({
         url: 'https://example.com',
@@ -456,12 +454,12 @@ describe('用户数据持久化集成测试', () => {
     await fetch(`http://localhost:${managerHttpPort}/api/sessions/${sessionId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
     });
 
     // 等待浏览器完全关闭，避免影响下一个测试
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     console.log('--- TIER-081 完成 ---\n');
   });
@@ -486,7 +484,7 @@ describe('用户数据持久化集成测试', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify({
         url: 'https://httpbin.org/cookies/set?testCookie=testValue123',
@@ -515,7 +513,7 @@ describe('用户数据持久化集成测试', () => {
 
     // 验证 Cookie 已设置
     const cookies1 = await page1.cookies();
-    const testCookie1 = cookies1.find(c => c.name === 'testCookie');
+    const testCookie1 = cookies1.find((c) => c.name === 'testCookie');
     expect(testCookie1).not.toBeUndefined();
     expect(testCookie1!.value).toBe('testValue123');
     console.log(`   ✅ Cookie 已设置: ${testCookie1!.name}=${testCookie1!.value}`);
@@ -529,7 +527,7 @@ describe('用户数据持久化集成测试', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify({
         url: 'https://httpbin.org/cookies',
@@ -549,13 +547,13 @@ describe('用户数据持久化集成测试', () => {
     await fetch(`http://localhost:${managerHttpPort}/api/sessions/${sessionId1}/release`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
     });
     console.log('   ✅ 第一个会话已释放');
 
     // 等待清理完成
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // 步骤 5: 释放后创建新的共享会话
     console.log('\n[步骤 5] 释放后创建新的共享会话...');
@@ -563,7 +561,7 @@ describe('用户数据持久化集成测试', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify({
         url: 'https://example.com',
@@ -581,7 +579,7 @@ describe('用户数据持久化集成测试', () => {
     await fetch(`http://localhost:${managerHttpPort}/api/sessions/${sessionId3}/release`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
     });
 
@@ -608,7 +606,7 @@ describe('用户数据持久化集成测试', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify({
         url: 'https://example.com',
@@ -628,7 +626,7 @@ describe('用户数据持久化集成测试', () => {
     console.log(`   📁 预期目录路径: ${sessionPath}`);
 
     // 等待目录创建
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // 注意：由于目录在机器端创建，需要验证机器端路径
     // 这里我们验证会话状态和数据库记录
@@ -655,14 +653,14 @@ describe('用户数据持久化集成测试', () => {
     await fetch(`http://localhost:${managerHttpPort}/api/sessions/${sessionId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
     });
     console.log('   ✅ 发送释放会话请求');
 
     // 步骤 4: 等待清理完成
     console.log('\n[步骤 4] 等待清理完成...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // 步骤 5: 验证会话状态
     console.log('\n[步骤 5] 验证会话状态和目录清理...');
@@ -720,7 +718,7 @@ describe('用户数据持久化集成测试', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify({
         url: 'https://example.com',
@@ -773,7 +771,7 @@ describe('用户数据持久化集成测试', () => {
     await fetch(`http://localhost:${managerHttpPort}/api/sessions/${sessionId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
     });
 
@@ -813,7 +811,7 @@ describe('用户数据持久化集成测试', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.token}`,
+        Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify({
         url: 'https://example.com',
@@ -832,7 +830,7 @@ describe('用户数据持久化集成测试', () => {
         await fetch(`http://localhost:${managerHttpPort}/api/sessions/${result.data.id}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${user.token}`,
+            Authorization: `Bearer ${user.token}`,
           },
         });
       }
@@ -881,19 +879,16 @@ describe('用户数据持久化集成测试', () => {
 
     // 步骤 2: 调用清理 API
     console.log('\n[步骤 2] 调用清理 API...');
-    const cleanResponse = await fetch(
-      `http://localhost:${managerHttpPort}/api/users/${user.id}/storage/clean`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          type: 'shared',
-        }),
-      }
-    );
+    const cleanResponse = await fetch(`http://localhost:${managerHttpPort}/api/users/${user.id}/storage/clean`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({
+        type: 'shared',
+      }),
+    });
 
     // 步骤 3: 验证清理结果
     console.log('\n[步骤 3] 验证清理结果...');
@@ -904,7 +899,7 @@ describe('用户数据持久化集成测试', () => {
       console.log(`   📊 清理详情: ${JSON.stringify(result.data, null, 2)}`);
 
       // 验证目录被删除
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       const directoryExists = existsSync(sharedPath);
 
       if (directoryExists) {
@@ -968,15 +963,12 @@ describe('用户数据持久化集成测试', () => {
 
     // 步骤 2: 调用统计 API
     console.log('\n[步骤 2] 调用存储统计 API...');
-    const statsResponse = await fetch(
-      `http://localhost:${managerHttpPort}/api/users/${user.id}/storage/stats`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
-      }
-    );
+    const statsResponse = await fetch(`http://localhost:${managerHttpPort}/api/users/${user.id}/storage/stats`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+    });
 
     // 步骤 3: 验证统计数据
     console.log('\n[步骤 3] 验证统计数据...');
@@ -1056,19 +1048,16 @@ describe('用户数据持久化集成测试', () => {
 
     // 步骤 2: 调用清理 API（模拟定时任务）
     console.log('\n[步骤 2] 调用清理 API（模拟定时任务）...');
-    const cleanResponse = await fetch(
-      `http://localhost:${managerHttpPort}/api/admin/storage/cleanup-old`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          days: 30, // 清理 30 天未使用的数据
-        }),
-      }
-    );
+    const cleanResponse = await fetch(`http://localhost:${managerHttpPort}/api/admin/storage/cleanup-old`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({
+        days: 30, // 清理 30 天未使用的数据
+      }),
+    });
 
     // 步骤 3: 验证清理结果
     console.log('\n[步骤 3] 验证清理结果...');
@@ -1079,7 +1068,7 @@ describe('用户数据持久化集成测试', () => {
       console.log(`   📊 清理详情: ${JSON.stringify(result.data, null, 2)}`);
 
       // 等待清理完成
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // 验证文件状态
       const filesAfter = readdirSync(sharedPath);
@@ -1164,19 +1153,16 @@ describe('用户数据持久化集成测试', () => {
 
     // 步骤 3: 调用 API 获取存储统计
     console.log('\n[步骤 3] 调用 API 获取存储统计...');
-    const statsResponse = await fetch(
-      `http://localhost:${managerHttpPort}/api/users/${user.id}/storage/calculate`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          path: testPath,
-        }),
-      }
-    );
+    const statsResponse = await fetch(`http://localhost:${managerHttpPort}/api/users/${user.id}/storage/calculate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({
+        path: testPath,
+      }),
+    });
 
     // 步骤 4: 验证计算准确性
     console.log('\n[步骤 4] 验证计算准确性...');

@@ -159,11 +159,7 @@ export async function createFullMachine(overrides: Partial<any> = {}): Promise<a
  * @param overrides 覆盖的字段
  * @returns Promise<Session> 会话对象
  */
-export async function createTestSession(
-  userId: number,
-  machineId: string,
-  overrides: Partial<any> = {}
-): Promise<any> {
+export async function createTestSession(userId: number, machineId: string, overrides: Partial<any> = {}): Promise<any> {
   const defaultSession = {
     user_id: userId,
     machine_id: machineId,
@@ -270,10 +266,7 @@ export async function createCreditHistory(
  * @param overrides 覆盖的字段
  * @returns Promise<User[]> 用户数组
  */
-export async function createTestUsers(
-  count: number,
-  overrides: Partial<any> = {}
-): Promise<any[]> {
+export async function createTestUsers(count: number, overrides: Partial<any> = {}): Promise<any[]> {
   const users: any[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -294,10 +287,7 @@ export async function createTestUsers(
  * @param overrides 覆盖的字段
  * @returns Promise<Machine[]> 机器数组
  */
-export async function createTestMachines(
-  count: number,
-  overrides: Partial<any> = {}
-): Promise<any[]> {
+export async function createTestMachines(count: number, overrides: Partial<any> = {}): Promise<any[]> {
   const machines: any[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -318,22 +308,19 @@ export async function createTestMachines(
  * @param options 配置选项
  * @returns Promise<测试环境> 测试环境对象
  */
-export async function createTestEnvironment(options: {
-  userCount?: number;
-  machineCount?: number;
-  userCredits?: number;
-  machineMaxInstances?: number;
-} = {}): Promise<{
+export async function createTestEnvironment(
+  options: {
+    userCount?: number;
+    machineCount?: number;
+    userCredits?: number;
+    machineMaxInstances?: number;
+  } = {}
+): Promise<{
   users: any[];
   machines: any[];
   admin: any;
 }> {
-  const {
-    userCount = 1,
-    machineCount = 1,
-    userCredits = 100,
-    machineMaxInstances = 5,
-  } = options;
+  const { userCount = 1, machineCount = 1, userCredits = 100, machineMaxInstances = 5 } = options;
 
   // 创建管理员
   const admin = await createTestAdmin({ credits: 1000 });

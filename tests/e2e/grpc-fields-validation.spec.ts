@@ -57,9 +57,9 @@ async function waitForHeartbeatUpdate(
       const machines = result.data?.items || result.data || result.items || [];
 
       // 检查是否有机器有有效的心跳数据（CPU或内存使用率）
-      const hasValidHeartbeat = machines.some((m: any) =>
-        (m.cpuUsage !== null && m.cpuUsage !== undefined) ||
-        (m.memoryUsage !== null && m.memoryUsage !== undefined)
+      const hasValidHeartbeat = machines.some(
+        (m: any) =>
+          (m.cpuUsage !== null && m.cpuUsage !== undefined) || (m.memoryUsage !== null && m.memoryUsage !== undefined)
       );
 
       if (hasValidHeartbeat) {
@@ -67,7 +67,7 @@ async function waitForHeartbeatUpdate(
       }
     }
 
-    await new Promise(resolve => setTimeout(resolve, intervalMs));
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 
   return false;
@@ -94,7 +94,7 @@ async function waitForLogContent(
         return true;
       }
     }
-    await new Promise(resolve => setTimeout(resolve, intervalMs));
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 
   return false;
@@ -121,7 +121,6 @@ const VALID_SESSION_FIELDS = {
 // ==================== P0 核心功能测试 ====================
 
 test.describe('P0: 机器注册字段验证', () => {
-
   test('P0-R01: 机器注册应该包含所有必填字段', async ({ testEnv, apiRequest }) => {
     // 获取机器列表 (API 路由: GET /api/machines)
     // apiRequest fixture 会自动添加认证 token
@@ -199,16 +198,14 @@ test.describe('P0: 机器注册字段验证', () => {
     // 验证机器在管理端可访问
     // 通过 gRPC 调用 GetMachineStatus
     const logsDir = path.join(__dirname, '../../logs/test-logs');
-    const logFiles = fs.readdirSync(logsDir)
-      .filter(f => f.startsWith('machine-0-'))
+    const logFiles = fs
+      .readdirSync(logsDir)
+      .filter((f) => f.startsWith('machine-0-'))
       .sort()
       .reverse();
 
     if (logFiles.length > 0) {
-      const logContent = fs.readFileSync(
-        path.join(logsDir, logFiles[0]),
-        'utf-8'
-      );
+      const logContent = fs.readFileSync(path.join(logsDir, logFiles[0]), 'utf-8');
 
       // 验证日志包含注册成功信息
       expect(logContent).toContain('注册成功');
@@ -232,14 +229,14 @@ test.describe('P0: 机器注册字段验证', () => {
 // ==================== P0 心跳字段验证 ====================
 
 test.describe('P0: 心跳字段验证', () => {
-
   test('P0-H01: 心跳应该包含所有必填字段', async ({ testEnv }) => {
     const testMachine = testEnv.machines[0];
 
     // 轮询等待心跳数据更新（最多35秒，每2秒检查一次）
     const logsDir = path.join(__dirname, '../../logs/test-logs');
-    const logFiles = fs.readdirSync(logsDir)
-      .filter(f => f.startsWith('machine-0-'))
+    const logFiles = fs
+      .readdirSync(logsDir)
+      .filter((f) => f.startsWith('machine-0-'))
       .sort()
       .reverse();
 
@@ -326,16 +323,14 @@ test.describe('P0: 心跳字段验证', () => {
 
   test('P0-H05: 心跳间隔应该符合配置 (30秒)', async ({ testEnv }) => {
     const logsDir = path.join(__dirname, '../../logs/test-logs');
-    const logFiles = fs.readdirSync(logsDir)
-      .filter(f => f.startsWith('machine-0-'))
+    const logFiles = fs
+      .readdirSync(logsDir)
+      .filter((f) => f.startsWith('machine-0-'))
       .sort()
       .reverse();
 
     if (logFiles.length > 0) {
-      const logContent = fs.readFileSync(
-        path.join(logsDir, logFiles[0]),
-        'utf-8'
-      );
+      const logContent = fs.readFileSync(path.join(logsDir, logFiles[0]), 'utf-8');
 
       // 验证心跳间隔配置
       expect(logContent).toContain('30');
@@ -346,7 +341,6 @@ test.describe('P0: 心跳字段验证', () => {
 // ==================== P0 会话管理字段验证 ====================
 
 test.describe('P0: 会话管理字段验证', () => {
-
   test('P0-S01: 会话列表应该包含所有必填字段', async ({ apiRequest }) => {
     const response = await apiRequest('/api/admin/sessions');
 
@@ -374,14 +368,7 @@ test.describe('P0: 会话管理字段验证', () => {
 
       expect(session).toHaveProperty('status');
       expect(typeof session.status).toBe('string');
-      expect([
-        'created',
-        'connected',
-        'disconnected',
-        'active',
-        'closed',
-        'error'
-      ]).toContain(session.status);
+      expect(['created', 'connected', 'disconnected', 'active', 'closed', 'error']).toContain(session.status);
     }
   });
 
@@ -458,12 +445,11 @@ test.describe('P0: 会话管理字段验证', () => {
 // ==================== P1 状态同步验证 ====================
 
 test.describe('P1: 状态同步验证', () => {
-
   test('P1-SYNC01: 机器在线状态应该正确更新', async ({ testEnv, apiRequest }) => {
     const testMachine = testEnv.machines[0];
 
     // 等待机器注册和心跳
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const response = await apiRequest('/api/machines');
     expect(response.ok).toBe(true);
@@ -472,9 +458,7 @@ test.describe('P1: 状态同步验证', () => {
     const machines = result.data?.items || result.data || result.items || [];
 
     // 查找测试机器
-    const testMachineData = machines.find((m: any) =>
-      m.id === testMachine.id || m.hostname === testMachine.name
-    );
+    const testMachineData = machines.find((m: any) => m.id === testMachine.id || m.hostname === testMachine.name);
 
     expect(testMachineData).toBeDefined();
     expect(testMachineData.status).toBe('online');
@@ -525,22 +509,19 @@ test.describe('P1: 状态同步验证', () => {
 // ==================== P2 统计和监控验证 ====================
 
 test.describe('P2: 统计和监控验证', () => {
-
   test('P2-STAT01: 机器系统信息应该完整', async ({ testEnv }) => {
     const testMachine = testEnv.machines[0];
 
     // 从日志中验证系统信息
     const logsDir = path.join(__dirname, '../../logs/test-logs');
-    const logFiles = fs.readdirSync(logsDir)
-      .filter(f => f.startsWith('machine-0-'))
+    const logFiles = fs
+      .readdirSync(logsDir)
+      .filter((f) => f.startsWith('machine-0-'))
       .sort()
       .reverse();
 
     if (logFiles.length > 0) {
-      const logContent = fs.readFileSync(
-        path.join(logsDir, logFiles[0]),
-        'utf-8'
-      );
+      const logContent = fs.readFileSync(path.join(logsDir, logFiles[0]), 'utf-8');
 
       // 验证系统信息记录
       // 系统信息应该在注册时发送
@@ -559,9 +540,8 @@ test.describe('P2: 统计和监控验证', () => {
 
     // 统计每台机器的活跃会话
     for (const machine of machines) {
-      const activeSessions = sessions.filter((s: any) =>
-        s.machine_id === machine.id &&
-        ['active', 'connected'].includes(s.status)
+      const activeSessions = sessions.filter(
+        (s: any) => s.machine_id === machine.id && ['active', 'connected'].includes(s.status)
       );
 
       console.log(`机器 ${machine.id}: 报告 ${machine.instanceCount} 个活跃会话, 实际 ${activeSessions.length} 个`);
@@ -577,7 +557,6 @@ test.describe('P2: 统计和监控验证', () => {
 // ==================== 数据一致性验证 ====================
 
 test.describe('数据一致性验证', () => {
-
   test('CONSISTENCY01: 内存缓存与数据库应该同步', async ({ apiRequest }) => {
     // 这个测试需要访问内存存储，暂时跳过
     // 在实际实现中，可以通过管理端 API 获取内存状态
@@ -607,9 +586,7 @@ test.describe('数据一致性验证', () => {
     const response = await apiRequest('/api/machines');
     const result = await response.json();
     const machines = result.data?.items || result.data || result.items || [];
-    const machineData = machines.find((m: any) =>
-      m.id === machine.id || m.hostname === machine.name
-    );
+    const machineData = machines.find((m: any) => m.id === machine.id || m.hostname === machine.name);
 
     if (machineData) {
       const maxSessions = machineData.max_instances || 10;
@@ -625,7 +602,6 @@ test.describe('数据一致性验证', () => {
 // ==================== 性能验证 ====================
 
 test.describe('性能验证', () => {
-
   test('PERF01: 心跳响应时间应该在合理范围内', async ({ apiRequest }) => {
     const startTime = Date.now();
 
@@ -645,16 +621,14 @@ test.describe('性能验证', () => {
     // 这里验证的是机器从启动到注册成功的时间
 
     const logsDir = path.join(__dirname, '../../logs/test-logs');
-    const logFiles = fs.readdirSync(logsDir)
-      .filter(f => f.startsWith('machine-0-'))
+    const logFiles = fs
+      .readdirSync(logsDir)
+      .filter((f) => f.startsWith('machine-0-'))
       .sort()
       .reverse();
 
     if (logFiles.length > 0) {
-      const logContent = fs.readFileSync(
-        path.join(logsDir, logFiles[0]),
-        'utf-8'
-      );
+      const logContent = fs.readFileSync(path.join(logsDir, logFiles[0]), 'utf-8');
 
       // 验证注册成功
       expect(logContent).toContain('注册成功');

@@ -70,7 +70,10 @@ describe('SharedUserData Integration Tests', () => {
 
       // 检查第一个会话的用户数据目录是否存在
       const userDataDir1 = path.join(testDataBaseDir, String(userId), 'sessions', sessionId1);
-      const exists1 = await fs.access(userDataDir1).then(() => true).catch(() => false);
+      const exists1 = await fs
+        .access(userDataDir1)
+        .then(() => true)
+        .catch(() => false);
       expect(exists1).toBe(true);
 
       // 启动第二个浏览器
@@ -81,7 +84,10 @@ describe('SharedUserData Integration Tests', () => {
 
       // 检查第二个会话的用户数据目录是否存在
       const userDataDir2 = path.join(testDataBaseDir, String(userId), 'sessions', sessionId2);
-      const exists2 = await fs.access(userDataDir2).then(() => true).catch(() => false);
+      const exists2 = await fs
+        .access(userDataDir2)
+        .then(() => true)
+        .catch(() => false);
       expect(exists2).toBe(true);
 
       // 验证两个目录是独立的
@@ -92,8 +98,14 @@ describe('SharedUserData Integration Tests', () => {
       await browserService.closeBrowser(sessionId2);
 
       // 验证独立会话目录已被清理
-      const existsAfterCleanup1 = await fs.access(userDataDir1).then(() => true).catch(() => false);
-      const existsAfterCleanup2 = await fs.access(userDataDir2).then(() => true).catch(() => false);
+      const existsAfterCleanup1 = await fs
+        .access(userDataDir1)
+        .then(() => true)
+        .catch(() => false);
+      const existsAfterCleanup2 = await fs
+        .access(userDataDir2)
+        .then(() => true)
+        .catch(() => false);
       expect(existsAfterCleanup1).toBe(false);
       expect(existsAfterCleanup2).toBe(false);
     });
@@ -118,7 +130,10 @@ describe('SharedUserData Integration Tests', () => {
 
       // 检查用户数据目录是否使用独立模式路径
       const userDataDir = path.join(testDataBaseDir, String(userId), 'sessions', sessionId);
-      const exists = await fs.access(userDataDir).then(() => true).catch(() => false);
+      const exists = await fs
+        .access(userDataDir)
+        .then(() => true)
+        .catch(() => false);
       expect(exists).toBe(true);
 
       // 清理
@@ -148,7 +163,10 @@ describe('SharedUserData Integration Tests', () => {
 
       // 检查共享用户数据目录是否存在
       const sharedDir = path.join(testDataBaseDir, String(userId), 'shared');
-      const exists1 = await fs.access(sharedDir).then(() => true).catch(() => false);
+      const exists1 = await fs
+        .access(sharedDir)
+        .then(() => true)
+        .catch(() => false);
       expect(exists1).toBe(true);
 
       // 启动第二个浏览器
@@ -158,21 +176,30 @@ describe('SharedUserData Integration Tests', () => {
       expect(result2.browserWSEndpoint!.length).toBeGreaterThan(10);
 
       // 验证共享目录仍然存在
-      const exists2 = await fs.access(sharedDir).then(() => true).catch(() => false);
+      const exists2 = await fs
+        .access(sharedDir)
+        .then(() => true)
+        .catch(() => false);
       expect(exists2).toBe(true);
 
       // 关闭第一个浏览器
       await browserService.closeBrowser(sessionId1);
 
       // 验证共享目录仍然存在（共享会话不会被清理）
-      const existsAfterClose1 = await fs.access(sharedDir).then(() => true).catch(() => false);
+      const existsAfterClose1 = await fs
+        .access(sharedDir)
+        .then(() => true)
+        .catch(() => false);
       expect(existsAfterClose1).toBe(true);
 
       // 关闭第二个浏览器
       await browserService.closeBrowser(sessionId2);
 
       // 验证共享目录仍然存在
-      const existsAfterClose2 = await fs.access(sharedDir).then(() => true).catch(() => false);
+      const existsAfterClose2 = await fs
+        .access(sharedDir)
+        .then(() => true)
+        .catch(() => false);
       expect(existsAfterClose2).toBe(true);
     });
   });
@@ -196,7 +223,10 @@ describe('SharedUserData Integration Tests', () => {
 
       // 检查兼容模式路径
       const userDataDir = path.join(testDataBaseDir, 'sessions', sessionId);
-      const exists = await fs.access(userDataDir).then(() => true).catch(() => false);
+      const exists = await fs
+        .access(userDataDir)
+        .then(() => true)
+        .catch(() => false);
       expect(exists).toBe(true);
 
       // 清理
@@ -229,7 +259,10 @@ describe('SharedUserData Integration Tests', () => {
       await browserService.launchBrowser(sessionId, options);
 
       // 验证目录已创建
-      const exists = await fs.access(userDataDir).then(() => true).catch(() => false);
+      const exists = await fs
+        .access(userDataDir)
+        .then(() => true)
+        .catch(() => false);
       expect(exists).toBe(true);
 
       // 清理

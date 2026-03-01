@@ -84,7 +84,7 @@ test.describe('管理后台视图渲染测试', () => {
 
       // 验证 Cookie 被设置
       const cookies = await context.cookies();
-      const tokenCookie = cookies.find(c => c.name === 'token');
+      const tokenCookie = cookies.find((c) => c.name === 'token');
       expect(tokenCookie).toBeTruthy();
       expect(tokenCookie?.httpOnly).toBe(true);
       expect(tokenCookie?.value).toBeTruthy();
@@ -330,7 +330,7 @@ test.describe('管理后台视图渲染测试', () => {
 
       // 验证 Cookie 存在
       let cookies = await context.cookies();
-      const tokenCookieBefore = cookies.find(c => c.name === 'token');
+      const tokenCookieBefore = cookies.find((c) => c.name === 'token');
       expect(tokenCookieBefore).toBeTruthy();
       expect(tokenCookieBefore?.value).toBeTruthy();
       expect(tokenCookieBefore?.value.length).toBeGreaterThan(20);
@@ -341,7 +341,7 @@ test.describe('管理后台视图渲染测试', () => {
 
       // 验证 Cookie 被清除
       cookies = await context.cookies();
-      const tokenCookieAfter = cookies.find(c => c.name === 'token');
+      const tokenCookieAfter = cookies.find((c) => c.name === 'token');
       expect(tokenCookieAfter).toBeFalsy();
     });
   });

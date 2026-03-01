@@ -203,13 +203,13 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
         maxSessions: 10,
         sessionTimeout: 300000,
         // 根据平台自动检测 Chrome 路径
-        chromePath: process.env.CHROME_PATH || (
-          process.platform === 'darwin'
+        chromePath:
+          process.env.CHROME_PATH ||
+          (process.platform === 'darwin'
             ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             : process.platform === 'linux'
               ? '/usr/bin/google-chrome-stable'
-              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        ),
+              : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
         heartbeatInterval: 30000,
         disconnectionTimeout: 10000,
         activityReportInterval: 3000,
@@ -235,7 +235,7 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
 
     // 步骤 6: 验证机器注册
     console.log('\n[步骤 6] 验证机器注册...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const machines = await MachineModel.findAll();
     console.log(`   数据库中的机器数量: ${machines.total}`);
@@ -344,7 +344,7 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
           method: 'POST',
           url: '/api/sessions',
           headers: {
-            'x-api-key': user.apiKey,  // 使用 API Key 而不是 JWT Token
+            'x-api-key': user.apiKey, // 使用 API Key 而不是 JWT Token
           },
           payload: {
             userAgent: 'test-agent',
@@ -469,7 +469,7 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       console.log('\n[步骤 2] 验证会话隔离...');
 
       // 验证每个会话都有唯一的 ID
-      const sessionIds = results.map(r => r.session.data.id);
+      const sessionIds = results.map((r) => r.session.data.id);
       const uniqueSessionIds = new Set(sessionIds);
       console.log(`   会话总数: ${sessionIds.length}`);
       console.log(`   唯一会话数: ${uniqueSessionIds.size}`);
@@ -510,13 +510,13 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       const results = await Promise.all(sessionPromises);
 
       console.log('\n[步骤 2] 等待10秒...');
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise((resolve) => setTimeout(resolve, 10000));
 
       console.log('\n[步骤 3] 5个用户同时释放会话...');
 
       const releasePromises = results.map(async (result) => {
         // 查找对应用户的 apiKey
-        const user = testUsers.find(u => u.id === result.userId);
+        const user = testUsers.find((u) => u.id === result.userId);
         const response = await managerApp.inject({
           method: 'POST',
           url: `/api/sessions/${result.session.data.id}/release`,
@@ -668,13 +668,13 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       const results = await Promise.all(sessionPromises);
 
       console.log('\n[步骤 2] 等待65秒（确保扣2点积分）...');
-      await new Promise(resolve => setTimeout(resolve, 65000));
+      await new Promise((resolve) => setTimeout(resolve, 65000));
 
       console.log('\n[步骤 3] 5个用户同时释放会话...');
 
       const releasePromises = results.map(async (result) => {
         // 查找对应用户的 apiKey
-        const user = testUsers.find(u => u.id === result.userId);
+        const user = testUsers.find((u) => u.id === result.userId);
         await managerApp.inject({
           method: 'POST',
           url: `/api/sessions/${result.session.data.id}/release`,
@@ -725,13 +725,13 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       const results = await Promise.all(sessionPromises);
 
       console.log('\n[步骤 2] 等待10秒...');
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise((resolve) => setTimeout(resolve, 10000));
 
       console.log('\n[步骤 3] 5个用户同时释放会话...');
 
       const releasePromises = results.map(async (result) => {
         // 查找对应用户的 apiKey
-        const user = testUsers.find(u => u.id === result.userId);
+        const user = testUsers.find((u) => u.id === result.userId);
         await managerApp.inject({
           method: 'POST',
           url: `/api/sessions/${result.session.data.id}/release`,
@@ -753,7 +753,9 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
 
         // 验证最新的记录是扣费
         const latestRecord = historyRecords[0];
-        console.log(`     最新记录: ${latestRecord.action} ${latestRecord.amount} 积分, 剩余 ${latestRecord.balance_after} 积分`);
+        console.log(
+          `     最新记录: ${latestRecord.action} ${latestRecord.amount} 积分, 剩余 ${latestRecord.balance_after} 积分`
+        );
         expect(latestRecord.action).toBe('use');
         expect(latestRecord.amount).toBe(1);
       }

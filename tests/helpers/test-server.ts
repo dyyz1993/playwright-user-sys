@@ -126,7 +126,7 @@ export async function startMachineServer(): Promise<void> {
   });
 
   // 等待机器服务注册
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
   console.log(`✅ 机器服务已启动: gRPC端口=${testPorts.machineGrpc}, 代理端口=${testPorts.machineProxy}`);
 }
 
@@ -142,7 +142,7 @@ async function waitForServer(url: string, timeout = 30000): Promise<void> {
     } catch {
       // 继续等待
     }
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error(`服务器启动超时: ${url}`);
 }
@@ -164,7 +164,7 @@ export async function stopAllServers(): Promise<void> {
   }
 
   // 等待进程完全退出
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   console.log('✅ 所有服务器已停止');
 }
 

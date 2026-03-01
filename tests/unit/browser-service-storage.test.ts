@@ -50,7 +50,7 @@ describe('BrowserService storageState 处理', () => {
     const puppeteerOptions = await (browserService as any).convertPuppeteerOptions(options);
     expect(puppeteerOptions).toBeDefined();
     // userDataDir 应该不在参数中（因为没有设置）
-    expect(puppeteerOptions.args?.find(arg => arg.startsWith('--user-data-dir'))).toBeUndefined();
+    expect(puppeteerOptions.args?.find((arg) => arg.startsWith('--user-data-dir'))).toBeUndefined();
   });
 
   it('应该正确处理 userDataDir 参数', async () => {
@@ -64,9 +64,7 @@ describe('BrowserService storageState 处理', () => {
     expect(puppeteerOptions).toBeDefined();
 
     // 验证 userDataDir 被添加到 args
-    const userDataDirArg = puppeteerOptions.args?.find(arg =>
-      arg.startsWith('--user-data-dir=')
-    );
+    const userDataDirArg = puppeteerOptions.args?.find((arg) => arg.startsWith('--user-data-dir='));
     expect(userDataDirArg).toBe(`--user-data-dir=${userDataDir}`);
   });
 
@@ -84,9 +82,9 @@ describe('BrowserService storageState 处理', () => {
     expect(puppeteerOptions).toBeDefined();
 
     // 验证所有参数都被正确处理
-    expect(puppeteerOptions.args?.some(arg => arg.startsWith('--user-data-dir='))).toBe(true);
-    expect(puppeteerOptions.args?.some(arg => arg.startsWith('--user-agent='))).toBe(true);
-    expect(puppeteerOptions.args?.some(arg => arg.startsWith('--window-size='))).toBe(true);
+    expect(puppeteerOptions.args?.some((arg) => arg.startsWith('--user-data-dir='))).toBe(true);
+    expect(puppeteerOptions.args?.some((arg) => arg.startsWith('--user-agent='))).toBe(true);
+    expect(puppeteerOptions.args?.some((arg) => arg.startsWith('--window-size='))).toBe(true);
     expect(puppeteerOptions.defaultViewport).toEqual({
       width: 1920,
       height: 1080,
@@ -132,9 +130,7 @@ describe('BrowserService storageState 处理', () => {
       origins: [
         {
           origin: 'https://example.com',
-          localStorage: [
-            { name: 'authToken', value: 'token123' },
-          ],
+          localStorage: [{ name: 'authToken', value: 'token123' }],
         },
       ],
     };

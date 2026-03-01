@@ -157,9 +157,7 @@ describe('StorageService', () => {
 
   describe('cleanupUserSessions', () => {
     it('should handle non-existent directory gracefully', async () => {
-      await expect(
-        StorageService.cleanupUserSessions(testUserId + 1)
-      ).resolves.not.toThrow();
+      await expect(StorageService.cleanupUserSessions(testUserId + 1)).resolves.not.toThrow();
     });
 
     it('should cleanup specific session', async () => {
@@ -193,9 +191,7 @@ describe('StorageService', () => {
 
   describe('cleanupUserShared', () => {
     it('should handle non-existent directory gracefully', async () => {
-      await expect(
-        StorageService.cleanupUserShared(testUserId + 1)
-      ).resolves.not.toThrow();
+      await expect(StorageService.cleanupUserShared(testUserId + 1)).resolves.not.toThrow();
     });
 
     it('should cleanup shared directory', async () => {

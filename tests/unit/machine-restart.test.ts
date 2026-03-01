@@ -78,20 +78,22 @@ describe('MachineServer getMachineServer Fix', () => {
         getAvailablePort(),
       ]);
 
-      console.log(`Test ports: manager=${managerPort}, managerGrpc=${managerGrpcPort}, machineGrpc=${machineGrpcPort}, machineProxy=${machineProxyPort}`);
+      console.log(
+        `Test ports: manager=${managerPort}, managerGrpc=${managerGrpcPort}, machineGrpc=${machineGrpcPort}, machineProxy=${machineProxyPort}`
+      );
     }, 30000);
 
     afterAll(async () => {
       if (machineProcess) {
         machineProcess.kill('SIGTERM');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         if (!machineProcess.killed) {
           machineProcess.kill('SIGKILL');
         }
       }
       if (managerProcess) {
         managerProcess.kill('SIGTERM');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         if (!managerProcess.killed) {
           managerProcess.kill('SIGKILL');
         }
@@ -118,7 +120,7 @@ describe('MachineServer getMachineServer Fix', () => {
 
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Manager startup timeout')), 30000);
-        
+
         const check = async () => {
           try {
             const response = await fetch(`http://localhost:${managerPort}/health`);
@@ -159,14 +161,14 @@ describe('MachineServer getMachineServer Fix', () => {
       machineProcess.stdout?.pipe(logStream);
       machineProcess.stderr?.pipe(logStream);
 
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       expect(machineProcess.killed).toBe(false);
       console.log(`Machine started with PID ${machineProcess.pid}`);
     }, 30000);
 
     it('should have getMachineServer return instance when machine is running', async () => {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       const { getMachineServer } = await import('../../src/machine/app.js');
       const instance = getMachineServer();
@@ -176,23 +178,23 @@ describe('MachineServer getMachineServer Fix', () => {
       if (instance) {
         expect(instance.getState).toBeDefined();
         expect(typeof instance.getState).toBe('function');
-        
+
         const state = instance.getState();
         console.log(`Machine state: ${state}`);
-        
+
         expect(['starting', 'running', 'reconnecting', 'shutting_down', 'stopped']).toContain(state);
       }
     });
 
     it('should NOT have TypeError in machine logs after startup', async () => {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       if (fs.existsSync(machineLogFile)) {
         const logContent = fs.readFileSync(machineLogFile, 'utf-8');
-        
+
         const hasTypeError = logContent.includes("Cannot read properties of undefined (reading 'restart')");
         expect(hasTypeError).toBe(false);
-        
+
         console.log('✅ No TypeError found in machine logs');
       }
     });

@@ -23,8 +23,8 @@ const dbConfig = {
   pool: {
     min: parseInt(process.env.DB_POOL_MIN || '2'),
     max: parseInt(process.env.DB_POOL_MAX || '10'),
-    idleTimeoutMillis: 30000,     // 30秒空闲超时
-    acquireTimeoutMillis: 60000,  // 60秒获取连接超时
+    idleTimeoutMillis: 30000, // 30秒空闲超时
+    acquireTimeoutMillis: 60000, // 60秒获取连接超时
     propagateCreateError: false,
   },
 };
@@ -144,7 +144,10 @@ export async function runMigrations(db: Knex): Promise<void> {
   try {
     // 使用 Knex 迁移 API
     const migrate = require('knex/lib/migrate/index.js');
-    const config = { ...dbConfig, connection: { ...dbConfig.connection, database: db.client.config.connection.database } };
+    const config = {
+      ...dbConfig,
+      connection: { ...dbConfig.connection, database: db.client.config.connection.database },
+    };
 
     const migration = new migrate(config);
     await migration.latest();
@@ -164,13 +167,7 @@ export async function runMigrations(db: Knex): Promise<void> {
 export async function clearAllTables(): Promise<void> {
   const db = getTestDbConnection();
 
-  const tables = [
-    'sessions',
-    'machines',
-    'users',
-    'credit_history',
-    'operation_logs',
-  ];
+  const tables = ['sessions', 'machines', 'users', 'credit_history', 'operation_logs'];
 
   try {
     // 按依赖顺序清空（外键约束）
@@ -219,7 +216,7 @@ export async function waitForDatabase(timeout: number = 30000): Promise<void> {
       // 继续等待
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   throw new Error(`Database connection timeout after ${timeout}ms`);
@@ -240,9 +237,7 @@ export async function closeDatabase(): Promise<void> {
  * 事务包装器
  * 自动回滚测试期间的事务
  */
-export async function withTransaction<T>(
-  callback: (trx: Knex.Transaction) => Promise<T>
-): Promise<T> {
+export async function withTransaction<T>(callback: (trx: Knex.Transaction) => Promise<T>): Promise<T> {
   const db = getTestDbConnection();
 
   try {

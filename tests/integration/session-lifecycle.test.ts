@@ -134,7 +134,7 @@ describe('会话生命周期集成测试', () => {
     await SessionModel.markConnected(session!.id);
 
     // 等待一段时间
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const disconnectedSession = await SessionModel.markDisconnected(session!.id, 0);
 
@@ -160,7 +160,7 @@ describe('会话生命周期集成测试', () => {
     await SessionModel.markConnected(session!.id);
 
     // 等待一段时间
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const expiredSession = await SessionModel.markExpired(session!.id, 120);
 
@@ -186,7 +186,7 @@ describe('会话生命周期集成测试', () => {
     await SessionModel.markConnected(session!.id);
 
     // 等待一段时间
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const errorSession = await SessionModel.markError(session!.id, 60);
 
@@ -212,7 +212,7 @@ describe('会话生命周期集成测试', () => {
     await SessionModel.markConnected(session!.id);
 
     // 等待一段时间
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // 使用断开来表示完成
     const completedSession = await SessionModel.markDisconnected(session!.id, 0);
@@ -235,7 +235,7 @@ describe('会话生命周期集成测试', () => {
     });
 
     // 等待一段时间
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const updatedSession = await SessionModel.updateLastActivity(session!.id);
 
@@ -461,9 +461,7 @@ describe('会话生命周期集成测试', () => {
 
     // 手动设置会话开始时间为过去（模拟超时）
     const pastTime = new Date(Date.now() - 3600000); // 1 小时前
-    await db('sessions')
-      .where({ id: session!.id })
-      .update({ start_time: pastTime });
+    await db('sessions').where({ id: session!.id }).update({ start_time: pastTime });
 
     // 检查并标记超时会话（超时时间设置为 30 分钟）
     const expiredCount = await SessionModel.checkExpiredSessions(1800000);

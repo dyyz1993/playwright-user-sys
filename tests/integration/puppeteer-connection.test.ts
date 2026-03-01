@@ -81,7 +81,9 @@ describe('Puppeteer 连接层集成测试', () => {
 
     // Specific assertions - verify WebSocket endpoint format
     // 实际返回的是 127.0.0.1 而非 localhost
-    expect(browserInstance?.browserWSEndpoint).toMatch(/^ws:\/\/(127\.0\.0\.1|localhost):\d+\/devtools\/browser\/[a-f0-9-]+$/);
+    expect(browserInstance?.browserWSEndpoint).toMatch(
+      /^ws:\/\/(127\.0\.0\.1|localhost):\d+\/devtools\/browser\/[a-f0-9-]+$/
+    );
     // Port should be in valid range (1024-65535)
     expect(browserInstance?.port).toBeGreaterThanOrEqual(1024);
     expect(browserInstance?.port).toBeLessThanOrEqual(65535);
@@ -415,7 +417,7 @@ describe('Puppeteer 连接层集成测试', () => {
     expect(browserService.getActiveSessions()).toBe(3);
 
     // 验证每个会话的端口不同
-    const ports = sessionIds.map(id => browserService.getPort(id));
+    const ports = sessionIds.map((id) => browserService.getPort(id));
     const uniquePorts = new Set(ports);
     expect(uniquePorts.size).toBe(3);
 

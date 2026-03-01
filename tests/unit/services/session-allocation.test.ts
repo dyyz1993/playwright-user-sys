@@ -92,11 +92,9 @@ describe('SessionAllocation - 会话分配', () => {
 
       expect(result.port).toBeDefined();
       expect(result.browser_ws_endpoint).toContain('ws://');
-      expect(mockConnectionManager.launchBrowser).toHaveBeenCalledWith(
-        'machine-1',
-        'session-123',
-        { viewport: { width: 1280, height: 800 } }
-      );
+      expect(mockConnectionManager.launchBrowser).toHaveBeenCalledWith('machine-1', 'session-123', {
+        viewport: { width: 1280, height: 800 },
+      });
     });
   });
 
@@ -119,7 +117,7 @@ describe('SessionAllocation - 会话分配', () => {
         { id: 'machine-2', instance_count: 3, max_instances: 5 }, // 可用
       ];
 
-      const available = machines.filter(m => m.instance_count < m.max_instances);
+      const available = machines.filter((m) => m.instance_count < m.max_instances);
 
       expect(available).toHaveLength(1);
       expect(available[0].id).toBe('machine-2');
@@ -163,7 +161,7 @@ describe('SessionAllocation - 会话分配', () => {
         { id: 'machine-2', instance_count: 5, max_instances: 5 }, // 已满
       ];
 
-      const available = machines.filter(m => m.instance_count < m.max_instances);
+      const available = machines.filter((m) => m.instance_count < m.max_instances);
 
       expect(available).toHaveLength(0);
 
@@ -180,9 +178,9 @@ describe('SessionAllocation - 会话分配', () => {
     it('应该处理启动浏览器失败的情况', async () => {
       mockConnectionManager.launchBrowser.mockRejectedValue(new Error('启动浏览器失败'));
 
-      await expect(
-        mockConnectionManager.launchBrowser('machine-1', 'session-123', {})
-      ).rejects.toThrow('启动浏览器失败');
+      await expect(mockConnectionManager.launchBrowser('machine-1', 'session-123', {})).rejects.toThrow(
+        '启动浏览器失败'
+      );
 
       // 验证失败后应该标记会话为错误状态
       expect(SessionStatus.ERROR).toBe('error');
@@ -192,9 +190,7 @@ describe('SessionAllocation - 会话分配', () => {
       mockConnectionManager.getAllConnectedMachines.mockReturnValue(['machine-1']);
       mockConnectionManager.launchBrowser.mockRejectedValue(new Error('机器连接中断'));
 
-      await expect(
-        mockConnectionManager.launchBrowser('machine-1', 'session-123', {})
-      ).rejects.toThrow('机器连接中断');
+      await expect(mockConnectionManager.launchBrowser('machine-1', 'session-123', {})).rejects.toThrow('机器连接中断');
     });
   });
 
@@ -207,7 +203,7 @@ describe('SessionAllocation - 会话分配', () => {
       }));
 
       const startTime = Date.now();
-      const available = machines.filter(m => m.instance_count < m.max_instances);
+      const available = machines.filter((m) => m.instance_count < m.max_instances);
       const sorted = available.sort((a, b) => a.instance_count - b.instance_count);
       const duration = Date.now() - startTime;
 
@@ -226,9 +222,7 @@ describe('SessionAllocation - 会话分配', () => {
       );
 
       const results = await Promise.all(
-        sessions.map(sessionId =>
-          mockConnectionManager.launchBrowser('machine-1', sessionId, {})
-        )
+        sessions.map((sessionId) => mockConnectionManager.launchBrowser('machine-1', sessionId, {}))
       );
 
       expect(results).toHaveLength(5);

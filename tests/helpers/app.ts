@@ -67,7 +67,7 @@ export class TestAppBuilder {
       // 监听端口
       const address = await app.listen({
         port: this.port,
-        host: '127.0.0.1'
+        host: '127.0.0.1',
       });
 
       // 解析端口号

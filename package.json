@@ -48,10 +48,10 @@
     "test:routes": "vitest run src/tests/integration/routes",
     "test:coverage": "vitest run --coverage",
     "test:integration:init": "bash scripts/init-test-db.sh",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\"",
+    "lint": "eslint src tests",
+    "lint:fix": "eslint src tests --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
     "test:api": "node tests/test-api.js",
     "test:login": "node tests/test-login.js",
     "test:web:login": "node tests/test-web-login-flow.cjs",
@@ -97,6 +97,10 @@
   },
   "lint-staged": {
     "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "tests/**/*.ts": [
       "eslint --fix",
       "prettier --write"
     ]

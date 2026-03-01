@@ -83,6 +83,6 @@ export default [
   },
   eslintConfigPrettier,
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '**/*.cjs', '**/*.mjs', '**/*.js'],
   },
 ];

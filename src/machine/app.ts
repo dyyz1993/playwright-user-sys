@@ -2,7 +2,7 @@ import { CONFIG, MachineConfig, loadConfig } from './config.js';
 import { logger } from '@shared/utils/logger.js';
 import { browserService } from './browser.service.js';
 import { ProxyService } from './proxy.service.js';
-import grpcService, { grpcClient, startGrpcServer, GrpcClient, setGrpcServerConfig } from './grpc.service.js';
+import { grpcClient, startGrpcServer, GrpcClient, setGrpcServerConfig } from './grpc.service.js';
 import retry from 'async-retry';
 
 // 机器端状态枚举
@@ -273,7 +273,7 @@ export class MachineServer {
           }
 
           await retry(
-            async (bail: (error: Error) => void, attemptNumber: number) => {
+            async (bail: (_error: Error) => void, attemptNumber: number) => {
               try {
                 // 再次检查状态
                 if (this.state === MachineState.SHUTTING_DOWN || this.state === MachineState.STOPPED) {

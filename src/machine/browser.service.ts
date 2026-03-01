@@ -1,5 +1,4 @@
-// import puppeteer from "puppeteer-core";
-import { Page, Browser, Frame, ScreenshotOptions, executablePath, LaunchOptions, FileChooser } from 'puppeteer-core';
+import { Page, Browser, LaunchOptions, Target } from 'puppeteer-core';
 import fsSync from 'fs';
 
 import { EventEmitter } from 'events';
@@ -10,12 +9,9 @@ import { FingerprintInjector } from 'fingerprint-injector';
 import { BrowserFingerprintWithHeaders, FingerprintGenerator } from 'fingerprint-generator';
 import { CONFIG } from './config.js';
 import { logger } from '@shared/utils/logger.js';
-import { Buffer } from 'buffer';
 import { sessionFocusEmitter } from './utils.js';
 import puppeteerStealth from 'puppeteer-extra';
 import ProxyChain from 'proxy-chain';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
 const puppeteer = puppeteerStealth.default;
 // puppeteer.use(StealthPlugin());
 // puppeteer.use(AdblockerPlugin.default({ blockTrackers: true }));
@@ -23,7 +19,7 @@ const puppeteer = puppeteerStealth.default;
 declare global {
   interface Window {
     _mouseTrackingInjected?: boolean;
-    updateMousePosition?: (x: number, y: number, viewportWidth: number, viewportHeight: number) => void;
+    updateMousePosition?: (_x: number, _y: number, _viewportWidth: number, _viewportHeight: number) => void;
   }
 }
 
@@ -882,7 +878,7 @@ class BrowserService extends EventEmitter {
   }
 
   private handleTargetChangeHandler(sessionId: string) {
-    return async (target: puppeteer.Target) => {
+    return async (target: Target) => {
       console.info(`Target changed:  ${target.type()}`, target.url());
       if (target.type() === 'page') {
         const page = await target.page();
@@ -894,7 +890,7 @@ class BrowserService extends EventEmitter {
    * 创建目标创建处理函数 (只注入指纹)
    */
   private createTargetHandler(sessionId: string, fingerprint: BrowserFingerprintWithHeaders) {
-    return async (target: puppeteer.Target) => {
+    return async (target: Target) => {
       console.info(`Target created:  ${target.type()}`, target.url());
       try {
         if (target.type() !== 'page') return;

@@ -4,7 +4,6 @@
  */
 
 import { createServer } from 'net';
-import { promisify } from 'util';
 
 /**
  * 获取一个可用的端口号

@@ -2,7 +2,6 @@ import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app.js';
 import { clearAllTables } from '../helpers/database.js';
 import { UserModel } from '../../models/user.model.js';
-import { OperationLogModel } from '../../models/operation-log.model.js';
 import { generateToken, hashPassword } from '../../utils/auth.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';
 

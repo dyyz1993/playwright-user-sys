@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
 import { FastifyRequest, FastifyReply, RouteGenericInterface } from 'fastify';
 
 // 扩展 FastifyRequest 类型

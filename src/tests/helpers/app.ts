@@ -1,7 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { env } from '../../config/env.js';
 import authPlugin from '../../plugins/auth.plugin.js';
 import errorHandlerPlugin from '../../plugins/error-handler.plugin.js';
 // 简化测试，移除不必要的插件

@@ -3,13 +3,11 @@ import { build } from '../../app.js';
 import { clearAllTables } from '../helpers/database.js';
 import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
-import { v4 as uuidv4 } from 'uuid';
 import { SessionStatus } from '@shared/types/index.js';
 
 describe('点数扣除集成测试', () => {
   let app: any;
   let testUser: any;
-  let apiKey: string;
 
   beforeAll(async () => {
     await clearAllTables();
@@ -25,9 +23,6 @@ describe('点数扣除集成测试', () => {
       email: `${username}@example.com`,
       credits: 100,
     });
-
-    // api_key is auto-generated, get it from the created user
-    apiKey = testUser?.api_key || uuidv4();
 
     expect(testUser).toBeTruthy();
     expect(testUser.credits).toBe(100);

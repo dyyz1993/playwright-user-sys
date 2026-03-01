@@ -12,7 +12,7 @@ import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session.model.js';
 import { MachineModel } from '../../models/machine.model.js';
 import { generateToken, hashPassword } from '../../utils/auth.js';
-import { UserRole, UserStatus, SessionStatus } from '@shared/types/index.js';
+import { UserRole, UserStatus } from '@shared/types/index.js';
 
 describe('Dashboard 页面集成测试', () => {
   let app: FastifyInstance;

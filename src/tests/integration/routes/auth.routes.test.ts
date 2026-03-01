@@ -15,7 +15,6 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../../helpers/app.js';
 import { UserModel } from '../../../models/user.model.js';
-import { db } from '../../../config/database.js';
 import { generateToken, verifyToken } from '../../../utils/auth.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';
 import { clearAllTables } from '../../helpers/database.js';

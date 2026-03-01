@@ -1,6 +1,7 @@
 import { describe, beforeAll, afterAll, test, expect } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app.js';
+import { initDatabase } from '../../config/database.js';
 import { clearAllTables } from '../helpers/database.js';
 import { UserModel } from '../../models/user.model.js';
 import { generateToken, hashPassword } from '../../utils/auth.js';
@@ -14,6 +15,7 @@ describe('管理员用户管理功能测试', () => {
   let adminId: number;
 
   beforeAll(async () => {
+    await initDatabase();
     await clearAllTables();
 
     app = await build();

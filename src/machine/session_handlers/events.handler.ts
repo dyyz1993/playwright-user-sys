@@ -11,7 +11,7 @@ import { CONFIG } from '../config.js';
 declare global {
   interface Window {
     _mouseTrackingInjected?: boolean;
-    updateMousePosition?: (x: number, y: number, viewportWidth: number, viewportHeight: number) => void;
+    updateMousePosition?: (_x: number, _y: number, _viewportWidth: number, _viewportHeight: number) => void;
     _focusListenerAttached?: boolean;
     _emitFocusEvent?: () => void;
   }
@@ -26,16 +26,13 @@ interface EventConnectionInfo {
   listeners: {
     pageCloseHandler?: () => void;
     pageCrashHandler?: () => void;
-    frameNavigatedHandler?: (frame: Frame) => void;
-    configUpdateListener?: (sessionId: string, newConfig: SessionConfig) => void;
+    frameNavigatedHandler?: (_frame: Frame) => void;
+    configUpdateListener?: (_sessionId: string, _newConfig: SessionConfig) => void;
     // 页面内 focus 监听器理论上随页面关闭，但保留引用以明确
     focusListenerAttached?: boolean;
   };
 }
 const activeEventConnections = new Map<WebSocket, EventConnectionInfo>();
-
-// !! 硬编码触摸模式 !!
-const HARDCODED_TOUCH_MODE: 'touchpad' | 'touch' = 'touchpad'; // 默认使用类似鼠标的 'touchpad' 模式
 
 // == 定义鼠标追踪脚本 ==
 
@@ -342,7 +339,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
     logger.warn('Received message for a non-tracked WebSocket connection.');
     return;
   }
-  const { page, sessionId, config } = connectionInfo; // Use cached config
+  const { page, sessionId } = connectionInfo;
   if (page.isClosed()) {
     logger.warn(`Received message for session ${sessionId}, but page is closed.`);
     cleanupEventConnection(ws);
@@ -373,6 +370,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
 
       // --- 配置更新 ---
       case 'updateClip':
+        // falls through to event handler
       // --- 程序化接口 ---
       case 'event':
         handleMouseEvents(eventData.event.type, eventData.event, page, ws, sessionId, requestType);

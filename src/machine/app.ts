@@ -2,10 +2,11 @@ import { CONFIG, MachineConfig, loadConfig } from './config.js';
 import { logger } from '@shared/utils/logger.js';
 import { browserService } from './browser.service.js';
 import { ProxyService } from './proxy.service.js';
-import { grpcClient, startGrpcServer, GrpcClient, setGrpcServerConfig } from './grpc.service.js';
+import { startGrpcServer, GrpcClient, setGrpcServerConfig } from './grpc.service.js';
 import retry from 'async-retry';
 
 // 机器端状态枚举
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 export enum MachineState {
   STARTING = 'starting',
   RUNNING = 'running',
@@ -336,7 +337,7 @@ export class MachineServer {
   /**
    * 处理未处理的拒绝
    */
-  private handleUnhandledRejection(reason: any) {
+  private handleUnhandledRejection(reason: unknown) {
     logger.error('未处理的拒绝:', reason);
 
     // 如果是 Error 对象，交给 handleUncaughtException 处理
@@ -354,15 +355,17 @@ export class MachineServer {
     // 检查是否是 gRPC 连接错误
     const isGrpcConnectionError =
       reason &&
-      reason.message &&
-      (reason.message.includes('UNAVAILABLE: Connection dropped') ||
-        reason.message.includes('UNAVAILABLE: No connection established') ||
-        reason.message.includes('ECONNREFUSED') ||
-        reason.message.includes('UNAVAILABLE'));
+      typeof reason === 'object' &&
+      'message' in reason &&
+      typeof (reason as { message: string }).message === 'string' &&
+      ((reason as { message: string }).message.includes('UNAVAILABLE: Connection dropped') ||
+        (reason as { message: string }).message.includes('UNAVAILABLE: No connection established') ||
+        (reason as { message: string }).message.includes('ECONNREFUSED') ||
+        (reason as { message: string }).message.includes('UNAVAILABLE'));
 
     if (isGrpcConnectionError) {
       // 创建一个 Error 对象并交给 handleUncaughtException 处理
-      const error = new Error(reason.message || 'gRPC connection error');
+      const error = new Error((reason as { message: string }).message || 'gRPC connection error');
       this.handleUncaughtException(error);
     }
   }

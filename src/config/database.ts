@@ -116,7 +116,7 @@ export const getDb = () => dbInstance;
 
 // 创建一个可调用的 db 对象来支持 db('table') 调用方式
 const createDbProxy = () => {
-  const proxyFn = function (table: string, ..._args: unknown[]) {
+  const proxyFn = function (table: string) {
     if (dbInstance) {
       return dbInstance(table);
     }

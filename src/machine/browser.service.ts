@@ -785,7 +785,7 @@ class BrowserService extends EventEmitter {
     await page.evaluateOnNewDocument((fnName) => {
       // document.removeEventListener('focusin', handleFocusin);
       document.addEventListener('focusin', function (event) {
-        const target = event.target;
+        const _target = event.target;
         if (typeof window[fnName] === 'function') {
           console.log('focusin', event.target);
           window[fnName](); // Call the dynamic function
@@ -877,7 +877,7 @@ class BrowserService extends EventEmitter {
     }
   }
 
-  private handleTargetChangeHandler(sessionId: string) {
+  private handleTargetChangeHandler(_sessionId: string) {
     return async (target: Target) => {
       console.info(`Target changed:  ${target.type()}`, target.url());
       if (target.type() === 'page') {

@@ -70,7 +70,7 @@ function getCpuUsage(): number {
       const loadavg = os.loadavg()[0]; // 1分钟平均负载
       const cpuCount = os.cpus().length;
       return Math.min((loadavg / cpuCount) * 100, 100);
-    } catch (e) {
+    } catch {
       // 如果连负载也无法获取，返回一个默认值
       return 50; // 默认50%
     }
@@ -110,9 +110,6 @@ const packageDefinition = protoLoader.loadSync(protoPath, {
 });
 
 const proto = grpc.loadPackageDefinition(packageDefinition).machine as any;
-
-// 导出 grpcClient 实例引用，用于重新初始化
-let grpcClientInstance: GrpcClient | null = null;
 
 /**
  * gRPC 客户端类

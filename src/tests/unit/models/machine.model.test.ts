@@ -108,15 +108,25 @@ describe('MachineModel', () => {
     });
 
     const updated = await MachineModel.update('machine-001', {
+      hostname: 'updated-host',
+      ip: '192.168.1.101',
       cpuUsage: 75.5,
       memoryUsage: 60.2,
+      diskUsage: 80.0,
       instanceCount: 5,
+      maxInstances: 10,
+      status: 'online',
     });
 
     expect(updated).toBeTruthy();
+    expect(updated!.hostname).toBe('updated-host');
+    expect(updated!.ip).toBe('192.168.1.101');
     expect(Number(updated!.cpuUsage)).toBe(75.5);
     expect(Number(updated!.memoryUsage)).toBe(60.2);
+    expect(Number(updated!.diskUsage)).toBe(80.0);
     expect(updated!.instanceCount).toBe(5);
+    expect(updated!.maxInstances).toBe(10);
+    expect(updated!.status).toBe('online');
   });
 
   // ========================================

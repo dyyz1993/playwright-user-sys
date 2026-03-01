@@ -1,0 +1,1 @@
+禁止使用 git commit --no-verify

@@ -38,7 +38,7 @@ export const verifyJWT = async (request: FastifyRequest, reply: FastifyReply) =>
       username: user.username,
       role: user.role as 'admin' | 'user',
     };
-  } catch (error) {
+  } catch (_error) {
     return reply.status(401).send({ success: false, error: '认证失败' });
   }
 };
@@ -90,7 +90,7 @@ export const verifyApiKey = async (request: FastifyRequest, reply: FastifyReply)
       username: user.username,
       role: user.role as 'admin' | 'user',
     };
-  } catch (error) {
+  } catch (_error) {
     return reply.status(401).send({ success: false, error: '认证失败' });
   }
 };

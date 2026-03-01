@@ -3,15 +3,9 @@ import { FastifyInstance } from 'fastify';
 import { build } from '../helpers/app.js';
 import { initDatabase } from '../../config/database.js';
 import { clearAllTables } from '../helpers/database.js';
-import { UserModel } from '../../models/user.model.js';
-import { generateToken, hashPassword } from '../../utils/auth.js';
-import { UserRole, UserStatus } from '@shared/types/index.js';
 
 describe('错误响应格式测试', () => {
   let app: FastifyInstance;
-  let adminToken: string;
-  let userToken: string;
-  let testUserId: number;
 
   beforeAll(async () => {
     await initDatabase();

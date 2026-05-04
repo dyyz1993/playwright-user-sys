@@ -450,8 +450,8 @@ describe('完整三端架构集成测试', () => {
     console.log(`   会话ID: ${sessionData.id}`);
     console.log(`   状态: ${sessionData.status}`);
 
-    expect(sessionData.id).toMatch(/^session_[a-zA-Z0-9_-]{16,}$/);
-    expect(sessionData.id.length).toBeGreaterThanOrEqual(20);
+    expect(sessionData.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    expect(sessionData.id.length).toBeGreaterThanOrEqual(36);
     expect(sessionData.status).toBe('created');
 
     // 步骤 2: 验证数据库中的会话记录

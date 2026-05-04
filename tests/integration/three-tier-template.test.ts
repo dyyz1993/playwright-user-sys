@@ -448,7 +448,7 @@ describe('三端架构集成测试模板', () => {
     console.log(`   状态: ${responseBody.status}`);
 
     // 严格断言: 验证HTTP响应
-    expect(responseBody.id).toMatch(/^session_[a-zA-Z0-9]{20,}$/);
+    expect(responseBody.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     expect(responseBody.machine_id).toMatch(/^test-machine-\d+-\d+-[01]$/);
     expect(responseBody.status).toBe('created');
     expect(responseBody).toHaveProperty('ws_url');

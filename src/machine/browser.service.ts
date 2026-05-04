@@ -676,21 +676,28 @@ export class BrowserService extends EventEmitter {
         }
       }
 
-      this.sessions.delete(sessionId);
-      await session.browser.close();
+      try {
+        await session.browser.close();
+      } catch (closeErr) {
+        logger.error(`关闭浏览器进程失败 (sessionId: ${sessionId}):`, closeErr);
+      }
+
+      // 等待 OS 释放文件锁
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // 清理独立会话的用户数据目录（共享会话不会被清理）
-      // 必须在 browser.close() 之后，否则 Chrome 进程仍持有文件锁导致 ENOTEMPTY
       if (userDataDir && !isSharedUserData) {
         try {
           if (fsSync.existsSync(userDataDir)) {
-            await fs.rm(userDataDir, { recursive: true, force: true });
+            fsSync.rmSync(userDataDir, { recursive: true, force: true });
             logger.info(`已清理独立会话的用户数据目录 (sessionId: ${sessionId}): ${userDataDir}`);
           }
         } catch (error) {
           logger.error(`清理用户数据目录失败 (sessionId: ${sessionId}):`, error);
         }
       }
+
+      this.sessions.delete(sessionId);
 
       this.connections.delete(sessionId);
       if (this.disconnectionTimers.has(sessionId)) {

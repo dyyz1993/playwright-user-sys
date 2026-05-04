@@ -231,9 +231,13 @@ export class MachineModel {
     await db('machines').where({ id }).increment('instance_count', 1);
   }
 
-  // 减少实例计数
   static async decrementInstanceCount(id: string): Promise<void> {
-    await db('machines').where({ id }).decrement('instance_count', 1);
+    await db('machines')
+      .where({ id })
+      .update({
+        instance_count: db.raw('CASE WHEN instance_count > 0 THEN instance_count - 1 ELSE 0 END'),
+        updated_at: new Date(),
+      });
   }
 
   // 标记机器离线

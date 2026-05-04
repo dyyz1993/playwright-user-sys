@@ -427,14 +427,13 @@ class MachineConnectionManager extends EventEmitter {
           break;
 
         case 'closed':
-          // 使用 markDisconnected 方法更新会话状态并扣费
-          // 这个方法会处理：
-          // 1. 更新数据库（状态、持续时间、消耗点数）
-          // 2. 扣除用户积分
-          // 3. 生成积分历史记录
+          if (session.status === SessionStatus.DISCONNECTED || session.status === SessionStatus.ERROR) {
+            logger.info(`会话已断开，跳过重复处理 (${session_id}), 当前状态: ${session.status}`);
+            break;
+          }
+
           await SessionModel.markDisconnected(session_id, duration);
 
-          // 如果会话已分配机器，减少机器的实例计数
           await MachineModel.decrementInstanceCount(machineId);
 
           // 触发 Webhook 事件

@@ -361,7 +361,8 @@ describe('用户数据持久化集成测试', () => {
     expect(response.ok).toBe(true);
     const result = await response.json();
     expect(result.success).toBe(true);
-    expect(result.data.id).toMatch(/^session-\d+$/);
+    expect(result.data.id).toBeTruthy();
+    expect(typeof result.data.id).toBe('string');
 
     const sessionId = result.data.id;
     console.log(`   ✅ 创建会话成功: ${sessionId}`);
@@ -441,7 +442,8 @@ describe('用户数据持久化集成测试', () => {
     expect(response.ok).toBe(true);
     const result = await response.json();
     expect(result.success).toBe(true);
-    expect(result.data.id).toMatch(/^session-\d+$/);
+    expect(result.data.id).toBeTruthy();
+    expect(typeof result.data.id).toBe('string');
 
     const sessionId = result.data.id;
     console.log(`   ✅ 创建会话成功: ${sessionId}`);

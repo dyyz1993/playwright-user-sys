@@ -54,6 +54,7 @@ import puppeteer from 'puppeteer-core';
 import type { FastifyInstance } from 'fastify';
 import { execSync } from 'child_process';
 import { UserRole } from '@/shared/types/index.js';
+import { initDatabase } from '../../src/config/database.js';
 
 // Mock webhook - 安全测试仅Mock外部依赖
 vi.mock('../../src/utils/webhook.js', () => ({
@@ -146,6 +147,10 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
     console.log('\n[步骤 2] 创建独立测试数据库...');
     testDb = await createIsolatedTestDatabase();
     console.log(`✅ 测试数据库创建完成: ${testDb.dbName}`);
+
+    // 初始化数据库单例，指向测试数据库
+    await initDatabase(testDb.dbName);
+    console.log(`✅ 数据库单例已初始化: ${testDb.dbName}`);
 
     // 步骤 3: 创建测试用户和管理员
     console.log(`\n[步骤 3] 创建测试用户和管理员...`);

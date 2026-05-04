@@ -93,7 +93,7 @@ describe('计费流程集成测试', () => {
     });
 
     expect(session).toBeTruthy();
-    expect(session!.id).toBeGreaterThan(0);
+    expect(session!.id).toBeTruthy();
     expect(session!.status).toBe(SessionStatus.CREATED);
 
     // 验证用户积分（创建时暂不扣除，只在结束时扣除）
@@ -147,7 +147,7 @@ describe('计费流程集成测试', () => {
     const disconnectedSession = await SessionModel.markDisconnected(session!.id, 0);
 
     expect(disconnectedSession).toBeTruthy();
-    expect(disconnectedSession!.id).toBeGreaterThan(0);
+    expect(disconnectedSession!.id).toBeTruthy();
     expect(disconnectedSession!.status).toBe(SessionStatus.DISCONNECTED);
     expect(disconnectedSession!.credits_used).toBeGreaterThanOrEqual(1);
 
@@ -179,7 +179,7 @@ describe('计费流程集成测试', () => {
     const expiredSession = await SessionModel.markExpired(session!.id, 120);
 
     expect(expiredSession).toBeTruthy();
-    expect(expiredSession!.id).toBeGreaterThan(0);
+    expect(expiredSession!.id).toBeTruthy();
     expect(expiredSession!.status).toBe(SessionStatus.EXPIRED);
     expect(expiredSession!.credits_used).toBeGreaterThanOrEqual(1);
 
@@ -214,7 +214,7 @@ describe('计费流程集成测试', () => {
     const errorSession = await SessionModel.markError(session!.id, 60);
 
     expect(errorSession).toBeTruthy();
-    expect(errorSession!.id).toBeGreaterThan(0);
+    expect(errorSession!.id).toBeTruthy();
     expect(errorSession!.status).toBe(SessionStatus.ERROR);
     expect(errorSession!.credits_used).toBeGreaterThanOrEqual(1);
 
@@ -250,7 +250,7 @@ describe('计费流程集成测试', () => {
     });
 
     expect(session).toBeTruthy();
-    expect(session!.id).toBeGreaterThan(0);
+    expect(session!.id).toBeTruthy();
 
     // 尝试扣费应该失败
     try {

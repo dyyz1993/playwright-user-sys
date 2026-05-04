@@ -44,6 +44,7 @@ import { createTestUser } from '../helpers/factories.js';
 import puppeteer from 'puppeteer-core';
 import type { FastifyInstance } from 'fastify';
 import { execSync } from 'child_process';
+import { initDatabase } from '../../src/config/database.js';
 
 // ========================================
 // 测试配置
@@ -103,6 +104,10 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
     console.log('\n[步骤 2] 创建独立测试数据库...');
     testDb = await createIsolatedTestDatabase();
     console.log(`✅ 测试数据库创建完成: ${testDb.dbName}`);
+
+    // 初始化数据库单例，指向测试数据库
+    await initDatabase(testDb.dbName);
+    console.log(`✅ 数据库单例已初始化: ${testDb.dbName}`);
 
     // 步骤 3: 创建测试用户 (5个)
     console.log(`\n[步骤 3] 创建 ${NUM_USERS} 个测试用户...`);

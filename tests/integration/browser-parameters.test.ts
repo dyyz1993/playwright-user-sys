@@ -41,6 +41,7 @@ import { execSync } from 'child_process';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { initDatabase } from '../../src/config/database.js';
 
 // ========================================
 // 测试配置
@@ -95,6 +96,10 @@ describe('浏览器启动参数集成测试', () => {
     console.log('\n[步骤 2] 创建独立测试数据库...');
     testDb = await createIsolatedTestDatabase();
     console.log(`   ✅ 测试数据库准备完成: ${testDb.dbName}`);
+
+    // 初始化数据库单例，指向测试数据库
+    await initDatabase(testDb.dbName);
+    console.log(`   ✅ 数据库单例已初始化: ${testDb.dbName}`);
 
     // 步骤 3: 创建测试用户
     console.log('\n[步骤 3] 创建测试用户...');

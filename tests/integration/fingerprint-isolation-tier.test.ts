@@ -45,6 +45,7 @@ import {
 } from '../../src/tests/helpers/isolated-database.js';
 import { getFreePort } from '../helpers/ports.js';
 import { createTestUser } from '../helpers/factories.js';
+import { initDatabase } from '../../src/config/database.js';
 import puppeteer, { Page } from 'puppeteer-core';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -142,6 +143,10 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
     console.log('\n[步骤 1] 创建独立测试数据库...');
     testDb = await createIsolatedTestDatabase();
     console.log(`   ✅ 测试数据库已创建: ${testDb.dbName}`);
+
+    // [步骤 1.5] 初始化数据库单例，指向测试数据库
+    await initDatabase(testDb.dbName);
+    console.log(`   ✅ 数据库单例已初始化: ${testDb.dbName}`);
 
     // [步骤 2] 启动管理端服务器
     console.log('\n[步骤 2] 启动管理端服务器...');

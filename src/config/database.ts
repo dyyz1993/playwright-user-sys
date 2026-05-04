@@ -60,7 +60,7 @@ const createDatabaseConfig = () => {
 let dbInstance: Knex;
 
 // 初始化数据库
-export async function initDatabase() {
+export async function initDatabase(dbName?: string) {
   try {
     console.log('正在初始化数据库...');
     const config = createDatabaseConfig();
@@ -80,6 +80,12 @@ export async function initDatabase() {
     if (process.env.NODE_ENV === 'test' && process.env.DATABASE_PATH === ':memory:') {
       console.log('使用内存数据库进行测试');
       config.connection = { filename: ':memory:' };
+    }
+
+    // 如果提供了数据库名称覆盖（用于测试环境）
+    if (dbName && config.client === 'mysql2') {
+      (config.connection as any).database = dbName;
+      console.log(`使用测试数据库: ${dbName}`);
     }
 
     // 创建数据库连接

@@ -170,15 +170,16 @@ export async function clearAllTables(): Promise<void> {
   const tables = ['sessions', 'machines', 'users', 'credit_history', 'operation_logs'];
 
   try {
-    // 按依赖顺序清空（外键约束）
+    await db.raw('SET FOREIGN_KEY_CHECKS = 0');
     for (const table of tables) {
       await db(table).truncate();
     }
-
     console.log('🧹 清空所有测试表');
   } catch (error) {
     console.error('清空表失败:', error);
     throw error;
+  } finally {
+    await db.raw('SET FOREIGN_KEY_CHECKS = 1');
   }
 }
 
@@ -189,13 +190,18 @@ export async function clearAllTables(): Promise<void> {
 export async function clearTables(...tableNames: string[]): Promise<void> {
   const db = getTestDbConnection();
 
-  for (const tableName of tableNames) {
-    try {
-      await db(tableName).truncate();
-      console.log(`🧹 清空表: ${tableName}`);
-    } catch (error) {
-      console.warn(`清空表失败: ${tableName}`, error);
+  try {
+    await db.raw('SET FOREIGN_KEY_CHECKS = 0');
+    for (const tableName of tableNames) {
+      try {
+        await db(tableName).truncate();
+        console.log(`🧹 清空表: ${tableName}`);
+      } catch (error) {
+        console.warn(`清空表失败: ${tableName}`, error);
+      }
     }
+  } finally {
+    await db.raw('SET FOREIGN_KEY_CHECKS = 1');
   }
 }
 

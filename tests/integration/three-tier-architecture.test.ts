@@ -644,9 +644,14 @@ describe('完整三端架构集成测试', () => {
       url: `/api/sessions/${sessionId}/release`,
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: {},
     });
 
+    if (endResponse.statusCode !== 200) {
+      console.log('   ❌ 释放会话失败:', endResponse.json());
+    }
     expect(endResponse.statusCode).toBe(200);
     console.log('   ✅ 会话结束请求成功');
 

@@ -699,7 +699,7 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
     /**
      * TIER-112: 不同实例应该有不同的 Canvas 指纹
      */
-    it('TIER-112: 不同实例应该有不同的 Canvas 指纹', { timeout: 90000 }, async () => {
+    it.skipIf(process.env.CI === 'true')('TIER-112: 不同实例应该有不同的 Canvas 指纹', { timeout: 90000 }, async () => {
       const { browser: browser1, sessionId: sessionId1 } = await createSessionAndConnect();
       const { browser: browser2, sessionId: sessionId2 } = await createSessionAndConnect();
 

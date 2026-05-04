@@ -36,7 +36,11 @@ export const loginResponseSchema = successResponseSchema(
 );
 
 // 当前用户信息响应模式
-export const currentUserResponseSchema = successResponseSchema(userDetailSchema.omit({ status: true }));
+export const currentUserResponseSchema = successResponseSchema(
+  z.object({
+    user: userDetailSchema.omit({ status: true }),
+  })
+);
 
 // 创建用户请求模式
 export const createUserRequestSchema = z.object({

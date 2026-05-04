@@ -31,8 +31,7 @@ const envSchema = z.object({
   DB_POOL_MAX: z.string().optional(),
 
   // JWT 配置
-  // 在测试环境中使用默认值，方便测试
-  JWT_SECRET: z.string().default('default_jwt_secret_change_in_production'),
+  JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
   JWT_EXPIRES_IN: z.string().default('1d'),
 
   // 管理员初始账号

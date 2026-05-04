@@ -132,8 +132,8 @@ export class SessionModel {
         updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
       };
     } catch (error) {
-      console.error(`查找会话失败 (ID: ${id}):`, error);
-      return null;
+      logger.error(`查找会话失败 (ID: ${id}):`, error);
+      throw error;
     }
   }
 
@@ -520,15 +520,8 @@ export class SessionModel {
         totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
       };
     } catch (error) {
-      console.error(`获取用户会话失败 (userId: ${userId}):`, error);
-      const page = Number(query.page) || 1;
-      return {
-        items: [],
-        total: 0,
-        page,
-        limit: Number(query.limit) || 10,
-        totalPages: 0,
-      };
+      logger.error(`获取用户会话失败 (userId: ${userId}):`, error);
+      throw error;
     }
   }
 

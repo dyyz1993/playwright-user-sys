@@ -119,3 +119,18 @@ jobs:
           PROXY_PORT: 8082
         run: |
           NODE_OPTIONS="--max-old-space-size=4096" npx vitest run tests/integration/security-vulnerabilities.test.ts --reporter=verbose --no-coverage
+
+  feishu-notify:
+    name: Feishu Notification
+    if: always()
+    needs: [test-security]
+    uses: dyyz1993/ci-tools/.github/workflows/feishu-notify.yml@main
+    with:
+      jobs: '{"test-security":"${{ needs.test-security.result }}"}'
+      sha: ${{ github.sha }}
+      ref: ${{ github.ref_name }}
+      actor: ${{ github.actor }}
+      repo: ${{ github.repository }}
+      run-id: ${{ github.run_id }}
+    secrets:
+      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}

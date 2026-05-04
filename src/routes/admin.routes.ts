@@ -45,17 +45,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   // 登录处理
   fastify.post('/admin/login', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // 打印请求信息进行调试
-      console.log('Login request body:', request.body);
-      console.log('Content-Type:', request.headers['content-type']);
-
-      // 处理表单提交的数据
       const body = request.body as any;
       const username = body.username;
       const password = body.password;
-
-      console.log('Username:', username);
-      console.log('Password:', password);
 
       // 验证输入
       if (!username || !password) {
@@ -74,7 +66,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         return reply.redirect('/admin/login');
       }
 
-      // 验证密码（使用 SHA256，与 UserModel 保持一致）
+      // 验证密码
       const { comparePassword } = await import('../utils/auth.js');
       const isPasswordValid = await comparePassword(password, user.password);
 
@@ -103,7 +95,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       reply.setCookie('token', token, {
         path: '/',
         httpOnly: true,
-        secure: false, // 暂时禁用 secure，允许 HTTP 登录
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax', // 使用 lax 提高兼容性
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
       });
@@ -736,14 +728,22 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     return reply.redirect('/admin/login');
   });
 
-  // 调试端点 - 查看所有 cookies
-  fastify.get('/admin/debug/cookies', async (request: FastifyRequest, _reply: FastifyReply) => {
-    return {
-      cookies: request.cookies,
-      headers: request.headers,
-      user: request.user,
-    };
-  });
+  // Debug endpoints - only available in non-production environments
+  fastify.register(async function debugRoutes(fastify) {
+    fastify.addHook('preHandler', async (_request: FastifyRequest, reply: FastifyReply) => {
+      if (process.env.NODE_ENV === 'production') {
+        return reply.code(404).send({ error: 'Not found' });
+      }
+    });
+
+    // 调试端点 - 查看所有 cookies
+    fastify.get('/admin/debug/cookies', async (request: FastifyRequest, _reply: FastifyReply) => {
+      return {
+        cookies: request.cookies,
+        headers: request.headers,
+        user: request.user,
+      };
+    });
 
   // 调试端点 - 手动验证 JWT
   fastify.post('/admin/debug/verify-token', async (request: FastifyRequest, _reply: FastifyReply) => {
@@ -753,10 +753,6 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     const body = request.body as any;
     const token = body.token || request.cookies?.token;
 
-    console.log('[DEBUG] Token from cookies:', request.cookies?.token?.substring(0, 20) + '...');
-    console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
-    console.log('[DEBUG] JWT_SECRET:', env.JWT_SECRET);
-
     if (!token) {
       return { error: 'No token provided' };
     }
@@ -765,21 +761,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
 
     try {
       const decoded = jwt.verify(token, jwtSecret);
-      console.log('[DEBUG] Decoded token:', decoded);
-      return {
-        success: true,
-        decoded,
-        jwtSecret,
-        NODE_ENV: process.env.NODE_ENV,
-      };
+      return { success: true, decoded };
     } catch (e: any) {
-      console.log('[DEBUG] Verification failed:', e.message);
-      return {
-        success: false,
-        error: e.message,
-        jwtSecret,
-        NODE_ENV: process.env.NODE_ENV,
-      };
+      return { success: false, error: e.message };
     }
   });
 
@@ -854,11 +838,11 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: any) {
-        console.error('[DEBUG PROFILE VIEW ERROR]', error);
-        return { error: error.message, stack: error.stack };
+        return { error: error.message };
       }
     }
   );
+  }); // end debug routes register
 
   // 个人资料页面
   fastify.get(

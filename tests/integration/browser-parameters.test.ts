@@ -198,7 +198,7 @@ describe('浏览器启动参数集成测试', () => {
 
     // 步骤 6: 验证机器注册
     console.log('\n[步骤 6] 验证机器注册状态...');
-    await new Promise((resolve) => setTimeout(resolve, 2000)); // 等待注册完成
+    await new Promise((resolve) => setTimeout(resolve, process.env.CI ? 5000 : 2000)); // 等待注册完成
     const registeredMachines = await testDb.db('machines').select('*').where('status', 'online');
     expect(registeredMachines.length).toBe(NUM_MACHINES);
     console.log(`   ✅ 成功注册 ${registeredMachines.length} 台机器`);

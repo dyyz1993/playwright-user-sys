@@ -1,17 +1,16 @@
-import { createHash, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
+import bcrypt from 'bcryptjs';
 import { env } from '../config/env.js';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { UserRole } from '@shared/types/index.js';
 
-// 哈希密码
 export async function hashPassword(password: string): Promise<string> {
-  return createHash('sha256').update(password).digest('hex');
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
 }
 
-// 比较密码
-export async function comparePassword(password: string, hashedPassword: string): Promise<boolean> {
-  const hashed = await hashPassword(password);
-  return hashed === hashedPassword;
+export async function comparePassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
 }
 
 // 生成 API Key

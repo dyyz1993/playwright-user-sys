@@ -7,8 +7,9 @@ process.on('uncaughtException', (error) => {
 });
 
 // 处理未处理的 Promise 拒绝
-process.on('unhandledRejection', (reason) => {
-  console.error('❌ 未处理的 Promise 拒绝:', reason);
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 });
 
 // 启动管理端服务

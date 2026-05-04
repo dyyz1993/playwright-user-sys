@@ -136,6 +136,47 @@ export async function createTables() {
   }
 }
 
+// 创建性能优化索引
+export async function createIndexes() {
+  const indexExists = async (indexName: string) => {
+    const result = await db.raw(
+      `SELECT COUNT(*) as count FROM information_schema.statistics WHERE index_name = ?`,
+      [indexName]
+    );
+    const count = result[0]?.[0]?.count || result[0]?.count || 0;
+    return count > 0;
+  };
+
+  const safeCreateIndex = async (indexName: string, table: string, column: string) => {
+    try {
+      await db.raw(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${table}(${column})`);
+      console.log(`✅ 索引 ${indexName} 创建成功`);
+    } catch (err: any) {
+      if (err.code === 'ER_DUP_KEYNAME' || err.message?.includes('already exists')) {
+        console.log(`⏭️ 索引 ${indexName} 已存在，跳过`);
+      } else {
+        throw err;
+      }
+    }
+  };
+
+  // Sessions table indexes
+  await safeCreateIndex('idx_sessions_user_id', 'sessions', 'user_id');
+  await safeCreateIndex('idx_sessions_machine_id', 'sessions', 'machine_id');
+  await safeCreateIndex('idx_sessions_status', 'sessions', 'status');
+  await safeCreateIndex('idx_sessions_start_time', 'sessions', 'start_time');
+
+  // Credit history indexes
+  await safeCreateIndex('idx_credit_history_user_id', 'credit_history', 'user_id');
+  await safeCreateIndex('idx_credit_history_action', 'credit_history', 'action');
+
+  // Operation logs indexes
+  await safeCreateIndex('idx_operation_logs_admin_id', 'operation_logs', 'admin_id');
+
+  // Users status index
+  await safeCreateIndex('idx_users_status', 'users', 'status');
+}
+
 // 初始化管理员账号
 export async function initAdminUser() {
   const hashedPassword = await hashPassword(env.ADMIN_PASSWORD);
@@ -172,6 +213,7 @@ export async function runMigrations() {
   try {
     console.log('🔄 开始数据库迁移...');
     await createTables();
+    await createIndexes();
     await initAdminUser();
     console.log('✅ 数据库迁移完成');
   } catch (error) {

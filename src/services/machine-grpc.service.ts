@@ -615,125 +615,107 @@ class MachineConnectionManager extends EventEmitter {
    * 启动浏览器实例
    */
   async launchBrowser(machineId: string, sessionId: string, options: any): Promise<any> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // 检查机器是否连接
-        if (!this.isConnected(machineId)) {
-          reject(new Error(`机器未连接: ${machineId}`));
-          return;
-        }
+    if (!this.isConnected(machineId)) {
+      throw new Error(`机器未连接: ${machineId}`);
+    }
 
-        // 获取机器对应的 gRPC 客户端
-        const client = await this.getClient(machineId);
-        if (!client) {
-          reject(new Error(`无法获取机器的 gRPC 客户端: ${machineId}`));
-          return;
-        }
+    const client = await this.getClient(machineId);
+    if (!client) {
+      throw new Error(`无法获取机器的 gRPC 客户端: ${machineId}`);
+    }
 
-        logger.info(`向机器 ${machineId} 发送启动浏览器请求 (sessionId: ${sessionId})`);
+    logger.info(`向机器 ${machineId} 发送启动浏览器请求 (sessionId: ${sessionId})`);
 
-        // 转换 TypeScript 格式的 options 到 proto 格式
-        const protoOptions: any = {};
+    const protoOptions: any = {};
 
-        if (options.userAgent) {
-          protoOptions.user_agent = options.userAgent;
-        }
+    if (options.userAgent) {
+      protoOptions.user_agent = options.userAgent;
+    }
 
-        if (options.proxy) {
-          protoOptions.proxy = options.proxy;
-        }
+    if (options.proxy) {
+      protoOptions.proxy = options.proxy;
+    }
 
-        if (options.viewport) {
-          protoOptions.viewport = {
-            width: options.viewport.width,
-            height: options.viewport.height,
-          };
-        }
+    if (options.viewport) {
+      protoOptions.viewport = {
+        width: options.viewport.width,
+        height: options.viewport.height,
+      };
+    }
 
-        if (options.args && Array.isArray(options.args)) {
-          protoOptions.args = options.args;
-        }
+    if (options.args && Array.isArray(options.args)) {
+      protoOptions.args = options.args;
+    }
 
-        if (options.storageStatePath) {
-          protoOptions.storage_state_path = options.storageStatePath;
-        }
+    if (options.storageStatePath) {
+      protoOptions.storage_state_path = options.storageStatePath;
+    }
 
-        if (options.storageState) {
-          // 转换 storage_state
-          const storageState: any = {};
+    if (options.storageState) {
+      const storageState: any = {};
 
-          if (options.storageState.cookies && Array.isArray(options.storageState.cookies)) {
-            storageState.cookies = options.storageState.cookies.map((cookie: any) => ({
-              name: cookie.name,
-              value: cookie.value,
-              domain: cookie.domain,
-              path: cookie.path,
-              expires: cookie.expires,
-              http_only: cookie.httpOnly,
-              secure: cookie.secure,
-              same_site: cookie.sameSite,
-            }));
-          }
-
-          if (options.storageState.origins && Array.isArray(options.storageState.origins)) {
-            storageState.origins = options.storageState.origins.map((origin: any) => ({
-              origin: origin.origin,
-              localStorage: origin.localStorage,
-            }));
-          }
-
-          protoOptions.storage_state = storageState;
-        }
-
-        // 新增：sharedUserData 参数
-        if (options.sharedUserData !== undefined) {
-          protoOptions.shared_user_data = options.sharedUserData;
-        }
-
-        // 新增：timezone 参数
-        if (options.timezone) {
-          protoOptions.timezone = options.timezone;
-        }
-
-        // 新增：proxyBypass 参数
-        if (options.proxyBypass) {
-          protoOptions.proxy_bypass = options.proxyBypass;
-        }
-
-        // 保留向后兼容：如果客户端直接传递了 userDataDir（已废弃）
-        if (options.userDataDir) {
-          protoOptions.user_data_dir = options.userDataDir;
-          logger.warn(`userDataDir 参数已废弃，客户端传递了自定义路径: ${options.userDataDir}`);
-        }
-
-        logger.info(`转换后的 proto 浏览器选项:`, protoOptions);
-
-        // 构造请求参数
-        const request = {
-          session_id: sessionId,
-          options: protoOptions,
-          user_id: options.userId || 0, // 传递 userId 用于计算 userDataDir
-        };
-
-        // 创建 metadata 并设置机器 ID
-        const metadata = new grpc.Metadata();
-        metadata.set('machine_id', machineId);
-
-        // 使用 LaunchBrowser RPC 方法
-        client.LaunchBrowser(request, metadata, (error: any, response: any) => {
-          if (error) {
-            logger.error(`启动浏览器失败 (${machineId}, ${sessionId}):`, error);
-            reject(error);
-            return;
-          }
-
-          logger.info(`浏览器启动成功 (${machineId}, ${sessionId}, port: ${response.port})`);
-          resolve(response);
-        });
-      } catch (error) {
-        logger.error(`启动浏览器过程中出错 (${machineId}, ${sessionId}):`, error);
-        reject(error);
+      if (options.storageState.cookies && Array.isArray(options.storageState.cookies)) {
+        storageState.cookies = options.storageState.cookies.map((cookie: any) => ({
+          name: cookie.name,
+          value: cookie.value,
+          domain: cookie.domain,
+          path: cookie.path,
+          expires: cookie.expires,
+          http_only: cookie.httpOnly,
+          secure: cookie.secure,
+          same_site: cookie.sameSite,
+        }));
       }
+
+      if (options.storageState.origins && Array.isArray(options.storageState.origins)) {
+        storageState.origins = options.storageState.origins.map((origin: any) => ({
+          origin: origin.origin,
+          localStorage: origin.localStorage,
+        }));
+      }
+
+      protoOptions.storage_state = storageState;
+    }
+
+    if (options.sharedUserData !== undefined) {
+      protoOptions.shared_user_data = options.sharedUserData;
+    }
+
+    if (options.timezone) {
+      protoOptions.timezone = options.timezone;
+    }
+
+    if (options.proxyBypass) {
+      protoOptions.proxy_bypass = options.proxyBypass;
+    }
+
+    if (options.userDataDir) {
+      protoOptions.user_data_dir = options.userDataDir;
+      logger.warn(`userDataDir 参数已废弃，客户端传递了自定义路径: ${options.userDataDir}`);
+    }
+
+    logger.info(`转换后的 proto 浏览器选项:`, protoOptions);
+
+    const request = {
+      session_id: sessionId,
+      options: protoOptions,
+      user_id: options.userId || 0,
+    };
+
+    const metadata = new grpc.Metadata();
+    metadata.set('machine_id', machineId);
+
+    return new Promise((resolve, reject) => {
+      client.LaunchBrowser(request, metadata, (error: any, response: any) => {
+        if (error) {
+          logger.error(`启动浏览器失败 (${machineId}, ${sessionId}):`, error);
+          reject(error);
+          return;
+        }
+
+        logger.info(`浏览器启动成功 (${machineId}, ${sessionId}, port: ${response.port})`);
+        resolve(response);
+      });
     });
   }
 
@@ -741,48 +723,36 @@ class MachineConnectionManager extends EventEmitter {
    * 关闭浏览器实例
    */
   async closeBrowser(machineId: string, sessionId: string): Promise<boolean> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // 检查机器是否连接
-        if (!this.isConnected(machineId)) {
-          reject(new Error(`机器未连接: ${machineId}`));
+    if (!this.isConnected(machineId)) {
+      throw new Error(`机器未连接: ${machineId}`);
+    }
+
+    const client = await this.getClient(machineId);
+    if (!client) {
+      throw new Error(`无法获取机器的 gRPC 客户端: ${machineId}`);
+    }
+
+    logger.info(`向机器 ${machineId} 发送关闭浏览器请求 (sessionId: ${sessionId})`);
+
+    const request = {
+      session_id: sessionId,
+    };
+
+    const metadata = new grpc.Metadata();
+    metadata.set('machine_id', machineId);
+
+    return new Promise((resolve, reject) => {
+      client.CloseBrowser(request, metadata, (error: any, response: any) => {
+        if (error) {
+          logger.error(`关闭浏览器失败 (${machineId}, ${sessionId}):`, error);
+          reject(error);
           return;
         }
 
-        // 获取机器对应的 gRPC 客户端
-        const client = await this.getClient(machineId);
-        if (!client) {
-          reject(new Error(`无法获取机器的 gRPC 客户端: ${machineId}`));
-          return;
-        }
-
-        logger.info(`向机器 ${machineId} 发送关闭浏览器请求 (sessionId: ${sessionId})`);
-
-        // 构造请求参数
-        const request = {
-          session_id: sessionId,
-        };
-
-        // 创建 metadata 并设置机器 ID
-        const metadata = new grpc.Metadata();
-        metadata.set('machine_id', machineId);
-
-        // 使用 CloseBrowser RPC 方法
-        client.CloseBrowser(request, metadata, (error: any, response: any) => {
-          if (error) {
-            logger.error(`关闭浏览器失败 (${machineId}, ${sessionId}):`, error);
-            reject(error);
-            return;
-          }
-
-          const success = response.status === 'closed';
-          logger.info(`浏览器关闭${success ? '成功' : '失败'} (${machineId}, ${sessionId})`);
-          resolve(success);
-        });
-      } catch (error) {
-        logger.error(`关闭浏览器过程中出错 (${machineId}, ${sessionId}):`, error);
-        reject(error);
-      }
+        const success = response.status === 'closed';
+        logger.info(`浏览器关闭${success ? '成功' : '失败'} (${machineId}, ${sessionId})`);
+        resolve(success);
+      });
     });
   }
 
@@ -790,55 +760,43 @@ class MachineConnectionManager extends EventEmitter {
    * 获取机器状态
    */
   async getMachineStatus(machineId: string): Promise<any> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // 检查机器是否连接
-        if (!this.isConnected(machineId)) {
-          resolve({
-            machine_id: machineId,
-            online: false,
-            cpu_usage: 0,
-            memory_usage: 0,
-            active_sessions: 0,
-            max_sessions: 0,
-            timestamp: Date.now(),
-          });
+    if (!this.isConnected(machineId)) {
+      return {
+        machine_id: machineId,
+        online: false,
+        cpu_usage: 0,
+        memory_usage: 0,
+        active_sessions: 0,
+        max_sessions: 0,
+        timestamp: Date.now(),
+      };
+    }
+
+    const client = await this.getClient(machineId);
+    if (!client) {
+      throw new Error(`无法获取机器的 gRPC 客户端: ${machineId}`);
+    }
+
+    logger.info(`向机器 ${machineId} 发送获取状态请求`);
+
+    const request = {
+      machine_id: machineId,
+    };
+
+    const metadata = new grpc.Metadata();
+    metadata.set('machine_id', machineId);
+
+    return new Promise((resolve, reject) => {
+      client.GetMachineStatus(request, metadata, (error: any, response: any) => {
+        if (error) {
+          logger.error(`获取机器状态失败 (${machineId}):`, error);
+          reject(error);
           return;
         }
 
-        // 获取机器对应的 gRPC 客户端
-        const client = await this.getClient(machineId);
-        if (!client) {
-          reject(new Error(`无法获取机器的 gRPC 客户端: ${machineId}`));
-          return;
-        }
-
-        logger.info(`向机器 ${machineId} 发送获取状态请求`);
-
-        // 构造请求参数
-        const request = {
-          machine_id: machineId,
-        };
-
-        // 创建 metadata 并设置机器 ID
-        const metadata = new grpc.Metadata();
-        metadata.set('machine_id', machineId);
-
-        // 使用 GetMachineStatus RPC 方法
-        client.GetMachineStatus(request, metadata, (error: any, response: any) => {
-          if (error) {
-            logger.error(`获取机器状态失败 (${machineId}):`, error);
-            reject(error);
-            return;
-          }
-
-          logger.info(`成功获取机器状态 (${machineId})`);
-          resolve(response);
-        });
-      } catch (error) {
-        logger.error(`获取机器状态过程中出错 (${machineId}):`, error);
-        reject(error);
-      }
+        logger.info(`成功获取机器状态 (${machineId})`);
+        resolve(response);
+      });
     });
   }
 }

@@ -244,14 +244,7 @@ export class UserModel {
       };
     } catch (error) {
       console.error('查询用户数据失败:', error);
-      // 返回空数据
-      return {
-        items: [],
-        total: 0,
-        page: parseInt(query.page || '1', 10),
-        limit: parseInt(query.limit || '10', 10),
-        totalPages: 0,
-      };
+      throw error;
     }
   }
 
@@ -279,7 +272,7 @@ export class UserModel {
       return { total, active, inactive };
     } catch (error) {
       console.error('获取用户统计数据失败:', error);
-      return { total: 0, active: 0, inactive: 0 };
+      throw error;
     }
   }
 

@@ -11,7 +11,7 @@ const dbConfig = {
   host: process.env.DB_HOST || 'REDACTED_INTERNAL_HOST',
   port: parseInt(process.env.DB_PORT || '3306'),
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'REDACTED_PASSWORD',
+  password: process.env.DB_PASSWORD || '',
 };
 
 function getAdminConnection(): Knex {

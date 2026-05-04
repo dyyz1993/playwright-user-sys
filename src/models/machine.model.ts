@@ -168,15 +168,8 @@ export class MachineModel {
         totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
       };
     } catch (error) {
-      console.error('查询机器数据失败:', error);
-      // 返回空数据
-      return {
-        items: [],
-        total: 0,
-        page: parseInt(query.page || '1', 10),
-        limit: parseInt(query.limit || '10', 10),
-        totalPages: 0,
-      };
+      logger.error('查询机器数据失败:', error);
+      throw error;
     }
   }
 

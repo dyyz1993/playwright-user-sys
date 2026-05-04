@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/playwright.ui.config.ts",
-    "rootDir": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/ui",
+    "configFile": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/playwright.config.ts",
+    "rootDir": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e",
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -10,8 +10,29 @@
     "grep": {},
     "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {},
+    "metadata": {
+      "actualWorkers": 1
+    },
     "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
     "reporter": [
       [
         "html",
@@ -40,56 +61,45 @@
       "max": 5,
       "threshold": 300000
     },
-    "quiet": false,
-    "projects": [
-      {
-        "outputDir": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/test-results",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {},
-        "id": "chromium",
-        "name": "chromium",
-        "testDir": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/tests/ui",
-        "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
-        "timeout": 60000
-      }
-    ],
+    "runAgents": "none",
     "shard": null,
     "tags": [],
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.57.0",
+    "version": "1.58.2",
     "workers": 1,
     "webServer": {
-      "command": "NODE_ENV=test npx tsx src/server.ts",
+      "command": "npx tsx src/server.ts",
       "port": 3000,
-      "reuseExistingServer": true,
+      "reuseExistingServer": false,
       "timeout": 120000,
       "env": {
         "NODE_ENV": "test",
-        "TEST_ENV": "true"
+        "TEST_ENV": "true",
+        "DB_TYPE": "mysql",
+        "DB_HOST": "REDACTED_INTERNAL_HOST",
+        "DB_USER": "root",
+        "DB_PASSWORD": "REDACTED_PASSWORD",
+        "DB_NAME": "playwright_user_sys"
       }
     }
   },
   "suites": [
     {
-      "title": "admin-storage-management.test.ts",
-      "file": "admin-storage-management.test.ts",
+      "title": "session-list-issues.spec.ts",
+      "file": "session-list-issues.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "管理后台存储管理 UI 测试",
-          "file": "admin-storage-management.test.ts",
-          "line": 446,
+          "title": "会话列表问题验证",
+          "file": "session-list-issues.spec.ts",
+          "line": 5,
           "column": 6,
           "specs": [
             {
-              "title": "UI-001: 管理员登录",
+              "title": "验证机器名称显示和时间显示",
               "ok": true,
               "tags": [],
               "tests": [
@@ -99,153 +109,34 @@
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4355,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "表格行数: \u001b[33m0\u001b[39m\n"
+                        },
+                        {
+                          "text": "页面内容: {\"success\":false,\"error\":\"无效的令牌\"}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-01T19:57:07.849Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
                 }
               ],
-              "id": "70a1269a5952ddc46527-abc8826462914e6849d8",
-              "file": "admin-storage-management.test.ts",
-              "line": 520,
-              "column": 3
-            },
-            {
-              "title": "UI-002: 访问存储管理页面",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "70a1269a5952ddc46527-3771c4a60b614ce7448c",
-              "file": "admin-storage-management.test.ts",
-              "line": 553,
-              "column": 3
-            },
-            {
-              "title": "UI-003: 查看用户存储详情",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "70a1269a5952ddc46527-f56bf6ef8d50af21fdd6",
-              "file": "admin-storage-management.test.ts",
-              "line": 624,
-              "column": 3
-            },
-            {
-              "title": "UI-004: 手动清理用户 shared 数据",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "70a1269a5952ddc46527-67a60d5350b377175e32",
-              "file": "admin-storage-management.test.ts",
-              "line": 687,
-              "column": 3
-            },
-            {
-              "title": "UI-005: 存储超限提示",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "70a1269a5952ddc46527-38c0dc59eed8e35bb77d",
-              "file": "admin-storage-management.test.ts",
-              "line": 769,
-              "column": 3
-            },
-            {
-              "title": "UI-006: 批量清理操作",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "70a1269a5952ddc46527-54024b53ded45e49e309",
-              "file": "admin-storage-management.test.ts",
-              "line": 825,
-              "column": 3
-            },
-            {
-              "title": "UI-007: 页面响应式布局测试",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "70a1269a5952ddc46527-3e4a74c67c908493bb9a",
-              "file": "admin-storage-management.test.ts",
-              "line": 909,
-              "column": 3
-            },
-            {
-              "title": "UI-008: 搜索和筛选功能",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "70a1269a5952ddc46527-58b2acf1a1e1931867be",
-              "file": "admin-storage-management.test.ts",
-              "line": 978,
+              "id": "ef177516cc76d1b1bd83-7143378f21d0d04d291e",
+              "file": "session-list-issues.spec.ts",
+              "line": 6,
               "column": 3
             }
           ]
@@ -255,10 +146,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-12-29T10:27:39.770Z",
-    "duration": 137.20700000000005,
-    "expected": 0,
-    "skipped": 8,
+    "startTime": "2026-03-01T19:57:03.252Z",
+    "duration": 42218.729,
+    "expected": 1,
+    "skipped": 0,
     "unexpected": 0,
     "flaky": 0
   }

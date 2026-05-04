@@ -644,9 +644,7 @@ describe('完整三端架构集成测试', () => {
       url: `/api/sessions/${sessionId}/release`,
       headers: {
         authorization: `Bearer ${user.token}`,
-        'content-type': 'application/json',
       },
-      body: {},
     });
 
     if (endResponse.statusCode !== 200) {

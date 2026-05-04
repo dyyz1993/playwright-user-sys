@@ -9,7 +9,7 @@ export async function up(knex) {
     { table: 'sessions', column: 'status', name: 'idx_sessions_status' },
     { table: 'sessions', column: 'start_time', name: 'idx_sessions_start_time' },
     { table: 'credit_history', column: 'user_id', name: 'idx_credit_history_user_id' },
-    { table: 'credit_history', column: 'action', name: 'idx_credit_history_action' },
+    { table: 'credit_history', column: 'type', name: 'idx_credit_history_type' },
     { table: 'operation_logs', column: 'admin_id', name: 'idx_operation_logs_admin_id' },
     { table: 'users', column: 'status', name: 'idx_users_status' },
   ];
@@ -37,7 +37,7 @@ export async function down(knex) {
     { table: 'sessions', name: 'idx_sessions_status' },
     { table: 'sessions', name: 'idx_sessions_start_time' },
     { table: 'credit_history', name: 'idx_credit_history_user_id' },
-    { table: 'credit_history', name: 'idx_credit_history_action' },
+    { table: 'credit_history', name: 'idx_credit_history_type' },
     { table: 'operation_logs', name: 'idx_operation_logs_admin_id' },
     { table: 'users', name: 'idx_users_status' },
   ];

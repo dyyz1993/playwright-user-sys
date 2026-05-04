@@ -124,6 +124,7 @@ export default fp(async function (fastify: FastifyInstance) {
 
   // 支持 JWT Token 或 API Key 的灵活认证中间件
   // 优先尝试 JWT Token，如果失败则尝试 API Key
+  // 注意：同时提供 JWT 和 API Key 时，拒绝请求以防止身份混淆
   fastify.decorate('verifyJWTOrApiKey', async (request: FastifyRequest, reply: FastifyReply) => {
     const authHeader = request.headers.authorization;
     const apiKey = request.headers['x-api-key'] as string;
@@ -135,7 +136,12 @@ export default fp(async function (fastify: FastifyInstance) {
       return sendError(reply, '未提供授权令牌或 API Key', 401);
     }
 
-    // 优先尝试 JWT Token
+    // 同时提供 JWT 和 API Key 时，拒绝请求防止身份混淆
+    if (hasToken && hasApiKey) {
+      return sendError(reply, '不允许同时提供 JWT 和 API Key', 401);
+    }
+
+    // 尝试 JWT Token
     if (hasToken) {
       try {
         const token = authHeader!.split(' ')[1];
@@ -162,8 +168,7 @@ export default fp(async function (fastify: FastifyInstance) {
         };
         return; // JWT 认证成功，直接返回
       } catch {
-        // JWT 认证失败，记录日志但继续尝试 API Key
-        request.log.warn('JWT Token 验证失败，尝试 API Key 认证');
+        return sendError(reply, '无效的令牌', 401);
       }
     }
 

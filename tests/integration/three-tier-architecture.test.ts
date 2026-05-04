@@ -44,6 +44,7 @@ import {
   dropIsolatedTestDatabase,
   type IsolatedTestDatabase,
 } from '../../src/tests/helpers/isolated-database.js';
+import { initDatabase } from '../../src/config/database.js';
 import puppeteer from 'puppeteer-core';
 import type { FastifyInstance } from 'fastify';
 import { execSync } from 'child_process';
@@ -120,6 +121,8 @@ describe('完整三端架构集成测试', () => {
     console.log('\n[步骤 2] 创建独立测试数据库...');
     testDb = await createIsolatedTestDatabase();
     console.log(`✅ 测试数据库创建完成: ${testDb.dbName}`);
+
+    await initDatabase(testDb.dbName);
 
     // 步骤 3: 创建测试用户 (N个)
     console.log(`\n[步骤 3] 创建 ${NUM_USERS} 个测试用户...`);

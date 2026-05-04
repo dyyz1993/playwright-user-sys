@@ -29,6 +29,14 @@ export async function createBrowserSession(
     throw new Error('点数不足，请联系管理员充值');
   }
 
+  // 检查用户活跃会话数量是否超过限制
+  const { config } = await import('../config/index.js');
+  const maxSessions = config.session.maxPerUser;
+  const activeCount = await SessionModel.countActiveByUserId(user.id);
+  if (activeCount >= maxSessions) {
+    throw new Error(`活跃会话数量已达上限 (${maxSessions})，请先释放现有会话`);
+  }
+
   // 确保至少有一个默认的viewport
   if (!options.viewport) {
     options.viewport = {

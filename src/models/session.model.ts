@@ -761,6 +761,21 @@ export class SessionModel {
     }
   }
 
+  // 获取指定用户的活跃会话数量
+  static async countActiveByUserId(userId: number): Promise<number> {
+    try {
+      const result = await db('sessions')
+        .where({ user_id: userId })
+        .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED])
+        .count('id as count')
+        .first();
+      return result ? Number(result.count) : 0;
+    } catch (error) {
+      console.error(`统计用户活跃会话失败 (userId: ${userId}):`, error);
+      return 0;
+    }
+  }
+
   // 获取指定机器上的活跃会话
   static async findActiveSessionsByMachineId(machineId: string): Promise<Session[]> {
     try {

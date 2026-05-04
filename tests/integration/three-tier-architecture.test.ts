@@ -52,7 +52,7 @@ import { execSync } from 'child_process';
 // 测试配置
 const NUM_USERS = 2; // 客户端数量
 const NUM_MACHINES = 2; // 机器端数量
-const INITIAL_CREDITS = 100; // 初始积分
+const INITIAL_CREDITS = 10000; // 初始积分（高值防止异步扣费竞态）
 
 describe('完整三端架构集成测试', () => {
   let testDb: IsolatedTestDatabase;

@@ -591,7 +591,7 @@ describe('完整三端架构集成测试', () => {
    * 4. 验证积分扣除
    * 5. 验证会话记录
    */
-  it('TIER-006: 释放会话并验证积分扣除测试', { timeout: 90000 }, async () => {
+  it('TIER-006: 释放会话并验证积分扣除测试', { timeout: 60000 }, async () => {
     const user = testUsers[0];
 
     // 记录初始积分
@@ -606,6 +606,10 @@ describe('完整三端架构集成测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+      },
+      payload: {
+        userAgent: 'test-agent',
+        viewport: { width: 1920, height: 1080 },
       },
     });
 

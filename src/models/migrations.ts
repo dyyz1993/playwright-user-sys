@@ -138,12 +138,21 @@ export async function createTables() {
 
 // 创建性能优化索引
 export async function createIndexes() {
+  const isMySQL = db.client.config.client === 'mysql2';
+  const isSQLite = db.client.config.client === 'sqlite3' || db.client.config.client === 'better-sqlite3';
+
   const safeCreateIndex = async (indexName: string, table: string, column: string) => {
     try {
-      await db.raw(`ALTER TABLE \`${table}\` ADD INDEX \`${indexName}\` (\`${column}\`)`);
+      if (isMySQL) {
+        await db.raw(`ALTER TABLE \`${table}\` ADD INDEX \`${indexName}\` (\`${column}\`)`);
+      } else {
+        await db.raw(`CREATE INDEX IF NOT EXISTS "${indexName}" ON "${table}" ("${column}")`);
+      }
       console.log(`✅ 索引 ${indexName} 创建成功`);
     } catch (err: any) {
-      if (err.errno === 1061 || err.code === 'ER_DUP_KEYNAME' || err.message?.includes('already exists')) {
+      if (isMySQL && (err.errno === 1061 || err.code === 'ER_DUP_KEYNAME' || err.message?.includes('already exists'))) {
+        console.log(`⏭️ 索引 ${indexName} 已存在，跳过`);
+      } else if (isSQLite && err.message?.includes('already exists')) {
         console.log(`⏭️ 索引 ${indexName} 已存在，跳过`);
       } else {
         throw err;

@@ -91,6 +91,9 @@ export async function createBrowserSession(
       start_time: now,
     });
 
+    // 增加机器实例计数
+    await MachineModel.incrementInstanceCount(machineId);
+
     logger.info(`会话已更新并设置开始时间 (${sessionId}): ${now.toISOString()}`);
 
     // 触发 Webhook 事件

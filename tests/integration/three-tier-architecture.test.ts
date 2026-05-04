@@ -641,7 +641,7 @@ describe('完整三端架构集成测试', () => {
     console.log('\n[步骤 6] 结束会话...');
     const endResponse = await managerApp.inject({
       method: 'POST',
-      url: `/api/sessions/${sessionId}/disconnect`,
+      url: `/api/sessions/${sessionId}/release`,
       headers: {
         authorization: `Bearer ${user.token}`,
       },

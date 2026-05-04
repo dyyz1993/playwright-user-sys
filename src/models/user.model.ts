@@ -1,7 +1,7 @@
 import { db } from '../config/database.js';
 import { UserRole, UserStatus, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
 import { v4 as uuidv4 } from 'uuid';
-import { hashPassword, comparePassword } from '../utils/auth.js';
+import { hashPassword, comparePassword, verifyPasswordWithMigration } from '../utils/auth.js';
 
 export interface User {
   id: number;
@@ -119,7 +119,13 @@ export class UserModel {
     if (!user) {
       return false;
     }
-    return comparePassword(password, user.password);
+    const { valid, needsMigration } = await verifyPasswordWithMigration(password, user.password);
+    if (valid && needsMigration) {
+      const newHash = await hashPassword(password);
+      await db('users').where({ id: user.id }).update({ password: newHash, updated_at: new Date() });
+      console.log(`[密码迁移] 用户 ${user.id} 的密码已从 SHA-256 迁移到 bcrypt`);
+    }
+    return valid;
   }
 
   // 添加点数

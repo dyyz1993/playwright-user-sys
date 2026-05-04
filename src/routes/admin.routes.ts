@@ -67,13 +67,19 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       }
 
       // 验证密码
-      const { comparePassword } = await import('../utils/auth.js');
-      const isPasswordValid = await comparePassword(password, user.password);
+      const { verifyPasswordWithMigration, hashPassword } = await import('../utils/auth.js');
+      const { valid: isPasswordValid, needsMigration } = await verifyPasswordWithMigration(password, user.password);
 
       if (!isPasswordValid) {
         console.log('Invalid password');
         request.flash('error', '用户名或密码错误');
         return reply.redirect('/admin/login');
+      }
+
+      if (needsMigration) {
+        const newHash = await hashPassword(password);
+        await UserModel.update(user.id, { password: newHash } as any);
+        request.log.info({ userId: user.id }, 'Password migrated from SHA-256 to bcrypt');
       }
 
       // 检查用户状态

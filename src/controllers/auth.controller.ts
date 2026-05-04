@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { UserModel } from '../models/user.model.js';
-import { generateToken, comparePassword } from '../utils/auth.js';
+import { generateToken, verifyPasswordWithMigration, hashPassword } from '../utils/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { UserStatus } from '@shared/types/index.js';
 import { adminLoginRequestSchema } from '../schemas/admin.schema.js';
@@ -23,9 +23,15 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
     }
 
     // 验证密码
-    const isValid = await comparePassword(password, user.password);
-    if (!isValid) {
+    const { valid, needsMigration } = await verifyPasswordWithMigration(password, user.password);
+    if (!valid) {
       return sendError(reply, '用户名或密码错误', 401);
+    }
+
+    if (needsMigration) {
+      const newHash = await hashPassword(password);
+      await UserModel.update(user.id, { password: newHash } as any);
+      request.log.info({ userId: user.id }, 'Password migrated from SHA-256 to bcrypt');
     }
 
     // 生成 JWT Token

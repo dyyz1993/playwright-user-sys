@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import bcrypt from 'bcryptjs';
 import { env } from '../config/env.js';
 import jwt, { SignOptions } from 'jsonwebtoken';
@@ -11,6 +11,30 @@ export async function hashPassword(password: string): Promise<string> {
 
 export async function comparePassword(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash);
+}
+
+export function isSha256Hash(hash: string): boolean {
+  return /^[a-f0-9]{64}$/i.test(hash);
+}
+
+export async function verifyPasswordWithMigration(
+  password: string,
+  hash: string
+): Promise<{ valid: boolean; needsMigration: boolean }> {
+  if (hash.startsWith('$2a$') || hash.startsWith('$2b$')) {
+    const valid = await bcrypt.compare(password, hash);
+    return { valid, needsMigration: false };
+  }
+
+  if (isSha256Hash(hash)) {
+    const sha256Hash = createHash('sha256').update(password).digest('hex');
+    if (sha256Hash === hash) {
+      return { valid: true, needsMigration: true };
+    }
+    return { valid: false, needsMigration: false };
+  }
+
+  return { valid: false, needsMigration: false };
 }
 
 // 生成 API Key
@@ -83,6 +107,8 @@ export function extractTokenFromHeader(header: string | undefined): string | nul
 export default {
   hashPassword,
   comparePassword,
+  verifyPasswordWithMigration,
+  isSha256Hash,
   generateApiKey,
   generateToken,
   verifyToken,

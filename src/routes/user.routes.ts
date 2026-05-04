@@ -198,15 +198,18 @@ export default async function userRoutes(fastify: FastifyInstance) {
         }
 
         // 验证当前密码
-        const { comparePassword } = await import('../utils/auth.js');
-        const isPasswordValid = await comparePassword(body.current_password, user.password);
+        const { verifyPasswordWithMigration, hashPassword } = await import('../utils/auth.js');
+        const { valid: isPasswordValid, needsMigration } = await verifyPasswordWithMigration(body.current_password, user.password);
 
         if (!isPasswordValid) {
           return sendError(reply, '当前密码错误', 401);
         }
 
+        if (needsMigration) {
+          request.log.info({ userId: user.id }, 'Password migrated from SHA-256 to bcrypt during password change');
+        }
+
         // 哈希新密码
-        const { hashPassword } = await import('../utils/auth.js');
         const hashedPassword = await hashPassword(body.new_password);
 
         // 更新密码

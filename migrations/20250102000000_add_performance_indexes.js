@@ -2,7 +2,7 @@
  * 添加性能优化索引
  * 为高频查询字段创建索引
  */
-exports.up = async function (knex) {
+export async function up(knex) {
   const indexes = [
     { table: 'sessions', column: 'user_id', name: 'idx_sessions_user_id' },
     { table: 'sessions', column: 'machine_id', name: 'idx_sessions_machine_id' },
@@ -30,7 +30,7 @@ exports.up = async function (knex) {
   }
 };
 
-exports.down = async function (knex) {
+export async function down(knex) {
   const indexes = [
     { table: 'sessions', name: 'idx_sessions_user_id' },
     { table: 'sessions', name: 'idx_sessions_machine_id' },

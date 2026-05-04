@@ -39,7 +39,7 @@ export const config = {
   // 会话配置
   session: {
     timeout: process.env.SESSION_TIMEOUT ? parseInt(process.env.SESSION_TIMEOUT) : 60, // 分钟
-    maxPerUser: process.env.MAX_SESSIONS_PER_USER ? parseInt(process.env.MAX_SESSIONS_PER_USER) : 5,
+    maxPerUser: process.env.MAX_SESSIONS_PER_USER ? parseInt(process.env.MAX_SESSIONS_PER_USER) : 20,
   },
 
   // 日志配置

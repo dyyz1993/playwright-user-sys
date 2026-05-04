@@ -75,6 +75,11 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
         return sendError(reply, serviceError.message, 402);
       }
 
+      // 检查是否是会话数量限制错误 - 返回 429 (Too Many Requests)
+      if (serviceError.message && serviceError.message.includes('Session limit reached')) {
+        return sendError(reply, serviceError.message, 429);
+      }
+
       // 其他错误返回 500
       return sendError(reply, '启动浏览器实例失败: ' + serviceError.message, 500);
     }
@@ -102,7 +107,7 @@ export async function getSession(request: FastifyRequest, reply: FastifyReply) {
     // 查找会话
     const session = await SessionModel.findById(sessionId);
     if (!session) {
-      return sendError(reply, '会话不存在', 404);
+      return sendError(reply, '未找到指定的会话记录', 404);
     }
 
     // 检查会话是否属于当前用户

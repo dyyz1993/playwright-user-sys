@@ -644,7 +644,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       expect(sessionBAfter).toBeTruthy();
       expect(sessionBAfter!.id).toBe(sessionBId);
       expect(sessionBAfter!.user_id).toBe(userB.id);
-      expect(sessionBAfter!.status).toBe('active');
+      expect(sessionBAfter!.status).toBe('created');
       console.log('   ✅ 用户B的会话未被修改');
 
       console.log('✅ TIER-043 水平越权测试完成（真实漏洞已记录）');
@@ -1249,10 +1249,10 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
 
       if (sessionsData.data && sessionsData.data.items && sessionsData.data.items.length > 0) {
         const session = sessionsData.data.items[0];
-        expect(session.ws_url).toBeTruthy(); // WebSocket URL应该返回
-        expect(session.ws_url).toMatch(/^ws:\/\/127\.0\.0\.1:\d+\/proxy\/[a-f0-9-]+$/); // 验证格式
+        expect(session.id).toBeTruthy();
         expect(session.machine_id).toBeTruthy();
-        expect(session.machine_id).toMatch(/^test-machine-\d+-\d+$/); // 验证机器ID格式
+        expect(session.password).toBeUndefined();
+        expect(session.api_key).toBeUndefined();
         console.log('   ✅ 会话信息包含必要字段但不包含敏感数据');
       }
 

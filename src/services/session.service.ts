@@ -30,11 +30,12 @@ export async function createBrowserSession(
   }
 
   // 检查用户活跃会话数量是否超过限制
-  const { config } = await import('../config/index.js');
-  const maxSessions = config.session.maxPerUser;
   const activeCount = await SessionModel.countActiveByUserId(user.id);
+  const maxSessions = env.MAX_SESSIONS_PER_USER;
   if (activeCount >= maxSessions) {
-    throw new Error(`活跃会话数量已达上限 (${maxSessions})，请先释放现有会话`);
+    throw new Error(
+      `Session limit reached: user has ${activeCount} active sessions, max is ${maxSessions}`
+    );
   }
 
   // 确保至少有一个默认的viewport

@@ -53,6 +53,9 @@ const envSchema = z.object({
   // 公共访问的机器端点，如果设置，将使用这个域名或IP代替机器的实际IP
   // 例如：'example.com:8082' 或 '192.168.1.100:8082'
   PUBLIC_MACHINE_ENDPOINT: z.string().optional(),
+
+  // 每用户最大活跃会话数
+  MAX_SESSIONS_PER_USER: z.coerce.number().default(20),
 });
 
 // 验证环境变量
@@ -71,6 +74,7 @@ export const env = {
   GRPC_PORT: parseInt(_env.data.GRPC_PORT, 10),
   PROXY_PORT: parseInt(_env.data.PROXY_PORT, 10),
   MACHINE_MONITOR_INTERVAL: parseInt(_env.data.MACHINE_MONITOR_INTERVAL, 10),
+  MAX_SESSIONS_PER_USER: _env.data.MAX_SESSIONS_PER_USER,
   // 确保 JWT_EXPIRES_IN 保持为字符串
   JWT_EXPIRES_IN: _env.data.JWT_EXPIRES_IN,
   ROOT_DIR: rootDir,

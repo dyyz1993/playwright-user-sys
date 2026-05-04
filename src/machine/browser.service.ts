@@ -664,8 +664,8 @@ export class BrowserService extends EventEmitter {
         totalConnectedTime = Math.floor((Date.now() - session.startTime) / 1000);
       }
 
-      // 清理独立会话的用户数据目录（共享会话不会被清理）
-      await this.cleanupUserDataDir(sessionId);
+      const userDataDir = session.userDataDir;
+      const isSharedUserData = session.sharedUserData;
 
       // ===== 清理共享浏览器记录 =====
       if (session.sharedUserData && session.userId) {
@@ -678,6 +678,19 @@ export class BrowserService extends EventEmitter {
 
       this.sessions.delete(sessionId);
       await session.browser.close();
+
+      // 清理独立会话的用户数据目录（共享会话不会被清理）
+      // 必须在 browser.close() 之后，否则 Chrome 进程仍持有文件锁导致 ENOTEMPTY
+      if (userDataDir && !isSharedUserData) {
+        try {
+          if (fsSync.existsSync(userDataDir)) {
+            await fs.rm(userDataDir, { recursive: true, force: true });
+            logger.info(`已清理独立会话的用户数据目录 (sessionId: ${sessionId}): ${userDataDir}`);
+          }
+        } catch (error) {
+          logger.error(`清理用户数据目录失败 (sessionId: ${sessionId}):`, error);
+        }
+      }
 
       this.connections.delete(sessionId);
       if (this.disconnectionTimers.has(sessionId)) {

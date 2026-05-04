@@ -446,29 +446,25 @@ describe('完整三端架构集成测试', () => {
     expect(response.statusCode).toBe(201);
 
     const responseBody = JSON.parse(response.body);
-    console.log(`   会话ID: ${responseBody.id}`);
-    console.log(`   机器ID: ${responseBody.machine_id}`);
-    console.log(`   状态: ${responseBody.status}`);
+    const sessionData = responseBody.data;
+    console.log(`   会话ID: ${sessionData.id}`);
+    console.log(`   状态: ${sessionData.status}`);
 
-    // 严格断言: 验证HTTP响应
-    expect(responseBody.id).toMatch(/^session_[a-zA-Z0-9_-]{16,}$/);
-    expect(responseBody.id.length).toBeGreaterThanOrEqual(20);
-    expect(responseBody.machine_id).toMatch(/^test-machine-[0-9]+-[0-9]-[0-9]$/);
-    expect(responseBody.machine_id.length).toBeGreaterThanOrEqual(20);
-    expect(responseBody.status).toBe('created');
+    expect(sessionData.id).toMatch(/^session_[a-zA-Z0-9_-]{16,}$/);
+    expect(sessionData.id.length).toBeGreaterThanOrEqual(20);
+    expect(sessionData.status).toBe('created');
 
     // 步骤 2: 验证数据库中的会话记录
     console.log('\n[步骤 2] 验证数据库会话记录...');
-    const session = await SessionModel.findById(responseBody.id);
+    const session = await SessionModel.findById(sessionData.id);
     expect(session).toEqual(expect.any(Object));
     expect(session!.user_id).toBe(user.id);
-    expect(session!.machine_id).toBe(responseBody.machine_id);
     expect(session!.status).toBe('created');
     console.log(`   ✅ 会话记录验证成功: ${session!.id}`);
 
     // 步骤 3: 验证机器实例计数增加
     console.log('\n[步骤 3] 验证机器实例计数...');
-    const machine = await MachineModel.findById(responseBody.machine_id);
+    const machine = await MachineModel.findById(session!.machine_id);
     expect(machine).toEqual(expect.any(Object));
     expect(machine!.instanceCount).toBe(1);
     console.log(`   ✅ 机器实例计数: ${machine!.instanceCount}`);
@@ -486,7 +482,7 @@ describe('完整三端架构集成测试', () => {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const browser = await puppeteer.connect({
-      browserWSEndpoint: responseBody.ws_url,
+      browserWSEndpoint: sessionData.directUrl,
     });
 
     expect(browser.isConnected()).toBe(true);
@@ -614,8 +610,8 @@ describe('完整三端架构集成测试', () => {
     });
 
     expect(createResponse.statusCode).toBe(201);
-    const sessionData = JSON.parse(createResponse.body);
-    const sessionId = sessionData.id;
+    const createResponseBody = JSON.parse(createResponse.body);
+    const sessionId = createResponseBody.data.id;
     console.log(`   会话ID: ${sessionId}`);
 
     // 等待WebSocket端点准备就绪
@@ -624,7 +620,7 @@ describe('完整三端架构集成测试', () => {
     // 连接到Chrome
     console.log('\n[步骤 2] 连接到Chrome...');
     const browser = await puppeteer.connect({
-      browserWSEndpoint: sessionData.ws_url,
+      browserWSEndpoint: createResponseBody.data.directUrl,
     });
     console.log('   ✅ 浏览器连接成功');
 

@@ -61,12 +61,14 @@ export async function up(knex) {
   await knex.schema.createTable('credit_history', table => {
     table.increments('id').primary();
     table.integer('user_id').unsigned().references('id').inTable('users').onDelete('CASCADE');
-    table.enum('type', ['add', 'deduct', 'refund']).notNullable();
+    table.string('action', 20).notNullable();
     table.integer('amount').notNullable();
     table.integer('balance_after').notNullable();
     table.string('session_id', 36);
     table.string('description', 255);
+    table.json('metadata').nullable();
     table.timestamp('created_at').defaultTo(knex.fn.now());
+    table.timestamp('updated_at').defaultTo(knex.fn.now());
   });
 
   // 创建操作日志表

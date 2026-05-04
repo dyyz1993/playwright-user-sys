@@ -737,7 +737,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     });
 
     // 调试端点 - 查看所有 cookies
-    fastify.get('/admin/debug/cookies', async (request: FastifyRequest, _reply: FastifyReply) => {
+    fastify.get('/admin/debug/cookies', { preHandler: [fastify.verifyJWT] }, async (request: FastifyRequest, _reply: FastifyReply) => {
       return {
         cookies: request.cookies,
         headers: request.headers,
@@ -757,7 +757,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       return { error: 'No token provided' };
     }
 
-    const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key' : String(env.JWT_SECRET);
+    const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
 
     try {
       const decoded = jwt.verify(token, jwtSecret);

@@ -2,34 +2,56 @@
  * 添加性能优化索引
  * 为高频查询字段创建索引
  */
-export async function up(knex) {
-  // Sessions table indexes
-  await knex.raw('CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)');
-  await knex.raw('CREATE INDEX IF NOT EXISTS idx_sessions_machine_id ON sessions(machine_id)');
-  await knex.raw('CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status)');
-  await knex.raw('CREATE INDEX IF NOT EXISTS idx_sessions_start_time ON sessions(start_time)');
+exports.up = async function (knex) {
+  const indexes = [
+    { table: 'sessions', column: 'user_id', name: 'idx_sessions_user_id' },
+    { table: 'sessions', column: 'machine_id', name: 'idx_sessions_machine_id' },
+    { table: 'sessions', column: 'status', name: 'idx_sessions_status' },
+    { table: 'sessions', column: 'start_time', name: 'idx_sessions_start_time' },
+    { table: 'credit_history', column: 'user_id', name: 'idx_credit_history_user_id' },
+    { table: 'credit_history', column: 'action', name: 'idx_credit_history_action' },
+    { table: 'operation_logs', column: 'admin_id', name: 'idx_operation_logs_admin_id' },
+    { table: 'users', column: 'status', name: 'idx_users_status' },
+  ];
 
-  // Credit history indexes
-  await knex.raw('CREATE INDEX IF NOT EXISTS idx_credit_history_user_id ON credit_history(user_id)');
-  await knex.raw('CREATE INDEX IF NOT EXISTS idx_credit_history_action ON credit_history(action)');
+  for (const idx of indexes) {
+    try {
+      await knex.raw(
+        `ALTER TABLE \`${idx.table}\` ADD INDEX \`${idx.name}\` (\`${idx.column}\`)`
+      );
+      console.log(`[迁移] 创建索引 ${idx.name} 成功`);
+    } catch (err) {
+      if (err.errno === 1061) {
+        console.log(`[迁移] 索引 ${idx.name} 已存在，跳过`);
+      } else {
+        throw err;
+      }
+    }
+  }
+};
 
-  // Operation logs indexes
-  await knex.raw('CREATE INDEX IF NOT EXISTS idx_operation_logs_admin_id ON operation_logs(admin_id)');
+exports.down = async function (knex) {
+  const indexes = [
+    { table: 'sessions', name: 'idx_sessions_user_id' },
+    { table: 'sessions', name: 'idx_sessions_machine_id' },
+    { table: 'sessions', name: 'idx_sessions_status' },
+    { table: 'sessions', name: 'idx_sessions_start_time' },
+    { table: 'credit_history', name: 'idx_credit_history_user_id' },
+    { table: 'credit_history', name: 'idx_credit_history_action' },
+    { table: 'operation_logs', name: 'idx_operation_logs_admin_id' },
+    { table: 'users', name: 'idx_users_status' },
+  ];
 
-  // Users status index
-  await knex.raw('CREATE INDEX IF NOT EXISTS idx_users_status ON users(status)');
-}
-
-/**
- * 回滚：删除所有索引
- */
-export async function down(knex) {
-  await knex.raw('DROP INDEX IF EXISTS idx_sessions_user_id ON sessions');
-  await knex.raw('DROP INDEX IF EXISTS idx_sessions_machine_id ON sessions');
-  await knex.raw('DROP INDEX IF EXISTS idx_sessions_status ON sessions');
-  await knex.raw('DROP INDEX IF EXISTS idx_sessions_start_time ON sessions');
-  await knex.raw('DROP INDEX IF EXISTS idx_credit_history_user_id ON credit_history');
-  await knex.raw('DROP INDEX IF EXISTS idx_credit_history_action ON credit_history');
-  await knex.raw('DROP INDEX IF EXISTS idx_operation_logs_admin_id ON operation_logs');
-  await knex.raw('DROP INDEX IF EXISTS idx_users_status ON users');
-}
+  for (const idx of indexes) {
+    try {
+      await knex.raw(`ALTER TABLE \`${idx.table}\` DROP INDEX \`${idx.name}\``);
+      console.log(`[迁移] 删除索引 ${idx.name} 成功`);
+    } catch (err) {
+      if (err.errno === 1091) {
+        console.log(`[迁移] 索引 ${idx.name} 不存在，跳过`);
+      } else {
+        throw err;
+      }
+    }
+  }
+};

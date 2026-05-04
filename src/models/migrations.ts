@@ -138,21 +138,12 @@ export async function createTables() {
 
 // 创建性能优化索引
 export async function createIndexes() {
-  const indexExists = async (indexName: string) => {
-    const result = await db.raw(
-      `SELECT COUNT(*) as count FROM information_schema.statistics WHERE index_name = ?`,
-      [indexName]
-    );
-    const count = result[0]?.[0]?.count || result[0]?.count || 0;
-    return count > 0;
-  };
-
   const safeCreateIndex = async (indexName: string, table: string, column: string) => {
     try {
-      await db.raw(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${table}(${column})`);
+      await db.raw(`ALTER TABLE \`${table}\` ADD INDEX \`${indexName}\` (\`${column}\`)`);
       console.log(`✅ 索引 ${indexName} 创建成功`);
     } catch (err: any) {
-      if (err.code === 'ER_DUP_KEYNAME' || err.message?.includes('already exists')) {
+      if (err.errno === 1061 || err.code === 'ER_DUP_KEYNAME' || err.message?.includes('already exists')) {
         console.log(`⏭️ 索引 ${indexName} 已存在，跳过`);
       } else {
         throw err;

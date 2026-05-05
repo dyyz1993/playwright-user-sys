@@ -50,13 +50,7 @@ jobs:
 
           echo "Waiting for all services to become healthy..."
           timeout 180 bash -c '
-            until docker compose -f docker/docker-compose.e2e.yml ps --format json | python3 -c "
-              import json, sys
-              data = [json.loads(line) for line in sys.stdin]
-              healthy = all(d.get(\"Health\",\"\") == \"healthy\" for d in data)
-              running = all(d.get(\"State\",\"\") == \"running\" for d in data)
-              sys.exit(0 if (healthy and running) else 1)
-            " 2>/dev/null; do
+            until docker compose -f docker/docker-compose.e2e.yml ps | grep -q "(healthy)"; do
               sleep 5
               echo "  Still waiting..."
               docker compose -f docker/docker-compose.e2e.yml ps

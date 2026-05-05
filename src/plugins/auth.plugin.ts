@@ -77,8 +77,9 @@ export default fp(async function (fastify: FastifyInstance) {
       };
 
       request.log.info({ username: user.username, role: user.role }, '用户认证成功');
-    } catch (error: any) {
-      request.log.error({ err: error.message }, '令牌验证失败');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      request.log.error({ err: message }, '令牌验证失败');
       return sendError(reply, '无效的令牌', 401);
     }
   });

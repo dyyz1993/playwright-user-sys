@@ -43,8 +43,9 @@ export const requestLogger = fp(async (fastify) => {
         user_agent: request.headers['user-agent'],
         response_time: responseTime,
       });
-    } catch (error: any) {
-      request.log.error({ err: error.message || error }, '记录请求日志失败');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      request.log.error({ err: message }, '记录请求日志失败');
     }
   });
 });

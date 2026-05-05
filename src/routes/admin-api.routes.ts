@@ -283,7 +283,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         }
 
         // 准备更新数据
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = {};
 
         if (body.email) updateData.email = body.email;
         if (body.role) updateData.role = body.role;
@@ -557,7 +557,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         const query = request.query as { search?: string; role?: string; status?: string };
 
         // 构建查询条件
-        const filters: any = {};
+        const filters: Record<string, unknown> = {};
 
         // 搜索条件（用户名或邮箱）
         if (query.search) {
@@ -575,7 +575,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         }
 
         // 获取所有用户（不分页，用于导出）
-        const result = await UserModel.findAll({ limit: 1000000, ...filters });
+        const result = await UserModel.findAll({ limit: '1000000', ...filters });
         const users = result.items;
 
         // 生成 CSV 内容
@@ -1447,7 +1447,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         const limit = parseInt(query.limit) || 20;
 
         // 构建筛选条件
-        const filters: any = {};
+        const filters: Record<string, unknown> = {};
 
         if (query.action) {
           filters.action = query.action;

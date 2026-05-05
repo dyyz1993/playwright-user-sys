@@ -90,7 +90,7 @@ export class UserModel {
 
   // 更新用户
   static async update(id: number, data: UpdateUserInput): Promise<User | null> {
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...data,
       updated_at: new Date(),
     };

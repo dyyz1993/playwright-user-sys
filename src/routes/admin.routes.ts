@@ -998,7 +998,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         const { OperationLogModel } = await import('../models/operation-log.model.js');
         const { UserModel } = await import('../models/user.model.js');
 
-        const filters: any = {};
+        const filters: Record<string, unknown> = {};
 
         // 操作类型筛选
         if (query.action) {

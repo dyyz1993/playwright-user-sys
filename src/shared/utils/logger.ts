@@ -26,28 +26,28 @@ const logLevel = config.logging?.level || 'info';
  * - 按日期自动分割日志文件
  */
 export const logger = {
-  info(message: string, ...args: any[]): void {
+  info(message: string, ...args: unknown[]): void {
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] [INFO] ${message}`;
     console.log(`\x1b[36m${formattedMessage}\x1b[0m`, ...args);
     this.writeToFile(formattedMessage, args);
   },
 
-  warn(message: string, ...args: any[]): void {
+  warn(message: string, ...args: unknown[]): void {
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] [WARN] ${message}`;
     console.log(`\x1b[33m${formattedMessage}\x1b[0m`, ...args);
     this.writeToFile(formattedMessage, args);
   },
 
-  error(message: string, ...args: any[]): void {
+  error(message: string, ...args: unknown[]): void {
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] [ERROR] ${message}`;
     console.error(`\x1b[31m${formattedMessage}\x1b[0m`, ...args);
     this.writeToFile(formattedMessage, args);
   },
 
-  debug(message: string, ...args: any[]): void {
+  debug(message: string, ...args: unknown[]): void {
     if (logLevel === 'debug') {
       const timestamp = new Date().toISOString();
       const formattedMessage = `[${timestamp}] [DEBUG] ${message}`;
@@ -57,7 +57,7 @@ export const logger = {
   },
 
   // 将日志写入文件
-  writeToFile(message: string, args: any[]): void {
+  writeToFile(message: string, args: unknown[]): void {
     try {
       let logMessage = message;
 

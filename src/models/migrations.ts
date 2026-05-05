@@ -149,10 +149,11 @@ export async function createIndexes() {
         await db.raw(`CREATE INDEX IF NOT EXISTS "${indexName}" ON "${table}" ("${column}")`);
       }
       console.log(`✅ 索引 ${indexName} 创建成功`);
-    } catch (err: any) {
-      if (isMySQL && (err.errno === 1061 || err.code === 'ER_DUP_KEYNAME' || err.message?.includes('already exists'))) {
+    } catch (err: unknown) {
+      const error = err as { errno?: number; code?: string; message?: string };
+      if (isMySQL && (error.errno === 1061 || error.code === 'ER_DUP_KEYNAME' || error.message?.includes('already exists'))) {
         console.log(`⏭️ 索引 ${indexName} 已存在，跳过`);
-      } else if (isSQLite && err.message?.includes('already exists')) {
+      } else if (isSQLite && error.message?.includes('already exists')) {
         console.log(`⏭️ 索引 ${indexName} 已存在，跳过`);
       } else {
         throw err;

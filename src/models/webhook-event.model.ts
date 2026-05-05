@@ -5,7 +5,7 @@ export interface WebhookEvent {
   id: number;
   user_id: number;
   event_type: WebhookEventType;
-  payload: any;
+  payload: Record<string, unknown>;
   delivered: boolean;
   attempts: number;
   last_attempt: Date | null;
@@ -17,7 +17,7 @@ export interface WebhookEvent {
 export interface CreateWebhookEventInput {
   user_id: number;
   event_type: WebhookEventType;
-  payload: any;
+  payload: Record<string, unknown>;
 }
 
 export class WebhookEventModel {

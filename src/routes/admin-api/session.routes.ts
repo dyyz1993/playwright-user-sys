@@ -3,6 +3,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import { errorResponseSchema, idParamSchema } from '../../schemas/index.js';
 import { createAuthenticate } from './authenticate.js';
+import * as AdminSessionService from '../../services/admin-session.service.js';
 
 function getErrorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -54,69 +55,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
           return reply.status(400).send({ success: false, error: '请提供要结束的会话 ID 列表' });
         }
 
-        const { SessionModel } = await import('../../models/session.model.js');
-        const { MachineModel } = await import('../../models/machine.model.js');
-        const { connectionManager } = await import('../../services/machine-grpc.service.js');
-        const { createWebhookEvent } = await import('../../utils/webhook.js');
-        const { SessionStatus, WebhookEventType } = await import('@shared/types/index.js');
-
-        const released: string[] = [];
-        const failed: Array<{ sessionId: string; error: string }> = [];
-
-        for (const sessionId of body.sessionIds) {
-          try {
-            const session = await SessionModel.findById(sessionId);
-            if (!session) {
-              failed.push({ sessionId, error: '会话不存在' });
-              continue;
-            }
-
-            if (session.status === SessionStatus.DISCONNECTED || session.status === SessionStatus.ERROR) {
-              released.push(sessionId);
-              continue;
-            }
-
-            if (!session.machine_id) {
-              const now = new Date();
-              const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
-              const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-
-              await SessionModel.markDisconnected(sessionId, duration);
-
-              released.push(sessionId);
-              continue;
-            }
-
-            try {
-              await connectionManager.closeBrowser(session.machine_id, sessionId);
-
-              const now = new Date();
-              const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
-              const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-
-              await SessionModel.markDisconnected(sessionId, duration);
-
-              await MachineModel.decrementInstanceCount(session.machine_id);
-
-              await createWebhookEvent(session.user_id, WebhookEventType.SESSION_DISCONNECTED, {
-                session_id: sessionId,
-                disconnected_at: new Date(),
-              });
-
-              released.push(sessionId);
-            } catch (_machineError) {
-              const now = new Date();
-              const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
-              const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-              await SessionModel.markDisconnected(sessionId, duration);
-
-              released.push(sessionId);
-            }
-          } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : '结束失败';
-            failed.push({ sessionId, error: message });
-          }
-        }
+        const { released, failed } = await AdminSessionService.batchReleaseSessions(body.sessionIds);
 
         return reply.send({
           success: true,
@@ -174,7 +113,6 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { UserModel } = await import('../../models/user.model.js');
         const params = request.params as { id: string };
         const userId = parseInt(params.id, 10);
         const query = request.query as { page?: string; limit?: string };
@@ -183,16 +121,15 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
           return reply.status(400).send({ success: false, error: '无效的用户 ID' });
         }
 
-        const existingUser = await UserModel.findById(userId);
+        const existingUser = await AdminSessionService.findUserById(userId);
         if (!existingUser) {
           return reply.status(404).send({ success: false, error: '用户不存在' });
         }
 
-        const page = query.page || '1';
-        const limit = query.limit || '10';
-
-        const { SessionModel } = await import('../../models/session.model.js');
-        const sessions = await SessionModel.findByUserId(userId, { page, limit });
+        const sessions = await AdminSessionService.getUserSessions(userId, {
+          page: query.page || '1',
+          limit: query.limit || '10',
+        });
 
         return reply.send({
           success: true,
@@ -259,54 +196,16 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
           dateRange?: string;
         };
 
-        const page = parseInt(query.page || '1');
-        const limit = parseInt(query.limit || '20');
-        const sort = query.sort || 'created_at';
-        const order = (query.order || 'desc') as 'asc' | 'desc';
-
-        const { SessionModel } = await import('../../models/session.model.js');
-        const filters: { status?: string; userId?: number; startDate?: Date; endDate?: Date } = {};
-
-        if (query.status) {
-          filters.status = query.status;
-        }
-
-        if (query.userId) {
-          filters.userId = parseInt(query.userId);
-        }
-
-        if (query.dateRange && query.dateRange !== 'all') {
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-          if (query.dateRange === 'today') {
-            filters.startDate = today;
-          } else if (query.dateRange === 'yesterday') {
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            filters.startDate = yesterday;
-            filters.endDate = yesterday;
-          } else if (query.dateRange === 'week') {
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
-            filters.startDate = startOfWeek;
-          } else if (query.dateRange === 'month') {
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            filters.startDate = startOfMonth;
-          }
-        }
-
-        if (query.startDate) {
-          filters.startDate = new Date(query.startDate);
-        }
-        if (query.endDate) {
-          filters.endDate = new Date(query.endDate);
-        }
-
-        const result = await SessionModel.paginateSorted(page, limit, {
-          sort,
-          order,
-          filters: Object.keys(filters).length > 0 ? filters : undefined,
+        const result = await AdminSessionService.listSessions({
+          page: query.page || '1',
+          limit: query.limit || '20',
+          sort: query.sort || 'created_at',
+          order: query.order || 'desc',
+          status: query.status,
+          userId: query.userId,
+          startDate: query.startDate,
+          endDate: query.endDate,
+          dateRange: query.dateRange,
         });
 
         return reply.send({
@@ -371,38 +270,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
           dateRange?: string;
         };
 
-        const filters: { startDate?: Date; endDate?: Date } = {};
-
-        if (query.dateRange && query.dateRange !== 'all') {
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-          if (query.dateRange === 'today') {
-            filters.startDate = today;
-          } else if (query.dateRange === 'yesterday') {
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            filters.startDate = yesterday;
-            filters.endDate = yesterday;
-          } else if (query.dateRange === 'week') {
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
-            filters.startDate = startOfWeek;
-          } else if (query.dateRange === 'month') {
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            filters.startDate = startOfMonth;
-          }
-        }
-
-        if (query.startDate) {
-          filters.startDate = new Date(query.startDate);
-        }
-        if (query.endDate) {
-          filters.endDate = new Date(query.endDate);
-        }
-
-        const { SessionModel } = await import('../../models/session.model.js');
-        const stats = await SessionModel.getStats(Object.keys(filters).length > 0 ? filters : undefined);
+        const stats = await AdminSessionService.getSessionStats(query);
 
         return reply.send({
           success: true,
@@ -459,8 +327,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
         const params = request.params as { id: string };
         const sessionId = params.id;
 
-        const { SessionModel } = await import('../../models/session.model.js');
-        const session = await SessionModel.getDetailById(sessionId);
+        const session = await AdminSessionService.getSessionDetail(sessionId);
 
         if (!session) {
           return reply.status(404).send({ success: false, error: '会话不存在' });
@@ -514,20 +381,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
       try {
         const body = request.body as { sessionIds?: string[] };
 
-        const { SessionModel } = await import('../../models/session.model.js');
-        let sessions: Array<{ id: string; status: string }> = [];
-
-        if (body.sessionIds && body.sessionIds.length > 0) {
-          for (const sessionId of body.sessionIds) {
-            const session = await SessionModel.findById(sessionId);
-            if (session) {
-              sessions.push({ id: session.id, status: session.status });
-            }
-          }
-        } else {
-          sessions = await SessionModel.findActiveSessions();
-          sessions = sessions.map((s) => ({ id: s.id, status: s.status }));
-        }
+        const sessions = await AdminSessionService.refreshSessionStatus(body.sessionIds);
 
         return reply.send({
           success: true,

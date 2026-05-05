@@ -387,8 +387,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       '/admin/debug/user',
       { onRequest: [fastify.verifyJWT] },
       async (request: FastifyRequest, _reply: FastifyReply) => {
-        const { UserModel } = await import('../models/user.model.js');
-        const user = await UserModel.findById(request.user!.id);
+        const { getUserById } = await import('../services/user.service.js');
+        const user = await getUserById(request.user!.id);
         return {
           userId: request.user!.id,
           userExists: !!user,

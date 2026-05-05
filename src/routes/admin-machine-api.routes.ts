@@ -5,16 +5,12 @@ function getErrorMessage(e: unknown): string {
 }
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
-import { OperationLogModel } from '../models/operation-log.model.js';
 import { errorResponseSchema, idParamSchema } from '../schemas/index.js';
 import { IdParamRoute, UpdateMachineBodyRoute, MachineIdArrayBodyRoute } from '@shared/types/routes.js';
+import * as AdminMachineService from '../services/admin-machine.service.js';
+import * as AdminOpLogService from '../services/admin-operation-log.service.js';
 
-/**
- * 机器管理的额外 API 路由
- * 包含健康检查和编辑配置功能
- */
 export default async function adminMachineApiRoutes(fastify: FastifyInstance): Promise<void> {
-  // 使用全局验证中间件
   const authenticate = async (request: FastifyRequest, reply: FastifyReply) => {
     if (reply.sent) return;
 
@@ -36,7 +32,6 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
     }
   };
 
-  // 获取机器详情
   fastify.get(
     '/api/admin/machines/:id',
     {
@@ -78,8 +73,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         const params = request.params as { id: string };
         const machineId = params.id;
 
-        const { MachineModel } = await import('../models/machine.model.js');
-        const machine = await MachineModel.getDetailById(machineId);
+        const machine = await AdminMachineService.getMachineDetail(machineId);
 
         if (!machine) {
           return reply.status(404).send({ success: false, error: '机器不存在' });
@@ -93,7 +87,6 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
     }
   );
 
-  // 更新机器配置
   fastify.put(
     '/api/admin/machines/:id',
     {
@@ -140,15 +133,6 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         const machineId = request.params.id;
         const body = request.body;
 
-        const { MachineModel } = await import('../models/machine.model.js');
-
-        // 检查机器是否存在
-        const existingMachine = await MachineModel.findById(machineId);
-        if (!existingMachine) {
-          return reply.status(404).send({ success: false, error: '机器不存在' });
-        }
-
-        // 验证 IP 地址格式（如果提供）
         if (body.ip) {
           const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
           if (!ipRegex.test(body.ip)) {
@@ -156,7 +140,6 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
           }
         }
 
-        // 验证端口范围（如果提供）
         if (body.grpcPort !== undefined && (body.grpcPort < 1 || body.grpcPort > 65535)) {
           return reply.status(400).send({ success: false, error: 'gRPC 端口必须在 1-65535 之间' });
         }
@@ -164,24 +147,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
           return reply.status(400).send({ success: false, error: '代理端口必须在 1-65535 之间' });
         }
 
-        // 更新机器
-        const updatedMachine = await MachineModel.update(machineId, body);
-        if (!updatedMachine) {
-          return reply.status(500).send({ success: false, error: '更新机器失败' });
-        }
-
-        // 记录操作日志 - 异步处理
-        OperationLogModel.create({
-          admin_id: adminId || 0,
-          action: '更新机器配置',
-          details: {
-            hostname: body.hostname,
-            ip: body.ip,
-            maxInstances: body.maxInstances,
-          },
-        }).catch((logError) => {
-          request.log.error({ err: logError }, '记录操作日志失败');
-        });
+        const updatedMachine = await AdminMachineService.updateMachineConfig(machineId, body, adminId || 0);
 
         return reply.send({
           success: true,
@@ -190,12 +156,15 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '更新机器配置失败');
-        return reply.status(500).send({ success: false, error: '更新机器配置失败: ' + getErrorMessage(error) });
+        const message = error instanceof Error ? error.message : '未知错误';
+        if (message === '机器不存在') {
+          return reply.status(404).send({ success: false, error: message });
+        }
+        return reply.status(500).send({ success: false, error: '更新机器配置失败: ' + message });
       }
     }
   );
 
-  // 健康检查
   fastify.post(
     '/api/admin/machines/:id/health-check',
     {
@@ -238,8 +207,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         const params = request.params as { id: string };
         const machineId = params.id;
 
-        const { MachineModel } = await import('../models/machine.model.js');
-        const result = await MachineModel.healthCheck(machineId);
+        const result = await AdminMachineService.healthCheckMachine(machineId);
 
         return reply.send({ success: true, data: result });
       } catch (error: unknown) {
@@ -249,7 +217,6 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
     }
   );
 
-  // 批量健康检查
   fastify.post(
     '/api/admin/machines/health-check/batch',
     {
@@ -295,8 +262,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
           return reply.status(400).send({ success: false, error: '请提供要检查的机器 ID 列表' });
         }
 
-        const { MachineModel } = await import('../models/machine.model.js');
-        const results = await MachineModel.batchHealthCheck(body.machineIds);
+        const results = await AdminMachineService.batchHealthCheck(body.machineIds);
 
         const healthy = results.filter((r) => r.status === 'healthy').length;
         const unhealthy = results.filter((r) => r.status === 'unhealthy').length;

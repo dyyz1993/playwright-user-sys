@@ -12,27 +12,12 @@ vi.mock('../../../../routes/admin-api/authenticate.js', () => ({
   },
 }));
 
-vi.mock('../../../../models/operation-log.model.js', () => ({
-  OperationLogModel: {
-    create: vi.fn().mockResolvedValue(undefined),
-  },
-}));
+const mockAddMachine = vi.hoisted(() => vi.fn().mockRejectedValue(new Error('should not be called')));
+const mockBatchRestartMachines = vi.hoisted(() => vi.fn().mockRejectedValue(new Error('should not be called')));
 
-vi.mock('../../../../models/user.model.js', () => ({
-  UserModel: {},
-}));
-
-vi.mock('../../../../models/machine.model.js', () => ({
-  MachineModel: {
-    getAll: vi.fn().mockResolvedValue([]),
-    register: vi.fn().mockResolvedValue(null),
-    findById: vi.fn().mockResolvedValue(null),
-    update: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
-vi.mock('uuid', () => ({
-  v4: vi.fn().mockReturnValue('test-machine-uuid'),
+vi.mock('../../../../services/admin-machine.service.js', () => ({
+  addMachine: mockAddMachine,
+  batchRestartMachines: mockBatchRestartMachines,
 }));
 
 function buildApp(): Promise<FastifyInstance> {
@@ -155,20 +140,15 @@ describe('admin-api machine routes - add machine success', () => {
     vi.clearAllMocks();
     mockAuth.behavior = 'pass';
 
-    vi.doMock('../../../../models/machine.model.js', () => ({
-      MachineModel: {
-        getAll: vi.fn().mockResolvedValue([]),
-        register: vi.fn().mockResolvedValue({
-          id: 'test-machine-uuid',
-          hostname: 'test-machine',
-          ip: '192.168.1.100',
-          grpcPort: 50051,
-          proxyPort: 8080,
-          maxInstances: 10,
-          status: 'offline',
-        }),
-      },
-    }));
+    mockAddMachine.mockResolvedValue({
+      id: 'test-machine-uuid',
+      hostname: 'test-machine',
+      ip: '192.168.1.100',
+      grpcPort: 50051,
+      proxyPort: 8080,
+      maxInstances: 10,
+      status: 'offline',
+    });
 
     app = await buildApp();
   });

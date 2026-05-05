@@ -1,8 +1,7 @@
-import { FastifyInstance } from 'fastify';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import userController from '../controllers/user.controller.js';
-import { UserModel } from '../models/user.model.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { userDetailSchema } from '../schemas/index.js';
 import {
   createUserRequestSchema,
   createUserResponseSchema,
@@ -10,7 +9,6 @@ import {
   paginatedResponseSchema,
   userListItemSchema,
   idParamSchema,
-  userDetailSchema,
   updateUserRequestSchema,
   updateUserResponseSchema,
   resetApiKeyResponseSchema,
@@ -18,6 +16,10 @@ import {
   nullSchema,
   successResponseSchema,
 } from '../schemas/index.js';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import * as UserService from '../services/user.service.js';
+import * as UserAuthService from '../services/auth.service.js';
+import { verifyPasswordWithMigration, hashPassword } from '../utils/auth.js';
 
 function toISO(v: Date | string | null | undefined): string | null {
   if (v === undefined) return null;
@@ -26,7 +28,6 @@ function toISO(v: Date | string | null | undefined): string | null {
 }
 
 export default async function userRoutes(fastify: FastifyInstance) {
-  // 获取当前用户信息（通过 API Key）
   fastify.get(
     '/me',
     {
@@ -46,13 +47,11 @@ export default async function userRoutes(fastify: FastifyInstance) {
           return sendError(reply, '用户未认证', 401);
         }
 
-        // 查找用户
-        const user = await UserModel.findById(userId);
+        const user = await UserService.getUserById(userId);
         if (!user) {
           return sendError(reply, '用户不存在', 404);
         }
 
-        // 返回用户信息
         return sendSuccess(reply, {
           id: user.id,
           username: user.username,
@@ -70,7 +69,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // 重新生成当前用户的 API Key
   fastify.post(
     '/me/apikey/regenerate',
     {
@@ -91,16 +89,13 @@ export default async function userRoutes(fastify: FastifyInstance) {
           return sendError(reply, '用户未认证', 401);
         }
 
-        // 查找用户
-        const user = await UserModel.findById(userId);
+        const user = await UserService.getUserById(userId);
         if (!user) {
           return sendError(reply, '用户不存在', 404);
         }
 
-        // 重置 API Key
-        const apiKey = await UserModel.resetApiKey(userId);
+        const apiKey = await UserService.resetApiKey(userId);
 
-        // 返回新的 API Key
         return sendSuccess(reply, { api_key: apiKey });
       } catch (error) {
         request.log.error(error);
@@ -109,7 +104,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // 更新当前用户信息
   fastify.put(
     '/me',
     {
@@ -138,18 +132,15 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
         const body = request.body as { email?: string; webhook_url?: string };
 
-        // 准备更新数据
         const updateData: Record<string, unknown> = {};
         if (body.email !== undefined) updateData.email = body.email;
         if (body.webhook_url !== undefined) updateData.webhook_url = body.webhook_url;
 
-        // 更新用户
-        const updatedUser = await UserModel.update(userId, updateData);
+        const updatedUser = await UserService.updateUser(userId, updateData);
         if (!updatedUser) {
           return sendError(reply, '更新用户信息失败', 500);
         }
 
-        // 返回更新后的用户信息
         return sendSuccess(reply, {
           id: updatedUser.id,
           username: updatedUser.username,
@@ -167,7 +158,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // 修改当前用户密码
   fastify.put(
     '/me/password',
     {
@@ -197,14 +187,11 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
         const body = request.body as { current_password: string; new_password: string };
 
-        // 查找用户
-        const user = await UserModel.findById(userId);
+        const user = await UserService.getUserById(userId);
         if (!user) {
           return sendError(reply, '用户不存在', 404);
         }
 
-        // 验证当前密码
-        const { verifyPasswordWithMigration, hashPassword } = await import('../utils/auth.js');
         const { valid: isPasswordValid, needsMigration } = await verifyPasswordWithMigration(
           body.current_password,
           user.password
@@ -218,11 +205,9 @@ export default async function userRoutes(fastify: FastifyInstance) {
           request.log.info({ userId: user.id }, 'Password migrated from SHA-256 to bcrypt during password change');
         }
 
-        // 哈希新密码
         const hashedPassword = await hashPassword(body.new_password);
 
-        // 更新密码
-        await UserModel.update(userId, { password: hashedPassword });
+        await UserService.updateUser(userId, { password: hashedPassword });
 
         return sendSuccess(reply, { message: '密码修改成功' });
       } catch (error) {
@@ -232,7 +217,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // 创建用户（仅管理员）
   fastify.post(
     '/',
     {
@@ -254,7 +238,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
     userController.createUser as any
   );
 
-  // 获取所有用户（仅管理员）
   fastify.get(
     '/',
     {
@@ -273,7 +256,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
     userController.getAllUsers as any
   );
 
-  // 获取单个用户（仅管理员）
   fastify.get(
     '/:id',
     {
@@ -294,7 +276,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
     userController.getUserById as any
   );
 
-  // 更新用户（仅管理员）
   fastify.put(
     '/:id',
     {
@@ -316,7 +297,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
     userController.updateUser as any
   );
 
-  // 重置用户 API Key（仅管理员）
   fastify.post(
     '/:id/reset-api-key',
     {
@@ -337,9 +317,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
     userController.resetApiKey as any
   );
 
-  // 注意：添加点数功能已移至管理员API路由
-
-  // 删除用户（仅管理员）
   fastify.delete(
     '/:id',
     {

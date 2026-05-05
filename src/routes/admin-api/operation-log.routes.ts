@@ -1,11 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { OperationLogModel } from '../../models/operation-log.model.js';
-import { UserModel } from '../../models/user.model.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import { errorResponseSchema, idParamSchema } from '../../schemas/index.js';
 import { OperationLogQueryRoute, OperationLogStatsQueryRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
+import * as AdminOpLogService from '../../services/admin-operation-log.service.js';
 
 function getErrorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -61,15 +60,10 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
           return reply.status(400).send({ success: false, error: '无效的用户 ID' });
         }
 
-        const existingUser = await UserModel.findById(userId);
-        if (!existingUser) {
-          return reply.status(404).send({ success: false, error: '用户不存在' });
-        }
-
-        const page = query.page || '1';
-        const limit = query.limit || '10';
-
-        const result = await OperationLogModel.findByTargetUserId(userId, { page, limit });
+        const result = await AdminOpLogService.getUserOperationLogs(userId, {
+          page: query.page || '1',
+          limit: query.limit || '10',
+        });
 
         return reply.send({
           success: true,
@@ -77,8 +71,10 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '获取用户操作日志失败');
-        const message = error instanceof Error ? error.message : '未知错误';
-        return reply.status(500).send({ success: false, error: '获取用户操作日志失败: ' + message });
+        if (error instanceof Error && error.message === '用户不存在') {
+          return reply.status(404).send({ success: false, error: '用户不存在' });
+        }
+        return reply.status(500).send({ success: false, error: '获取用户操作日志失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -159,7 +155,7 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
           filters.endDate = new Date(query.endDate);
         }
 
-        const result = await OperationLogModel.paginate(page, limit, filters);
+        const result = await AdminOpLogService.listOperationLogs(page, limit, filters);
 
         return reply.send({
           success: true,
@@ -221,7 +217,7 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
           }
         }
 
-        const stats = await OperationLogModel.getStats(filters);
+        const stats = await AdminOpLogService.getOperationLogStats(filters);
 
         return reply.send({ success: true, data: stats });
       } catch (error: unknown) {

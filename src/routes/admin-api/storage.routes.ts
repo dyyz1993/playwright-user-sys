@@ -1,10 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { OperationLogModel } from '../../models/operation-log.model.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
-import { join } from 'path';
 import { errorResponseSchema } from '../../schemas/index.js';
 import { createAuthenticate } from './authenticate.js';
+import * as AdminStorageService from '../../services/admin-storage.service.js';
 
 function getErrorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -69,57 +68,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
           sortOrder?: 'asc' | 'desc';
         };
 
-        const { StorageService } = await import('../../services/storage.service.js');
-
-        if (query.userId) {
-          const { UserModel } = await import('../../models/user.model.js');
-          const user = await UserModel.findById(query.userId);
-
-          if (!user) {
-            return reply.status(404).send({ success: false, error: '用户不存在' });
-          }
-
-          const stats = await StorageService.getUserStorageStats(query.userId);
-          const sessionsPath = join(process.cwd(), 'data', 'user-data', String(query.userId), 'sessions');
-          let sessionsCount = 0;
-          try {
-            const { readdirSync, existsSync } = await import('fs');
-            if (existsSync(sessionsPath)) {
-              const entries = readdirSync(sessionsPath, { withFileTypes: true });
-              sessionsCount = entries.filter((e: { isDirectory: () => boolean }) => e.isDirectory()).length;
-            }
-          } catch (error) {
-            request.log.error({ err: error }, '读取用户 sessions 目录失败');
-          }
-
-          return reply.send({
-            success: true,
-            data: {
-              users: [
-                {
-                  userId: user.id,
-                  username: user.username,
-                  sessionsSize: stats.sessionsSize,
-                  sharedSize: stats.sharedSize,
-                  totalSize: stats.totalSize,
-                  sessionsCount,
-                  isOverLimit: stats.totalSize > 5 * 1024 * 1024 * 1024,
-                },
-              ],
-              total: 1,
-              page: 1,
-              limit: 1,
-            },
-          });
-        }
-
-        const result = await StorageService.getAdminStorageStats({
-          page: query.page,
-          limit: query.limit,
-          search: query.search,
-          sortBy: query.sortBy,
-          sortOrder: query.sortOrder,
-        });
+        const result = await AdminStorageService.getStorageStats(query);
 
         return reply.send({
           success: true,
@@ -127,6 +76,9 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '获取存储统计失败');
+        if (error instanceof Error && error.message === '用户不存在') {
+          return reply.status(404).send({ success: false, error: '用户不存在' });
+        }
         return reply.status(500).send({ success: false, error: '获取存储统计失败: ' + getErrorMessage(error) });
       }
     }
@@ -185,21 +137,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
           return reply.status(400).send({ success: false, error: '无效的清理类型' });
         }
 
-        const { StorageService } = await import('../../services/storage.service.js');
-        const result = await StorageService.adminCleanupUserData(body.userIds, body.type);
-
-        OperationLogModel.create({
-          admin_id: adminId || 0,
-          action: '清理用户存储',
-          details: {
-            type: body.type,
-            userIds: body.userIds,
-            cleanedUsers: result.cleanedUsers,
-            freedSpace: result.freedSpace,
-          },
-        }).catch((logError) => {
-          request.log.error({ err: logError }, '记录操作日志失败');
-        });
+        const result = await AdminStorageService.cleanupUserData(body.userIds, body.type, adminId || 0);
 
         return reply.send({
           success: true,
@@ -245,20 +183,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
         const adminId = request.user?.id;
         const body = request.body as { days?: number };
 
-        const { StorageService } = await import('../../services/storage.service.js');
-        const result = await StorageService.adminCleanupAllOldData(body.days);
-
-        OperationLogModel.create({
-          admin_id: adminId || 0,
-          action: '清理旧数据',
-          details: {
-            days: body.days,
-            deletedCount: result.deletedCount,
-            freedSpace: result.freedSpace,
-          },
-        }).catch((logError) => {
-          request.log.error({ err: logError }, '记录操作日志失败');
-        });
+        const result = await AdminStorageService.cleanupAllOldData(body.days, adminId || 0);
 
         return reply.send({
           success: true,
@@ -298,8 +223,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { StorageService } = await import('../../services/storage.service.js');
-        const stats = await StorageService.getSystemStorageStats();
+        const stats = await AdminStorageService.getSystemStorageStats();
 
         return reply.send({
           success: true,

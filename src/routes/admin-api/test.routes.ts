@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { v4 as uuidv4 } from 'uuid';
 import { TestSessionBodyRoute, TestMachineBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
+import * as AdminTestService from '../../services/admin-test.service.js';
 
 function getErrorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -17,27 +17,11 @@ export async function adminApiTestRoutes(fastify: FastifyInstance): Promise<void
     },
     async (request: FastifyRequest<TestSessionBodyRoute>, reply: FastifyReply) => {
       try {
-        const { SessionModel } = await import('../../models/session.model.js');
-        const { v4: uuidv4 } = await import('uuid');
-
         const body = request.body;
         const count = body.count || 1;
         const userId = body.user_id || 1;
 
-        const sessions: Awaited<ReturnType<typeof SessionModel.create>>[] = [];
-        const now = new Date();
-
-        for (let i = 0; i < count; i++) {
-          const _sessionId = uuidv4();
-
-          const session = await SessionModel.create({
-            user_id: userId,
-          });
-
-          if (session) {
-            sessions.push(session);
-          }
-        }
+        const sessions = await AdminTestService.createTestSessions(count, userId);
 
         return reply.send({
           success: true,
@@ -60,29 +44,10 @@ export async function adminApiTestRoutes(fastify: FastifyInstance): Promise<void
     },
     async (request: FastifyRequest<TestMachineBodyRoute>, reply: FastifyReply) => {
       try {
-        const { MachineModel } = await import('../../models/machine.model.js');
-        const { v4: uuidv4 } = await import('uuid');
-
         const body = request.body;
         const count = body.count || 1;
 
-        const machines: Awaited<ReturnType<typeof MachineModel.register>>[] = [];
-        for (let i = 0; i < count; i++) {
-          const machineId = uuidv4();
-          const machine = await MachineModel.register({
-            id: machineId,
-            hostname: `test-machine-${Date.now()}-${i}`,
-            ip: `192.168.1.${100 + i}`,
-            grpcPort: 50051 + i,
-            proxyPort: 8080 + i,
-            maxInstances: 10,
-            instanceCount: 0,
-          });
-
-          if (machine) {
-            machines.push(machine);
-          }
-        }
+        const machines = await AdminTestService.createTestMachines(count);
 
         return reply.send({
           success: true,

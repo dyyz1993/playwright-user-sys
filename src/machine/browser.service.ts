@@ -567,13 +567,13 @@ export class BrowserService extends EventEmitter {
           browser.on('targetcreated', this.createTargetHandler(sessionId, fingerprint));
           // @ts-ignore — puppeteer-core Handler<> type mismatch (dual installations on macOS)
           browser.on('targetchanged', this.handleTargetChangeHandler(sessionId));
-          browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy));
+          browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy ?? ''));
           logger.info(`已设置浏览器事件监听 (sessionId: ${sessionId})`);
         } catch (error) {
           logger.error(`设置指纹事件监听失败 (sessionId: ${sessionId}):`, error);
         }
       } else {
-        browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy));
+        browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy ?? ''));
       }
       logger.info('primaryPage', primaryPage);
       // if (primaryPage) {
@@ -598,7 +598,7 @@ export class BrowserService extends EventEmitter {
         startTime: now,
         wsEndpoint: browserWSEndpoint,
         config: initialConfig,
-        fingerprint,
+        fingerprint: fingerprint ?? undefined,
         // 新增：存储用户数据相关信息
         userId,
         sessionId,
@@ -804,28 +804,28 @@ export class BrowserService extends EventEmitter {
 
     // 处理 userDataDir - 必须在启动时传递
     if (options.userDataDir) {
-      result.args.push(`--user-data-dir=${options.userDataDir}`);
+      result.args!.push(`--user-data-dir=${options.userDataDir}`);
       logger.info(`设置 userDataDir: ${options.userDataDir}`);
     }
 
     if (options.args && Array.isArray(options.args)) {
-      result.args.push(...options.args);
+      result.args!.push(...options.args);
     }
 
     if (options.userAgent) {
-      result.args.push(`--user-agent=${options.userAgent}`);
+      result.args!.push(`--user-agent=${options.userAgent}`);
     }
 
     if (options.proxy) {
-      result.args.push(`--proxy-server=${options.proxy}`);
+      result.args!.push(`--proxy-server=${options.proxy}`);
     }
 
     if (options.proxyBypass) {
-      result.args.push(`--proxy-bypass-list=${options.proxyBypass}`);
+      result.args!.push(`--proxy-bypass-list=${options.proxyBypass}`);
     }
 
     if (options.viewport) {
-      result.args.push(`--window-size=${options.viewport.width},${options.viewport.height}`);
+      result.args!.push(`--window-size=${options.viewport.width},${options.viewport.height}`);
     }
 
     if (options.defaultViewport) {
@@ -968,16 +968,12 @@ export class BrowserService extends EventEmitter {
       try {
         if (target.type() !== 'page') return;
         const page = await target.page();
+        if (!page) return;
         page.on('dialog', async (dialog) => {
           await dialog.dismiss();
         });
-        // page.on('filechooser', async (fileChooser: FileChooser) => {
-        //   console.log('File chooser event detected. Preventing file selection.');
-        //   await fileChooser.cancel();
-        // });
 
-        if (!page || page.isClosed() || page.url().startsWith('devtools://') || page.url().startsWith('file://'))
-          return;
+        if (page.isClosed() || page.url().startsWith('devtools://') || page.url().startsWith('file://')) return;
         logger.debug(`新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`);
 
         await this.injectMouseTrackingScript(page);
@@ -1011,6 +1007,7 @@ export class BrowserService extends EventEmitter {
         // @ts-ignore — Page type mismatch (dual puppeteer-core installations on macOS)
         await fingerprintInjector.attachFingerprintToPuppeteer(page, fingerprint);
         const currentViewport = await page.viewport();
+        if (!currentViewport) return;
 
         await page.setViewport({ width: currentViewport.width, height: currentViewport.height });
         await (

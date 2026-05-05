@@ -587,7 +587,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
 
         // 生成 CSV 内容
         const headers = ['ID', '用户名', '邮箱', '角色', '积分', '状态', '创建时间'];
-        const csvRows = [];
+        const csvRows: string[] = [];
 
         // 添加表头（添加 UTF-8 BOM 以支持 Excel 正确显示中文）
         csvRows.push('\uFEFF' + headers.map((h) => `"${h}"`).join(','));
@@ -1942,7 +1942,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         const count = body.count || 1;
         const userId = body.user_id || 1;
 
-        const sessions = [];
+        const sessions: Awaited<ReturnType<typeof SessionModel.create>>[] = [];
         const now = new Date();
 
         for (let i = 0; i < count; i++) {
@@ -1950,7 +1950,6 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
 
           const session = await SessionModel.create({
             user_id: userId,
-            machine_id: null,
           });
 
           if (session) {
@@ -1986,7 +1985,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         const body = request.body;
         const count = body.count || 1;
 
-        const machines = [];
+        const machines: Awaited<ReturnType<typeof MachineModel.register>>[] = [];
         for (let i = 0; i < count; i++) {
           const machineId = uuidv4();
           const machine = await MachineModel.register({

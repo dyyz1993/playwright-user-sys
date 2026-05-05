@@ -32,7 +32,7 @@ export class RequestLogModel {
       updated_at: new Date(),
     });
 
-    return this.findById(id);
+    return (await this.findById(id)) ?? (undefined as unknown as RequestLog);
   }
 
   // 通过 ID 查找请求日志

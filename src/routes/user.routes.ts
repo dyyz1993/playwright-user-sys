@@ -20,7 +20,8 @@ import {
 } from '../schemas/index.js';
 
 function toISO(v: Date | string | null | undefined): string | null {
-  if (!v) return v === undefined ? undefined : null;
+  if (v === undefined) return null;
+  if (!v) return null;
   return v instanceof Date ? v.toISOString() : String(v);
 }
 

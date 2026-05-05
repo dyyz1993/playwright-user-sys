@@ -97,11 +97,11 @@ export class SessionModel {
   static async create(data: CreateSessionInput): Promise<Session | null> {
     const sessionId = uuidv4();
 
-    let optionsJson = null;
+    let optionsJson: string | null = null;
     if (data.options) {
       try {
         optionsJson = JSON.stringify(data.options);
-        JSON.parse(optionsJson);
+        JSON.parse(optionsJson!);
       } catch (error) {
         logger.error('Invalid session options JSON:', error);
         throw new Error('Invalid options format: must be valid JSON');

@@ -11,16 +11,16 @@ export default fp(async function (fastify: FastifyInstance) {
   fastify.decorate('verifyJWT', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // 先从 Authorization 头中获取令牌
-      let token = null;
+      let token: string | null = null;
       const authHeader = request.headers.authorization;
       if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.split(' ')[1];
+        token = authHeader.split(' ')[1] ?? null;
         request.log.info('从 Authorization 头中获取到令牌');
       }
 
       // 如果没有从头中获取到令牌，尝试从 cookie 中获取
       if (!token && request.cookies && request.cookies.token) {
-        token = request.cookies.token;
+        token = request.cookies.token ?? null;
         request.log.info('从 cookie 中获取到令牌');
       }
 
@@ -51,7 +51,7 @@ export default fp(async function (fastify: FastifyInstance) {
         process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
       request.log.debug({ jwtSecret: jwtSecret ? 'set' : 'not set' }, 'JWT_SECRET');
       request.log.debug('使用 JWT 密钥验证令牌');
-      request.log.debug({ tokenPrefix: token?.substring(0, 20) + '...' }, 'Token 前缀');
+      request.log.debug({ tokenPrefix: token.substring(0, 20) + '...' }, 'Token 前缀');
 
       const decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
       request.log.debug({ decoded: JSON.stringify(decoded) }, '完整解码后的 token');

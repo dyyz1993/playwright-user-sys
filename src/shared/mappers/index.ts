@@ -14,8 +14,8 @@ import type {
   SessionReleaseDTO,
 } from '../types/dto.js';
 
-function toISO(v: Date | string | null | undefined): string | null | undefined {
-  if (v === undefined) return undefined;
+function toISO(v: Date | string | null | undefined): string | null {
+  if (v === undefined) return null;
   if (!v) return null;
   return v instanceof Date ? v.toISOString() : String(v);
 }

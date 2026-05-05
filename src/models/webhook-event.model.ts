@@ -28,7 +28,7 @@ export class WebhookEventModel {
       updated_at: new Date(),
     });
 
-    return this.findById(id);
+    return (await this.findById(id))!;
   }
 
   // 通过 ID 查找 Webhook 事件

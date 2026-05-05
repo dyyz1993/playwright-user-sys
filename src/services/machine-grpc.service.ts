@@ -200,7 +200,7 @@ class MachineConnectionManager extends EventEmitter {
   async getClient(machineId: string): Promise<MachineServiceClient | null> {
     // 如果已经有客户端，直接返回
     if (this.clients.has(machineId)) {
-      return this.clients.get(machineId);
+      return this.clients.get(machineId) ?? null;
     }
 
     try {
@@ -1073,7 +1073,7 @@ const serviceImplementation = {
 
       // 将请求转发到机器端
       try {
-        const result = await connectionManager.launchBrowser(machineId, session_id, options);
+        const result = await connectionManager.launchBrowser(machineId, session_id, options ?? {});
         logger.info(`浏览器启动成功 (${machineId}, ${session_id})`);
         callback(null, result);
       } catch (error: unknown) {

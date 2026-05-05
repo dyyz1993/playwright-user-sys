@@ -94,7 +94,7 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
 
         // 计算会话持续时间
         const now = new Date();
-        const startTime = new Date(session.start_time);
+        const startTime = new Date(session.start_time ?? 0);
         const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
 
         // 在内存中更新会话状态
@@ -102,7 +102,7 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
           ...session,
           status: SessionStatus.ERROR,
           last_activity: now,
-        });
+        } as Parameters<typeof memoryStore.updateSessionStatus>[0]);
 
         // 同时在数据库中标记会话为错误状态
         await SessionModel.markError(sessionId, duration);

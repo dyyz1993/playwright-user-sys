@@ -68,7 +68,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
         // 不再限制只有管理员可以登录
 
         // 生成 JWT 令牌
-        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, config.jwt.secret, {
+        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, config.jwt.secret!, {
           expiresIn: config.jwt.expiresIn,
         });
 

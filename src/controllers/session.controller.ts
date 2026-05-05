@@ -181,7 +181,7 @@ export async function releaseSession(request: FastifyRequest<IdParamRoute>, repl
     if (!session.machine_id) {
       // 计算会话持续时间
       const now = new Date();
-      const startTime = new Date(session.start_time);
+      const startTime = new Date(session.start_time ?? 0);
       const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
 
       // 使用 markDisconnected 方法更新会话状态并计算点数
@@ -203,7 +203,7 @@ export async function releaseSession(request: FastifyRequest<IdParamRoute>, repl
 
       // 计算会话持续时间
       const now = new Date();
-      const startTime = new Date(session.start_time);
+      const startTime = new Date(session.start_time ?? 0);
       const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
       request.log.info(
         `计算会话持续时间 (${sessionId}): 开始时间=${startTime.toISOString()}, 结束时间=${now.toISOString()}, 持续时间=${duration}秒, 数据源: 管理端`
@@ -238,7 +238,7 @@ export async function releaseSession(request: FastifyRequest<IdParamRoute>, repl
 
       // 计算会话持续时间
       const now = new Date();
-      const startTime = new Date(session.start_time);
+      const startTime = new Date(session.start_time ?? 0);
       const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
 
       // 计算消耗的点数（每分钟1点）

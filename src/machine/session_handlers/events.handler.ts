@@ -310,7 +310,7 @@ async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string)
               ? `iframe.${CSS.escape(activeElement.classList[0])}`
               : 'iframe');
 
-        activeElement = (activeElement as HTMLIFrameElement).contentWindow.document.activeElement as HTMLElement;
+        activeElement = (activeElement as HTMLIFrameElement).contentWindow!.document.activeElement as HTMLElement;
       }
       if (
         activeElement &&
@@ -475,7 +475,7 @@ async function handleMouseEvents(
           if (!iframeHandle) {
             return;
           }
-          targetContext = await iframeHandle.contentFrame();
+          targetContext = (await iframeHandle.contentFrame())!;
         }
 
         try {
@@ -491,7 +491,7 @@ async function handleMouseEvents(
             input.dispatchEvent(event);
           }, selector);
 
-          await targetContext.type(selector, value, { delay: 30 + Math.random() * 50 });
+          await targetContext.type(selector, value ?? '', { delay: 30 + Math.random() * 50 });
           logger.info(`Successfully filled input for session ${sessionId}`);
           sendResponse(ws, requestType, { success: true });
         } catch (fillError) {
@@ -524,7 +524,7 @@ async function handleMouseEvents(
           let coords: { tx: number; ty: number } | null = null;
           if (['mouseClick', 'mouseMove', 'mouseDown', 'mouseUp'].includes(eventType)) {
             logger.debug(`data: ${JSON.stringify(data)}`);
-            coords = browserService.getTransformedCoordinates(sessionId, data.x, data.y);
+            coords = browserService.getTransformedCoordinates(sessionId, data.x ?? 0, data.y ?? 0);
             if (!coords) throw new Error('Cannot get transformed coordinates');
           }
           logger.info(eventType, `Coords: ${JSON.stringify(coords)}`);

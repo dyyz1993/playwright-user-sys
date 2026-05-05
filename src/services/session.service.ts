@@ -190,7 +190,7 @@ export async function handleSessionDisconnect(sessionId: string, userId: number,
 
     // 计算会话持续时间
     const now = new Date();
-    const startTime = new Date(session.start_time);
+    const startTime = new Date(session.start_time ?? 0);
     const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
     logger.info(
       `计算会话持续时间 (${sessionId}): 开始时间=${startTime.toISOString()}, 结束时间=${now.toISOString()}, 持续时间=${duration}秒`

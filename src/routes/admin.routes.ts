@@ -19,7 +19,7 @@ import {
 // 辅助函数：生成模拟历史数据
 function generateMockHistoryData(type: string) {
   const now = Date.now();
-  const data = [];
+  const data: { time: string; value: number }[] = [];
   for (let i = 23; i >= 0; i--) {
     const time = new Date(now - i * 3600000);
     let value;
@@ -1052,7 +1052,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         // 为每条日志添加用户信息
         const logsWithUserInfo = await Promise.all(
           items.map(async (log) => {
-            let adminUser = null;
+            let adminUser: Awaited<ReturnType<typeof UserModel.findById>> = null;
             if (log.admin_id) {
               adminUser = await UserModel.findById(log.admin_id);
             }

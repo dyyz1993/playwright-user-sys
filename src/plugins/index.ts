@@ -40,6 +40,7 @@ export default fp(async function (fastify: FastifyInstance) {
     ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
     : ['http://localhost:3000', 'http://localhost:5173'];
 
+  // @ts-ignore — cors origin callback type mismatch with fastify-cors typings
   await fastify.register(cors, {
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin) return callback(null, true);
@@ -88,6 +89,7 @@ export default fp(async function (fastify: FastifyInstance) {
   // 不设置 secret，因为 JWT token 本身已经签名了
   await fastify.register(cookie);
 
+  // @ts-ignore — @fastify/session option type mismatch
   await fastify.register(session, {
     cookieName: 'sessionId',
     secret: config.jwt.secret,

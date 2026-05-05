@@ -610,12 +610,12 @@ describe('SessionController', () => {
       ...mockSessions,
       items: mockSessions.items.map((item: any) => ({
         ...item,
-        start_time: undefined,
-        end_time: undefined,
-        disconnected_at: undefined,
-        last_activity: undefined,
+        start_time: null,
+        end_time: null,
+        disconnected_at: null,
+        last_activity: null,
         created_at: item.created_at instanceof Date ? item.created_at.toISOString() : item.created_at,
-        updated_at: undefined,
+        updated_at: null,
       })),
     });
   });
@@ -673,12 +673,12 @@ describe('SessionController', () => {
       ...mockSessions,
       items: mockSessions.items.map((item: any) => ({
         ...item,
-        start_time: undefined,
-        end_time: undefined,
-        disconnected_at: undefined,
-        last_activity: undefined,
-        created_at: undefined,
-        updated_at: undefined,
+        start_time: null,
+        end_time: null,
+        disconnected_at: null,
+        last_activity: null,
+        created_at: null,
+        updated_at: null,
       })),
     });
   });

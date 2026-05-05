@@ -42,10 +42,26 @@ const packageDefinition = protoLoader.loadSync(protoPath, {
 });
 
 interface MachineServiceClient {
-  Register(request: RegisterRequest, metadata: grpc.Metadata, callback: (err: unknown, response: RegisterResponse) => void): void;
-  LaunchBrowser(request: LaunchBrowserRequest, metadata: grpc.Metadata, callback: (err: unknown, response: SessionResponse) => void): void;
-  CloseBrowser(request: CloseBrowserRequest, metadata: grpc.Metadata, callback: (err: unknown, response: SessionStatusUpdate) => void): void;
-  GetMachineStatus(request: MachineStatusRequest, metadata: grpc.Metadata, callback: (err: unknown, response: MachineStatusResponse) => void): void;
+  Register(
+    request: RegisterRequest,
+    metadata: grpc.Metadata,
+    callback: (err: unknown, response: RegisterResponse) => void
+  ): void;
+  LaunchBrowser(
+    request: LaunchBrowserRequest,
+    metadata: grpc.Metadata,
+    callback: (err: unknown, response: SessionResponse) => void
+  ): void;
+  CloseBrowser(
+    request: CloseBrowserRequest,
+    metadata: grpc.Metadata,
+    callback: (err: unknown, response: SessionStatusUpdate) => void
+  ): void;
+  GetMachineStatus(
+    request: MachineStatusRequest,
+    metadata: grpc.Metadata,
+    callback: (err: unknown, response: MachineStatusResponse) => void
+  ): void;
 }
 
 const proto = grpc.loadPackageDefinition(packageDefinition).machine as unknown as {
@@ -231,11 +247,9 @@ class MachineConnectionManager extends EventEmitter {
       // 处理心跳消息
       if (message.heartbeat) {
         await this.handleHeartbeat(machineId, message.heartbeat);
-      }
-      else if (message.session_status) {
+      } else if (message.session_status) {
         await this.handleSessionStatus(machineId, message.session_status);
-      }
-      else if (message.session_screenshot) {
+      } else if (message.session_screenshot) {
         await this.handleSessionScreenshot(machineId, message.session_screenshot);
       }
       // 未知消息类型
@@ -250,10 +264,7 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 处理心跳消息
    */
-  private async handleHeartbeat(
-    machineId: string,
-    heartbeat: Heartbeat
-  ): Promise<void> {
+  private async handleHeartbeat(machineId: string, heartbeat: Heartbeat): Promise<void> {
     try {
       logger.debug(`收到心跳 (${machineId}): ${JSON.stringify(heartbeat)}`);
 
@@ -330,11 +341,7 @@ class MachineConnectionManager extends EventEmitter {
    * 处理会话状态更新
    */
   private async handleSessionStatus(machineId: string, status: SessionStatusUpdate): Promise<void> {
-    const {
-      session_id,
-      status: sessionStatus,
-      duration: reportedDuration,
-    } = status;
+    const { session_id, status: sessionStatus, duration: reportedDuration } = status;
     try {
       // 使用可变变量存储持续时间，以便后续可以修改
       let duration = reportedDuration;
@@ -1043,7 +1050,7 @@ const serviceImplementation = {
 
       const { session_id, options } = request;
 
-      const machineId = call.metadata.get('machine_id')?.[0] as string || '';
+      const machineId = (call.metadata.get('machine_id')?.[0] as string) || '';
 
       if (!machineId) {
         logger.error(`启动浏览器请求缺少机器 ID`);
@@ -1097,7 +1104,7 @@ const serviceImplementation = {
 
       const { session_id } = request;
 
-      const machineId = call.metadata.get('machine_id')?.[0] as string || '';
+      const machineId = (call.metadata.get('machine_id')?.[0] as string) || '';
 
       if (!machineId) {
         logger.error(`关闭浏览器请求缺少机器 ID`);

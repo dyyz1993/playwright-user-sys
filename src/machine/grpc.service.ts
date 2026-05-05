@@ -132,10 +132,7 @@ interface MachineServiceConstructor {
 }
 
 interface MachineServiceClient {
-  Register(
-    request: RegisterRequest,
-    callback: (err: unknown, response: RegisterResponse) => void
-  ): void;
+  Register(request: RegisterRequest, callback: (err: unknown, response: RegisterResponse) => void): void;
   Connect(): grpc.ClientDuplexStream<MachineMessage, ManagerMessage>;
 }
 
@@ -953,7 +950,7 @@ const serviceImplementation = {
       logger.info(`收到启动浏览器请求:`, request);
 
       const { session_id, user_id } = request;
-      const protoOptions = request.options || {} as BrowserOptions;
+      const protoOptions = request.options || ({} as BrowserOptions);
 
       const convertedOptions: Record<string, unknown> = {};
 
@@ -995,10 +992,11 @@ const serviceImplementation = {
               secure: cookie.secure,
               sameSite: cookie.same_site,
             })),
-            origins: storageStateData.origins?.map((origin) => ({
-              origin: origin.origin,
-              localStorage: origin.localStorage,
-            })) || [],
+            origins:
+              storageStateData.origins?.map((origin) => ({
+                origin: origin.origin,
+                localStorage: origin.localStorage,
+              })) || [],
           };
         }
       }

@@ -105,7 +105,11 @@ export class NativeWebSocketProxyService {
     logger.info('原生WebSocket代理服务已成功初始化，正在监听upgrade事件');
   }
 
-  private async handleWebSocketUpgrade(request: http.IncomingMessage, socket: stream.Duplex, head: Buffer): Promise<void> {
+  private async handleWebSocketUpgrade(
+    request: http.IncomingMessage,
+    socket: stream.Duplex,
+    head: Buffer
+  ): Promise<void> {
     let sessionId: string | null = null;
     let userId: number | null = null;
     let machineId: string | null = null;

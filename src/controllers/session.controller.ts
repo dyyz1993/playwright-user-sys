@@ -14,10 +14,7 @@ import {
   toCreateSessionResponse,
   toSessionReleaseDTO,
 } from '@shared/mappers/index.js';
-import {
-  IdParamRoute,
-  PaginationQueryRoute,
-} from '@shared/types/routes.js';
+import { IdParamRoute, PaginationQueryRoute } from '@shared/types/routes.js';
 
 import { createBrowserSession } from '../services/session.service.js';
 import { connectionManager } from '../services/machine-grpc.service.js';
@@ -63,7 +60,7 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
       const sessionResult = await createBrowserSession(userId, options);
 
       // 构建前端 Viewer URL
-      const frontendBaseUrl = (env as Record<string, unknown>).VITE_FRONTEND_URL as string || 'http://localhost:5173';
+      const frontendBaseUrl = ((env as Record<string, unknown>).VITE_FRONTEND_URL as string) || 'http://localhost:5173';
       const viewerUrl = `${frontendBaseUrl}/viewer?sessionId=${sessionResult.sessionId}`;
       request.log.info(`构建的前端 Viewer URL: ${viewerUrl}`);
 
@@ -257,7 +254,9 @@ export async function releaseSession(request: FastifyRequest<IdParamRoute>, repl
       );
 
       // 记录错误信息
-      request.log.error(`关闭浏览器错误信息: ${machineError instanceof Error ? machineError.message : String(machineError)}`);
+      request.log.error(
+        `关闭浏览器错误信息: ${machineError instanceof Error ? machineError.message : String(machineError)}`
+      );
 
       // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
 

@@ -782,27 +782,30 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     );
 
     // 调试端点 - 手动验证 JWT
-    fastify.post('/admin/debug/verify-token', async (request: FastifyRequest<DebugVerifyTokenBodyRoute>, _reply: FastifyReply) => {
-      const jwt = (await import('jsonwebtoken')).default;
-      const { env } = await import('../config/env.js');
+    fastify.post(
+      '/admin/debug/verify-token',
+      async (request: FastifyRequest<DebugVerifyTokenBodyRoute>, _reply: FastifyReply) => {
+        const jwt = (await import('jsonwebtoken')).default;
+        const { env } = await import('../config/env.js');
 
-      const body = request.body;
-      const token = body.token || request.cookies?.token;
+        const body = request.body;
+        const token = body.token || request.cookies?.token;
 
-      if (!token) {
-        return { error: 'No token provided' };
+        if (!token) {
+          return { error: 'No token provided' };
+        }
+
+        const jwtSecret =
+          process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
+
+        try {
+          const decoded = jwt.verify(token, jwtSecret);
+          return { success: true, decoded };
+        } catch (e: unknown) {
+          return { success: false, error: getErrorMessage(e) };
+        }
       }
-
-      const jwtSecret =
-        process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
-
-      try {
-        const decoded = jwt.verify(token, jwtSecret);
-        return { success: true, decoded };
-      } catch (e: unknown) {
-        return { success: false, error: getErrorMessage(e) };
-      }
-    });
+    );
 
     // 调试端点 - 测试 verifyJWT 中间件
     fastify.get(

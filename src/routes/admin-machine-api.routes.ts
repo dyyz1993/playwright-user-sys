@@ -7,11 +7,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { errorResponseSchema, idParamSchema } from '../schemas/index.js';
-import {
-  IdParamRoute,
-  UpdateMachineBodyRoute,
-  MachineIdArrayBodyRoute,
-} from '@shared/types/routes.js';
+import { IdParamRoute, UpdateMachineBodyRoute, MachineIdArrayBodyRoute } from '@shared/types/routes.js';
 
 /**
  * 机器管理的额外 API 路由

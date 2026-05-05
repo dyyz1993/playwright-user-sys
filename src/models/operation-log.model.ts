@@ -21,8 +21,8 @@ function parseLogDetails(raw: OperationLogRow): OperationLog {
       ...raw,
       details: raw.details
         ? typeof raw.details === 'string'
-          ? JSON.parse(raw.details) as Record<string, unknown>
-          : raw.details as Record<string, unknown>
+          ? (JSON.parse(raw.details) as Record<string, unknown>)
+          : (raw.details as Record<string, unknown>)
         : null,
       created_at: new Date(raw.created_at),
       updated_at: new Date(raw.updated_at),

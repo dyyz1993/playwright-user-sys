@@ -10,10 +10,7 @@ import {
   paginationQuerySchema,
 } from '../schemas/index.js';
 import { toMachineMemoryDTO, toMachineInfoDTO } from '@shared/mappers/index.js';
-import {
-  IdParamRoute,
-  CleanupOldMachinesBodyRoute,
-} from '@shared/types/routes.js';
+import { IdParamRoute, CleanupOldMachinesBodyRoute } from '@shared/types/routes.js';
 
 // 注册机器
 export async function registerMachine(request: FastifyRequest, reply: FastifyReply) {

@@ -148,7 +148,10 @@ export class SessionManager {
    * @returns 释放结果
    */
   async release(sessionId: string): Promise<{ id: string; status: SessionStatus; duration?: number }> {
-    const response = await this.client.request<{ id: string; status: SessionStatus; duration?: number }>('POST', `/api/sessions/${sessionId}/release`);
+    const response = await this.client.request<{ id: string; status: SessionStatus; duration?: number }>(
+      'POST',
+      `/api/sessions/${sessionId}/release`
+    );
     return response.data;
   }
 
@@ -158,7 +161,10 @@ export class SessionManager {
    * @returns 截图 URL
    */
   async getScreenshot(sessionId: string): Promise<{ screenshot_url: string }> {
-    const response = await this.client.request<{ screenshot_url: string }>('GET', `/api/sessions/${sessionId}/screenshot`);
+    const response = await this.client.request<{ screenshot_url: string }>(
+      'GET',
+      `/api/sessions/${sessionId}/screenshot`
+    );
     return response.data;
   }
 }

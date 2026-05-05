@@ -53,8 +53,8 @@ function parseSessionOptions(raw: SessionRow & Record<string, unknown>): Session
       ...raw,
       options: raw.options
         ? typeof raw.options === 'string'
-          ? JSON.parse(raw.options) as SessionCreateOptions
-          : raw.options as SessionCreateOptions
+          ? (JSON.parse(raw.options) as SessionCreateOptions)
+          : (raw.options as SessionCreateOptions)
         : null,
     } as unknown as Session;
   } catch {
@@ -68,8 +68,8 @@ function parseSessionRowWithDates(raw: SessionRow & Record<string, unknown>): Se
       ...raw,
       options: raw.options
         ? typeof raw.options === 'string'
-          ? JSON.parse(raw.options) as SessionCreateOptions
-          : raw.options as SessionCreateOptions
+          ? (JSON.parse(raw.options) as SessionCreateOptions)
+          : (raw.options as SessionCreateOptions)
         : null,
       start_time: raw.start_time ? new Date(raw.start_time) : null,
       end_time: raw.end_time ? new Date(raw.end_time) : null,
@@ -971,11 +971,18 @@ export class SessionModel {
 
       // 统计数据
       const total = sessions.length;
-      const active = sessions.filter((s: SessionRow & { username?: string }) => ['created', 'connected'].includes(s.status)).length;
-      const ended = sessions.filter((s: SessionRow & { username?: string }) => ['disconnected', 'expired', 'completed'].includes(s.status)).length;
+      const active = sessions.filter((s: SessionRow & { username?: string }) =>
+        ['created', 'connected'].includes(s.status)
+      ).length;
+      const ended = sessions.filter((s: SessionRow & { username?: string }) =>
+        ['disconnected', 'expired', 'completed'].includes(s.status)
+      ).length;
       const error = sessions.filter((s: SessionRow & { username?: string }) => s.status === 'error').length;
 
-      const totalCreditsUsed = sessions.reduce((sum, s: SessionRow & { username?: string }) => sum + (s.credits_used || 0), 0);
+      const totalCreditsUsed = sessions.reduce(
+        (sum, s: SessionRow & { username?: string }) => sum + (s.credits_used || 0),
+        0
+      );
       const totalDuration = sessions.reduce((sum, s: SessionRow & { username?: string }) => sum + (s.duration || 0), 0);
       const avgDuration = total > 0 ? Math.round(totalDuration / total) : 0;
 

@@ -99,9 +99,15 @@ jobs:
         run: docker compose -f docker/docker-compose.e2e.yml down -v
 
   feishu-notify:
-    needs: e2e-test
+    name: Feishu Notification
+    needs: [e2e-test]
     if: always()
     uses: dyyz1993/ci-tools/.github/workflows/feishu-notify.yml@main
     with:
-      workflow_name: "E2E Smoke Test"
+      jobs: '{"e2e-test":"${{ needs.e2e-test.result }}"}'
+      sha: ${{ github.sha }}
+      ref: ${{ github.ref_name }}
+      actor: ${{ github.actor }}
+      repo: ${{ github.repository }}
+      run-id: ${{ github.run_id }}
     secrets: inherit

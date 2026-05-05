@@ -2,6 +2,7 @@ import { db } from '../../config/database.js';
 import { SessionStatus, WebhookEventType } from '@shared/types/index.js';
 import { logger } from '@shared/utils/logger.js';
 import type { Session } from './types.js';
+import { crudMethods } from './session-crud.model.js';
 
 export const statusMethods = {
   async markMachineSessionsAsDisconnected(machineId: string): Promise<number> {
@@ -28,13 +29,13 @@ export const statusMethods = {
       updated_at: new Date(),
     });
 
-    return this.findById(id);
+    return crudMethods.findById(id);
   },
 
   async markDisconnected(id: string, duration: number): Promise<Session | null> {
     const { logger } = await import('@shared/utils/logger.js');
 
-    const session = await this.findById(id);
+    const session = await crudMethods.findById(id);
     if (!session) {
       logger.error(`标记会话已断开失败: 会话不存在 (${id})`);
       return null;
@@ -94,7 +95,7 @@ export const statusMethods = {
 
       if (rowsAffected === 0) {
         logger.info(`会话已是终态或已被其他请求更新 (${id}), 直接返回当前状态`);
-        return await this.findById(id);
+        return await crudMethods.findById(id);
       }
 
       logger.info(`数据库更新成功 (${id}), 影响行数: ${rowsAffected}`);
@@ -129,7 +130,7 @@ export const statusMethods = {
         logger.info(`无需额外扣费 (${id}), credits_used 未增加`);
       }
 
-      return await this.findById(id);
+      return await crudMethods.findById(id);
     } catch (error) {
       logger.error(`标记会话已断开失败 (${id}):`, error);
       return null;
@@ -139,7 +140,7 @@ export const statusMethods = {
   async markExpired(id: string, duration: number): Promise<Session | null> {
     const { logger } = await import('@shared/utils/logger.js');
 
-    const session = await this.findById(id);
+    const session = await crudMethods.findById(id);
     if (!session) return null;
 
     const previousCreditsUsed = session.credits_used || 0;
@@ -179,7 +180,7 @@ export const statusMethods = {
       updated_at: new Date(),
     });
 
-    const updatedSession = await this.findById(id);
+    const updatedSession = await crudMethods.findById(id);
 
     if (updatedSession && creditsUsed > previousCreditsUsed) {
       const creditsToDeduct = creditsUsed - previousCreditsUsed;
@@ -197,7 +198,7 @@ export const statusMethods = {
   async markError(id: string, duration: number = 0): Promise<Session | null> {
     const { logger } = await import('@shared/utils/logger.js');
 
-    const session = await this.findById(id);
+    const session = await crudMethods.findById(id);
     if (!session) return null;
 
     const previousCreditsUsed = session.credits_used || 0;
@@ -237,7 +238,7 @@ export const statusMethods = {
       updated_at: new Date(),
     });
 
-    const updatedSession = await this.findById(id);
+    const updatedSession = await crudMethods.findById(id);
 
     if (updatedSession && creditsUsed > previousCreditsUsed) {
       const creditsToDeduct = creditsUsed - previousCreditsUsed;

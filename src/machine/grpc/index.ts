@@ -57,7 +57,7 @@ export function getServerConfig(): MachineConfig {
 let _grpcClientInstance: GrpcClient | null = null;
 
 export class GrpcClient extends EventEmitter {
-  private client: MachineServiceClient;
+  private client!: MachineServiceClient;
   private connectionManager: ConnectionManager;
   private config: MachineConfig;
 

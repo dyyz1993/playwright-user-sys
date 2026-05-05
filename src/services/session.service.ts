@@ -5,6 +5,104 @@ import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/t
 import { logger } from '@shared/utils/logger.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { env } from '../config/env.js';
+import { db } from '../config/database.js';
+
+export interface ReleaseSessionOptions {
+  sessionId: string;
+  userId: number;
+  machineId?: string;
+  force?: boolean;
+}
+
+export interface ReleaseSessionResult {
+  sessionId: string;
+  duration: number;
+  creditsUsed: number;
+  alreadyDisconnected: boolean;
+}
+
+const TERMINAL_STATUSES: SessionStatus[] = [
+  SessionStatus.DISCONNECTED,
+  SessionStatus.ERROR,
+  SessionStatus.EXPIRED,
+  SessionStatus.COMPLETED,
+];
+
+export async function releaseSession(options: ReleaseSessionOptions): Promise<ReleaseSessionResult> {
+  const { sessionId, userId, machineId } = options;
+
+  return db.transaction(async (trx) => {
+    const session = await trx('sessions').where({ id: sessionId }).first();
+    if (!session) {
+      throw new Error('会话不存在');
+    }
+
+    if (TERMINAL_STATUSES.includes(session.status as SessionStatus)) {
+      return {
+        sessionId,
+        duration: session.duration || 0,
+        creditsUsed: session.credits_used || 0,
+        alreadyDisconnected: true,
+      };
+    }
+
+    const now = new Date();
+    const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
+    const duration = Math.max(0, Math.floor((now.getTime() - startTime.getTime()) / 1000));
+
+    const creditsUsed = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+    const initialCreditsUsed = session.credits_used || 0;
+    const creditsToDeduct = Math.max(0, creditsUsed - initialCreditsUsed);
+
+    const updateResult = await trx('sessions').where({ id: sessionId }).whereNotIn('status', TERMINAL_STATUSES).update({
+      status: SessionStatus.DISCONNECTED,
+      end_time: now,
+      duration,
+      credits_used: creditsUsed,
+      updated_at: now,
+    });
+
+    if (updateResult === 0) {
+      const current = await trx('sessions').where({ id: sessionId }).first();
+      return {
+        sessionId,
+        duration: current?.duration || duration,
+        creditsUsed: current?.credits_used || creditsUsed,
+        alreadyDisconnected: true,
+      };
+    }
+
+    if (creditsToDeduct > 0) {
+      const user = await trx('users').where({ id: userId }).first();
+      if (user) {
+        const balanceAfter = user.credits - creditsToDeduct;
+        await trx('users').where({ id: userId }).decrement('credits', creditsToDeduct);
+
+        await trx('credit_history').insert({
+          user_id: userId,
+          amount: creditsToDeduct,
+          action: 'use',
+          balance_after: balanceAfter,
+          description: `Session usage: ${sessionId.substring(0, 8)}... (${duration}s)`,
+          metadata: JSON.stringify({ session_id: sessionId, duration }),
+          created_at: now,
+          updated_at: now,
+        });
+      }
+    }
+
+    if (machineId) {
+      await trx('machines')
+        .where({ id: machineId })
+        .update({
+          instance_count: trx.raw('CASE WHEN instance_count > 0 THEN instance_count - 1 ELSE 0 END'),
+          updated_at: now,
+        });
+    }
+
+    return { sessionId, duration, creditsUsed, alreadyDisconnected: false };
+  });
+}
 
 /**
  * 创建浏览器会话的核心服务
@@ -165,70 +263,27 @@ export async function handleSessionDisconnect(sessionId: string, userId: number,
   try {
     logger.info(`处理会话断开连接 (sessionId: ${sessionId})`);
 
-    // 查找会话记录
-    const session = await SessionModel.findById(sessionId);
-    if (!session) {
-      logger.error(`会话不存在: ${sessionId}`);
-      return;
-    }
+    const result = await releaseSession({ sessionId, userId, machineId });
 
-    // 检查会话状态，避免重复处理
-    if (session.status === SessionStatus.DISCONNECTED || session.status === SessionStatus.ERROR) {
+    if (result.alreadyDisconnected) {
       logger.info(`会话已经处于断开状态: ${sessionId}`);
       return;
     }
 
     try {
-      // 通知机器节点关闭浏览器
       const { connectionManager } = await import('../services/machine-grpc.service.js');
       logger.info(`向机器 ${machineId} 发送关闭浏览器请求 (sessionId: ${sessionId})`);
       await connectionManager.closeBrowser(machineId, sessionId);
     } catch (error) {
       logger.error(`关闭浏览器失败 (sessionId: ${sessionId}):`, error);
-      // 即使关闭浏览器失败，仍然继续处理会话断开
     }
 
-    // 计算会话持续时间
-    const now = new Date();
-    const startTime = new Date(session.start_time ?? 0);
-    const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-    logger.info(
-      `计算会话持续时间 (${sessionId}): 开始时间=${startTime.toISOString()}, 结束时间=${now.toISOString()}, 持续时间=${duration}秒`
-    );
-
-    // 计算消耗的点数（每分钟1点，至少消耗1点）
-    const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
-
-    // 更新会话状态
-    await SessionModel.markDisconnected(sessionId, duration);
-    logger.info(`更新会话状态为已断开 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`);
-
-    await MachineModel.decrementInstanceCount(machineId);
-
-    const disconnectedAt = new Date();
     await createWebhookEvent(userId, WebhookEventType.SESSION_DISCONNECTED, {
       session_id: sessionId,
-      disconnected_at: disconnectedAt,
+      disconnected_at: new Date(),
     });
 
-    const updatedSession = await SessionModel.findById(sessionId);
-    if (!updatedSession) {
-      logger.error(`无法获取更新后的会话信息 (${sessionId})`);
-      return;
-    }
-
-    if (updatedSession.credits_used === 0 && minutes > 0) {
-      try {
-        await UserModel.deductCredits(userId, minutes);
-        logger.info(`已扣除用户 ${userId} 的点数: ${minutes} 点 (${sessionId})`);
-      } catch (error) {
-        logger.error('扣除点数失败:', error);
-      }
-    } else if (updatedSession.credits_used === 0 && minutes === 0) {
-      logger.info(`会话无消耗点数，跳过扣除 (${sessionId})`);
-    } else {
-      logger.info(`会话已有消耗点数，不重复扣除 (${sessionId}): 消耗点数=${updatedSession.credits_used}点`);
-    }
+    logger.info(`会话断开处理完成 (${sessionId}): 持续时间=${result.duration}秒, 消耗点数=${result.creditsUsed}点`);
   } catch (error) {
     logger.error(`处理会话断开连接失败 (sessionId: ${sessionId}):`, error);
   }

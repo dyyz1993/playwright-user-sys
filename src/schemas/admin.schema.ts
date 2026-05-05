@@ -136,7 +136,7 @@ export const userListQuerySchema = z.object({
 export const adminGetUsersResponseSchema = z.object({
   success: z.boolean(),
   data: z.object({
-    items: z.array(z.any()),
+    items: z.array(z.record(z.unknown())),
     total: z.number(),
     page: z.number(),
     limit: z.number(),

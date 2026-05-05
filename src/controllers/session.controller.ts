@@ -1,7 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { SessionModel } from '../models/session.model.js';
-import { MachineModel } from '../models/machine.model.js';
 import { UserModel } from '../models/user.model.js';
 import { sendSuccess, sendError, sendCreated } from '../utils/response.js';
 import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/types/index.js';
@@ -16,7 +15,7 @@ import {
 } from '@shared/mappers/index.js';
 import { IdParamRoute, PaginationQueryRoute } from '@shared/types/routes.js';
 
-import { createBrowserSession } from '../services/session.service.js';
+import * as sessionService from '../services/session.service.js';
 import { connectionManager } from '../services/machine-grpc.service.js';
 
 interface User {
@@ -57,7 +56,7 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
 
     try {
       // 使用共享服务创建会话
-      const sessionResult = await createBrowserSession(userId, options);
+      const sessionResult = await sessionService.createBrowserSession(userId, options);
 
       // 构建前端 Viewer URL
       const frontendBaseUrl = ((env as Record<string, unknown>).VITE_FRONTEND_URL as string) || 'http://localhost:5173';
@@ -164,108 +163,39 @@ export async function releaseSession(request: FastifyRequest<IdParamRoute>, repl
     const userId = request.user.id;
     const sessionId = request.params.id;
 
-    // 查找会话
     const session = await SessionModel.findById(sessionId);
     if (!session) {
       return sendError(reply, '会话不存在', 404);
     }
 
-    // 检查会话是否属于当前用户
     if (session.user_id !== userId && request.user.role !== 'admin') {
       return sendError(reply, '无权操作此会话', 403);
     }
 
-    // 检查会话是否有关联的机器
-    // 即使会话已经是 DISCONNECTED 状态，也要尝试关闭浏览器以确保清理
-    // （例如：清理共享浏览器记录 userSharedBrowsers）
-    if (!session.machine_id) {
-      // 计算会话持续时间
-      const now = new Date();
-      const startTime = new Date(session.start_time ?? 0);
-      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+    const result = await sessionService.releaseSession({
+      sessionId,
+      userId: session.user_id,
+      machineId: session.machine_id || undefined,
+    });
 
-      // 使用 markDisconnected 方法更新会话状态并计算点数
-      // 注意：markDisconnected 已经自动扣除了用户积分
-      const updatedSession = await SessionModel.markDisconnected(sessionId, duration);
+    if (session.machine_id && !result.alreadyDisconnected) {
+      try {
+        await connectionManager.closeBrowser(session.machine_id, sessionId);
+      } catch (machineError: unknown) {
+        request.log.error({ err: machineError, sessionId }, '关闭浏览器实例失败（会话已释放）');
+      }
 
-      return sendSuccess(
-        reply,
-        toSessionReleaseDTO(sessionId, SessionStatus.DISCONNECTED, updatedSession?.duration || duration),
-        '会话已释放'
-      );
-    }
-
-    try {
-      // 向机器发送关闭浏览器实例的请求
-      request.log.info(`向机器 ${session.machine_id} 发送关闭浏览器请求 (sessionId: ${sessionId})`);
-
-      await connectionManager.closeBrowser(session.machine_id, sessionId);
-
-      // 计算会话持续时间
-      const now = new Date();
-      const startTime = new Date(session.start_time ?? 0);
-      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-      request.log.info(
-        `计算会话持续时间 (${sessionId}): 开始时间=${startTime.toISOString()}, 结束时间=${now.toISOString()}, 持续时间=${duration}秒, 数据源: 管理端`
-      );
-
-      // 计算消耗的点数（每分钟1点）
-      // 即使会话只运行了几秒钟，也至少消耗 1 点
-      const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
-
-      // 使用 markDisconnected 方法更新会话状态
-      // 该方法会同时更新持续时间和消耗点数
-      await SessionModel.markDisconnected(sessionId, duration);
-      request.log.info(
-        `使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`
-      );
-
-      // 如果会话已分配机器，减少机器的实例计数
-      await MachineModel.decrementInstanceCount(session.machine_id);
-
-      // 触发 Webhook 事件
-      const disconnectedAt = new Date();
-      await createWebhookEvent(userId, WebhookEventType.SESSION_DISCONNECTED, {
+      await createWebhookEvent(session.user_id, WebhookEventType.SESSION_DISCONNECTED, {
         session_id: sessionId,
-        disconnected_at: disconnectedAt,
+        disconnected_at: new Date(),
       });
-
-      // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
-
-      return sendSuccess(reply, toSessionReleaseDTO(sessionId, SessionStatus.DISCONNECTED, duration), '会话已释放');
-    } catch (machineError: unknown) {
-      request.log.error({ err: machineError, sessionId }, '关闭浏览器实例失败');
-
-      // 计算会话持续时间
-      const now = new Date();
-      const startTime = new Date(session.start_time ?? 0);
-      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-
-      // 计算消耗的点数（每分钟1点）
-      // 即使会话只运行了几秒钟，也至少消耗 1 点
-      const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
-
-      // 即使关闭失败，也将会话标记为结束
-      // 使用 markDisconnected 方法更新会话状态
-      // 该方法会同时更新持续时间和消耗点数
-      await SessionModel.markDisconnected(sessionId, duration);
-      request.log.info(
-        `关闭失败，使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`
-      );
-
-      // 记录错误信息
-      request.log.error(
-        `关闭浏览器错误信息: ${machineError instanceof Error ? machineError.message : String(machineError)}`
-      );
-
-      // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
-
-      return sendSuccess(
-        reply,
-        toSessionReleaseDTO(sessionId, SessionStatus.DISCONNECTED, duration),
-        '会话已释放（但关闭浏览器实例失败）'
-      );
     }
+
+    return sendSuccess(
+      reply,
+      toSessionReleaseDTO(sessionId, SessionStatus.DISCONNECTED, result.duration),
+      '会话已释放'
+    );
   } catch (error) {
     request.log.error(error);
     return sendError(reply, '释放会话失败', 500);
@@ -318,96 +248,36 @@ export async function closeSession(request: FastifyRequest<IdParamRoute>, reply:
 
     const sessionId = request.params.id;
 
-    // 查找会话
     const session = await SessionModel.findById(sessionId);
     if (!session) {
       return sendError(reply, '会话不存在', 404);
     }
 
-    // 检查会话状态
-    if (session.status === SessionStatus.DISCONNECTED || session.status === SessionStatus.ERROR) {
-      return sendSuccess(reply, toSessionReleaseDTO(sessionId, session.status, session.duration || 0), '会话已关闭');
-    }
+    const result = await sessionService.releaseSession({
+      sessionId,
+      userId: session.user_id,
+      machineId: session.machine_id || undefined,
+      force: true,
+    });
 
-    // 检查会话是否有关联的机器
-    if (!session.machine_id) {
-      // 计算会话持续时间
-      const now = new Date();
-      const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
-      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+    if (session.machine_id && !result.alreadyDisconnected) {
+      try {
+        await connectionManager.closeBrowser(session.machine_id, sessionId);
+      } catch (machineError: unknown) {
+        request.log.error({ err: machineError, sessionId }, '关闭浏览器实例失败（会话已关闭）');
+      }
 
-      // 使用 markDisconnected 方法更新会话状态并计算点数
-      // 注意：markDisconnected 已经自动扣除了用户积分
-      const updatedSession = await SessionModel.markDisconnected(sessionId, duration);
-
-      return sendSuccess(
-        reply,
-        toSessionReleaseDTO(sessionId, SessionStatus.DISCONNECTED, updatedSession?.duration || duration),
-        '会话已关闭'
-      );
-    }
-
-    try {
-      // 向机器发送关闭浏览器实例的请求
-      request.log.info(`向机器 ${session.machine_id} 发送关闭浏览器请求 (sessionId: ${sessionId})`);
-
-      await connectionManager.closeBrowser(session.machine_id, sessionId);
-
-      // 计算会话持续时间
-      const now = new Date();
-      const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
-      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-
-      // 计算消耗的点数（每分钟1点）
-      // 即使会话只运行了几秒钟，也至少消耗 1 点
-      const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
-
-      // 使用 markDisconnected 方法更新会话状态
-      // 该方法会同时更新持续时间和消耗点数
-      await SessionModel.markDisconnected(sessionId, duration);
-      request.log.info(
-        `使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`
-      );
-
-      // 如果会话已分配机器，减少机器的实例计数
-      await MachineModel.decrementInstanceCount(session.machine_id);
-
-      // 触发 Webhook 事件
-      const disconnectedAt = new Date();
       await createWebhookEvent(session.user_id, WebhookEventType.SESSION_DISCONNECTED, {
         session_id: sessionId,
-        disconnected_at: disconnectedAt,
+        disconnected_at: new Date(),
       });
-
-      // 注意：markDisconnected 已经自动扣除了用户积分，这里不需要重复扣费
-
-      return sendSuccess(reply, toSessionReleaseDTO(sessionId, SessionStatus.DISCONNECTED, duration), '会话已关闭');
-    } catch (machineError: unknown) {
-      request.log.error({ err: machineError, sessionId }, '关闭浏览器实例失败');
-
-      // 计算会话持续时间
-      const now = new Date();
-      const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
-      const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-
-      // 计算消耗的点数（每分钟1点）
-      // 即使会话只运行了几秒钟，也至少消耗 1 点
-      const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
-
-      // 即使关闭失败，也将会话标记为结束
-      // 使用 markDisconnected 方法更新会话状态
-      // 该方法会同时更新持续时间和消耗点数
-      await SessionModel.markDisconnected(sessionId, duration);
-      request.log.info(
-        `关闭失败，使用 markDisconnected 方法更新会话状态 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`
-      );
-
-      return sendSuccess(
-        reply,
-        toSessionReleaseDTO(sessionId, SessionStatus.DISCONNECTED, duration),
-        '会话已关闭（但关闭浏览器实例失败）'
-      );
     }
+
+    return sendSuccess(
+      reply,
+      toSessionReleaseDTO(sessionId, SessionStatus.DISCONNECTED, result.duration),
+      '会话已关闭'
+    );
   } catch (error) {
     request.log.error(error);
     return sendError(reply, '关闭会话失败', 500);

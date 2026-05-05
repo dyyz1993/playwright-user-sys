@@ -47,5 +47,61 @@
     "parentID": "ses_2070d0089ffeHXMjsRB6h97f7F",
     "status": "running",
     "createdAt": 1777998477642
+  },
+  "create-user-service": {
+    "id": "ses_206551bbdffeOzTVK1TfCVqRyB",
+    "name": "create-user-service",
+    "parentID": "ses_206580c98ffe3Nv4EaoeNo14mg",
+    "status": "running",
+    "createdAt": 1778010219594
+  },
+  "create-auth-service": {
+    "id": "ses_2065530b4ffe6NrCAt5OmOTHVo",
+    "name": "create-auth-service",
+    "parentID": "create-auth-service",
+    "status": "running",
+    "createdAt": 1778010214226
+  },
+  "refactor-admin-api-user": {
+    "id": "ses_2064d818effeMcAA4x31xUmXUo",
+    "name": "refactor-admin-api-user",
+    "parentID": "refactor-admin-api-user",
+    "status": "running",
+    "createdAt": 1778010717821
+  },
+  "refactor-admin-api-auth": {
+    "id": "ses_2064d3b95ffeyCrs1SG6Qg7JBQ",
+    "name": "refactor-admin-api-auth",
+    "parentID": "refactor-admin-api-auth",
+    "status": "running",
+    "createdAt": 1778010735729
+  },
+  "zod-type-inference": {
+    "id": "ses_2063137beffeDRepcuzYXcU12E",
+    "name": "zod-type-inference",
+    "parentID": "ses_206341a7cffe84qiasou9A14UR",
+    "status": "running",
+    "createdAt": 1778012571715
+  },
+  "frontend-optimization": {
+    "id": "ses_206313547ffefIfR7lQCkyH0hN",
+    "name": "frontend-optimization",
+    "parentID": "ses_206341a7cffe84qiasou9A14UR",
+    "status": "running",
+    "createdAt": 1778012572345
+  },
+  "refactor-release-session": {
+    "id": "ses_205ea0fe0ffepfVZxBYSVdX0Y5",
+    "name": "refactor-release-session",
+    "parentID": "ses_205ee038effeoTd4C3daJX8BQE",
+    "status": "running",
+    "createdAt": 1778017234977
+  },
+  "split-session-model": {
+    "id": "ses_205d3ba14ffepS6f6ExTYRkO17",
+    "name": "split-session-model",
+    "parentID": "ses_205d4e7c4ffekpK25z1niR3p9D",
+    "status": "running",
+    "createdAt": 1778018698733
   }
 }

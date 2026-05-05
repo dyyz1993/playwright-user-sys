@@ -4,12 +4,11 @@
  *
  * 注意: 此测试使用 Mock 策略
  * - 真实执行: SessionService 的业务逻辑
- * - Mock: Models 层、connectionManager、logger、createWebhookEvent
+ * - Mock: Models 层、connectionManager、logger、createWebhookEvent、db
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SessionStatus, WebhookEventType } from '../../../shared/types/index.js';
 
-// Mock 所有依赖
 vi.mock('../../../models/user.model.js', () => ({
   UserModel: {
     findById: vi.fn(),
@@ -42,10 +41,31 @@ vi.mock('../../../services/machine-grpc.service.js', () => ({
   },
 }));
 
+function createMockTrx(sessionData: Record<string, unknown> | null) {
+  const queryBuilder: Record<string, ReturnType<typeof vi.fn>> = {
+    where: vi.fn().mockReturnThis(),
+    first: vi.fn().mockResolvedValue(sessionData),
+    whereNotIn: vi.fn().mockReturnThis(),
+    update: vi.fn().mockResolvedValue(1),
+    decrement: vi.fn().mockResolvedValue(1),
+    insert: vi.fn().mockResolvedValue([1]),
+    raw: vi.fn((sql: string) => sql),
+  };
+  const trx = vi.fn().mockReturnValue(queryBuilder);
+  return Object.assign(trx, queryBuilder);
+}
+
+vi.mock('../../../config/database.js', () => ({
+  db: Object.assign(vi.fn(), {
+    transaction: vi.fn(),
+  }),
+}));
+
 vi.mock('../../../utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
@@ -62,22 +82,22 @@ vi.mock('../../../config/env.js', () => ({
 describe('SessionService', () => {
   let createBrowserSession: any;
   let handleSessionDisconnect: any;
+  let releaseSessionFn: any;
   let UserModel: any;
   let SessionModel: any;
   let MachineModel: any;
   let connectionManager: any;
   let createWebhookEvent: any;
+  let db: any;
 
   beforeEach(async () => {
-    // 重置所有 mock
     vi.clearAllMocks();
 
-    // 动态导入服务模块
     const module = await import('../../../services/session.service.js');
     createBrowserSession = module.createBrowserSession;
     handleSessionDisconnect = module.handleSessionDisconnect;
+    releaseSessionFn = module.releaseSession;
 
-    // 获取 mock 实例
     const userModule = await import('../../../models/user.model.js');
     UserModel = userModule.UserModel;
 
@@ -92,13 +112,15 @@ describe('SessionService', () => {
 
     const webhookModule = await import('../../../utils/webhook.js');
     createWebhookEvent = webhookModule.createWebhookEvent;
+
+    const dbModule = await import('../../../config/database.js');
+    db = dbModule.db;
   });
 
   // ========================================
   // SS-01: 创建会话 - 正常流程
   // ========================================
   it('应该成功创建浏览器会话', async () => {
-    // 配置 Mock
     vi.mocked(UserModel.findById).mockResolvedValue({
       id: 1,
       credits: 100,
@@ -130,17 +152,14 @@ describe('SessionService', () => {
 
     vi.mocked(createWebhookEvent).mockResolvedValue(undefined);
 
-    // 调用服务
     const result = await createBrowserSession(1, { viewport: { width: 1920, height: 1080 } });
 
-    // 验证结果
     expect(result.sessionId).toBe('session-001');
     expect(result.status).toBe(SessionStatus.CREATED);
     expect(result.machineId).toBe('machine-001');
     expect(result.browserWSEndpoint).toBe('ws://localhost:9222');
     expect(result.directUrl).toContain('sessionId=session-001');
 
-    // 验证调用
     expect(UserModel.findById).toHaveBeenCalledWith(1);
     expect(MachineModel.findAvailable).toHaveBeenCalled();
     expect(SessionModel.create).toHaveBeenCalled();
@@ -227,7 +246,6 @@ describe('SessionService', () => {
 
     vi.mocked(createWebhookEvent).mockResolvedValue(undefined);
 
-    // 使用 isWebSocketDirect = true
     const result = await createBrowserSession(1, {}, true);
 
     expect(result.status).toBe(SessionStatus.CONNECTED);
@@ -243,7 +261,6 @@ describe('SessionService', () => {
   // SS-06: 创建会话 - 使用公共端点
   // ========================================
   it('应该使用 PUBLIC_MACHINE_ENDPOINT 构建直连URL', async () => {
-    // 动态修改 env mock
     const envModule = await import('../../../config/env.js');
     vi.spyOn(envModule, 'env', 'get').mockReturnValue({
       PUBLIC_MACHINE_ENDPOINT: 'public.example.com:8082',
@@ -304,7 +321,6 @@ describe('SessionService', () => {
 
     await expect(createBrowserSession(1, {})).rejects.toThrow('启动浏览器实例失败');
 
-    // 验证错误时更新会话状态
     expect(SessionModel.update).toHaveBeenCalledWith('session-001', {
       status: SessionStatus.ERROR,
     });
@@ -314,66 +330,159 @@ describe('SessionService', () => {
   // SS-08: 处理会话断开 - 正常流程
   // ========================================
   it('应该正确处理会话断开连接', async () => {
-    const startTime = new Date(Date.now() - 5 * 60 * 1000); // 5分钟前开始
-
-    // 第一次调用 findById 返回活跃会话
-    vi.mocked(SessionModel.findById).mockResolvedValueOnce({
+    const trx = createMockTrx({
       id: 'session-001',
-      user_id: 1,
-      machine_id: 'machine-001',
       status: SessionStatus.CONNECTED,
-      start_time: startTime,
+      start_time: new Date(Date.now() - 5 * 60 * 1000),
+      created_at: new Date(),
+      duration: 0,
       credits_used: 0,
-    });
-
-    vi.mocked(connectionManager.closeBrowser).mockResolvedValue(undefined);
-
-    // markDisconnected 返回会话但不包含 credits_used (需要第二次 findById 获取)
-    vi.mocked(SessionModel.markDisconnected).mockResolvedValue({
-      id: 'session-001',
-      duration: 300,
-    });
-
-    vi.mocked(MachineModel.decrementInstanceCount).mockResolvedValue(undefined);
-
-    vi.mocked(createWebhookEvent).mockResolvedValue(undefined);
-
-    vi.mocked(UserModel.deductCredits).mockResolvedValue(undefined);
-
-    // 第二次调用 findById 返回更新后的会话，credits_used 仍为 0
-    vi.mocked(SessionModel.findById).mockResolvedValueOnce({
-      id: 'session-001',
       user_id: 1,
-      machine_id: 'machine-001',
-      status: SessionStatus.DISCONNECTED,
-      duration: 300,
-      credits_used: 0, // markDisconnected 没有设置 credits_used，所以仍为 0
     });
+
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
+    vi.mocked(connectionManager.closeBrowser).mockResolvedValue(undefined);
+    vi.mocked(createWebhookEvent).mockResolvedValue(undefined);
 
     await handleSessionDisconnect('session-001', 1, 'machine-001');
 
-    // 验证调用
+    expect(db.transaction).toHaveBeenCalled();
     expect(connectionManager.closeBrowser).toHaveBeenCalledWith('machine-001', 'session-001');
-    expect(SessionModel.markDisconnected).toHaveBeenCalledWith('session-001', expect.any(Number));
-    expect(MachineModel.decrementInstanceCount).toHaveBeenCalledWith('machine-001');
     expect(createWebhookEvent).toHaveBeenCalledWith(1, WebhookEventType.SESSION_DISCONNECTED, expect.any(Object));
-    expect(UserModel.deductCredits).toHaveBeenCalledWith(1, 5); // 5分钟 = 5点
   });
 
   // ========================================
   // SS-09: 处理会话断开 - 会话已断开
   // ========================================
   it('会话已断开时不应该重复处理', async () => {
-    vi.mocked(SessionModel.findById).mockResolvedValue({
+    const trx = createMockTrx({
       id: 'session-001',
       status: SessionStatus.DISCONNECTED,
+      start_time: new Date(),
+      created_at: new Date(),
+      duration: 300,
+      credits_used: 5,
+      user_id: 1,
     });
+
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     await handleSessionDisconnect('session-001', 1, 'machine-001');
 
-    // 不应该调用这些方法
     expect(connectionManager.closeBrowser).not.toHaveBeenCalled();
-    expect(SessionModel.markDisconnected).not.toHaveBeenCalled();
-    expect(MachineModel.decrementInstanceCount).not.toHaveBeenCalled();
+  });
+
+  // ========================================
+  // SS-10: releaseSession - 正常释放
+  // ========================================
+  it('releaseSession 应该在事务中完成所有操作', async () => {
+    const trx = createMockTrx({
+      id: 'session-001',
+      status: SessionStatus.CONNECTED,
+      start_time: new Date(Date.now() - 2 * 60 * 1000),
+      created_at: new Date(),
+      duration: 0,
+      credits_used: 0,
+      user_id: 1,
+    });
+
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
+
+    const result = await releaseSessionFn({
+      sessionId: 'session-001',
+      userId: 1,
+      machineId: 'machine-001',
+    });
+
+    expect(result.alreadyDisconnected).toBe(false);
+    expect(result.duration).toBe(120);
+    expect(result.creditsUsed).toBe(2);
+    expect(trx.update).toHaveBeenCalled();
+    expect(trx.decrement).toHaveBeenCalled();
+    expect(trx.insert).toHaveBeenCalled();
+  });
+
+  // ========================================
+  // SS-11: releaseSession - 已断开
+  // ========================================
+  it('releaseSession 已断开的会话返回 alreadyDisconnected', async () => {
+    const trx = createMockTrx({
+      id: 'session-001',
+      status: SessionStatus.DISCONNECTED,
+      duration: 100,
+      credits_used: 2,
+      user_id: 1,
+    });
+
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
+
+    const result = await releaseSessionFn({
+      sessionId: 'session-001',
+      userId: 1,
+      machineId: 'machine-001',
+    });
+
+    expect(result.alreadyDisconnected).toBe(true);
+    expect(result.duration).toBe(100);
+    expect(result.creditsUsed).toBe(2);
+  });
+
+  // ========================================
+  // SS-12: releaseSession - 会话不存在
+  // ========================================
+  it('releaseSession 不存在的会话应该抛出错误', async () => {
+    const queryBuilder = {
+      where: vi.fn().mockReturnThis(),
+      first: vi.fn().mockResolvedValue(null),
+      whereNotIn: vi.fn().mockReturnThis(),
+      update: vi.fn().mockResolvedValue(1),
+      decrement: vi.fn().mockResolvedValue(1),
+      insert: vi.fn().mockResolvedValue([1]),
+      raw: vi.fn((sql: string) => sql),
+    };
+    const trx = vi.fn().mockReturnValue(queryBuilder);
+    Object.assign(trx, queryBuilder);
+
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
+
+    await expect(
+      releaseSessionFn({
+        sessionId: 'nonexistent',
+        userId: 1,
+      })
+    ).rejects.toThrow('会话不存在');
+  });
+
+  // ========================================
+  // SS-13: releaseSession - 无机器不减少计数
+  // ========================================
+  it('releaseSession 无 machineId 时不减少机器实例计数', async () => {
+    const trx = createMockTrx({
+      id: 'session-001',
+      status: SessionStatus.CONNECTED,
+      start_time: new Date(),
+      created_at: new Date(),
+      duration: 0,
+      credits_used: 0,
+      user_id: 1,
+    });
+
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
+
+    const result = await releaseSessionFn({
+      sessionId: 'session-001',
+      userId: 1,
+    });
+
+    expect(result.alreadyDisconnected).toBe(false);
+    const updateCalls = vi.mocked(trx.update).mock.calls;
+    const machineUpdateCall = updateCalls.find(
+      (call: unknown[]) =>
+        call.length > 0 &&
+        typeof call[0] === 'object' &&
+        call[0] !== null &&
+        'instance_count' in (call[0] as Record<string, unknown>)
+    );
+    expect(machineUpdateCall).toBeUndefined();
   });
 });

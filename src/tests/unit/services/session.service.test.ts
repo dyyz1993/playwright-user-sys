@@ -30,7 +30,8 @@ vi.mock('../../../models/session.model.js', () => ({
 vi.mock('../../../models/machine.model.js', () => ({
   MachineModel: {
     findAvailable: vi.fn(),
-    decrementInstanceCount: vi.fn(),
+    incrementInstanceCount: vi.fn().mockResolvedValue(1),
+    decrementInstanceCount: vi.fn().mockResolvedValue(1),
   },
 }));
 

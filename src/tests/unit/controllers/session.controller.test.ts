@@ -23,7 +23,8 @@ vi.mock('../../../models/session.model.js', () => ({
 
 vi.mock('../../../models/machine.model.js', () => ({
   MachineModel: {
-    decrementInstanceCount: vi.fn(),
+    incrementInstanceCount: vi.fn().mockResolvedValue(1),
+    decrementInstanceCount: vi.fn().mockResolvedValue(1),
   },
 }));
 
@@ -336,7 +337,7 @@ describe('SessionController', () => {
 
     await getSession(request as any, reply as any);
 
-    expect(sendError).toHaveBeenCalledWith(reply, '会话不存在', 404);
+    expect(sendError).toHaveBeenCalledWith(reply, '未找到指定的会话记录', 404);
   });
 
   // ========================================

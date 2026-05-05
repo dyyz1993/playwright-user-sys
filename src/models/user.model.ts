@@ -208,7 +208,7 @@ export class UserModel {
       logger.info('开始查询用户数据');
       const page = parseInt(query.page || '1', 10);
       const limit = parseInt(query.limit || '10', 10);
-      const offset = (page - 1) * limit;
+      const offset = Math.max(0, (page - 1) * limit);
       const sort = query.sort || 'created_at';
       const order = query.order || 'desc';
 

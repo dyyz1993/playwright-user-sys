@@ -30,6 +30,8 @@ jobs:
       - name: Build TypeScript
         run: pnpm build:emit
 
+      - uses: docker/setup-buildx-action@v3
+
       - name: Build Docker images
         run: |
           docker build -f docker/manager/Dockerfile.prod -t playwright-manager:e2e --target production .

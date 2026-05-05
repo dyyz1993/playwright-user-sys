@@ -78,7 +78,7 @@ export async function getAllUsers(request: AuthenticatedRequest, reply: FastifyR
       role: user.role,
       status: user.status,
       credits: user.credits,
-      created_at: user.created_at,
+      created_at: user.created_at instanceof Date ? user.created_at.toISOString() : user.created_at,
     }));
 
     return sendPaginated(reply, {
@@ -117,7 +117,7 @@ export async function getUserById(request: AuthenticatedRequestWithParams<IdPara
       credits: user.credits,
       webhook_url: user.webhook_url,
       api_key: user.api_key,
-      created_at: user.created_at,
+      created_at: user.created_at instanceof Date ? user.created_at.toISOString() : user.created_at,
     });
   } catch (error) {
     request.log.error(error);

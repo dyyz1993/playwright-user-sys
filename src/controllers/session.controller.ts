@@ -8,6 +8,24 @@ import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/t
 import { createWebhookEvent } from '../utils/webhook.js';
 import { createSessionRequestSchema } from '../schemas/index.js';
 import { env } from '../config/env.js';
+
+function toISOString(v: Date | string | null | undefined): string | null {
+  if (!v) return v === undefined ? undefined : null;
+  return v instanceof Date ? v.toISOString() : String(v);
+}
+
+function serializeSessionTimestamps(session: any) {
+  return {
+    ...session,
+    start_time: toISOString(session.start_time),
+    end_time: toISOString(session.end_time),
+    disconnected_at: toISOString(session.disconnected_at),
+    last_activity: toISOString(session.last_activity),
+    created_at: toISOString(session.created_at),
+    updated_at: toISOString(session.updated_at),
+  };
+}
+
 import { createBrowserSession } from '../services/session.service.js';
 import { connectionManager } from '../services/machine-grpc.service.js';
 // URL 导入已移除，因为不再需要解析 URL
@@ -65,7 +83,7 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
         browserWSEndpoint: sessionResult.directUrl, // 使用代理端点而不是原始 CDP 端点
         directUrl: sessionResult.directUrl,
         viewerUrl: viewerUrl,
-        created_at: sessionResult.created_at,
+        created_at: toISOString(sessionResult.created_at),
       });
     } catch (serviceError: any) {
       request.log.error({ err: serviceError }, '创建会话服务错误');
@@ -115,23 +133,26 @@ export async function getSession(request: FastifyRequest, reply: FastifyReply) {
       return sendError(reply, '无权访问此会话', 403);
     }
 
-    return sendSuccess(reply, {
-      id: session.id,
-      status: session.status,
-      machine_id: session.machine_id,
-      port: session.port,
-      options: session.options,
-      start_time: session.start_time,
-      end_time: session.end_time,
-      disconnected_at: session.disconnected_at,
-      duration: session.duration,
-      credits_used: session.credits_used,
-      screenshot_url: session.screenshot_url,
-      last_activity: session.last_activity,
-      error_message: session.error_message,
-      created_at: session.created_at,
-      updated_at: session.updated_at,
-    });
+    return sendSuccess(
+      reply,
+      serializeSessionTimestamps({
+        id: session.id,
+        status: session.status,
+        machine_id: session.machine_id,
+        port: session.port,
+        options: session.options,
+        start_time: session.start_time,
+        end_time: session.end_time,
+        disconnected_at: session.disconnected_at,
+        duration: session.duration,
+        credits_used: session.credits_used,
+        screenshot_url: session.screenshot_url,
+        last_activity: session.last_activity,
+        error_message: session.error_message,
+        created_at: session.created_at,
+        updated_at: session.updated_at,
+      })
+    );
   } catch (error) {
     request.log.error(error);
     return sendError(reply, '获取会话信息失败', 500);
@@ -154,7 +175,10 @@ export async function getUserSessions(request: FastifyRequest, reply: FastifyRep
     const paginatedSessions = await SessionModel.findByUserId(userId, query);
 
     // 返回完整的分页对象
-    return sendSuccess(reply, paginatedSessions);
+    return sendSuccess(reply, {
+      ...paginatedSessions,
+      items: paginatedSessions.items.map(serializeSessionTimestamps),
+    });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return sendError(reply, '无效的查询参数: ' + error.errors.map((e: any) => e.message).join(', '), 400);
@@ -303,7 +327,10 @@ export async function getAllSessions(request: FastifyRequest, reply: FastifyRepl
     const paginatedSessions = await SessionModel.findAll(query);
 
     // 返回完整的分页对象
-    return sendSuccess(reply, paginatedSessions);
+    return sendSuccess(reply, {
+      ...paginatedSessions,
+      items: paginatedSessions.items.map(serializeSessionTimestamps),
+    });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return sendError(reply, '无效的查询参数: ' + error.errors.map((e: any) => e.message).join(', '), 400);

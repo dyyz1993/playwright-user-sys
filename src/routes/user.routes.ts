@@ -19,6 +19,11 @@ import {
   successResponseSchema,
 } from '../schemas/index.js';
 
+function toISO(v: Date | string | null | undefined): string | null {
+  if (!v) return v === undefined ? undefined : null;
+  return v instanceof Date ? v.toISOString() : String(v);
+}
+
 export default async function userRoutes(fastify: FastifyInstance) {
   // 获取当前用户信息（通过 API Key）
   fastify.get(
@@ -55,7 +60,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
           credits: user.credits,
           webhook_url: user.webhook_url,
           api_key: user.api_key,
-          created_at: user.created_at,
+          created_at: toISO(user.created_at),
         });
       } catch (error) {
         request.log.error(error);
@@ -152,7 +157,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
           credits: updatedUser.credits,
           webhook_url: updatedUser.webhook_url,
           api_key: updatedUser.api_key,
-          created_at: updatedUser.created_at,
+          created_at: toISO(updatedUser.created_at),
         });
       } catch (error) {
         request.log.error(error);

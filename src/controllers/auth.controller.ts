@@ -86,7 +86,7 @@ export async function getCurrentUser(request: FastifyRequest, reply: FastifyRepl
         credits: user.credits,
         webhook_url: user.webhook_url,
         api_key: user.api_key,
-        created_at: user.created_at,
+        created_at: user.created_at instanceof Date ? user.created_at.toISOString() : user.created_at,
       },
     });
   } catch (error) {

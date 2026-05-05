@@ -526,83 +526,87 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       console.log('\n✅ TIER-034 测试通过: 并发释放会话正确扣费');
     });
 
-    it.skipIf(process.env.CI === 'true')('TIER-035: 并发用户同时使用浏览器应该互不干扰', { timeout: 180000 }, async () => {
-      console.log('\n[步骤 1] 5个用户同时创建会话...');
+    it.skipIf(process.env.CI === 'true')(
+      'TIER-035: 并发用户同时使用浏览器应该互不干扰',
+      { timeout: 180000 },
+      async () => {
+        console.log('\n[步骤 1] 5个用户同时创建会话...');
 
-      const sessionPromises = testUsers.map(async (user) => {
-        const response = await managerApp.inject({
-          method: 'POST',
-          url: '/api/sessions',
-          headers: {
-            'x-api-key': user.apiKey,
-          },
-          payload: {
-            userAgent: 'test-agent',
-            viewport: { width: 1920, height: 1080 },
-          },
+        const sessionPromises = testUsers.map(async (user) => {
+          const response = await managerApp.inject({
+            method: 'POST',
+            url: '/api/sessions',
+            headers: {
+              'x-api-key': user.apiKey,
+            },
+            payload: {
+              userAgent: 'test-agent',
+              viewport: { width: 1920, height: 1080 },
+            },
+          });
+
+          return {
+            userId: user.id,
+            session: response.json(),
+          };
         });
 
-        return {
-          userId: user.id,
-          session: response.json(),
-        };
-      });
+        const results = await Promise.all(sessionPromises);
 
-      const results = await Promise.all(sessionPromises);
+        console.log('\n[步骤 2] 5个用户同时连接浏览器并访问百度...');
 
-      console.log('\n[步骤 2] 5个用户同时连接浏览器并访问百度...');
+        const browserPromises = results.map(async (result) => {
+          const sessionId = result.session.data.id;
+          const wsUrl = result.session.data.directUrl || result.session.data.browserWSEndpoint;
 
-      const browserPromises = results.map(async (result) => {
-        const sessionId = result.session.data.id;
-        const wsUrl = result.session.data.directUrl || result.session.data.browserWSEndpoint;
+          if (!wsUrl) {
+            throw new Error(`No WebSocket URL for session ${sessionId}`);
+          }
 
-        if (!wsUrl) {
-          throw new Error(`No WebSocket URL for session ${sessionId}`);
+          const browser = await puppeteer.connect({
+            browserWSEndpoint: wsUrl,
+          });
+
+          const page = (await browser.pages())[0];
+
+          // 每个用户访问不同的URL以确保隔离
+          const searchQuery = `user${result.userId}_${Date.now()}`;
+          await page.goto(`https://www.baidu.com/s?wd=${searchQuery}`, {
+            waitUntil: 'networkidle0',
+            timeout: 30000,
+          });
+
+          const title = await page.title();
+          const url = page.url();
+
+          await browser.disconnect();
+
+          return {
+            userId: result.userId,
+            title,
+            url,
+            searchQuery,
+          };
+        });
+
+        const browserResults = await Promise.all(browserPromises);
+
+        console.log('\n[步骤 3] 验证每个用户的浏览器操作互不干扰...');
+
+        for (const result of browserResults) {
+          console.log(`   用户 ${result.userId}:`);
+          console.log(`     标题: ${result.title}`);
+          console.log(`     URL: ${result.url}`);
+          console.log(`     搜索词: ${result.searchQuery}`);
+
+          // 验证每个用户都访问到了自己的搜索页面
+          expect(result.url).toContain(result.searchQuery);
+          expect(result.title).toContain('百度');
         }
 
-        const browser = await puppeteer.connect({
-          browserWSEndpoint: wsUrl,
-        });
-
-        const page = (await browser.pages())[0];
-
-        // 每个用户访问不同的URL以确保隔离
-        const searchQuery = `user${result.userId}_${Date.now()}`;
-        await page.goto(`https://www.baidu.com/s?wd=${searchQuery}`, {
-          waitUntil: 'networkidle0',
-          timeout: 30000,
-        });
-
-        const title = await page.title();
-        const url = page.url();
-
-        await browser.disconnect();
-
-        return {
-          userId: result.userId,
-          title,
-          url,
-          searchQuery,
-        };
-      });
-
-      const browserResults = await Promise.all(browserPromises);
-
-      console.log('\n[步骤 3] 验证每个用户的浏览器操作互不干扰...');
-
-      for (const result of browserResults) {
-        console.log(`   用户 ${result.userId}:`);
-        console.log(`     标题: ${result.title}`);
-        console.log(`     URL: ${result.url}`);
-        console.log(`     搜索词: ${result.searchQuery}`);
-
-        // 验证每个用户都访问到了自己的搜索页面
-        expect(result.url).toContain(result.searchQuery);
-        expect(result.title).toContain('百度');
+        console.log('\n✅ TIER-035 测试通过: 并发浏览器操作互不干扰');
       }
-
-      console.log('\n✅ TIER-035 测试通过: 并发浏览器操作互不干扰');
-    });
+    );
   });
 
   describe('并发计费测试 (TIER-036 ~ TIER-040)', () => {

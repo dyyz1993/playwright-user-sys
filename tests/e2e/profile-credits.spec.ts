@@ -92,7 +92,7 @@ test.describe('Profile 页面点数显示测试', () => {
       console.log('这是一个潜在问题: 如果用户有会话记录，已使用点数应该大于 0');
 
       const sessionsLink = page.locator('a[href="/admin/sessions"]');
-      if (await sessionsLink.count() > 0) {
+      if ((await sessionsLink.count()) > 0) {
         console.log('建议: 检查会话管理页面确认是否有已完成的会话');
       }
     }
@@ -106,9 +106,12 @@ test.describe('Profile 页面点数显示测试', () => {
     console.log('会话记录数量:', sessionRows);
 
     if (sessionRows > 0) {
-      const endedSessions = await page.locator('table tbody tr').filter({
-        hasText: /disconnected|expired|completed|error/i
-      }).count();
+      const endedSessions = await page
+        .locator('table tbody tr')
+        .filter({
+          hasText: /disconnected|expired|completed|error/i,
+        })
+        .count();
       console.log('已结束的会话数量:', endedSessions);
 
       if (endedSessions > 0) {

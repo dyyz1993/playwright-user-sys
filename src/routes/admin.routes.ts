@@ -743,111 +743,116 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     });
 
     // 调试端点 - 查看所有 cookies
-    fastify.get('/admin/debug/cookies', { preHandler: [fastify.verifyJWT] }, async (request: FastifyRequest, _reply: FastifyReply) => {
-      return {
-        cookies: request.cookies,
-        headers: request.headers,
-        user: request.user,
-      };
+    fastify.get(
+      '/admin/debug/cookies',
+      { preHandler: [fastify.verifyJWT] },
+      async (request: FastifyRequest, _reply: FastifyReply) => {
+        return {
+          cookies: request.cookies,
+          headers: request.headers,
+          user: request.user,
+        };
+      }
+    );
+
+    // 调试端点 - 手动验证 JWT
+    fastify.post('/admin/debug/verify-token', async (request: FastifyRequest, _reply: FastifyReply) => {
+      const jwt = (await import('jsonwebtoken')).default;
+      const { env } = await import('../config/env.js');
+
+      const body = request.body as any;
+      const token = body.token || request.cookies?.token;
+
+      if (!token) {
+        return { error: 'No token provided' };
+      }
+
+      const jwtSecret =
+        process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
+
+      try {
+        const decoded = jwt.verify(token, jwtSecret);
+        return { success: true, decoded };
+      } catch (e: any) {
+        return { success: false, error: e.message };
+      }
     });
 
-  // 调试端点 - 手动验证 JWT
-  fastify.post('/admin/debug/verify-token', async (request: FastifyRequest, _reply: FastifyReply) => {
-    const jwt = (await import('jsonwebtoken')).default;
-    const { env } = await import('../config/env.js');
-
-    const body = request.body as any;
-    const token = body.token || request.cookies?.token;
-
-    if (!token) {
-      return { error: 'No token provided' };
-    }
-
-    const jwtSecret = process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
-
-    try {
-      const decoded = jwt.verify(token, jwtSecret);
-      return { success: true, decoded };
-    } catch (e: any) {
-      return { success: false, error: e.message };
-    }
-  });
-
-  // 调试端点 - 测试 verifyJWT 中间件
-  fastify.get(
-    '/admin/debug/auth',
-    {
-      onRequest: [fastify.verifyJWT],
-    },
-    async (request: FastifyRequest, _reply: FastifyReply) => {
-      return {
-        message: 'Authentication successful',
-        user: request.user,
-      };
-    }
-  );
-
-  // 调试端点 - 检查用户是否存在
-  fastify.get(
-    '/admin/debug/user',
-    {
-      onRequest: [fastify.verifyJWT],
-    },
-    async (request: FastifyRequest, _reply: FastifyReply) => {
-      const { UserModel } = await import('../models/user.model.js');
-      const user = await UserModel.findById(request.user!.id);
-      return {
-        userId: request.user!.id,
-        userExists: !!user,
-        userData: user,
-      };
-    }
-  );
-
-  // 调试端点 - 测试 profile 视图渲染
-  fastify.get(
-    '/admin/debug/profile-view',
-    {
-      onRequest: [fastify.verifyJWT],
-    },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const { UserModel } = await import('../models/user.model.js');
-        const { CreditHistoryModel } = await import('../models/credit-history.model.js');
-
-        const user = await UserModel.findById(request.user!.id);
-        if (!user) {
-          return { error: 'User not found' };
-        }
-
-        const creditHistory = await CreditHistoryModel.findByUserId(user.id, 5);
-
-        // 暂时将已使用的积分设为 0
-        const usedCredits = 0;
-
-        console.log('[DEBUG PROFILE VIEW] About to render view...');
-
-        return reply.view('pages/profile', {
-          title: '个人资料',
-          subtitle: '管理个人信息',
-          path: request.url,
-          user: {
-            ...request.user,
-            email: user.email,
-            webhook_url: user.webhook_url,
-            credits: user.credits,
-            api_key: user.api_key,
-            created_at: user.created_at,
-            used_credits: usedCredits,
-          },
-          creditHistory,
-          flash: request.flash,
-        });
-      } catch (error: any) {
-        return { error: error.message };
+    // 调试端点 - 测试 verifyJWT 中间件
+    fastify.get(
+      '/admin/debug/auth',
+      {
+        onRequest: [fastify.verifyJWT],
+      },
+      async (request: FastifyRequest, _reply: FastifyReply) => {
+        return {
+          message: 'Authentication successful',
+          user: request.user,
+        };
       }
-    }
-  );
+    );
+
+    // 调试端点 - 检查用户是否存在
+    fastify.get(
+      '/admin/debug/user',
+      {
+        onRequest: [fastify.verifyJWT],
+      },
+      async (request: FastifyRequest, _reply: FastifyReply) => {
+        const { UserModel } = await import('../models/user.model.js');
+        const user = await UserModel.findById(request.user!.id);
+        return {
+          userId: request.user!.id,
+          userExists: !!user,
+          userData: user,
+        };
+      }
+    );
+
+    // 调试端点 - 测试 profile 视图渲染
+    fastify.get(
+      '/admin/debug/profile-view',
+      {
+        onRequest: [fastify.verifyJWT],
+      },
+      async (request: FastifyRequest, reply: FastifyReply) => {
+        try {
+          const { UserModel } = await import('../models/user.model.js');
+          const { CreditHistoryModel } = await import('../models/credit-history.model.js');
+
+          const user = await UserModel.findById(request.user!.id);
+          if (!user) {
+            return { error: 'User not found' };
+          }
+
+          const creditHistory = await CreditHistoryModel.findByUserId(user.id, 5);
+
+          // 暂时将已使用的积分设为 0
+          const usedCredits = 0;
+
+          console.log('[DEBUG PROFILE VIEW] About to render view...');
+
+          return reply.view('pages/profile', {
+            title: '个人资料',
+            subtitle: '管理个人信息',
+            path: request.url,
+            user: {
+              ...request.user,
+              email: user.email,
+              webhook_url: user.webhook_url,
+              credits: user.credits,
+              api_key: user.api_key,
+              created_at: user.created_at,
+              used_credits: usedCredits,
+            },
+            creditHistory,
+            flash: request.flash,
+          });
+        } catch (error: any) {
+          return { error: error.message };
+        }
+      }
+    );
   }); // end debug routes register
 
   // 个人资料页面

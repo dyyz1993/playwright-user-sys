@@ -33,9 +33,7 @@ export async function createBrowserSession(
   const activeCount = await SessionModel.countActiveByUserId(user.id);
   const maxSessions = env.MAX_SESSIONS_PER_USER;
   if (activeCount >= maxSessions) {
-    throw new Error(
-      `Session limit reached: user has ${activeCount} active sessions, max is ${maxSessions}`
-    );
+    throw new Error(`Session limit reached: user has ${activeCount} active sessions, max is ${maxSessions}`);
   }
 
   // 确保至少有一个默认的viewport

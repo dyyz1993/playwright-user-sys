@@ -199,7 +199,10 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
         // 验证当前密码
         const { verifyPasswordWithMigration, hashPassword } = await import('../utils/auth.js');
-        const { valid: isPasswordValid, needsMigration } = await verifyPasswordWithMigration(body.current_password, user.password);
+        const { valid: isPasswordValid, needsMigration } = await verifyPasswordWithMigration(
+          body.current_password,
+          user.password
+        );
 
         if (!isPasswordValid) {
           return sendError(reply, '当前密码错误', 401);

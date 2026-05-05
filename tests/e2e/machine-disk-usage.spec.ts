@@ -22,7 +22,12 @@ test.describe('Machine Disk Usage Tests', () => {
     await page.goto(`/admin/machines/${registeredMachine.id}`, { timeout: 30000 });
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
 
-    const diskUsageText = await page.locator('text=磁盘使用率').locator('..').locator('span.text-sm').nth(1).textContent();
+    const diskUsageText = await page
+      .locator('text=磁盘使用率')
+      .locator('..')
+      .locator('span.text-sm')
+      .nth(1)
+      .textContent();
     console.log(`Disk usage text: ${diskUsageText}`);
 
     const diskUsageValue = parseFloat(diskUsageText?.replace('%', '') || '0');

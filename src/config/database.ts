@@ -2,6 +2,7 @@ import knex, { Knex } from 'knex';
 import path from 'path';
 import { env } from './env.js';
 import { fileURLToPath } from 'url';
+import { logger } from '../shared/utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,7 +12,7 @@ const createDatabaseConfig = () => {
   // 根据环境变量选择数据库类型
   if (env.DB_TYPE === 'sqlite') {
     const dbPath = env.DB_PATH || path.join(__dirname, '../../data/database.sqlite');
-    console.log(`使用 SQLite 数据库: ${dbPath}`);
+    logger.info(`使用 SQLite 数据库: ${dbPath}`);
 
     return {
       client: 'better-sqlite3',
@@ -24,7 +25,7 @@ const createDatabaseConfig = () => {
     };
   } else {
     // MySQL 配置
-    console.log(`使用 MySQL 数据库: ${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`);
+    logger.info(`使用 MySQL 数据库: ${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`);
 
     return {
       client: 'mysql2',
@@ -62,57 +63,57 @@ let dbInstance: Knex;
 // 初始化数据库
 export async function initDatabase(dbName?: string) {
   try {
-    console.log('正在初始化数据库...');
+    logger.info('正在初始化数据库...');
     const config = createDatabaseConfig();
 
     // 如果已经存在连接，先销毁
     if (dbInstance) {
-      console.log('销毁旧的数据库连接...');
+      logger.info('销毁旧的数据库连接...');
       try {
         await dbInstance.destroy();
-        console.log('旧数据库连接已销毁');
+        logger.info('旧数据库连接已销毁');
       } catch (e) {
-        console.error('销毁旧连接时出错:', e);
+        logger.error('销毁旧连接时出错:', e);
       }
     }
 
     // 如果是测试环境且使用内存数据库
     if (process.env.NODE_ENV === 'test' && process.env.DATABASE_PATH === ':memory:') {
-      console.log('使用内存数据库进行测试');
+      logger.info('使用内存数据库进行测试');
       config.connection = { filename: ':memory:' };
     }
 
     // 如果提供了数据库名称覆盖（用于测试环境）
     if (dbName && config.client === 'mysql2') {
       (config.connection as any).database = dbName;
-      console.log(`使用测试数据库: ${dbName}`);
+      logger.info(`使用测试数据库: ${dbName}`);
     }
 
     // 创建数据库连接
-    console.log('创建新的数据库连接...');
+    logger.info('创建新的数据库连接...');
     dbInstance = knex(config);
-    console.log('knex 实例已创建');
+    logger.info('knex 实例已创建');
 
     // 测试连接
-    console.log('测试数据库连接 (SELECT 1)...');
+    logger.info('测试数据库连接 (SELECT 1)...');
     await dbInstance.raw('SELECT 1');
-    console.log('数据库连接创建成功');
+    logger.info('数据库连接创建成功');
 
     return dbInstance;
   } catch (error) {
-    console.error('创建数据库连接失败:', error);
+    logger.error('创建数据库连接失败:', error);
     throw error;
   }
 }
 
 // 创建初始数据库连接（非测试环境）
 if (process.env.NODE_ENV !== 'test') {
-  console.log('正在创建数据库连接...');
+  logger.info('正在创建数据库连接...');
   try {
     dbInstance = knex(createDatabaseConfig());
-    console.log('数据库连接创建成功');
+    logger.info('数据库连接创建成功');
   } catch (error) {
-    console.error('创建数据库连接失败:', error);
+    logger.error('创建数据库连接失败:', error);
     throw error;
   }
 }

@@ -389,8 +389,8 @@ export class StorageService {
             const entries = await readdir(sessionsPath, { withFileTypes: true });
             sessionsCount = entries.filter((e) => e.isDirectory()).length;
           }
-        } catch {
-          // Ignore errors
+        } catch (error) {
+          logger.error(`读取用户 ${user.id} sessions 目录失败:`, error);
         }
 
         return {

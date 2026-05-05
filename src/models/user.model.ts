@@ -2,6 +2,7 @@ import { db } from '../config/database.js';
 import { UserRole, UserStatus, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import { hashPassword, comparePassword, verifyPasswordWithMigration } from '../utils/auth.js';
+import { logger } from '../shared/utils/logger.js';
 
 export interface User {
   id: number;
@@ -123,7 +124,7 @@ export class UserModel {
     if (valid && needsMigration) {
       const newHash = await hashPassword(password);
       await db('users').where({ id: user.id }).update({ password: newHash, updated_at: new Date() });
-      console.log(`[密码迁移] 用户 ${user.id} 的密码已从 SHA-256 迁移到 bcrypt`);
+      logger.info(`[密码迁移] 用户 ${user.id} 的密码已从 SHA-256 迁移到 bcrypt`);
     }
     return valid;
   }
@@ -142,7 +143,7 @@ export class UserModel {
     if (user.credits < amount) {
       throw new Error('点数不足');
     }
-    console.log(`🔴 扣除点数: ${amount} 点, 用户 ${id} 剩余 ${user.credits - amount} 点`);
+    logger.info(`🔴 扣除点数: ${amount} 点, 用户 ${id} 剩余 ${user.credits - amount} 点`);
 
     const queryBuilder = trx || db;
     await queryBuilder('users').where({ id }).decrement('credits', amount);
@@ -176,25 +177,25 @@ export class UserModel {
         const user = userMap.get(userId);
 
         if (!user) {
-          console.warn(`用户 ${userId} 不存在，跳过扣除点数`);
+          logger.warn(`用户 ${userId} 不存在，跳过扣除点数`);
           continue;
         }
 
         if (user.credits < amount) {
-          console.warn(`用户 ${userId} 点数不足，剩余: ${user.credits}，需要: ${amount}，跳过扣除点数`);
+          logger.warn(`用户 ${userId} 点数不足，剩余: ${user.credits}，需要: ${amount}，跳过扣除点数`);
           continue;
         }
 
         // 扣除点数
         await queryBuilder('users').where('id', userId).decrement('credits', amount);
 
-        console.log(`批量扣除: 用户 ${userId} 扣除 ${amount} 点，剩余 ${user.credits - amount} 点`);
+        logger.info(`批量扣除: 用户 ${userId} 扣除 ${amount} 点，剩余 ${user.credits - amount} 点`);
         successCount++;
       }
 
       return successCount;
     } catch (error) {
-      console.error('批量扣除用户点数失败:', error);
+      logger.error('批量扣除用户点数失败:', error);
       throw error;
     }
   }
@@ -204,7 +205,7 @@ export class UserModel {
     query: PaginationQuery & { search?: string; role?: UserRole; status?: UserStatus } = {}
   ): Promise<PaginatedResponse<User>> {
     try {
-      console.log('开始查询用户数据');
+      logger.info('开始查询用户数据');
       const page = parseInt(query.page || '1', 10);
       const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
@@ -239,7 +240,7 @@ export class UserModel {
       // 获取分页数据
       const users = await queryBuilder.orderBy(sort, order).limit(limit).offset(offset);
 
-      console.log(`找到 ${users.length} 个用户，总数 ${total}`);
+      logger.info(`找到 ${users.length} 个用户，总数 ${total}`);
 
       return {
         items: users,
@@ -249,7 +250,7 @@ export class UserModel {
         totalPages: Math.ceil(total / limit),
       };
     } catch (error) {
-      console.error('查询用户数据失败:', error);
+      logger.error('查询用户数据失败:', error);
       throw error;
     }
   }
@@ -277,7 +278,7 @@ export class UserModel {
 
       return { total, active, inactive };
     } catch (error) {
-      console.error('获取用户统计数据失败:', error);
+      logger.error('获取用户统计数据失败:', error);
       throw error;
     }
   }
@@ -301,7 +302,7 @@ export class UserModel {
 
       return { total, used, available };
     } catch (error) {
-      console.error('获取点数统计数据失败:', error);
+      logger.error('获取点数统计数据失败:', error);
       return { total: 0, used: 0, available: 0 };
     }
   }
@@ -312,7 +313,7 @@ export class UserModel {
       const result = await db('users').count('id as count').first();
       return result ? Number(result.count) : 0;
     } catch (error) {
-      console.error('统计用户数失败:', error);
+      logger.error('统计用户数失败:', error);
       return 0;
     }
   }
@@ -324,7 +325,7 @@ export class UserModel {
       const result = await db('users').where('created_at', '>=', cutoffDate).count('id as count').first();
       return result ? Number(result.count) : 0;
     } catch (error) {
-      console.error('统计新用户数失败:', error);
+      logger.error('统计新用户数失败:', error);
       return 0;
     }
   }
@@ -335,7 +336,7 @@ export class UserModel {
       const result = await db('users').sum('credits as total').first();
       return result && result.total ? Number(result.total) : 0;
     } catch (error) {
-      console.error('统计用户点数总和失败:', error);
+      logger.error('统计用户点数总和失败:', error);
       return 0;
     }
   }

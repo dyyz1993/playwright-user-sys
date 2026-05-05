@@ -61,7 +61,8 @@ export class SessionModel {
       try {
         optionsJson = JSON.stringify(data.options);
         JSON.parse(optionsJson);
-      } catch {
+      } catch (error) {
+        logger.error('Invalid session options JSON:', error);
         throw new Error('Invalid options format: must be valid JSON');
       }
     }

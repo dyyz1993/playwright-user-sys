@@ -117,7 +117,8 @@ export default fp(async function (fastify: FastifyInstance) {
         username: user.username,
         role: user.role as 'admin' | 'user',
       };
-    } catch {
+    } catch (error) {
+      request.log.error({ err: error }, '验证 API Key 失败');
       return sendError(reply, '验证 API Key 失败', 500);
     }
   });
@@ -167,7 +168,8 @@ export default fp(async function (fastify: FastifyInstance) {
           role: user.role as 'admin' | 'user',
         };
         return; // JWT 认证成功，直接返回
-      } catch {
+      } catch (error) {
+        request.log.error({ err: error }, 'JWT 令牌验证失败');
         return sendError(reply, '无效的令牌', 401);
       }
     }
@@ -191,7 +193,8 @@ export default fp(async function (fastify: FastifyInstance) {
           role: user.role as 'admin' | 'user',
         };
         return; // API Key 认证成功
-      } catch {
+      } catch (error) {
+        request.log.error({ err: error }, 'API Key 验证失败');
         return sendError(reply, '验证 API Key 失败', 500);
       }
     }

@@ -70,8 +70,8 @@ function getCpuUsage(): number {
       const loadavg = os.loadavg()[0]; // 1分钟平均负载
       const cpuCount = os.cpus().length;
       return Math.min((loadavg / cpuCount) * 100, 100);
-    } catch {
-      // 如果连负载也无法获取，返回一个默认值
+    } catch (fallbackError) {
+      logger.error('获取系统负载失败，使用默认CPU使用率:', fallbackError);
       return 50; // 默认50%
     }
   }

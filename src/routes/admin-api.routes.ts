@@ -2088,8 +2088,8 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
               const entries = readdirSync(sessionsPath, { withFileTypes: true });
               sessionsCount = entries.filter((e: any) => e.isDirectory()).length;
             }
-          } catch {
-            // Ignore
+          } catch (error) {
+            request.log.error({ err: error }, '读取用户 sessions 目录失败');
           }
 
           return reply.send({

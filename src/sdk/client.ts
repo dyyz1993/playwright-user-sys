@@ -90,8 +90,8 @@ export class Client {
         if (errorData.error) {
           errorMessage = errorData.error;
         }
-      } catch {
-        // 忽略解析错误
+      } catch (error) {
+        // 忽略响应体解析错误，使用默认错误信息
       }
 
       throw new Error(errorMessage);

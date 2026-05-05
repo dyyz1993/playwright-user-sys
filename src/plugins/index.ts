@@ -25,12 +25,14 @@ import { logger } from '@shared/utils/logger.js';
 export default fp(async function (fastify: FastifyInstance) {
   logger.info('开始注册所有插件...');
 
-  // 注册 Rate Limit 插件
-  await fastify.register(rateLimit as any, {
-    max: 100,
-    timeWindow: '1 minute',
-    keyGenerator: (request) => request.ip,
-  });
+  // 注册 Rate Limit 插件（测试环境跳过，避免干扰安全测试）
+  if (process.env.NODE_ENV !== 'test') {
+    await fastify.register(rateLimit as any, {
+      max: 100,
+      timeWindow: '1 minute',
+      keyGenerator: (request) => request.ip,
+    });
+  }
 
   // 注册 CORS 插件
   const allowedOrigins = process.env.CORS_ORIGINS

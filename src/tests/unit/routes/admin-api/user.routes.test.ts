@@ -21,6 +21,13 @@ vi.mock('../../../../models/user.model.js', () => ({
     update: vi.fn(),
     delete: vi.fn(),
     addCredits: vi.fn(),
+    findByUsername: vi.fn(),
+    getStats: vi.fn(),
+    getCreditsStats: vi.fn(),
+    countAll: vi.fn(),
+    countNewUsers: vi.fn(),
+    sumAllCredits: vi.fn(),
+    resetApiKey: vi.fn(),
   },
 }));
 
@@ -28,6 +35,25 @@ vi.mock('../../../../models/operation-log.model.js', () => ({
   OperationLogModel: {
     create: vi.fn().mockResolvedValue(undefined),
   },
+}));
+
+vi.mock('../../../../services/user.service.js', () => ({
+  createUser: vi.fn(),
+  updateUser: vi.fn(),
+  deleteUser: vi.fn(),
+  batchDeleteUsers: vi.fn(),
+  addCredits: vi.fn(),
+  batchRecharge: vi.fn(),
+  resetApiKey: vi.fn(),
+  listUsers: vi.fn(),
+  getUserById: vi.fn(),
+  getUserStats: vi.fn(),
+  getUserSessionStats: vi.fn(),
+  exportUsersCsv: vi.fn(),
+  getCreditsStats: vi.fn(),
+  countAll: vi.fn(),
+  sumAllCredits: vi.fn(),
+  findByUsername: vi.fn(),
 }));
 
 vi.mock('../../../../utils/auth.js', () => ({
@@ -132,18 +158,18 @@ describe('admin-api user routes - auth enforcement', () => {
 
 describe('admin-api user routes - authenticated CRUD', () => {
   let app: FastifyInstance;
-  let UserModel: any;
+  let UserService: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     mockAuth.behavior = 'pass';
-    const mod = await import('../../../../models/user.model.js');
-    UserModel = mod.UserModel;
+    const mod = await import('../../../../services/user.service.js');
+    UserService = mod;
     app = await buildApp();
   });
 
   it('POST /api/admin/users should create a user and return 201', async () => {
-    UserModel.create.mockResolvedValue({
+    UserService.createUser.mockResolvedValue({
       id: 1,
       username: 'newuser',
       email: 'new@test.com',
@@ -166,7 +192,7 @@ describe('admin-api user routes - authenticated CRUD', () => {
   });
 
   it('GET /api/admin/users/:id should return user details', async () => {
-    UserModel.findById.mockResolvedValue({
+    UserService.getUserById.mockResolvedValue({
       id: 1,
       username: 'testuser',
       email: 'test@test.com',
@@ -188,7 +214,7 @@ describe('admin-api user routes - authenticated CRUD', () => {
   });
 
   it('GET /api/admin/users/:id should return 404 for non-existent user', async () => {
-    UserModel.findById.mockResolvedValue(null);
+    UserService.getUserById.mockResolvedValue(null);
 
     const res = await app.inject({ method: 'GET', url: '/api/admin/users/999' });
 
@@ -198,16 +224,7 @@ describe('admin-api user routes - authenticated CRUD', () => {
   });
 
   it('PUT /api/admin/users/:id should update user', async () => {
-    UserModel.findById.mockResolvedValue({
-      id: 1,
-      username: 'testuser',
-      email: 'test@test.com',
-      role: 'user',
-      status: 'active',
-      credits: 100,
-      webhook_url: null,
-    });
-    UserModel.update.mockResolvedValue({
+    UserService.updateUser.mockResolvedValue({
       id: 1,
       username: 'testuser',
       email: 'updated@test.com',
@@ -230,8 +247,7 @@ describe('admin-api user routes - authenticated CRUD', () => {
   });
 
   it('DELETE /api/admin/users/:id should delete non-admin user', async () => {
-    UserModel.findById.mockResolvedValue({ id: 2, username: 'normaluser', role: UserRole.USER });
-    UserModel.delete.mockResolvedValue(true);
+    UserService.deleteUser.mockResolvedValue(true);
 
     const res = await app.inject({ method: 'DELETE', url: '/api/admin/users/2' });
 
@@ -241,7 +257,7 @@ describe('admin-api user routes - authenticated CRUD', () => {
   });
 
   it('DELETE /api/admin/users/:id should refuse to delete admin', async () => {
-    UserModel.findById.mockResolvedValue({ id: 1, username: 'admin', role: UserRole.ADMIN });
+    UserService.deleteUser.mockRejectedValue(new Error('不允许删除管理员账号'));
 
     const res = await app.inject({ method: 'DELETE', url: '/api/admin/users/1' });
 
@@ -252,8 +268,7 @@ describe('admin-api user routes - authenticated CRUD', () => {
   });
 
   it('POST /api/admin/users/:id/credits should add credits', async () => {
-    UserModel.findById.mockResolvedValue({ id: 1, username: 'testuser' });
-    UserModel.addCredits.mockResolvedValue({ id: 1, username: 'testuser', credits: 200 });
+    UserService.addCredits.mockResolvedValue({ id: 1, username: 'testuser', credits: 200 });
 
     const res = await app.inject({
       method: 'POST',
@@ -268,7 +283,7 @@ describe('admin-api user routes - authenticated CRUD', () => {
   });
 
   it('POST /api/admin/users/:id/credits should reject invalid amount', async () => {
-    UserModel.findById.mockResolvedValue({ id: 1, username: 'testuser' });
+    UserService.addCredits.mockResolvedValue(null);
 
     const res = await app.inject({
       method: 'POST',
@@ -280,8 +295,7 @@ describe('admin-api user routes - authenticated CRUD', () => {
   });
 
   it('POST /api/admin/users/:id/reset-api-key should generate new key', async () => {
-    UserModel.findById.mockResolvedValue({ id: 1, username: 'testuser' });
-    UserModel.update.mockResolvedValue({ id: 1, api_key: 'test-uuid-key' });
+    UserService.resetApiKey.mockResolvedValue('test-uuid-key');
 
     const res = await app.inject({ method: 'POST', url: '/api/admin/users/1/reset-api-key' });
 
@@ -292,7 +306,7 @@ describe('admin-api user routes - authenticated CRUD', () => {
   });
 
   it('GET /api/admin/users should list users', async () => {
-    UserModel.findAll.mockResolvedValue({
+    UserService.listUsers.mockResolvedValue({
       items: [
         {
           id: 1,

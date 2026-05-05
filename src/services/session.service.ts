@@ -203,31 +203,29 @@ export async function handleSessionDisconnect(sessionId: string, userId: number,
     await SessionModel.markDisconnected(sessionId, duration);
     logger.info(`更新会话状态为已断开 (${sessionId}): 持续时间=${duration}秒, 消耗点数=${minutes}点`);
 
-    // 减少机器的实例计数
     await MachineModel.decrementInstanceCount(machineId);
 
-    // 触发 Webhook 事件
     const disconnectedAt = new Date();
     await createWebhookEvent(userId, WebhookEventType.SESSION_DISCONNECTED, {
       session_id: sessionId,
       disconnected_at: disconnectedAt,
     });
 
-    // 获取更新后的会话信息
     const updatedSession = await SessionModel.findById(sessionId);
     if (!updatedSession) {
       logger.error(`无法获取更新后的会话信息 (${sessionId})`);
       return;
     }
 
-    // 扣除用户点数（只有在会话没有消耗点数时才扣除）
-    if (updatedSession.credits_used === 0) {
+    if (updatedSession.credits_used === 0 && minutes > 0) {
       try {
         await UserModel.deductCredits(userId, minutes);
         logger.info(`已扣除用户 ${userId} 的点数: ${minutes} 点 (${sessionId})`);
       } catch (error) {
         logger.error('扣除点数失败:', error);
       }
+    } else if (updatedSession.credits_used === 0 && minutes === 0) {
+      logger.info(`会话无消耗点数，跳过扣除 (${sessionId})`);
     } else {
       logger.info(`会话已有消耗点数，不重复扣除 (${sessionId}): 消耗点数=${updatedSession.credits_used}点`);
     }

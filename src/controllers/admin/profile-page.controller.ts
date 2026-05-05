@@ -1,0 +1,24 @@
+import * as UserService from '../../services/user.service.js';
+import { CreditHistoryModel } from '../../models/credit-history.model.js';
+import { SessionModel } from '../../models/session.model.js';
+
+export async function getProfilePageData(userId: number) {
+  const user = await UserService.getUserById(userId);
+  if (!user) return null;
+
+  const creditHistory = await CreditHistoryModel.findByUserId(user.id, 5);
+  const sessionStats = await SessionModel.getUserSessionStats(user.id);
+  const usedCredits = sessionStats.total_credits_used;
+
+  return {
+    userData: {
+      email: user.email,
+      webhook_url: user.webhook_url,
+      credits: user.credits,
+      api_key: user.api_key,
+      created_at: user.created_at,
+      used_credits: usedCredits,
+    },
+    creditHistory,
+  };
+}

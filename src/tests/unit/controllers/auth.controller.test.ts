@@ -124,8 +124,11 @@ describe('AuthController', () => {
 
     const request = {
       body: {
-        username: 'nonexistent',
+        username: 'testuser',
         password: 'password123',
+      },
+      log: {
+        error: vi.fn(),
       },
     };
 
@@ -161,6 +164,9 @@ describe('AuthController', () => {
         username: 'testuser',
         password: 'wrongpassword',
       },
+      log: {
+        error: vi.fn(),
+      },
     };
 
     const reply = {
@@ -194,6 +200,9 @@ describe('AuthController', () => {
       body: {
         username: 'testuser',
         password: 'password123',
+      },
+      log: {
+        error: vi.fn(),
       },
     };
 

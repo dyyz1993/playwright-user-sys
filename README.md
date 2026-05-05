@@ -1,5 +1,7 @@
 # Playwright 用户管理系统
 
+[![License: Apache 2.0 with Commons Clause](https://img.shields.io/badge/License-Apache%202.0%20with%20Commons%20Clause-red.svg)](LICENSE)
+
 一个用于管理 Playwright 实例的系统，包含用户管理、点数计费和实例集群管理功能。
 
 ## 系统架构
@@ -261,18 +263,15 @@ await uploader.closeSession();
 系统包含了一系列测试脚本，位于 `tests` 目录下：
 
 ```bash
+# 单元测试
+pnpm test:unit
+
 # 测试登录流程
 pnpm test:login
-
-# 测试会话管理
-pnpm test:sessions
-
-# 测试点数管理
-pnpm test:credits
 
 # 完整 API 测试
 pnpm test:api
 
-# 运行所有测试
-pnpm test:all
+# 运行所有 vitest 测试
+pnpm test
 ```

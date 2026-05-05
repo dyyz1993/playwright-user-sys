@@ -217,10 +217,13 @@ class MachineConnectionManager extends EventEmitter {
       }
       // 处理会话截图更新
       else if (message.session_screenshot) {
-        await this.handleSessionScreenshot(machineId, message.session_screenshot as {
-          session_id: string;
-          screenshot_url: string;
-        });
+        await this.handleSessionScreenshot(
+          machineId,
+          message.session_screenshot as {
+            session_id: string;
+            screenshot_url: string;
+          }
+        );
       }
       // 未知消息类型
       else {
@@ -293,10 +296,7 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 处理会话截图更新
    */
-  private async handleSessionScreenshot(
-    machineId: string,
-    screenshot: unknown
-  ): Promise<void> {
+  private async handleSessionScreenshot(machineId: string, screenshot: unknown): Promise<void> {
     if (
       !screenshot ||
       typeof screenshot !== 'object' ||
@@ -347,7 +347,11 @@ class MachineConnectionManager extends EventEmitter {
       return;
     }
 
-    const { session_id, status: sessionStatus, duration: reportedDuration } = status as {
+    const {
+      session_id,
+      status: sessionStatus,
+      duration: reportedDuration,
+    } = status as {
       session_id: string;
       status: string;
       duration: number;

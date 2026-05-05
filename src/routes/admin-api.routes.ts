@@ -1497,10 +1497,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: result,
         });
-    } catch (error: unknown) {
-      request.log.error({ err: error }, '认证失败');
-      return reply.status(401).send({ success: false, error: '认证失败' });
-    }
+      } catch (error: unknown) {
+        request.log.error({ err: error }, '认证失败');
+        return reply.status(401).send({ success: false, error: '认证失败' });
+      }
     }
   );
 

@@ -11,6 +11,22 @@ import { browserService } from './browser.service.js';
 import { logger } from '@shared/utils/logger.js';
 import { MachineConfig } from './config.js';
 import { setGrpcConnected } from './health.service.js';
+import type {
+  RegisterRequest,
+  RegisterResponse,
+  LaunchBrowserRequest,
+  SessionResponse,
+  CloseBrowserRequest,
+  SessionStatusUpdate,
+  MachineStatusRequest,
+  MachineStatusResponse,
+  MachineMessage,
+  ManagerMessage,
+  GrpcServiceError,
+  HeartbeatRequest,
+  BrowserOptions,
+} from '../shared/types/grpc.js';
+import type { ServerUnaryCall, sendUnaryData, ServerDuplexStream } from '@grpc/grpc-js';
 
 // 存储上一次CPU使用情况，用于计算使用率
 let lastCpuInfo: { idle: number; total: number } | null = null;
@@ -110,13 +126,29 @@ const packageDefinition = protoLoader.loadSync(protoPath, {
   oneofs: true,
 });
 
-const proto = grpc.loadPackageDefinition(packageDefinition).machine as any;
+interface MachineServiceConstructor {
+  service: grpc.ServiceDefinition;
+  new (address: string, credentials: grpc.ChannelCredentials): MachineServiceClient;
+}
+
+interface MachineServiceClient {
+  Register(
+    request: RegisterRequest,
+    callback: (err: unknown, response: RegisterResponse) => void
+  ): void;
+  Connect(): grpc.ClientDuplexStream<MachineMessage, ManagerMessage>;
+}
+
+const protoDef = grpc.loadPackageDefinition(packageDefinition).machine as unknown as {
+  MachineService: MachineServiceConstructor;
+};
+const proto = protoDef.MachineService;
 
 let _grpcClientInstance: GrpcClient | null = null;
 
 export class GrpcClient extends EventEmitter {
-  private client: any;
-  private call: grpc.ClientDuplexStream<unknown, unknown> | null;
+  private client: MachineServiceClient;
+  private call: grpc.ClientDuplexStream<MachineMessage, ManagerMessage> | null;
   private connected: boolean = false;
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private config: MachineConfig; // 实例级配置
@@ -154,7 +186,7 @@ export class GrpcClient extends EventEmitter {
    * 初始化 gRPC 客户端
    */
   private initClient() {
-    this.client = new proto.MachineService(this.config.managerHost, grpc.credentials.createInsecure());
+    this.client = new proto(this.config.managerHost, grpc.credentials.createInsecure());
   }
 
   /**
@@ -167,7 +199,7 @@ export class GrpcClient extends EventEmitter {
   /**
    * 向管理服务器注册机器
    */
-  async register(): Promise<any> {
+  async register(): Promise<RegisterResponse> {
     try {
       // 获取磁盘空间
       const diskSpace = await this.getDiskSpace();
@@ -192,7 +224,7 @@ export class GrpcClient extends EventEmitter {
 
         logger.info('注册机器:', request);
 
-        this.client.Register(request, (err: unknown, response: Record<string, unknown>) => {
+        this.client.Register(request, (err: unknown, response: RegisterResponse) => {
           if (err) {
             logger.error('注册失败:', err);
             reject(err);
@@ -204,16 +236,15 @@ export class GrpcClient extends EventEmitter {
       });
     } catch (error) {
       logger.error('注册时获取系统信息失败:', error);
-      // 如果获取磁盘空间失败，使用默认值继续注册
       return new Promise((resolve, reject) => {
         const systemInfo = {
           os: os.platform(),
           cpu: os.cpus()[0].model,
           memory: os.totalmem(),
-          disk: 1000000000, // 默认1GB
+          disk: 1000000000,
         };
 
-        const request = {
+        const request: RegisterRequest = {
           machine_id: this.config.machineId,
           name: this.config.machineName,
           ip_address: this.getLocalIpAddress(),
@@ -225,7 +256,7 @@ export class GrpcClient extends EventEmitter {
 
         logger.info('使用默认磁盘空间注册机器:', request);
 
-        this.client.Register(request, (err: any, response: any) => {
+        this.client.Register(request, (err: unknown, response: RegisterResponse) => {
           if (err) {
             logger.error('注册失败:', err);
             reject(err);
@@ -267,7 +298,7 @@ export class GrpcClient extends EventEmitter {
               this.call = this.client.Connect();
 
               // 设置数据处理器
-              this.call.on('data', (message: Record<string, unknown>) => {
+              this.call.on('data', (message: ManagerMessage) => {
                 try {
                   logger.debug(`收到管理端消息: ${JSON.stringify(message)}`);
                   this.handleManagerMessage(message);
@@ -368,11 +399,11 @@ export class GrpcClient extends EventEmitter {
           },
         }
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('连接到管理端失败，已达到最大重试次数:', error);
 
-      // 如果是连接断开错误，不抛出异常，而是尝试重新连接
-      if (error.message && error.message.includes('UNAVAILABLE: Connection dropped')) {
+      const errMsg = error instanceof Error ? error.message : '';
+      if (errMsg && errMsg.includes('UNAVAILABLE: Connection dropped')) {
         logger.warn('检测到 gRPC 连接断开错误，将在内部处理而不抛出异常');
 
         // 尝试重新连接
@@ -624,19 +655,18 @@ export class GrpcClient extends EventEmitter {
   /**
    * 处理来自管理服务器的消息
    */
-  private async handleManagerMessage(message: Record<string, unknown>) {
+  private async handleManagerMessage(message: ManagerMessage) {
     try {
       // 处理心跳请求
       if (message.heartbeat_request) {
         logger.debug(`收到心跳请求: ${JSON.stringify(message.heartbeat_request)}`);
-        this.handleHeartbeatRequest(message.heartbeat_request as Record<string, unknown>);
+        this.handleHeartbeatRequest(message.heartbeat_request as HeartbeatRequest);
         return;
       }
 
       // 处理关闭浏览器命令
       if (message.close_browser) {
-        const closeBrowser = message.close_browser as { session_id: string };
-        const { session_id } = closeBrowser;
+        const { session_id } = message.close_browser;
         logger.info(`收到关闭浏览器命令 (sessionId: ${session_id})`);
 
         // 关闭浏览器
@@ -738,7 +768,7 @@ export class GrpcClient extends EventEmitter {
   /**
    * 处理心跳请求
    */
-  private handleHeartbeatRequest(_request: Record<string, unknown>) {
+  private handleHeartbeatRequest(_request: HeartbeatRequest) {
     try {
       // 构造心跳响应消息
       const response = {
@@ -915,24 +945,16 @@ export class GrpcClient extends EventEmitter {
 const serviceImplementation = {
   // 启动浏览器实例
   LaunchBrowser: async (
-    call: {
-      request: {
-        session_id: string;
-        options: Record<string, unknown>;
-        user_id?: number;
-      };
-    },
-    callback: (error: unknown | { code: number; message: string }, response?: Record<string, unknown>) => void
+    call: ServerUnaryCall<LaunchBrowserRequest, SessionResponse>,
+    callback: sendUnaryData<SessionResponse>
   ) => {
     try {
       const request = call.request;
       logger.info(`收到启动浏览器请求:`, request);
 
-      const { session_id, options, user_id } = request;
+      const { session_id, user_id } = request;
+      const protoOptions = request.options || {} as BrowserOptions;
 
-      const protoOptions = options as Record<string, unknown>;
-
-      // 转换 proto 格式的 options 到 TypeScript 接口格式
       const convertedOptions: Record<string, unknown> = {};
 
       if (protoOptions.user_agent) {
@@ -944,10 +966,9 @@ const serviceImplementation = {
       }
 
       if (protoOptions.viewport) {
-        const viewport = protoOptions.viewport as { width: number; height: number };
         convertedOptions.viewport = {
-          width: viewport.width,
-          height: viewport.height,
+          width: protoOptions.viewport.width,
+          height: protoOptions.viewport.height,
         };
       }
 
@@ -960,31 +981,26 @@ const serviceImplementation = {
       }
 
       if (protoOptions.storage_state) {
-        const storageStateData = protoOptions.storage_state as Record<string, unknown>;
-        // 转换 storage_state
-        const storageState: Record<string, unknown> = {};
+        const storageStateData = protoOptions.storage_state;
 
         if (storageStateData.cookies && Array.isArray(storageStateData.cookies)) {
-          storageState.cookies = storageStateData.cookies.map((cookie: Record<string, unknown>) => ({
-            name: cookie.name,
-            value: cookie.value,
-            domain: cookie.domain,
-            path: cookie.path,
-            expires: cookie.expires,
-            httpOnly: cookie.httpOnly,
-            secure: cookie.secure,
-            sameSite: cookie.sameSite,
-          }));
+          convertedOptions.storageState = {
+            cookies: storageStateData.cookies.map((cookie) => ({
+              name: cookie.name,
+              value: cookie.value,
+              domain: cookie.domain,
+              path: cookie.path,
+              expires: cookie.expires,
+              httpOnly: cookie.http_only,
+              secure: cookie.secure,
+              sameSite: cookie.same_site,
+            })),
+            origins: storageStateData.origins?.map((origin) => ({
+              origin: origin.origin,
+              localStorage: origin.localStorage,
+            })) || [],
+          };
         }
-
-        if (storageStateData.origins && Array.isArray(storageStateData.origins)) {
-          storageState.origins = storageStateData.origins.map((origin: Record<string, unknown>) => ({
-            origin: origin.origin,
-            localStorage: origin.localStorage,
-          }));
-        }
-
-        convertedOptions.storageState = storageState;
       }
 
       // 新增：shared_user_data 参数
@@ -1028,71 +1044,76 @@ const serviceImplementation = {
           port: result.port,
           error: '',
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : '启动浏览器失败';
         logger.error(`启动浏览器失败 (sessionId: ${session_id}):`, error);
 
-        // 业务逻辑错误（如 SHARED_SESSION_EXISTS）应该返回给客户端
-        // 使用 gRPC 错误回调，让管理端正确处理
         callback({
           code: grpc.status.FAILED_PRECONDITION,
-          message: error.message || '启动浏览器失败',
+          message: errMsg,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : '处理启动浏览器请求失败';
       logger.error('处理启动浏览器请求失败:', error);
       callback({
         code: grpc.status.INTERNAL,
-        message: error.message || '处理启动浏览器请求失败',
+        message: errMsg,
       });
     }
   },
 
   // 关闭浏览器实例
-  CloseBrowser: async (call: any, callback: any) => {
+  CloseBrowser: async (
+    call: ServerUnaryCall<CloseBrowserRequest, SessionStatusUpdate>,
+    callback: sendUnaryData<SessionStatusUpdate>
+  ) => {
     try {
       const request = call.request;
       logger.info(`收到关闭浏览器请求:`, request);
 
       const { session_id } = request;
 
-      // 调用浏览器服务关闭浏览器
       try {
         const success = await browserService.closeBrowser(session_id);
         logger.info(`浏览器关闭${success ? '成功' : '失败'} (sessionId: ${session_id})`);
 
-        // 构造响应
         callback(null, {
           session_id,
           status: success ? 'closed' : 'error',
           error: success ? '' : '关闭浏览器失败',
+          duration: 0,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : '关闭浏览器失败';
         logger.error(`关闭浏览器失败 (sessionId: ${session_id}):`, error);
         callback(null, {
           session_id,
           status: 'error',
-          error: error.message || '关闭浏览器失败',
+          error: errMsg,
+          duration: 0,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : '处理关闭浏览器请求失败';
       logger.error('处理关闭浏览器请求失败:', error);
       callback({
         code: grpc.status.INTERNAL,
-        message: error.message || '处理关闭浏览器请求失败',
+        message: errMsg,
       });
     }
   },
 
-  // 获取机器状态
-  GetMachineStatus: async (call: any, callback: any) => {
+  GetMachineStatus: async (
+    call: ServerUnaryCall<MachineStatusRequest, MachineStatusResponse>,
+    callback: sendUnaryData<MachineStatusResponse>
+  ) => {
     try {
       const request = call.request;
       logger.info(`收到获取机器状态请求:`, request);
 
-      // 获取CPU使用率
       const cpuUsage = getCpuUsage();
 
-      // 构造响应
       callback(null, {
         machine_id: serverConfig.machineId,
         online: true,
@@ -1102,49 +1123,45 @@ const serviceImplementation = {
         max_sessions: serverConfig.maxSessions,
         timestamp: Date.now(),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : '处理获取机器状态请求失败';
       logger.error('处理获取机器状态请求失败:', error);
       callback({
         code: grpc.status.INTERNAL,
-        message: error.message || '处理获取机器状态请求失败',
+        message: errMsg,
       });
     }
   },
 
-  // 注册机器
-  Register: async (call: any, callback: any) => {
+  Register: async (
+    call: ServerUnaryCall<RegisterRequest, RegisterResponse>,
+    callback: sendUnaryData<RegisterResponse>
+  ) => {
     try {
       const request = call.request;
       logger.info('收到机器注册请求:', request);
-
-      // 这个方法通常不会被调用，因为机器是客户端，不是服务器
-      // 但为了完整性，我们还是实现它
 
       callback(null, {
         success: true,
         message: '注册成功',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : '处理机器注册请求失败';
       logger.error('处理机器注册请求失败:', error);
       callback({
         code: grpc.status.INTERNAL,
-        message: error.message || '处理机器注册请求失败',
+        message: errMsg,
       });
     }
   },
 
-  // 双向流通信
-  Connect: (call: any) => {
+  Connect: (call: ServerDuplexStream<MachineMessage, ManagerMessage>) => {
     try {
       logger.info('收到新的 Connect 请求');
 
-      // 这个方法通常不会被调用，因为机器是客户端，不是服务器
-      // 但为了完整性，我们还是实现它
-
-      call.on('data', (message: any) => {
+      call.on('data', (message: MachineMessage) => {
         logger.info('收到消息:', message);
 
-        // 发送响应
         call.write({
           heartbeat_request: {
             timestamp: Date.now(),
@@ -1157,7 +1174,7 @@ const serviceImplementation = {
         call.end();
       });
 
-      call.on('error', (error: any) => {
+      call.on('error', (error: unknown) => {
         logger.error('连接错误:', error);
         call.end();
       });
@@ -1183,16 +1200,16 @@ export async function startGrpcClient(): Promise<void> {
     await grpcClient.connect();
 
     return;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('启动 gRPC 客户端失败:', error);
 
-    // 检查是否是 gRPC 连接错误
+    const errMsg = error instanceof Error ? error.message : '';
     const isGrpcConnectionError =
-      error.message &&
-      (error.message.includes('UNAVAILABLE: Connection dropped') ||
-        error.message.includes('UNAVAILABLE: No connection established') ||
-        error.message.includes('ECONNREFUSED') ||
-        error.message.includes('UNAVAILABLE'));
+      errMsg &&
+      (errMsg.includes('UNAVAILABLE: Connection dropped') ||
+        errMsg.includes('UNAVAILABLE: No connection established') ||
+        errMsg.includes('ECONNREFUSED') ||
+        errMsg.includes('UNAVAILABLE'));
 
     if (isGrpcConnectionError) {
       logger.warn('检测到 gRPC 连接错误，将在内部处理而不抛出异常');
@@ -1248,7 +1265,7 @@ export async function startGrpcClient(): Promise<void> {
 export function startGrpcServer(port: number = 50052): void {
   logger.info(`开始启动 gRPC 服务器，端口: ${port}`);
   const server = new grpc.Server();
-  server.addService(proto.MachineService.service, serviceImplementation);
+  server.addService(proto.service, serviceImplementation);
 
   // 使用新的 API 启动服务器
   server.bindAsync(`0.0.0.0:${port}`, grpc.ServerCredentials.createInsecure(), (bindErr) => {

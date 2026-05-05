@@ -378,7 +378,7 @@ describe('三端架构集成测试模板', () => {
 
     // 步骤 2: 测试API请求认证
     console.log('\n[步骤 2] 测试API请求认证...');
-    const response = await client.request('GET', '/api/auth/verify');
+    const response = await client.request<{ user: { id: number; username: string; role: string } }>('GET', '/api/auth/verify');
     expect(response.success).toBe(true);
     expect(response.data).toHaveProperty('user');
     expect(response.data.user).toMatchObject({

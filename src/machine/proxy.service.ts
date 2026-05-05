@@ -44,14 +44,13 @@ export class ProxyService {
     this.server.on('upgrade', this.handleWebSocketUpgrade.bind(this));
 
     // 处理代理错误
-    this.proxy.on('error', (err, req, res: any) => {
+    this.proxy.on('error', (err, req, res: ServerResponse) => {
       logger.error('代理错误:', err);
 
-      // 尝试从请求中提取 sessionId
       try {
         if (req && req.url) {
-          const url = new URL(req.url, `http://${req.headers?.host || 'localhost'}`);
-          const sessionId = url.searchParams.get('sessionId');
+          const urlObj = new URL(req.url, `http://${req.headers?.host || 'localhost'}`);
+          const sessionId = urlObj.searchParams.get('sessionId');
 
           if (sessionId) {
             logger.info(`代理错误，尝试处理断开连接 (sessionId: ${sessionId})`);

@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { UserModel } from '../models/user.model.js';
+import { UserModel, UpdateUserInput } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { UserRole } from '@shared/types/index.js';
 import { verifyPasswordWithMigration, hashPassword } from '../utils/auth.js';
@@ -54,7 +54,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
 
         if (needsMigration) {
           const newHash = await hashPassword(password);
-          await UserModel.update(user.id, { password: newHash } as any);
+          await UserModel.update(user.id, { password: newHash } as UpdateUserInput);
           request.log.info({ userId: user.id }, 'Password migrated from SHA-256 to bcrypt');
         }
 
@@ -95,9 +95,10 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
             token,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '登录失败');
-        return reply.status(500).send({ success: false, error: '登录失败: ' + error.message });
+        const msg = error instanceof Error ? error.message : String(error);
+        return reply.status(500).send({ success: false, error: '登录失败: ' + msg });
       }
     }
   );
@@ -201,9 +202,10 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
             usedCredits,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取仪表盘统计数据失败');
-        return reply.status(500).send({ success: false, error: '获取仪表盘统计数据失败: ' + error.message });
+        const msg = error instanceof Error ? error.message : String(error);
+        return reply.status(500).send({ success: false, error: '获取仪表盘统计数据失败: ' + msg });
       }
     }
   );

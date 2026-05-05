@@ -426,7 +426,7 @@ export class BrowserService extends EventEmitter {
 
       // 提取 userId 和 sharedUserData 选项
       // 注意：userId 通常从 options 中传递，或者从会话上下文中获取
-      const userId = (options as any).userId;
+      const userId = (options as Record<string, unknown>).userId as number | undefined;
       const sharedUserData = options.sharedUserData || false;
 
       // ===== 检查用户是否已有共享浏览器 =====
@@ -440,10 +440,10 @@ export class BrowserService extends EventEmitter {
               `您已有一个活跃的共享数据会话 (ID: ${existingSessionId})。` +
                 `每个用户同时只能有 1 个共享数据会话。` +
                 `请先关闭现有会话，或使用独立会话模式（不设置 sharedUserData）。`
-            ) as any;
-            error.code = 'SHARED_SESSION_EXISTS';
-            error.existingSessionId = existingSessionId;
-            error.userId = userId;
+            ) as Error & { code?: string; existingSessionId?: string; userId?: number };
+            (error as unknown as Record<string, unknown>).code = 'SHARED_SESSION_EXISTS';
+            (error as unknown as Record<string, unknown>).existingSessionId = existingSessionId;
+            (error as unknown as Record<string, unknown>).userId = userId;
             throw error;
           } else {
             // Map 中的 sessionId 已失效，清理
@@ -875,8 +875,9 @@ export class BrowserService extends EventEmitter {
         sessionFocusEmitter.emit(`rawFocusEvent:${sessionId}`);
       });
       logger.info(`Dynamic focus bridge '${dynamicFunctionName}' exposed for session ${sessionId}.`);
-    } catch (exposeError: any) {
-      if (exposeError.message.includes('already exists')) {
+    } catch (exposeError: unknown) {
+      const msg = exposeError instanceof Error ? exposeError.message : String(exposeError);
+      if (msg.includes('already exists')) {
         logger.warn(
           `Dynamic bridge function '${dynamicFunctionName}' likely already exposed for session ${sessionId}.`
         );

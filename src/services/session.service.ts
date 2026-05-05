@@ -131,31 +131,30 @@ export async function createBrowserSession(
       machineId,
       created_at: session.created_at,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
     // 检查是否是共享会话已存在的错误
     // 注意：gRPC 会将业务错误包装成 grpc.status.FAILED_PRECONDITION
     // 所以需要检查错误消息内容而不是 error.code
+    const errorCode = (error as { code?: string }).code;
     if (
-      error.code === 'SHARED_SESSION_EXISTS' ||
-      error.message?.includes('活跃的共享数据会话') ||
-      error.message?.includes('每个用户同时只能有 1 个共享数据会话')
+      errorCode === 'SHARED_SESSION_EXISTS' ||
+      errMsg.includes('活跃的共享数据会话') ||
+      errMsg.includes('每个用户同时只能有 1 个共享数据会话')
     ) {
       // 这是预期的业务错误，不需要更新数据库状态
-      logger.warn(`共享会话冲突: ${error.message}`);
-      // 抛出友好的错误信息
-      throw new Error(error.message);
+      logger.warn(`共享会话冲突: ${errMsg}`);
+      throw new Error(errMsg);
     }
 
-    // 如果启动浏览器失败，更新会话状态为错误
     await SessionModel.update(sessionId, {
       status: SessionStatus.ERROR,
     });
 
-    // 记录错误信息
-    logger.error(`会话错误信息: ${error.message}`);
+    logger.error(`会话错误信息: ${errMsg}`);
     logger.error(`启动浏览器实例失败 (sessionId: ${sessionId}):`, error);
 
-    throw new Error(`启动浏览器实例失败: ${error.message}`);
+    throw new Error(`启动浏览器实例失败: ${errMsg}`);
   }
 }
 

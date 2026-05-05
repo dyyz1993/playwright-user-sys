@@ -147,8 +147,39 @@ export async function handleEventsConnection(
   }
 }
 
+interface FileUploadStartData {
+  filename: string;
+  totalChunks: number;
+  size: number;
+}
+
+interface FileUploadChunkData {
+  filepath: string;
+  chunkIndex: number;
+  data: string;
+  chunk: string;
+  isLast?: boolean;
+}
+
+interface MouseEventData {
+  selector?: string;
+  frameSelector?: string;
+  value?: string;
+  deltaX?: number;
+  deltaY?: number;
+  tx?: number;
+  ty?: number;
+  x?: number;
+  y?: number;
+  button?: string;
+  key?: string;
+  code?: string;
+  type?: string;
+  clickCount?: number;
+}
+
 // --- 文件上传处理函数 ---
-async function handleFileUploadStart(ws: WebSocket, sessionId: string, data: any): Promise<void> {
+async function handleFileUploadStart(ws: WebSocket, sessionId: string, data: FileUploadStartData): Promise<void> {
   try {
     logger.info(`Starting file upload for session ${sessionId}: ${data.filename}`);
 
@@ -199,7 +230,7 @@ async function handleFileUploadStart(ws: WebSocket, sessionId: string, data: any
   }
 }
 
-async function handleFileUploadChunk(ws: WebSocket, sessionId: string, data: any): Promise<void> {
+async function handleFileUploadChunk(ws: WebSocket, sessionId: string, data: FileUploadChunkData): Promise<void> {
   try {
     logger.info(`Receiving file chunk ${data.chunkIndex} for session ${sessionId}`);
 
@@ -292,7 +323,7 @@ async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string)
             : `${activeElement.tagName.toLowerCase()}:nth-child(${Array.from(activeElement.parentNode?.children || []).indexOf(activeElement) + 1})`;
         const tag = activeElement.tagName.toLowerCase();
         const value = activeElement.isContentEditable ? activeElement.innerText : (activeElement.value ?? '');
-        const attributes: { [key: string]: any } = {};
+        const attributes: Record<string, string | boolean | null> = {};
         // ... (extract attributes: id, name, type, placeholder, required, etc.) ...
         if (activeElement.id) attributes.id = activeElement.id;
         if (activeElement.getAttribute('name')) attributes.name = activeElement.getAttribute('name');
@@ -419,7 +450,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
 
 async function handleMouseEvents(
   eventType: string,
-  data: any,
+  data: MouseEventData,
   page: Page,
   ws: WebSocket,
   sessionId: string,
@@ -428,7 +459,7 @@ async function handleMouseEvents(
   try {
     switch (eventType) {
       case 'input': {
-        let targetContext: any = page; // Default context is the main page
+        let targetContext: Page | Frame = page;
         const { selector, frameSelector, value } = data;
         if (!selector) {
           return;
@@ -527,7 +558,7 @@ async function handleMouseEvents(
             case 'keyDown':
             case 'keyUp':
             case 'keyPress':
-              await page.keyboard[eventType.split('.')[1] as 'down' | 'up' | 'press'](data.key);
+              await (page.keyboard[eventType.split('.')[1] as 'down' | 'up' | 'press'] as Function)(data.key);
               break;
             // Ignore touch events in touchpad mode?
             default:
@@ -569,12 +600,12 @@ function cleanupEventConnection(ws: WebSocket): void {
       // 尝试移除页面内的 focus 监听器 (使用 flag 检查)
       page
         .evaluate((fnName) => {
-          const win = window as any;
+          const win = window as unknown as Record<string, unknown>;
           const flagName = `_focusListenerAttached_${fnName}`;
           if (win[flagName]) {
             // Only remove if attached by this logic
             if (win[fnName]) {
-              document.removeEventListener('focusin', win[fnName]);
+              document.removeEventListener('focusin', win[fnName] as EventListener);
             }
             win[flagName] = false; // Reset the flag
             logger.debug('Focus listener removed from page context.');
@@ -604,7 +635,7 @@ function cleanupEventConnection(ws: WebSocket): void {
 }
 
 // --- 辅助发送函数 ---
-function sendNotification(ws: WebSocket, eventType: string, data: any): void {
+function sendNotification(ws: WebSocket, eventType: string, data: Record<string, unknown> | null): void {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(
       JSON.stringify({
@@ -630,7 +661,7 @@ function sendConfigSync(ws: WebSocket, config: SessionConfig): void {
 function sendResponse(
   ws: WebSocket,
   requestType: string,
-  data: { success: boolean; error?: string; [key: string]: any }
+  data: { success: boolean; error?: string; [key: string]: unknown }
 ): void {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(

@@ -1,19 +1,12 @@
+import { Knex } from 'knex';
 import { db } from '../config/database.js';
 import { UserRole, UserStatus, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
+import { UserRow } from '@shared/types/tables.js';
 import { v4 as uuidv4 } from 'uuid';
 import { hashPassword, comparePassword, verifyPasswordWithMigration } from '../utils/auth.js';
 import { logger } from '../shared/utils/logger.js';
 
-export interface User {
-  id: number;
-  username: string;
-  password: string;
-  email: string | null;
-  role: UserRole;
-  status: UserStatus;
-  credits: number;
-  api_key: string | null;
-  webhook_url: string | null;
+export interface User extends Omit<UserRow, 'created_at' | 'updated_at'> {
   created_at: Date;
   updated_at: Date;
 }
@@ -136,7 +129,7 @@ export class UserModel {
   }
 
   // 扣除点数
-  static async deductCredits(id: number, amount: number, trx?: any): Promise<User | null> {
+  static async deductCredits(id: number, amount: number, trx?: Knex.Transaction): Promise<User | null> {
     const user = await this.findById(id);
     if (!user) return null;
 
@@ -157,7 +150,7 @@ export class UserModel {
    * @param trx 事务对象（可选）
    * @returns 成功扣除点数的用户数量
    */
-  static async batchDeductCredits(userCredits: Map<number, number>, trx?: any): Promise<number> {
+  static async batchDeductCredits(userCredits: Map<number, number>, trx?: Knex.Transaction): Promise<number> {
     try {
       let successCount = 0;
       const queryBuilder = trx || db;

@@ -86,7 +86,7 @@ export class MachineModel {
   // 更新机器状态
   static async update(id: string, data: UpdateMachineInput): Promise<MachineInfo | null> {
     // 将 camelCase (API 层) 转换为 snake_case (数据库层)
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       hostname: data.hostname,
       ip: data.ip,
       // camelCase → snake_case 转换

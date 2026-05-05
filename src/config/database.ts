@@ -85,7 +85,7 @@ export async function initDatabase(dbName?: string) {
 
     // 如果提供了数据库名称覆盖（用于测试环境）
     if (dbName && config.client === 'mysql2') {
-      (config.connection as any).database = dbName;
+      (config.connection as Record<string, unknown>).database = dbName;
       logger.info(`使用测试数据库: ${dbName}`);
     }
 

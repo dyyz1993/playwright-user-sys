@@ -1,4 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+
+function getErrorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
 import { UserModel } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';
@@ -21,6 +25,14 @@ import {
   errorResponseSchema,
   idParamSchema,
 } from '../schemas/index.js';
+import {
+  AddMachineBodyRoute,
+  BatchRechargeBodyRoute,
+  TestSessionBodyRoute,
+  TestMachineBodyRoute,
+  OperationLogQueryRoute,
+  OperationLogStatsQueryRoute,
+} from '@shared/types/routes.js';
 
 export default async function adminApiRoutes(fastify: FastifyInstance): Promise<void> {
   // 使用全局验证中间件
@@ -173,14 +185,14 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             items: sanitizedUsers,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply
             .status(400)
             .send({ success: false, error: '无效的查询参数: ' + error.errors.map((e) => e.message).join(', ') });
         }
         request.log.error({ err: error }, '获取用户列表失败');
-        return reply.status(500).send({ success: false, error: '获取用户列表失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '获取用户列表失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -672,12 +684,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         tags: ['admin', 'machines'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest<AddMachineBodyRoute>, reply: FastifyReply) => {
       try {
         const adminId = request.user?.id;
-        const body = request.body as any;
-
-        // 验证输入
+        const body = request.body;
         if (!body.hostname || !body.ip) {
           return reply.status(400).send({ success: false, error: '主机名和IP地址不能为空' });
         }
@@ -952,16 +962,16 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest<BatchRechargeBodyRoute>, reply: FastifyReply) => {
       try {
         const adminId = request.user?.id;
-        const body = request.body as { userIds: number[]; credits: number; reason?: string };
+        const body = request.body;
 
         if (!body.userIds || !Array.isArray(body.userIds) || body.userIds.length === 0) {
           return reply.status(400).send({ success: false, error: '请提供要充值的用户 ID 列表' });
         }
 
-        const amount = parseInt(body.credits as any);
+        const amount = body.credits;
         if (isNaN(amount) || amount <= 0) {
           return reply.status(400).send({ success: false, error: '无效的点数金额' });
         }
@@ -1448,11 +1458,11 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest<OperationLogQueryRoute>, reply: FastifyReply) => {
       try {
-        const query = request.query as any;
-        const page = parseInt(query.page) || 1;
-        const limit = parseInt(query.limit) || 20;
+        const query = request.query;
+        const page = parseInt(query.page || '1') || 1;
+        const limit = parseInt(query.limit || '20') || 20;
 
         // 构建筛选条件
         const filters: Record<string, unknown> = {};
@@ -1533,10 +1543,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest<OperationLogStatsQueryRoute>, reply: FastifyReply) => {
       try {
-        const query = request.query as any;
-        const filters: any = {};
+        const query = request.query;
+        const filters: Record<string, unknown> = {};
 
         if (query.dateRange && query.dateRange !== 'all') {
           const now = new Date();
@@ -1557,7 +1567,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         const stats = await OperationLogModel.getStats(filters);
 
         return reply.send({ success: true, data: stats });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取操作统计失败');
         return reply.status(500).send({ success: false, error: '获取操作统计失败' });
       }
@@ -1678,9 +1688,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: result,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取会话列表失败');
-        return reply.status(500).send({ success: false, error: '获取会话列表失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '获取会话列表失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -1776,9 +1786,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: stats,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取会话统计失败');
-        return reply.status(500).send({ success: false, error: '获取会话统计失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '获取会话统计失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -1839,9 +1849,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: session,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取会话详情失败');
-        return reply.status(500).send({ success: false, error: '获取会话详情失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '获取会话详情失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -1885,7 +1895,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         const body = request.body as { sessionIds?: string[] };
 
         const { SessionModel } = await import('../models/session.model.js');
-        let sessions: any[] = [];
+        let sessions: Array<{ id: string; status: string }> = [];
 
         if (body.sessionIds && body.sessionIds.length > 0) {
           // 获取指定会话的状态
@@ -1908,9 +1918,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             sessions,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '刷新会话状态失败');
-        return reply.status(500).send({ success: false, error: '刷新会话状态失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '刷新会话状态失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -1923,12 +1933,12 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
     {
       preHandler: [authenticate],
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest<TestSessionBodyRoute>, reply: FastifyReply) => {
       try {
         const { SessionModel } = await import('../models/session.model.js');
         const { v4: uuidv4 } = await import('uuid');
 
-        const body = request.body as any;
+        const body = request.body;
         const count = body.count || 1;
         const userId = body.user_id || 1;
 
@@ -1937,20 +1947,11 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
 
         for (let i = 0; i < count; i++) {
           const _sessionId = uuidv4();
-          const startTime = new Date(now.getTime() - Math.random() * 86400000);
-          const duration = Math.floor(Math.random() * 3600);
-          const endTime = new Date(startTime.getTime() + duration * 1000);
 
           const session = await SessionModel.create({
             user_id: userId,
             machine_id: null,
-            status: 'disconnected',
-            start_time: startTime,
-            end_time: endTime,
-            duration: duration,
-            credits_used: Math.floor(Math.random() * 100),
-            metadata: {},
-          } as any);
+          });
 
           if (session) {
             sessions.push(session);
@@ -1962,10 +1963,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           message: `成功创建 ${sessions.length} 个测试会话`,
           data: { sessions },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
-          error: '创建测试会话失败: ' + error.message,
+          error: '创建测试会话失败: ' + getErrorMessage(error),
         });
       }
     }
@@ -1977,12 +1978,12 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
     {
       preHandler: [authenticate],
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest<TestMachineBodyRoute>, reply: FastifyReply) => {
       try {
         const { MachineModel } = await import('../models/machine.model.js');
         const { v4: uuidv4 } = await import('uuid');
 
-        const body = request.body as any;
+        const body = request.body;
         const count = body.count || 1;
 
         const machines = [];
@@ -2008,10 +2009,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           message: `成功创建 ${machines.length} 个测试机器`,
           data: { machines },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
-          error: '创建测试机器失败: ' + error.message,
+          error: '创建测试机器失败: ' + getErrorMessage(error),
         });
       }
     }
@@ -2094,7 +2095,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             const { readdirSync, existsSync } = await import('fs');
             if (existsSync(sessionsPath)) {
               const entries = readdirSync(sessionsPath, { withFileTypes: true });
-              sessionsCount = entries.filter((e: any) => e.isDirectory()).length;
+              sessionsCount = entries.filter((e: { isDirectory: () => boolean }) => e.isDirectory()).length;
             }
           } catch (error) {
             request.log.error({ err: error }, '读取用户 sessions 目录失败');
@@ -2134,9 +2135,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: result,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取存储统计失败');
-        return reply.status(500).send({ success: false, error: '获取存储统计失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '获取存储统计失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -2216,9 +2217,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: result,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '清理用户数据失败');
-        return reply.status(500).send({ success: false, error: '清理用户数据失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '清理用户数据失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -2277,9 +2278,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: result,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '清理旧数据失败');
-        return reply.status(500).send({ success: false, error: '清理旧数据失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '清理旧数据失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -2319,9 +2320,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: stats,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取系统存储统计失败');
-        return reply.status(500).send({ success: false, error: '获取系统存储统计失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '获取系统存储统计失败: ' + getErrorMessage(error) });
       }
     }
   );

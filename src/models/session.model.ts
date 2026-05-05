@@ -1,23 +1,19 @@
+import { Knex } from 'knex';
 import { db } from '../config/database.js';
 import { v4 as uuidv4 } from 'uuid';
 import { SessionStatus, SessionCreateOptions, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
+import { SessionRow } from '@shared/types/tables.js';
 import { logger } from '@shared/utils/logger.js';
 
-export interface Session {
-  id: string;
-  user_id: number;
-  machine_id: string | null;
-  port: number | null;
-  status: SessionStatus;
+export interface Session extends Omit<
+  SessionRow,
+  'options' | 'start_time' | 'end_time' | 'disconnected_at' | 'last_activity' | 'created_at' | 'updated_at'
+> {
   options: SessionCreateOptions | null;
   start_time: Date | null;
   end_time: Date | null;
   disconnected_at: Date | null;
-  duration: number;
-  credits_used: number;
-  screenshot_url: string | null;
   last_activity: Date | null;
-  error_message: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -49,6 +45,51 @@ export interface SessionFilterOptions {
   userId?: number;
   startDate?: Date;
   endDate?: Date;
+}
+
+function parseSessionOptions(raw: SessionRow & Record<string, unknown>): Session {
+  try {
+    return {
+      ...raw,
+      options: raw.options
+        ? typeof raw.options === 'string'
+          ? JSON.parse(raw.options) as SessionCreateOptions
+          : raw.options as SessionCreateOptions
+        : null,
+    } as unknown as Session;
+  } catch {
+    return { ...raw, options: null } as unknown as Session;
+  }
+}
+
+function parseSessionRowWithDates(raw: SessionRow & Record<string, unknown>): Session {
+  try {
+    return {
+      ...raw,
+      options: raw.options
+        ? typeof raw.options === 'string'
+          ? JSON.parse(raw.options) as SessionCreateOptions
+          : raw.options as SessionCreateOptions
+        : null,
+      start_time: raw.start_time ? new Date(raw.start_time) : null,
+      end_time: raw.end_time ? new Date(raw.end_time) : null,
+      disconnected_at: raw.disconnected_at ? new Date(raw.disconnected_at) : null,
+      last_activity: raw.last_activity ? new Date(raw.last_activity) : null,
+      created_at: raw.created_at ? new Date(raw.created_at) : new Date(),
+      updated_at: raw.updated_at ? new Date(raw.updated_at) : new Date(),
+    } as unknown as Session;
+  } catch {
+    return {
+      ...raw,
+      options: null,
+      start_time: raw.start_time ? new Date(raw.start_time) : null,
+      end_time: raw.end_time ? new Date(raw.end_time) : null,
+      disconnected_at: raw.disconnected_at ? new Date(raw.disconnected_at) : null,
+      last_activity: raw.last_activity ? new Date(raw.last_activity) : null,
+      created_at: raw.created_at ? new Date(raw.created_at) : new Date(),
+      updated_at: raw.updated_at ? new Date(raw.updated_at) : new Date(),
+    } as unknown as Session;
+  }
 }
 
 export class SessionModel {
@@ -140,7 +181,7 @@ export class SessionModel {
 
   // 更新会话
   static async update(id: string, data: UpdateSessionInput): Promise<Session | null> {
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...data,
       updated_at: new Date(),
     };
@@ -157,7 +198,7 @@ export class SessionModel {
    */
   static async batchUpdate(
     updates: Array<{ id: string; duration: number; credits_used: number }>,
-    trx?: any
+    trx?: Knex.Transaction
   ): Promise<number> {
     try {
       let count = 0;
@@ -483,38 +524,7 @@ export class SessionModel {
       ]);
 
       return {
-        items: sessions.map((session: any) => {
-          try {
-            return {
-              ...session,
-              options: session.options
-                ? typeof session.options === 'string'
-                  ? JSON.parse(session.options)
-                  : session.options
-                : null,
-              // 将日期字符串转换为 Date 对象
-              start_time: session.start_time ? new Date(session.start_time) : null,
-              end_time: session.end_time ? new Date(session.end_time) : null,
-              disconnected_at: session.disconnected_at ? new Date(session.disconnected_at) : null,
-              last_activity: session.last_activity ? new Date(session.last_activity) : null,
-              created_at: session.created_at ? new Date(session.created_at) : new Date(),
-              updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
-            };
-          } catch (error) {
-            console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
-            return {
-              ...session,
-              options: null,
-              // 将日期字符串转换为 Date 对象
-              start_time: session.start_time ? new Date(session.start_time) : null,
-              end_time: session.end_time ? new Date(session.end_time) : null,
-              disconnected_at: session.disconnected_at ? new Date(session.disconnected_at) : null,
-              last_activity: session.last_activity ? new Date(session.last_activity) : null,
-              created_at: session.created_at ? new Date(session.created_at) : new Date(),
-              updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
-            };
-          }
-        }),
+        items: sessions.map(parseSessionRowWithDates),
         total: total ? Number(total.count) : 0,
         page,
         limit,
@@ -533,24 +543,7 @@ export class SessionModel {
       const sessions = await db('sessions').whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED]);
       console.log(`找到 ${sessions.length} 个活跃会话`);
 
-      return sessions.map((session: any) => {
-        try {
-          return {
-            ...session,
-            options: session.options
-              ? typeof session.options === 'string'
-                ? JSON.parse(session.options)
-                : session.options
-              : null,
-          };
-        } catch (error) {
-          console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
-          return {
-            ...session,
-            options: null,
-          };
-        }
-      });
+      return sessions.map(parseSessionOptions);
     } catch (error) {
       console.error('查询活跃会话失败:', error);
       return [];
@@ -564,24 +557,7 @@ export class SessionModel {
       const sessions = await db('sessions').where({ user_id: userId });
       console.log(`找到用户 ${userId} 的 ${sessions.length} 个会话`);
 
-      return sessions.map((session: any) => {
-        try {
-          return {
-            ...session,
-            options: session.options
-              ? typeof session.options === 'string'
-                ? JSON.parse(session.options)
-                : session.options
-              : null,
-          };
-        } catch (error) {
-          console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
-          return {
-            ...session,
-            options: null,
-          };
-        }
-      });
+      return sessions.map(parseSessionOptions);
     } catch (error) {
       console.error(`获取用户所有会话失败 (userId: ${userId}):`, error);
       return [];
@@ -603,24 +579,7 @@ export class SessionModel {
       const sessions = await query;
       console.log(`找到机器 ${machineId} 上的 ${sessions.length} 个会话`);
 
-      return sessions.map((session: any) => {
-        try {
-          return {
-            ...session,
-            options: session.options
-              ? typeof session.options === 'string'
-                ? JSON.parse(session.options)
-                : session.options
-              : null,
-          };
-        } catch (error) {
-          console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
-          return {
-            ...session,
-            options: null,
-          };
-        }
-      });
+      return sessions.map(parseSessionOptions);
     } catch (error) {
       console.error(`查询机器 ${machineId} 上的会话失败:`, error);
       return [];
@@ -664,38 +623,7 @@ export class SessionModel {
       console.log(`找到 ${sessions.length} 个会话，总数 ${total ? total.count : 0}`);
 
       return {
-        items: sessions.map((session: any) => {
-          try {
-            return {
-              ...session,
-              options: session.options
-                ? typeof session.options === 'string'
-                  ? JSON.parse(session.options)
-                  : session.options
-                : null,
-              // 将日期字符串转换为 Date 对象
-              start_time: session.start_time ? new Date(session.start_time) : null,
-              end_time: session.end_time ? new Date(session.end_time) : null,
-              disconnected_at: session.disconnected_at ? new Date(session.disconnected_at) : null,
-              last_activity: session.last_activity ? new Date(session.last_activity) : null,
-              created_at: session.created_at ? new Date(session.created_at) : new Date(),
-              updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
-            };
-          } catch (error) {
-            console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
-            return {
-              ...session,
-              options: null,
-              // 将日期字符串转换为 Date 对象
-              start_time: session.start_time ? new Date(session.start_time) : null,
-              end_time: session.end_time ? new Date(session.end_time) : null,
-              disconnected_at: session.disconnected_at ? new Date(session.disconnected_at) : null,
-              last_activity: session.last_activity ? new Date(session.last_activity) : null,
-              created_at: session.created_at ? new Date(session.created_at) : new Date(),
-              updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
-            };
-          }
-        }),
+        items: sessions.map(parseSessionRowWithDates),
         total: total ? Number(total.count) : 0,
         page,
         limit,
@@ -789,24 +717,7 @@ export class SessionModel {
 
       console.log(`找到机器 ${machineId} 上的 ${sessions.length} 个活跃会话`);
 
-      return sessions.map((session: any) => {
-        try {
-          return {
-            ...session,
-            options: session.options
-              ? typeof session.options === 'string'
-                ? JSON.parse(session.options)
-                : session.options
-              : null,
-          };
-        } catch (error) {
-          console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
-          return {
-            ...session,
-            options: null,
-          };
-        }
-      });
+      return sessions.map(parseSessionOptions);
     } catch (error) {
       console.error(`查询机器 ${machineId} 上的活跃会话失败:`, error);
       return [];
@@ -822,24 +733,7 @@ export class SessionModel {
         .orderBy('sessions.created_at', 'desc')
         .limit(limit);
 
-      return sessions.map((session: any) => {
-        try {
-          return {
-            ...session,
-            options: session.options
-              ? typeof session.options === 'string'
-                ? JSON.parse(session.options)
-                : session.options
-              : null,
-          };
-        } catch (error) {
-          console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
-          return {
-            ...session,
-            options: null,
-          };
-        }
-      });
+      return sessions.map(parseSessionOptions) as Array<Session & { username: string }>;
     } catch (error) {
       console.error('获取最近会话失败:', error);
       return [];
@@ -1024,24 +918,7 @@ export class SessionModel {
       const sessions = await query.orderBy('sessions.created_at', 'desc').limit(limit).offset(offset);
 
       return {
-        items: sessions.map((session: any) => {
-          try {
-            return {
-              ...session,
-              options: session.options
-                ? typeof session.options === 'string'
-                  ? JSON.parse(session.options)
-                  : session.options
-                : null,
-            };
-          } catch (error) {
-            console.error(`解析会话选项失败 (ID: ${session.id}):`, error);
-            return {
-              ...session,
-              options: null,
-            };
-          }
-        }),
+        items: sessions.map(parseSessionOptions),
         total: totalResult ? Number(totalResult.count) : 0,
         page,
         limit,
@@ -1094,17 +971,17 @@ export class SessionModel {
 
       // 统计数据
       const total = sessions.length;
-      const active = sessions.filter((s: any) => ['created', 'connected'].includes(s.status)).length;
-      const ended = sessions.filter((s: any) => ['disconnected', 'expired', 'completed'].includes(s.status)).length;
-      const error = sessions.filter((s: any) => s.status === 'error').length;
+      const active = sessions.filter((s: SessionRow & { username?: string }) => ['created', 'connected'].includes(s.status)).length;
+      const ended = sessions.filter((s: SessionRow & { username?: string }) => ['disconnected', 'expired', 'completed'].includes(s.status)).length;
+      const error = sessions.filter((s: SessionRow & { username?: string }) => s.status === 'error').length;
 
-      const totalCreditsUsed = sessions.reduce((sum, s: any) => sum + (s.credits_used || 0), 0);
-      const totalDuration = sessions.reduce((sum, s: any) => sum + (s.duration || 0), 0);
+      const totalCreditsUsed = sessions.reduce((sum, s: SessionRow & { username?: string }) => sum + (s.credits_used || 0), 0);
+      const totalDuration = sessions.reduce((sum, s: SessionRow & { username?: string }) => sum + (s.duration || 0), 0);
       const avgDuration = total > 0 ? Math.round(totalDuration / total) : 0;
 
       // 按用户分组统计
       const byUserMap = new Map();
-      sessions.forEach((s: any) => {
+      sessions.forEach((s: SessionRow & { username?: string }) => {
         const userId = s.user_id;
         if (!byUserMap.has(userId)) {
           byUserMap.set(userId, {
@@ -1285,24 +1162,7 @@ export class SessionModel {
       const sessions = await query.orderBy(`sessions.${validSortField}`, validOrder).limit(limit).offset(offset);
 
       return {
-        items: sessions.map((session: any) => {
-          try {
-            return {
-              ...session,
-              options: session.options
-                ? typeof session.options === 'string'
-                  ? JSON.parse(session.options)
-                  : session.options
-                : null,
-            };
-          } catch (error) {
-            logger.error(`解析会话选项失败 (ID: ${session.id}):`, error);
-            return {
-              ...session,
-              options: null,
-            };
-          }
-        }),
+        items: sessions.map(parseSessionOptions) as Array<Session & { username: string; machine_name?: string }>,
         total: totalResult ? Number(totalResult.count) : 0,
         page,
         limit,

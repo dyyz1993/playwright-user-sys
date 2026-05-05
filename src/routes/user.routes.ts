@@ -138,7 +138,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         const body = request.body as { email?: string; webhook_url?: string };
 
         // 准备更新数据
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = {};
         if (body.email !== undefined) updateData.email = body.email;
         if (body.webhook_url !== undefined) updateData.webhook_url = body.webhook_url;
 

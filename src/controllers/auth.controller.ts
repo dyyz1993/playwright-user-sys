@@ -1,10 +1,11 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { UserModel } from '../models/user.model.js';
+import { UserModel, UpdateUserInput } from '../models/user.model.js';
 import { generateToken, verifyPasswordWithMigration, hashPassword } from '../utils/auth.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { UserStatus } from '@shared/types/index.js';
 import { adminLoginRequestSchema } from '../schemas/admin.schema.js';
+import { toLoginUser, toCurrentUserResponse } from '@shared/mappers/index.js';
 
 // 登录控制器
 export async function login(request: FastifyRequest, reply: FastifyReply) {
@@ -30,7 +31,7 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
 
     if (needsMigration) {
       const newHash = await hashPassword(password);
-      await UserModel.update(user.id, { password: newHash } as any);
+      await UserModel.update(user.id, { password: newHash } as UpdateUserInput);
       request.log.info({ userId: user.id }, 'Password migrated from SHA-256 to bcrypt');
     }
 
@@ -43,14 +44,7 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
 
     // 返回用户信息和 Token
     return sendSuccess(reply, {
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-        credits: user.credits,
-      },
+      user: toLoginUser(user),
       token,
     });
   } catch (error) {
@@ -78,16 +72,7 @@ export async function getCurrentUser(request: FastifyRequest, reply: FastifyRepl
     }
 
     return sendSuccess(reply, {
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        credits: user.credits,
-        webhook_url: user.webhook_url,
-        api_key: user.api_key,
-        created_at: user.created_at instanceof Date ? user.created_at.toISOString() : user.created_at,
-      },
+      user: toCurrentUserResponse(user),
     });
   } catch (error) {
     request.log.error(error);

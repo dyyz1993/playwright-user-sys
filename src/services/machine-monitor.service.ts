@@ -1,5 +1,5 @@
 import { MachineModel } from '../models/machine.model.js';
-import { SessionModel } from '../models/session.model.js';
+import { SessionModel, Session } from '../models/session.model.js';
 import { UserModel } from '../models/user.model.js';
 import { SessionStatus, WebhookEventType } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
@@ -76,7 +76,7 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
     );
 
     // 如果内存中没有数据，则从数据库获取
-    let dbSessions: any[] = [];
+    let dbSessions: Session[] = [];
     if (activeSessions.length === 0) {
       dbSessions = await SessionModel.findByMachineId(machineId, {
         status: [SessionStatus.CREATED, SessionStatus.CONNECTED],

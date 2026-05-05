@@ -61,14 +61,14 @@ export class Client {
    * @param body 请求体
    * @returns 响应数据
    */
-  async request<T = any>(
+  async request<T = unknown>(
     method: string,
     path: string,
-    body?: any
+    body?: unknown
   ): Promise<{ success: boolean; data: T; message?: string }> {
     const url = `${this.baseUrl}${path}`;
 
-    const options: any = {
+    const options: { method: string; headers: Record<string, string>; body?: string } = {
       method,
       headers: {
         'Content-Type': 'application/json',
@@ -148,7 +148,7 @@ export class SessionManager {
    * @returns 释放结果
    */
   async release(sessionId: string): Promise<{ id: string; status: SessionStatus; duration?: number }> {
-    const response = await this.client.request('POST', `/api/sessions/${sessionId}/release`);
+    const response = await this.client.request<{ id: string; status: SessionStatus; duration?: number }>('POST', `/api/sessions/${sessionId}/release`);
     return response.data;
   }
 
@@ -158,7 +158,7 @@ export class SessionManager {
    * @returns 截图 URL
    */
   async getScreenshot(sessionId: string): Promise<{ screenshot_url: string }> {
-    const response = await this.client.request('GET', `/api/sessions/${sessionId}/screenshot`);
+    const response = await this.client.request<{ screenshot_url: string }>('GET', `/api/sessions/${sessionId}/screenshot`);
     return response.data;
   }
 }

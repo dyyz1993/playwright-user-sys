@@ -60,11 +60,12 @@ async function captureAndSend(ws: WebSocket, page: Page, sessionId: string): Pro
       });
     }
     return true; // 表示成功
-  } catch (error: any) {
-    if (error.message.includes('Target closed') || error.message.includes('Session closed')) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes('Target closed') || msg.includes('Session closed')) {
       logger.warn(`Page or session closed for ${sessionId} during screenshot. Stopping stream.`);
       sendSessionEndedMessage(ws, 'browser_closed');
-    } else if (error.message.includes('WebSocket is not open')) {
+    } else if (msg.includes('WebSocket is not open')) {
       logger.warn(`WebSocket closed for ${sessionId} during screenshot attempt. Stopping stream.`);
     } else {
       logger.error(`Error taking screenshot for session ${sessionId}:`, error);

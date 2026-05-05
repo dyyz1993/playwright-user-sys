@@ -9,6 +9,11 @@ import {
   updateMachineStatusRequestSchema,
   paginationQuerySchema,
 } from '../schemas/index.js';
+import { toMachineMemoryDTO, toMachineInfoDTO } from '@shared/mappers/index.js';
+import {
+  IdParamRoute,
+  CleanupOldMachinesBodyRoute,
+} from '@shared/types/routes.js';
 
 // 注册机器
 export async function registerMachine(request: FastifyRequest, reply: FastifyReply) {
@@ -35,9 +40,9 @@ export async function registerMachine(request: FastifyRequest, reply: FastifyRep
 }
 
 // 更新机器状态
-export async function updateMachineStatus(request: FastifyRequest, reply: FastifyReply) {
+export async function updateMachineStatus(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
-    const machineId = (request.params as any).id;
+    const machineId = request.params.id;
     const statusData = updateMachineStatusRequestSchema.parse(request.body);
 
     // 检查机器是否存在
@@ -108,29 +113,7 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
       const paginatedMachines = sortedMachines.slice(offset, offset + limit);
 
       // 转换为 API 响应格式
-      const formattedMachines = paginatedMachines.map((machine) => {
-        // 调试：打印机器的原始字段
-        console.log(`[DEBUG] 机器原始数据:`, {
-          machine_id: machine.machine_id,
-          grpc_port: machine.grpc_port,
-          has_grpc_port: 'grpc_port' in machine,
-        });
-
-        return {
-          id: machine.machine_id,
-          hostname: machine.name,
-          ip: machine.ip,
-          grpcPort: machine.grpc_port,
-          proxyPort: machine.proxy_port,
-          cpuUsage: machine.cpu_usage,
-          memoryUsage: machine.memory_usage,
-          diskUsage: machine.disk_space,
-          instanceCount: machine.active_sessions,
-          maxInstances: machine.max_sessions,
-          status: machine.online ? 'online' : 'offline',
-          lastSeen: machine.last_heartbeat,
-        };
-      });
+      const formattedMachines = paginatedMachines.map(toMachineMemoryDTO);
 
       return sendPaginated(reply, {
         items: formattedMachines,
@@ -155,9 +138,9 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
 }
 
 // 获取单个机器
-export async function getMachineById(request: FastifyRequest, reply: FastifyReply) {
+export async function getMachineById(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
-    const machineId = (request.params as any).id;
+    const machineId = request.params.id;
 
     // 导入内存存储服务
     const { memoryStore } = await import('../services/memory-store.service.js');
@@ -167,19 +150,7 @@ export async function getMachineById(request: FastifyRequest, reply: FastifyRepl
 
     if (memoryMachine) {
       // 如果内存中有数据，则使用内存中的数据
-      return sendSuccess(reply, {
-        id: memoryMachine.machine_id,
-        hostname: memoryMachine.name,
-        ip: memoryMachine.ip,
-        grpcPort: memoryMachine.grpc_port,
-        cpuUsage: memoryMachine.cpu_usage,
-        memoryUsage: memoryMachine.memory_usage,
-        diskUsage: memoryMachine.disk_space,
-        instanceCount: memoryMachine.active_sessions,
-        maxInstances: memoryMachine.max_sessions,
-        status: memoryMachine.online ? 'online' : 'offline',
-        lastSeen: memoryMachine.last_heartbeat,
-      });
+      return sendSuccess(reply, toMachineMemoryDTO(memoryMachine));
     } else {
       // 如果内存中没有数据，则从数据库获取
       const machine = await MachineModel.findById(machineId);
@@ -196,9 +167,9 @@ export async function getMachineById(request: FastifyRequest, reply: FastifyRepl
 }
 
 // 获取机器上的所有会话
-export async function getMachineSessions(request: FastifyRequest, reply: FastifyReply) {
+export async function getMachineSessions(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
-    const machineId = (request.params as any).id;
+    const machineId = request.params.id;
 
     // 导入内存存储服务
     const { memoryStore } = await import('../services/memory-store.service.js');
@@ -234,9 +205,9 @@ export async function getMachineSessions(request: FastifyRequest, reply: Fastify
 }
 
 // 标记机器离线
-export async function markMachineOffline(request: FastifyRequest, reply: FastifyReply) {
+export async function markMachineOffline(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
-    const machineId = (request.params as any).id;
+    const machineId = request.params.id;
 
     // 检查机器是否存在
     const machine = await MachineModel.findById(machineId);
@@ -281,10 +252,9 @@ export async function refreshMachineStatus(request: FastifyRequest, reply: Fasti
 }
 
 // 清理长时间未活动的机器
-export async function cleanupOldMachines(request: FastifyRequest, reply: FastifyReply) {
+export async function cleanupOldMachines(request: FastifyRequest<CleanupOldMachinesBodyRoute>, reply: FastifyReply) {
   try {
-    // 获取请求参数
-    const { daysThreshold = 30 } = request.body as any;
+    const { daysThreshold = 30 } = request.body;
 
     // 导入必要的服务
     const { cleanupOldMachines: cleanup } = await import('../services/machine-monitor.service.js');
@@ -308,9 +278,9 @@ export async function cleanupOldMachines(request: FastifyRequest, reply: Fastify
 }
 
 // 重启机器
-export async function restartMachine(request: FastifyRequest, reply: FastifyReply) {
+export async function restartMachine(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
-    const machineId = (request.params as any).id;
+    const machineId = request.params.id;
 
     // 检查机器是否存在
     const machine = await MachineModel.findById(machineId);
@@ -350,9 +320,9 @@ export async function restartMachine(request: FastifyRequest, reply: FastifyRepl
 }
 
 // 删除机器
-export async function deleteMachine(request: FastifyRequest, reply: FastifyReply) {
+export async function deleteMachine(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
-    const machineId = (request.params as any).id;
+    const machineId = request.params.id;
     request.log.info(`开始删除机器: ${machineId}`);
 
     // 检查机器是否存在
@@ -424,9 +394,9 @@ export async function deleteMachine(request: FastifyRequest, reply: FastifyReply
 }
 
 // 健康检查
-export async function healthCheck(request: FastifyRequest, reply: FastifyReply) {
+export async function healthCheck(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
-    const machineId = (request.params as any).id;
+    const machineId = request.params.id;
 
     const result = await MachineModel.healthCheck(machineId);
     return sendSuccess(reply, result);
@@ -463,9 +433,9 @@ export async function batchHealthCheck(request: FastifyRequest, reply: FastifyRe
 }
 
 // 更新机器配置（管理员）
-export async function updateMachineConfig(request: FastifyRequest, reply: FastifyReply) {
+export async function updateMachineConfig(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
-    const machineId = (request.params as any).id;
+    const machineId = request.params.id;
     const updateData = request.body as UpdateMachineInput;
 
     // 检查机器是否存在

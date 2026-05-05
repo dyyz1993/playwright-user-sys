@@ -1,3 +1,4 @@
+import * as stream from 'stream';
 import * as http from 'http';
 import * as url from 'url';
 import { z } from 'zod';
@@ -22,7 +23,7 @@ const wsConnectQuerySchema = z.object({
 });
 
 export class NativeWebSocketProxyService {
-  private proxy: any; // 使用any类型来避免TypeScript类型错误
+  private proxy: httpProxy;
   private server: http.Server;
   private activeConnections: Set<string> = new Set(); // 跟踪活动连接的会话ID
 
@@ -44,16 +45,17 @@ export class NativeWebSocketProxyService {
     });
 
     // 代理错误处理
-    this.proxy.on('error', (err: Error, req: http.IncomingMessage, socket: any, _proxyRes: unknown) => {
-      const sessionId = (req as any).sessionId || '未知';
+    this.proxy.on('error', (err: Error, req: http.IncomingMessage, socket: unknown) => {
+      const sessionId = (req as { sessionId?: string }).sessionId || '未知';
       logger.error(`WebSocket代理错误 (sessionId: ${sessionId}):`, err);
 
       this.cleanupConnection(sessionId);
 
-      if (socket && !socket.destroyed) {
+      const sock = socket as stream.Duplex | undefined;
+      if (sock && !sock.destroyed) {
         try {
-          if (socket.writable) {
-            socket.end();
+          if (sock.writable) {
+            sock.end();
           }
         } catch (socketError) {
           logger.error(`关闭socket失败 (sessionId: ${sessionId}):`, socketError);
@@ -103,7 +105,7 @@ export class NativeWebSocketProxyService {
     logger.info('原生WebSocket代理服务已成功初始化，正在监听upgrade事件');
   }
 
-  private async handleWebSocketUpgrade(request: http.IncomingMessage, socket: any, head: Buffer): Promise<void> {
+  private async handleWebSocketUpgrade(request: http.IncomingMessage, socket: stream.Duplex, head: Buffer): Promise<void> {
     let sessionId: string | null = null;
     let userId: number | null = null;
     let machineId: string | null = null;
@@ -150,7 +152,7 @@ export class NativeWebSocketProxyService {
       logger.info(`会话创建成功: ${sessionId}`);
 
       // 保存sessionId到请求对象，用于错误处理
-      (request as any).sessionId = sessionId;
+      (request as { sessionId?: string }).sessionId = sessionId;
 
       // 记录活动连接
       this.activeConnections.add(sessionId);

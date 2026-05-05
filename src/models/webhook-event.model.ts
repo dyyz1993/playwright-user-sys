@@ -1,15 +1,10 @@
 import { db } from '../config/database.js';
 import { WebhookEventType, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
+import { WebhookEventRow } from '@shared/types/tables.js';
 
-export interface WebhookEvent {
-  id: number;
-  user_id: number;
-  event_type: WebhookEventType;
+export interface WebhookEvent extends Omit<WebhookEventRow, 'payload' | 'last_attempt' | 'created_at' | 'updated_at'> {
   payload: Record<string, unknown>;
-  delivered: boolean;
-  attempts: number;
   last_attempt: Date | null;
-  error: string | null;
   created_at: Date;
   updated_at: Date;
 }

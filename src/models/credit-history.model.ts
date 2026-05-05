@@ -1,13 +1,7 @@
 import { db } from '../config/database.js';
+import { CreditHistoryRow } from '@shared/types/tables.js';
 
-// 点数历史记录模型
-export interface CreditHistory {
-  id: number;
-  user_id: number;
-  amount: number;
-  action: 'add' | 'deduct' | 'use';
-  balance_after: number;
-  description?: string;
+export interface CreditHistory extends Omit<CreditHistoryRow, 'metadata' | 'created_at' | 'updated_at'> {
   metadata?: Record<string, any>;
   created_at: Date;
   updated_at: Date;

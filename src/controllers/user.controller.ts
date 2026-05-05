@@ -11,6 +11,7 @@ import {
   AuthenticatedRequestWithParams,
 } from '@shared/types/index.js';
 import { createUserRequestSchema, updateUserRequestSchema, paginationQuerySchema } from '../schemas/index.js';
+import { toCreateUserResponse, toUserListItem, toUpdateUserResponse, toUserResponse } from '@shared/mappers/index.js';
 
 // 创建用户
 export async function createUser(request: AuthenticatedRequest, reply: FastifyReply) {
@@ -44,16 +45,7 @@ export async function createUser(request: AuthenticatedRequest, reply: FastifyRe
       request.log.error({ err: logError }, '记录操作日志失败');
     });
 
-    return sendCreated(reply, {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      credits: user.credits,
-      api_key: user.api_key,
-      webhook_url: user.webhook_url,
-    });
+    return sendCreated(reply, toCreateUserResponse(user));
   } catch (error) {
     if (error instanceof z.ZodError) {
       return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
@@ -71,15 +63,7 @@ export async function getAllUsers(request: AuthenticatedRequest, reply: FastifyR
     const users = await UserModel.findAll(query);
 
     // 移除敏感信息
-    const sanitizedUsers = users.items.map((user) => ({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      credits: user.credits,
-      created_at: user.created_at instanceof Date ? user.created_at.toISOString() : user.created_at,
-    }));
+    const sanitizedUsers = users.items.map(toUserListItem);
 
     return sendPaginated(reply, {
       ...users,
@@ -108,17 +92,7 @@ export async function getUserById(request: AuthenticatedRequestWithParams<IdPara
       return sendError(reply, '用户不存在', 404);
     }
 
-    return sendSuccess(reply, {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      credits: user.credits,
-      webhook_url: user.webhook_url,
-      api_key: user.api_key,
-      created_at: user.created_at instanceof Date ? user.created_at.toISOString() : user.created_at,
-    });
+    return sendSuccess(reply, toUserResponse(user));
   } catch (error) {
     request.log.error(error);
     return sendError(reply, '获取用户信息失败', 500);
@@ -152,21 +126,13 @@ export async function updateUser(request: AuthenticatedRequestWithParams<IdParam
     OperationLogModel.create({
       admin_id: adminId,
       action: '更新用户',
-      details: userData,
+      details: userData as unknown as Record<string, unknown>,
       target_user_id: userId,
     }).catch((logError) => {
       request.log.error({ err: logError }, '记录操作日志失败');
     });
 
-    return sendSuccess(reply, {
-      id: updatedUser.id,
-      username: updatedUser.username,
-      email: updatedUser.email,
-      role: updatedUser.role,
-      status: updatedUser.status,
-      credits: updatedUser.credits,
-      webhook_url: updatedUser.webhook_url,
-    });
+    return sendSuccess(reply, toUpdateUserResponse(updatedUser));
   } catch (error) {
     if (error instanceof z.ZodError) {
       return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);

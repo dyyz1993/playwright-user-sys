@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { CleanupTempFilesQueryRoute } from '@shared/types/routes.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -142,15 +143,13 @@ export async function getFileList(request: FastifyRequest, reply: FastifyReply) 
 /**
  * 清理临时文件
  */
-export async function cleanupTempFiles(request: FastifyRequest, reply: FastifyReply) {
+export async function cleanupTempFiles(request: FastifyRequest<CleanupTempFilesQueryRoute>, reply: FastifyReply) {
   try {
-    // 验证用户权限
     if (!request.user) {
       return sendError(reply, '需要认证', 401);
     }
 
-    // 获取指定时间之前的临时文件（默认24小时之前）
-    const hours = parseInt((request.query as any).hours || '24');
+    const hours = parseInt(request.query.hours || '24');
     const cutoffTime = Date.now() - hours * 60 * 60 * 1000;
 
     let deletedCount = 0;

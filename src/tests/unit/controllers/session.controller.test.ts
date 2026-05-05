@@ -606,7 +606,7 @@ describe('SessionController', () => {
     await getUserSessions(request as any, reply as any);
 
     expect(SessionModel.findByUserId).toHaveBeenCalledWith(1, { page: '1', limit: '10' });
-    expect(sendSuccess).toHaveBeenCalledWith(reply, {
+    expect(sendSuccess).toHaveBeenLastCalledWith(reply, {
       ...mockSessions,
       items: mockSessions.items.map((item: any) => ({
         ...item,
@@ -669,7 +669,18 @@ describe('SessionController', () => {
     await getAllSessions(request as any, reply as any);
 
     expect(SessionModel.findAll).toHaveBeenCalledWith({ page: '1', limit: '10' });
-    expect(sendSuccess).toHaveBeenCalledWith(reply, mockSessions);
+    expect(sendSuccess).toHaveBeenLastCalledWith(reply, {
+      ...mockSessions,
+      items: mockSessions.items.map((item: any) => ({
+        ...item,
+        start_time: undefined,
+        end_time: undefined,
+        disconnected_at: undefined,
+        last_activity: undefined,
+        created_at: undefined,
+        updated_at: undefined,
+      })),
+    });
   });
 
   // ========================================

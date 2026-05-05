@@ -1,8 +1,17 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+
+function getErrorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { errorResponseSchema, idParamSchema } from '../schemas/index.js';
+import {
+  IdParamRoute,
+  UpdateMachineBodyRoute,
+  MachineIdArrayBodyRoute,
+} from '@shared/types/routes.js';
 
 /**
  * 机器管理的额外 API 路由
@@ -81,9 +90,9 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         }
 
         return reply.send({ success: true, data: machine });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取机器详情失败');
-        return reply.status(500).send({ success: false, error: '获取机器详情失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '获取机器详情失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -129,12 +138,11 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         tags: ['admin', 'machines'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest<UpdateMachineBodyRoute>, reply: FastifyReply) => {
       try {
         const adminId = request.user?.id;
-        const params = request.params as { id: string };
-        const machineId = params.id;
-        const body = request.body as any;
+        const machineId = request.params.id;
+        const body = request.body;
 
         const { MachineModel } = await import('../models/machine.model.js');
 
@@ -184,9 +192,9 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
           message: '机器配置已更新',
           data: updatedMachine,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '更新机器配置失败');
-        return reply.status(500).send({ success: false, error: '更新机器配置失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '更新机器配置失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -238,9 +246,9 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         const result = await MachineModel.healthCheck(machineId);
 
         return reply.send({ success: true, data: result });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '健康检查失败');
-        return reply.status(500).send({ success: false, error: '健康检查失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '健康检查失败: ' + getErrorMessage(error) });
       }
     }
   );
@@ -306,9 +314,9 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
             results,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '批量健康检查失败');
-        return reply.status(500).send({ success: false, error: '批量健康检查失败: ' + error.message });
+        return reply.status(500).send({ success: false, error: '批量健康检查失败: ' + getErrorMessage(error) });
       }
     }
   );

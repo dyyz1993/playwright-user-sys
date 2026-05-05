@@ -10,6 +10,22 @@ import { UserModel } from '../models/user.model.js';
 import { SessionStatus } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { WebhookEventType } from '@shared/types/index.js';
+import type {
+  RegisterRequest,
+  RegisterResponse,
+  LaunchBrowserRequest,
+  SessionResponse,
+  CloseBrowserRequest,
+  SessionStatusUpdate,
+  MachineStatusRequest,
+  MachineStatusResponse,
+  MachineMessage,
+  ManagerMessage,
+  GrpcServiceError,
+  Heartbeat,
+  SessionScreenshot,
+} from '../shared/types/grpc.js';
+import type { ServerUnaryCall, sendUnaryData, ServerDuplexStream, Metadata } from '@grpc/grpc-js';
 
 // 获取当前文件的目录
 const __filename = fileURLToPath(import.meta.url);
@@ -25,16 +41,28 @@ const packageDefinition = protoLoader.loadSync(protoPath, {
   oneofs: true,
 });
 
-const proto = grpc.loadPackageDefinition(packageDefinition).machine as any;
+interface MachineServiceClient {
+  Register(request: RegisterRequest, metadata: grpc.Metadata, callback: (err: unknown, response: RegisterResponse) => void): void;
+  LaunchBrowser(request: LaunchBrowserRequest, metadata: grpc.Metadata, callback: (err: unknown, response: SessionResponse) => void): void;
+  CloseBrowser(request: CloseBrowserRequest, metadata: grpc.Metadata, callback: (err: unknown, response: SessionStatusUpdate) => void): void;
+  GetMachineStatus(request: MachineStatusRequest, metadata: grpc.Metadata, callback: (err: unknown, response: MachineStatusResponse) => void): void;
+}
+
+const proto = grpc.loadPackageDefinition(packageDefinition).machine as unknown as {
+  MachineService: {
+    service: grpc.ServiceDefinition;
+    new (address: string, credentials: grpc.ChannelCredentials, options?: object): MachineServiceClient;
+  };
+};
 
 /**
  * 机器连接管理器
  * 负责管理与机器的连接
  */
 class MachineConnectionManager extends EventEmitter {
-  private connections: Map<string, grpc.ServerDuplexStream<unknown, unknown>> = new Map();
+  private connections: Map<string, grpc.ServerDuplexStream<MachineMessage, ManagerMessage>> = new Map();
   private pendingRequests: Map<string, { resolve: Function; reject: Function; timer: NodeJS.Timeout }> = new Map();
-  private clients: Map<string, grpc.Client> = new Map();
+  private clients: Map<string, MachineServiceClient> = new Map();
 
   constructor() {
     super();
@@ -43,7 +71,7 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 添加机器连接
    */
-  addConnection(machineId: string, call: grpc.ServerDuplexStream<unknown, unknown>): void {
+  addConnection(machineId: string, call: grpc.ServerDuplexStream<MachineMessage, ManagerMessage>): void {
     // 如果已经有连接，先移除
     if (this.connections.has(machineId)) {
       this.removeConnection(machineId);
@@ -54,7 +82,7 @@ class MachineConnectionManager extends EventEmitter {
     logger.info(`机器连接已添加: ${machineId}`);
 
     // 设置数据处理器
-    call.on('data', (message: Record<string, unknown>) => {
+    call.on('data', (message: MachineMessage) => {
       try {
         this.handleMachineMessage(machineId, message);
       } catch (error) {
@@ -153,7 +181,7 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 获取客户端
    */
-  async getClient(machineId: string): Promise<any> {
+  async getClient(machineId: string): Promise<MachineServiceClient | null> {
     // 如果已经有客户端，直接返回
     if (this.clients.has(machineId)) {
       return this.clients.get(machineId);
@@ -196,7 +224,7 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 处理来自机器的消息
    */
-  private async handleMachineMessage(machineId: string, message: Record<string, unknown>): Promise<void> {
+  private async handleMachineMessage(machineId: string, message: MachineMessage): Promise<void> {
     try {
       logger.debug(`收到机器消息 (${machineId}): ${JSON.stringify(message)}`);
 
@@ -204,26 +232,11 @@ class MachineConnectionManager extends EventEmitter {
       if (message.heartbeat) {
         await this.handleHeartbeat(machineId, message.heartbeat);
       }
-      // 处理会话状态更新
       else if (message.session_status) {
-        await this.handleSessionStatus(
-          machineId,
-          message.session_status as {
-            session_id: string;
-            status: string;
-            duration: number;
-          }
-        );
+        await this.handleSessionStatus(machineId, message.session_status);
       }
-      // 处理会话截图更新
       else if (message.session_screenshot) {
-        await this.handleSessionScreenshot(
-          machineId,
-          message.session_screenshot as {
-            session_id: string;
-            screenshot_url: string;
-          }
-        );
+        await this.handleSessionScreenshot(machineId, message.session_screenshot);
       }
       // 未知消息类型
       else {
@@ -239,13 +252,7 @@ class MachineConnectionManager extends EventEmitter {
    */
   private async handleHeartbeat(
     machineId: string,
-    heartbeat: {
-      cpu_usage?: unknown;
-      memory_usage?: unknown;
-      disk_usage?: unknown;
-      active_sessions?: unknown;
-      timestamp?: unknown;
-    }
+    heartbeat: Heartbeat
   ): Promise<void> {
     try {
       logger.debug(`收到心跳 (${machineId}): ${JSON.stringify(heartbeat)}`);
@@ -268,10 +275,10 @@ class MachineConnectionManager extends EventEmitter {
           ip: machine.ip,
           grpc_port: machine.grpcPort || 50052, // 默认值
           proxy_port: machine.proxyPort || 8080, // 默认值
-          cpu_usage: heartbeat.cpu_usage as number,
-          memory_usage: heartbeat.memory_usage as number,
-          disk_space: (heartbeat.disk_usage as number) || 0, // 使用心跳中的磁盘使用率
-          active_sessions: heartbeat.active_sessions as number,
+          cpu_usage: heartbeat.cpu_usage,
+          memory_usage: heartbeat.memory_usage,
+          disk_space: heartbeat.disk_usage || 0,
+          active_sessions: heartbeat.active_sessions,
           max_sessions: machine.maxInstances,
           last_heartbeat: new Date(),
         });
@@ -281,9 +288,9 @@ class MachineConnectionManager extends EventEmitter {
 
       // 同时更新数据库中的机器状态（作为备份）
       await MachineModel.update(machineId, {
-        cpuUsage: heartbeat.cpu_usage as number,
-        memoryUsage: heartbeat.memory_usage as number,
-        instanceCount: heartbeat.active_sessions as number,
+        cpuUsage: heartbeat.cpu_usage,
+        memoryUsage: heartbeat.memory_usage,
+        instanceCount: heartbeat.active_sessions,
         status: 'online',
       });
 
@@ -296,21 +303,8 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 处理会话截图更新
    */
-  private async handleSessionScreenshot(machineId: string, screenshot: unknown): Promise<void> {
-    if (
-      !screenshot ||
-      typeof screenshot !== 'object' ||
-      !('session_id' in screenshot) ||
-      !('screenshot_url' in screenshot)
-    ) {
-      logger.warn(`无效的截图消息格式`);
-      return;
-    }
-
-    const { session_id, screenshot_url } = screenshot as {
-      session_id: string;
-      screenshot_url: string;
-    };
+  private async handleSessionScreenshot(machineId: string, screenshot: SessionScreenshot): Promise<void> {
+    const { session_id, screenshot_url } = screenshot;
     try {
       logger.info(`收到会话截图更新 (${machineId}, ${session_id}): ${screenshot_url}`);
 
@@ -335,27 +329,12 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 处理会话状态更新
    */
-  private async handleSessionStatus(machineId: string, status: unknown): Promise<void> {
-    if (
-      !status ||
-      typeof status !== 'object' ||
-      !('session_id' in status) ||
-      !('status' in status) ||
-      !('duration' in status)
-    ) {
-      logger.warn(`无效的会话状态消息格式`);
-      return;
-    }
-
+  private async handleSessionStatus(machineId: string, status: SessionStatusUpdate): Promise<void> {
     const {
       session_id,
       status: sessionStatus,
       duration: reportedDuration,
-    } = status as {
-      session_id: string;
-      status: string;
-      duration: number;
-    };
+    } = status;
     try {
       // 使用可变变量存储持续时间，以便后续可以修改
       let duration = reportedDuration;
@@ -698,7 +677,7 @@ class MachineConnectionManager extends EventEmitter {
       userDataDir?: string;
       userId?: number;
     }
-  ): Promise<Record<string, unknown>> {
+  ): Promise<SessionResponse> {
     if (!this.isConnected(machineId)) {
       throw new Error(`机器未连接: ${machineId}`);
     }
@@ -790,7 +769,7 @@ class MachineConnectionManager extends EventEmitter {
     metadata.set('machine_id', machineId);
 
     return new Promise((resolve, reject) => {
-      client.LaunchBrowser(request, metadata, (error: unknown, response: Record<string, unknown>) => {
+      client.LaunchBrowser(request, metadata, (error: unknown, response: SessionResponse) => {
         if (error) {
           logger.error(`启动浏览器失败 (${machineId}, ${sessionId}):`, error);
           reject(error);
@@ -826,7 +805,7 @@ class MachineConnectionManager extends EventEmitter {
     metadata.set('machine_id', machineId);
 
     return new Promise((resolve, reject) => {
-      client.CloseBrowser(request, metadata, (error: unknown, response: { status: string }) => {
+      client.CloseBrowser(request, metadata, (error: unknown, response: SessionStatusUpdate) => {
         if (error) {
           logger.error(`关闭浏览器失败 (${machineId}, ${sessionId}):`, error);
           reject(error);
@@ -881,7 +860,7 @@ class MachineConnectionManager extends EventEmitter {
     metadata.set('machine_id', machineId);
 
     return new Promise((resolve, reject) => {
-      client.GetMachineStatus(request, metadata, (error: unknown, response: Record<string, unknown>) => {
+      client.GetMachineStatus(request, metadata, (error: unknown, response: MachineStatusResponse) => {
         if (error) {
           logger.error(`获取机器状态失败 (${machineId}):`, error);
           reject(error);
@@ -890,14 +869,14 @@ class MachineConnectionManager extends EventEmitter {
 
         logger.info(`成功获取机器状态 (${machineId})`);
         resolve({
-          machine_id: response.machine_id as string,
-          online: response.online as boolean,
-          cpu_usage: response.cpu_usage as number,
-          memory_usage: response.memory_usage as number,
-          disk_space: response.disk_space as number,
-          active_sessions: response.active_sessions as number,
-          max_sessions: response.max_sessions as number,
-          timestamp: response.timestamp as number,
+          machine_id: response.machine_id,
+          online: response.online,
+          cpu_usage: response.cpu_usage,
+          memory_usage: response.memory_usage,
+          disk_space: response.disk_space ?? 0,
+          active_sessions: response.active_sessions,
+          max_sessions: response.max_sessions,
+          timestamp: response.timestamp,
         });
       });
     });
@@ -907,7 +886,10 @@ class MachineConnectionManager extends EventEmitter {
 // gRPC 服务实现
 const serviceImplementation = {
   // 机器注册
-  Register: async (call: any, callback: any) => {
+  Register: async (
+    call: ServerUnaryCall<RegisterRequest, RegisterResponse>,
+    callback: sendUnaryData<RegisterResponse>
+  ) => {
     try {
       const request = call.request;
       logger.info('收到机器注册请求:', request);
@@ -980,14 +962,14 @@ const serviceImplementation = {
       logger.info(`内存状态已更新: ${request.machine_id}, grpc_port=${request.grpc_port}`);
 
       callback(null, { success: true, message: '注册成功' });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : '机器注册失败';
       logger.error('机器注册失败:', error);
-      callback({ code: grpc.status.INTERNAL, message: error.message });
+      callback({ code: grpc.status.INTERNAL, message: errMsg });
     }
   },
 
-  // 双向流通信
-  Connect: (call: any) => {
+  Connect: (call: grpc.ServerDuplexStream<MachineMessage, ManagerMessage>) => {
     try {
       logger.info('收到新的 Connect 请求');
 
@@ -1000,7 +982,7 @@ const serviceImplementation = {
       }
 
       // 等待第一条消息以获取机器 ID
-      const dataHandler = (message: any) => {
+      const dataHandler = (message: MachineMessage) => {
         logger.info('收到第一条消息:', message);
 
         try {
@@ -1037,7 +1019,7 @@ const serviceImplementation = {
       call.on('data', dataHandler);
 
       // 处理错误
-      call.on('error', (error: any) => {
+      call.on('error', (error: unknown) => {
         logger.error('gRPC 连接错误:', error);
       });
 
@@ -1045,22 +1027,23 @@ const serviceImplementation = {
       call.on('end', () => {
         logger.info('gRPC 连接结束');
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('处理 Connect 请求失败:', error);
       call.end();
     }
   },
 
-  // 启动浏览器实例
-  LaunchBrowser: async (call: any, callback: any) => {
+  LaunchBrowser: async (
+    call: ServerUnaryCall<LaunchBrowserRequest, SessionResponse>,
+    callback: sendUnaryData<SessionResponse>
+  ) => {
     try {
       const request = call.request;
       logger.info(`收到启动浏览器请求:`, request);
 
       const { session_id, options } = request;
 
-      // 从 metadata 中获取机器 ID
-      const machineId = call.metadata?.get('machine_id')?.[0] || '';
+      const machineId = call.metadata.get('machine_id')?.[0] as string || '';
 
       if (!machineId) {
         logger.error(`启动浏览器请求缺少机器 ID`);
@@ -1086,32 +1069,35 @@ const serviceImplementation = {
         const result = await connectionManager.launchBrowser(machineId, session_id, options);
         logger.info(`浏览器启动成功 (${machineId}, ${session_id})`);
         callback(null, result);
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : '启动浏览器失败';
         logger.error(`启动浏览器失败 (${machineId}, ${session_id}):`, error);
         callback({
           code: grpc.status.INTERNAL,
-          message: error.message || '启动浏览器失败',
+          message: errMsg,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : '处理启动浏览器请求失败';
       logger.error('处理启动浏览器请求失败:', error);
       callback({
         code: grpc.status.INTERNAL,
-        message: error.message || '处理启动浏览器请求失败',
+        message: errMsg,
       });
     }
   },
 
-  // 关闭浏览器实例
-  CloseBrowser: async (call: any, callback: any) => {
+  CloseBrowser: async (
+    call: ServerUnaryCall<CloseBrowserRequest, SessionStatusUpdate>,
+    callback: sendUnaryData<SessionStatusUpdate>
+  ) => {
     try {
       const request = call.request;
       logger.info(`收到关闭浏览器请求:`, request);
 
       const { session_id } = request;
 
-      // 从 metadata 中获取机器 ID
-      const machineId = call.metadata?.get('machine_id')?.[0] || '';
+      const machineId = call.metadata.get('machine_id')?.[0] as string || '';
 
       if (!machineId) {
         logger.error(`关闭浏览器请求缺少机器 ID`);
@@ -1140,25 +1126,30 @@ const serviceImplementation = {
           session_id,
           status: success ? 'closed' : 'error',
           error: success ? '' : '关闭浏览器失败',
+          duration: 0,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : '关闭浏览器失败';
         logger.error(`关闭浏览器失败 (${machineId}, ${session_id}):`, error);
         callback({
           code: grpc.status.INTERNAL,
-          message: error.message || '关闭浏览器失败',
+          message: errMsg,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : '处理关闭浏览器请求失败';
       logger.error('处理关闭浏览器请求失败:', error);
       callback({
         code: grpc.status.INTERNAL,
-        message: error.message || '处理关闭浏览器请求失败',
+        message: errMsg,
       });
     }
   },
 
-  // 获取机器状态
-  GetMachineStatus: async (call: any, callback: any) => {
+  GetMachineStatus: async (
+    call: ServerUnaryCall<MachineStatusRequest, MachineStatusResponse>,
+    callback: sendUnaryData<MachineStatusResponse>
+  ) => {
     try {
       const request = call.request;
       logger.info(`收到获取机器状态请求:`, request);
@@ -1207,26 +1198,27 @@ const serviceImplementation = {
           max_sessions: machine?.maxInstances || 0,
           timestamp: heartbeat.timestamp || Date.now(),
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : '获取机器状态失败';
         logger.error(`获取机器状态失败 (${machine_id}):`, error);
 
-        // 即使心跳请求失败，也返回机器在线状态
         callback(null, {
           machine_id,
-          online: true, // 机器连接存在，所以还是在线的
+          online: true,
           cpu_usage: 0,
           memory_usage: 0,
           active_sessions: 0,
           max_sessions: 0,
           timestamp: Date.now(),
-          error: error.message || '获取机器状态失败',
+          error: errMsg,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : '处理获取机器状态请求失败';
       logger.error('处理获取机器状态请求失败:', error);
       callback({
         code: grpc.status.INTERNAL,
-        message: error.message || '处理获取机器状态请求失败',
+        message: errMsg,
       });
     }
   },

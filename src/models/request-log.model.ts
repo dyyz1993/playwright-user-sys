@@ -1,15 +1,8 @@
 import { db } from '../config/database.js';
 import { PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
+import { RequestLogRow } from '@shared/types/tables.js';
 
-export interface RequestLog {
-  id: number;
-  user_id: number | null;
-  method: string;
-  path: string;
-  status_code: number;
-  ip: string | null;
-  user_agent: string | null;
-  response_time: number | null;
+export interface RequestLog extends Omit<RequestLogRow, 'created_at' | 'updated_at'> {
   created_at: Date;
   updated_at: Date;
 }

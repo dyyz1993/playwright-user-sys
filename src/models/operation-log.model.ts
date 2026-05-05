@@ -1,12 +1,9 @@
 import { db } from '../config/database.js';
 import { PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
+import { OperationLogRow } from '@shared/types/tables.js';
 
-export interface OperationLog {
-  id: number;
-  admin_id: number;
-  action: string;
-  details: any;
-  target_user_id: number | null;
+export interface OperationLog extends Omit<OperationLogRow, 'details' | 'created_at' | 'updated_at'> {
+  details: Record<string, unknown> | string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -14,8 +11,30 @@ export interface OperationLog {
 export interface CreateOperationLogInput {
   admin_id: number;
   action: string;
-  details?: any;
+  details?: Record<string, unknown> | string | null;
   target_user_id?: number;
+}
+
+function parseLogDetails(raw: OperationLogRow): OperationLog {
+  try {
+    return {
+      ...raw,
+      details: raw.details
+        ? typeof raw.details === 'string'
+          ? JSON.parse(raw.details) as Record<string, unknown>
+          : raw.details as Record<string, unknown>
+        : null,
+      created_at: new Date(raw.created_at),
+      updated_at: new Date(raw.updated_at),
+    };
+  } catch {
+    return {
+      ...raw,
+      details: { error: '无法解析的数据', raw: raw.details },
+      created_at: new Date(raw.created_at),
+      updated_at: new Date(raw.updated_at),
+    };
+  }
 }
 
 export class OperationLogModel {
@@ -78,22 +97,7 @@ export class OperationLogModel {
       ]);
 
       return {
-        items: logs.map((log: any) => {
-          try {
-            // 如果 details 是字符串，尝试解析为 JSON 对象
-            // 如果已经是对象，直接使用
-            return {
-              ...log,
-              details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
-            };
-          } catch (error) {
-            console.error(`解析管理员日志详情失败 (ID: ${log.id}):`, error);
-            return {
-              ...log,
-              details: { error: '无法解析的数据', raw: log.details },
-            };
-          }
-        }),
+        items: logs.map(parseLogDetails),
         total: total ? Number(total.count) : 0,
         page,
         limit,
@@ -129,22 +133,7 @@ export class OperationLogModel {
       ]);
 
       return {
-        items: logs.map((log: any) => {
-          try {
-            // 如果 details 是字符串，尝试解析为 JSON 对象
-            // 如果已经是对象，直接使用
-            return {
-              ...log,
-              details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
-            };
-          } catch (error) {
-            console.error(`解析用户日志详情失败 (ID: ${log.id}):`, error);
-            return {
-              ...log,
-              details: { error: '无法解析的数据', raw: log.details },
-            };
-          }
-        }),
+        items: logs.map(parseLogDetails),
         total: total ? Number(total.count) : 0,
         page,
         limit,
@@ -177,23 +166,7 @@ export class OperationLogModel {
       ]);
 
       return {
-        items: logs.map((log: any) => {
-          try {
-            // 如果 details 是字符串，尝试解析为 JSON 对象
-            // 如果已经是对象，直接使用
-            return {
-              ...log,
-              details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
-            };
-          } catch (error) {
-            console.error(`解析日志详情失败 (ID: ${log.id}):`, error);
-            // 如果解析失败，返回错误对象
-            return {
-              ...log,
-              details: { error: '无法解析的数据', raw: log.details },
-            };
-          }
-        }),
+        items: logs.map(parseLogDetails),
         total: total ? Number(total.count) : 0,
         page,
         limit,
@@ -269,10 +242,7 @@ export class OperationLogModel {
         .offset(offset);
 
       return {
-        items: logs.map((log: any) => ({
-          ...log,
-          details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
-        })),
+        items: logs.map(parseLogDetails),
         total,
         page,
         limit,
@@ -311,7 +281,7 @@ export class OperationLogModel {
       const logs = await query;
 
       const byAction: Record<string, number> = {};
-      logs.forEach((log: any) => {
+      logs.forEach((log: OperationLogRow) => {
         const action = log.action;
         byAction[action] = (byAction[action] || 0) + 1;
       });

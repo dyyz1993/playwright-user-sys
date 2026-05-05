@@ -27,15 +27,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Build TypeScript
-        run: pnpm build:emit
-
       - uses: docker/setup-buildx-action@v3
 
       - name: Build Docker images
         run: |
-          docker buildx build -f docker/manager/Dockerfile.prod -t playwright-manager:e2e --target production --load .
-          docker buildx build -f docker/machine/Dockerfile -t playwright-machine:e2e --target production --load .
+          docker buildx build \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            -f docker/manager/Dockerfile.prod \
+            -t playwright-manager:e2e \
+            --target production --load .
+          docker buildx build \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            -f docker/machine/Dockerfile.prod \
+            -t playwright-machine:e2e \
+            --target e2e --load .
 
       - name: Start E2E environment
         run: |

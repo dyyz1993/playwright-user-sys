@@ -40,8 +40,8 @@ services:
     image: playwright-machine:e2e
     build:
       context: ..
-      dockerfile: docker/machine/Dockerfile
-      target: production
+      dockerfile: docker/machine/Dockerfile.prod
+      target: e2e
     container_name: playwright-e2e-machine
     depends_on:
       manager:
@@ -60,6 +60,7 @@ services:
       - MAX_SESSIONS=5
       - SESSION_TIMEOUT=300000
       - DISPLAY=:99
+      - CHROME_PATH=/usr/bin/google-chrome-stable
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9100/health"]
       interval: 5s

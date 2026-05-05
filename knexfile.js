@@ -34,10 +34,10 @@ const config = {
   test: {
     client: 'mysql2',
     connection: {
-      host: process.env.DB_HOST || 'REDACTED_INTERNAL_HOST',
+      host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
       user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || 'REDACTED_PASSWORD',
+      password: process.env.DB_PASSWORD || '',
       database: 'playwright_test_user_sys',
     },
     migrations: {

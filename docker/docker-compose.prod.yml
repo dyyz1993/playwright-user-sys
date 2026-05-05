@@ -24,8 +24,8 @@ services:
       - PORT=3000
       - HOST=0.0.0.0
       - DB_TYPE=mysql
-      - DB_HOST=REDACTED_INTERNAL_HOST
-      - DB_PORT=3307
+      - DB_HOST=${DB_HOST:-localhost}
+      - DB_PORT=${DB_PORT:-3306}
       - DB_USER=playwright_user_sys
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=playwright_user_sys
@@ -76,8 +76,8 @@ services:
       - CHROME_BIN=/opt/google/chrome/chromium
       - CHROME_PATH=/opt/google/chrome/chromium
       - PUPPETEER_EXECUTABLE_PATH=/opt/google/chrome/chromium
-      - no_proxy=REDACTED_INTERNAL_HOST,localhost,127.0.0.1,manager,machine-1,machine-2
-      - NO_PROXY=REDACTED_INTERNAL_HOST,localhost,127.0.0.1,manager,machine-1,machine-2
+      - no_proxy=localhost,127.0.0.1,manager,machine-1,machine-2
+      - NO_PROXY=localhost,127.0.0.1,manager,machine-1,machine-2
     depends_on:
       - manager
     healthcheck:
@@ -121,11 +121,11 @@ services:
       - CHROME_BIN=/opt/google/chrome/chromium
       - CHROME_PATH=/opt/google/chrome/chromium
       - PUPPETEER_EXECUTABLE_PATH=/opt/google/chrome/chromium
-      - no_proxy=REDACTED_INTERNAL_HOST,localhost,127.0.0.1,manager,machine-1,machine-2
-      - NO_PROXY=REDACTED_INTERNAL_HOST,localhost,127.0.0.1,manager,machine-1,machine-2
-      - HTTP_PROXY=http://REDACTED_PROXY_HOST:7890
-      - HTTPS_PROXY=http://REDACTED_PROXY_HOST:7890
-      - ALL_PROXY=socks5://REDACTED_PROXY_HOST:7890
+      - no_proxy=localhost,127.0.0.1,manager,machine-1,machine-2
+      - NO_PROXY=localhost,127.0.0.1,manager,machine-1,machine-2
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - ALL_PROXY=${ALL_PROXY:-}
     depends_on:
       - manager
     healthcheck:

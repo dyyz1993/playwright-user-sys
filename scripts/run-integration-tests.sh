@@ -16,11 +16,11 @@ echo "Node.js 版本: $NODE_VERSION"
 # 检查数据库连接
 echo ""
 echo "检查数据库连接..."
-DB_HOST=${DB_HOST:-REDACTED_INTERNAL_HOST}
+DB_HOST=${DB_HOST:-localhost}
 DB_PORT=${DB_PORT:-3306}
 DB_NAME=${DB_NAME:-playwright_test_user_sys}
 
-if mysql -h"$DB_HOST" -P"$DB_PORT" -uroot -pREDACTED_PASSWORD -e "USE $DB_NAME;" 2>/dev/null; then
+if mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" -e "USE $DB_NAME;" 2>/dev/null; then
     echo "✅ 数据库连接成功"
 else
     echo "❌ 数据库连接失败，请检查配置"
@@ -33,9 +33,9 @@ export DB_TYPE=mysql
 export DB_HOST=$DB_HOST
 export DB_PORT=$DB_PORT
 export DB_NAME=$DB_NAME
-export DB_USER=root
-export DB_PASSWORD=REDACTED_PASSWORD
-export JWT_SECRET=test_secret_key_for_ci
+export DB_USER=${DB_USER:-root}
+export DB_PASSWORD=${DB_PASSWORD:-}
+export JWT_SECRET=${JWT_SECRET:-test_secret_key_for_ci}
 export JWT_EXPIRES_IN=24h
 export NODE_OPTIONS="--max-old-space-size=4096"
 

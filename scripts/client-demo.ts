@@ -36,7 +36,7 @@ async function demoUsingRest() {
           height: 800,
         },
         // 远程代理（可选）
-        // proxy: 'http://android-client-5c598f19:11@REDACTED_PROXY_HOST:8011'
+        // proxy: 'http://user:pass@your-proxy-host:8011'
       }),
     });
 
@@ -57,8 +57,8 @@ async function demoUsingRest() {
 
     const sessionId = sessionData.data.id;
     const browserWSEndpoint = sessionData.data.browserWSEndpoint;
-    console.log(`http://REDACTED_PROXY_HOST:3001/?sessionId=${sessionId}&domain=REDACTED_PROXY_HOST:8082`);
-    console.log(`http://REDACTED_PROXY_HOST:3001/?sessionId=${sessionId}&domain=REDACTED_INTERNAL_HOST:8082`);
+    console.log(`http://localhost:3001/?sessionId=${sessionId}&domain=localhost:8082`);
+    console.log(`http://localhost:3001/?sessionId=${sessionId}&domain=localhost:8082`);
 
     // 步骤 2：连接到浏览器
     console.log('\n步骤 2：连接到浏览器...');

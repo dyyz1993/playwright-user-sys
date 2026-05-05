@@ -303,7 +303,7 @@ NODE_ENV=test
 # 数据库配置
 DB_TYPE=mysql
 DB_NAME=playwright_test_user_sys
-DB_HOST=REDACTED_INTERNAL_HOST
+DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=

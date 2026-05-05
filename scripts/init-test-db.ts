@@ -4,10 +4,10 @@ const TEST_DB_NAME = 'playwright_test_user_sys';
 const MAIN_DB_NAME = process.env.DB_NAME || 'playwright_user_sys';
 
 const dbConfig = {
-  host: process.env.DB_HOST || 'REDACTED_INTERNAL_HOST',
+  host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '3306'),
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'REDACTED_PASSWORD',
+  password: process.env.DB_PASSWORD || '',
 };
 
 async function ensureTestDatabase() {

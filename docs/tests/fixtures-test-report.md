@@ -142,7 +142,7 @@ testEnv: [async ({ baseURL }, use) => {
 [2025-12-27T16:55:08.005Z] [INFO] 注册机器: {
   machine_id: 'test-machine-1766854506856-0',
   name: '测试机器-1',
-  ip_address: 'REDACTED_PROXY_HOST',
+  ip_address: '192.168.1.100',
   grpc_port: 59235,
   proxy_port: 59236,
   max_sessions: 10,

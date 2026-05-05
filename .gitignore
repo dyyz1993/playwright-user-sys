@@ -55,4 +55,9 @@ prebuilt/
 !prebuilt-sqlite3/.gitkeep
 
 test-results/
+test-results.json
+*.bak
+
+# Claude local settings (contains credentials)
+.claude/settings.local.json
 

@@ -19,6 +19,8 @@ vi.mock('../../../models/user.model.js', () => ({
 
 vi.mock('../../../utils/auth.js', () => ({
   comparePassword: vi.fn(),
+  verifyPasswordWithMigration: vi.fn(),
+  hashPassword: vi.fn().mockResolvedValue('new_bcrypt_hash'),
   generateToken: vi.fn(() => 'mock-jwt-token'),
 }));
 
@@ -43,7 +45,7 @@ vi.mock('../../../config/env.js', () => ({
 
 describe('AuthController', () => {
   let UserModel: any;
-  let comparePassword: any;
+  let verifyPasswordWithMigration: any;
   let generateToken: any;
   let sendSuccess: any;
   let sendError: any;
@@ -56,7 +58,7 @@ describe('AuthController', () => {
     UserModel = userModule.UserModel;
 
     const authModule = await import('../../../utils/auth.js');
-    comparePassword = authModule.comparePassword;
+    verifyPasswordWithMigration = authModule.verifyPasswordWithMigration;
     generateToken = authModule.generateToken;
 
     const responseModule = await import('../../../utils/response.js');
@@ -80,7 +82,7 @@ describe('AuthController', () => {
     };
 
     vi.mocked(UserModel.findByUsername).mockResolvedValue(mockUser);
-    vi.mocked(comparePassword).mockResolvedValue(true);
+    vi.mocked(verifyPasswordWithMigration).mockResolvedValue({ valid: true, needsMigration: false });
     vi.mocked(generateToken).mockReturnValue('mock-jwt-token');
 
     const { login } = await import('../../../controllers/auth.controller.js');
@@ -89,6 +91,9 @@ describe('AuthController', () => {
       body: {
         username: 'testuser',
         password: 'password123',
+      },
+      log: {
+        error: vi.fn(),
       },
     };
 
@@ -100,7 +105,7 @@ describe('AuthController', () => {
     await login(request as any, reply as any);
 
     expect(UserModel.findByUsername).toHaveBeenCalledWith('testuser');
-    expect(comparePassword).toHaveBeenCalledWith('password123', 'hashed_password');
+    expect(verifyPasswordWithMigration).toHaveBeenCalledWith('password123', 'hashed_password');
     expect(generateToken).toHaveBeenCalled();
     expect(sendSuccess).toHaveBeenCalledWith(
       reply,
@@ -155,7 +160,7 @@ describe('AuthController', () => {
     };
 
     vi.mocked(UserModel.findByUsername).mockResolvedValue(mockUser);
-    vi.mocked(comparePassword).mockResolvedValue(false);
+    vi.mocked(verifyPasswordWithMigration).mockResolvedValue({ valid: false, needsMigration: false });
 
     const { login } = await import('../../../controllers/auth.controller.js');
 
@@ -192,7 +197,7 @@ describe('AuthController', () => {
     };
 
     vi.mocked(UserModel.findByUsername).mockResolvedValue(mockUser);
-    vi.mocked(comparePassword).mockResolvedValue(true);
+    vi.mocked(verifyPasswordWithMigration).mockResolvedValue({ valid: true, needsMigration: false });
 
     const { login } = await import('../../../controllers/auth.controller.js');
 

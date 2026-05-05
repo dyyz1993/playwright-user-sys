@@ -50,7 +50,8 @@ jobs:
 
           echo "Waiting for all services to become healthy..."
           timeout 180 bash -c '
-            until docker compose -f docker/docker-compose.e2e.yml ps | grep -q "(healthy)"; do
+            SERVICE_COUNT=$(docker compose -f docker/docker-compose.e2e.yml ps --services | wc -l)
+            until [ "$(docker compose -f docker/docker-compose.e2e.yml ps | grep -c "(healthy)")" -eq "$SERVICE_COUNT" ]; do
               sleep 5
               echo "  Still waiting..."
               docker compose -f docker/docker-compose.e2e.yml ps
@@ -74,7 +75,18 @@ jobs:
           curl -sf http://localhost:3000/health | python3 -m json.tool
           echo ""
           echo "Checking machine health..."
-          curl -sf http://localhost:9100/health | python3 -m json.tool
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:9100/health 2>/dev/null | python3 -m json.tool; then
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Machine health check failed after 30 retries"
+              docker compose -f docker/docker-compose.e2e.yml logs machine 2>&1 | tail -50
+              exit 1
+            fi
+            echo "  Machine not ready yet, retrying in 5s... ($i/30)"
+            sleep 5
+          done
           echo ""
           echo "Waiting 15s for gRPC registration..."
           sleep 15

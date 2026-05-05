@@ -1,3 +1,4 @@
+import { logger } from '@shared/utils/logger.js';
 export type DbDriver = 'better-sqlite3' | 'node-sqlite';
 
 export function getSqliteClient(): string {
@@ -7,7 +8,7 @@ export function getSqliteClient(): string {
     case 'better-sqlite3':
       return 'better-sqlite3';
     case 'node-sqlite':
-      console.warn('[DB] node:sqlite driver not yet supported, falling back to better-sqlite3');
+      logger.warn('[DB] node:sqlite driver not yet supported, falling back to better-sqlite3');
       return 'better-sqlite3';
     default:
       return 'better-sqlite3';

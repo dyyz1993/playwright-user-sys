@@ -283,7 +283,7 @@ async function handleFileUploadChunk(ws: WebSocket, sessionId: string, data: Fil
 
 // --- 页面内 Focus 监听器辅助函数 (确保幂等性) ---
 async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string): Promise<void> {
-  console.log('handleRawFocusEvent', sessionId);
+  logger.info('handleRawFocusEvent', sessionId);
   // Check states before evaluating
   if ((page && page!.isClosed()) || (ws && ws.readyState !== WebSocket.OPEN)) {
     logger.warn(`Page closed or WebSocket not open when handling raw focus for ${sessionId}.`);
@@ -504,7 +504,7 @@ async function handleMouseEvents(
         break;
       }
       case 'mouseWheel':
-        console.log('mouseWheel', data);
+        logger.info('mouseWheel', data);
         await page.mouse.wheel({
           deltaX: data.deltaX,
           deltaY: data.deltaY,
@@ -523,11 +523,11 @@ async function handleMouseEvents(
           // Determine coordinates if needed
           let coords: { tx: number; ty: number } | null = null;
           if (['mouseClick', 'mouseMove', 'mouseDown', 'mouseUp'].includes(eventType)) {
-            console.debug(`data: ${JSON.stringify(data)}`);
+            logger.debug(`data: ${JSON.stringify(data)}`);
             coords = browserService.getTransformedCoordinates(sessionId, data.x, data.y);
             if (!coords) throw new Error('Cannot get transformed coordinates');
           }
-          console.info(eventType, `Coords: ${JSON.stringify(coords)}`);
+          logger.info(eventType, `Coords: ${JSON.stringify(coords)}`);
 
           switch (eventType) {
             case 'mouseMove':
@@ -535,7 +535,7 @@ async function handleMouseEvents(
               await page.mouse.move(coords.tx, coords.ty, { steps: 3 });
               break;
             case 'mouseDown':
-              // console.log('mouseDown',coords);
+              // logger.info('mouseDown',coords);
               if (!coords) throw new Error(`Coordinates required for ${eventType}`);
               await page.mouse.move(coords.tx, coords.ty, { steps: 1 });
               await page.mouse.down();

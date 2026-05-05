@@ -1,3 +1,4 @@
+import { logger } from '@shared/utils/logger.js';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { MachineModel, UpdateMachineInput } from '../models/machine.model.js';
@@ -73,11 +74,11 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
     // 从内存中获取机器数据
     const memoryMachines = memoryStore.getAllMachines();
 
-    console.log(`[DEBUG] getAllMachines: 内存中机器数量 = ${memoryMachines.length}`);
+    logger.info(`[DEBUG] getAllMachines: 内存中机器数量 = ${memoryMachines.length}`);
 
     // 如果内存中有数据，则使用内存中的数据
     if (memoryMachines.length > 0) {
-      console.log(`[DEBUG] 使用内存数据，机器数量: ${memoryMachines.length}`);
+      logger.info(`[DEBUG] 使用内存数据，机器数量: ${memoryMachines.length}`);
       // 处理分页
       const page = parseInt(query.page || '1', 10);
       const limit = parseInt(query.limit || '10', 10);

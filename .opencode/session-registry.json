@@ -12,5 +12,40 @@
     "parentID": "main",
     "status": "running",
     "createdAt": 1777986415021
+  },
+  "fix-better-sqlite3": {
+    "id": "ses_2076489c1ffe1AsTnjf4mvAmES",
+    "name": "fix-better-sqlite3",
+    "parentID": "fix-session-model",
+    "status": "running",
+    "createdAt": 1777992431167
+  },
+  "add-node-sqlite-switch": {
+    "id": "ses_207642f9effeliXScDs59s6BLd",
+    "name": "add-node-sqlite-switch",
+    "parentID": "fix-session-model",
+    "status": "running",
+    "createdAt": 1777992454242
+  },
+  "replace-console-models": {
+    "id": "ses_20708a70dffe1sf2M9L3WQH2GM",
+    "name": "replace-console-models",
+    "parentID": "ses_2070d0089ffeHXMjsRB6h97f7F",
+    "status": "running",
+    "createdAt": 1777998452980
+  },
+  "replace-console-services-routes": {
+    "id": "ses_2070875ebffeZsapJNeVEDerpK",
+    "name": "replace-console-services-routes",
+    "parentID": "ses_2070d0089ffeHXMjsRB6h97f7F",
+    "status": "running",
+    "createdAt": 1777998465557
+  },
+  "replace-console-machine-config": {
+    "id": "ses_2070846b7ffeC1uX2eJxBrEefy",
+    "name": "replace-console-machine-config",
+    "parentID": "ses_2070d0089ffeHXMjsRB6h97f7F",
+    "status": "running",
+    "createdAt": 1777998477642
   }
 }

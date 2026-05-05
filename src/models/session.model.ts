@@ -157,7 +157,7 @@ export class SessionModel {
             parsedOptions = session.options;
           }
         } catch (error) {
-          console.error(`解析会话选项失败 (ID: ${id}):`, error);
+          logger.error(`解析会话选项失败 (ID: ${id}):`, error);
           parsedOptions = null;
         }
       }
@@ -215,7 +215,7 @@ export class SessionModel {
 
       return count;
     } catch (error) {
-      console.error('批量更新会话失败:', error);
+      logger.error('批量更新会话失败:', error);
       throw error;
     }
   }
@@ -539,13 +539,13 @@ export class SessionModel {
   // 获取所有活跃会话
   static async findActiveSessions(): Promise<Session[]> {
     try {
-      console.log('开始查询活跃会话');
+      logger.info('开始查询活跃会话');
       const sessions = await db('sessions').whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED]);
-      console.log(`找到 ${sessions.length} 个活跃会话`);
+      logger.info(`找到 ${sessions.length} 个活跃会话`);
 
       return sessions.map(parseSessionOptions);
     } catch (error) {
-      console.error('查询活跃会话失败:', error);
+      logger.error('查询活跃会话失败:', error);
       return [];
     }
   }
@@ -553,13 +553,13 @@ export class SessionModel {
   // 获取用户的所有会话（不分页）
   static async getAllByUserId(userId: number): Promise<Session[]> {
     try {
-      console.log(`开始查询用户 ${userId} 的所有会话`);
+      logger.info(`开始查询用户 ${userId} 的所有会话`);
       const sessions = await db('sessions').where({ user_id: userId });
-      console.log(`找到用户 ${userId} 的 ${sessions.length} 个会话`);
+      logger.info(`找到用户 ${userId} 的 ${sessions.length} 个会话`);
 
       return sessions.map(parseSessionOptions);
     } catch (error) {
-      console.error(`获取用户所有会话失败 (userId: ${userId}):`, error);
+      logger.error(`获取用户所有会话失败 (userId: ${userId}):`, error);
       return [];
     }
   }
@@ -567,7 +567,7 @@ export class SessionModel {
   // 获取指定机器上的会话
   static async findByMachineId(machineId: string, options: { status?: SessionStatus[] } = {}): Promise<Session[]> {
     try {
-      console.log(`开始查询机器 ${machineId} 上的会话`);
+      logger.info(`开始查询机器 ${machineId} 上的会话`);
 
       let query = db('sessions').where({ machine_id: machineId });
 
@@ -577,11 +577,11 @@ export class SessionModel {
       }
 
       const sessions = await query;
-      console.log(`找到机器 ${machineId} 上的 ${sessions.length} 个会话`);
+      logger.info(`找到机器 ${machineId} 上的 ${sessions.length} 个会话`);
 
       return sessions.map(parseSessionOptions);
     } catch (error) {
-      console.error(`查询机器 ${machineId} 上的会话失败:`, error);
+      logger.error(`查询机器 ${machineId} 上的会话失败:`, error);
       return [];
     }
   }
@@ -589,7 +589,7 @@ export class SessionModel {
   // 获取所有会话（分页）
   static async findAll(query: PaginationQuery = {}): Promise<PaginatedResponse<Session>> {
     try {
-      console.log('开始查询会话数据');
+      logger.info('开始查询会话数据');
       const page = Number(query.page) || 1;
       const limit = Number(query.limit) || 10;
       const offset = (page - 1) * limit;
@@ -620,7 +620,7 @@ export class SessionModel {
         db('sessions').count('id as count').first(),
       ]);
 
-      console.log(`找到 ${sessions.length} 个会话，总数 ${total ? total.count : 0}`);
+      logger.info(`找到 ${sessions.length} 个会话，总数 ${total ? total.count : 0}`);
 
       return {
         items: sessions.map(parseSessionRowWithDates),
@@ -630,7 +630,7 @@ export class SessionModel {
         totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
       };
     } catch (error) {
-      console.error('查询会话数据失败:', error);
+      logger.error('查询会话数据失败:', error);
       // 返回空数据
       return {
         items: [],
@@ -657,7 +657,7 @@ export class SessionModel {
     userId: number
   ): Promise<{ total_sessions: number; total_duration: number; total_credits_used: number }> {
     try {
-      console.log(`开始查询用户 ${userId} 的会话消耗统计`);
+      logger.info(`开始查询用户 ${userId} 的会话消耗统计`);
 
       // 查询用户的所有会话数量
       const totalResult = await db('sessions').where({ user_id: userId }).count('id as count').first();
@@ -671,7 +671,7 @@ export class SessionModel {
       const creditsResult = await db('sessions').where({ user_id: userId }).sum('credits_used as total').first();
       const total_credits_used = creditsResult && creditsResult.total ? Number(creditsResult.total) : 0;
 
-      console.log(
+      logger.info(
         `用户 ${userId} 的会话统计: 总会话数=${total_sessions}, 总时长=${total_duration}秒, 总消耗点数=${total_credits_used}点`
       );
 
@@ -681,7 +681,7 @@ export class SessionModel {
         total_credits_used,
       };
     } catch (error) {
-      console.error(`获取用户会话统计失败 (userId: ${userId}):`, error);
+      logger.error(`获取用户会话统计失败 (userId: ${userId}):`, error);
       return {
         total_sessions: 0,
         total_duration: 0,
@@ -700,7 +700,7 @@ export class SessionModel {
         .first();
       return result ? Number(result.count) : 0;
     } catch (error) {
-      console.error(`统计用户活跃会话失败 (userId: ${userId}):`, error);
+      logger.error(`统计用户活跃会话失败 (userId: ${userId}):`, error);
       return 0;
     }
   }
@@ -708,18 +708,18 @@ export class SessionModel {
   // 获取指定机器上的活跃会话
   static async findActiveSessionsByMachineId(machineId: string): Promise<Session[]> {
     try {
-      console.log(`开始查询机器 ${machineId} 上的活跃会话`);
+      logger.info(`开始查询机器 ${machineId} 上的活跃会话`);
 
       // 查询指定机器上的活跃会话
       const sessions = await db('sessions')
         .where({ machine_id: machineId })
         .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED]);
 
-      console.log(`找到机器 ${machineId} 上的 ${sessions.length} 个活跃会话`);
+      logger.info(`找到机器 ${machineId} 上的 ${sessions.length} 个活跃会话`);
 
       return sessions.map(parseSessionOptions);
     } catch (error) {
-      console.error(`查询机器 ${machineId} 上的活跃会话失败:`, error);
+      logger.error(`查询机器 ${machineId} 上的活跃会话失败:`, error);
       return [];
     }
   }
@@ -735,7 +735,7 @@ export class SessionModel {
 
       return sessions.map(parseSessionOptions) as Array<Session & { username: string }>;
     } catch (error) {
-      console.error('获取最近会话失败:', error);
+      logger.error('获取最近会话失败:', error);
       return [];
     }
   }
@@ -755,7 +755,7 @@ export class SessionModel {
         .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED])
         .where('start_time', '<', timeoutDate);
 
-      console.log(`找到 ${expiredSessions.length} 个超时会话`);
+      logger.info(`找到 ${expiredSessions.length} 个超时会话`);
 
       // 标记为过期
       if (expiredSessions.length > 0) {
@@ -771,14 +771,14 @@ export class SessionModel {
 
           // 标记会话为过期
           await this.markExpired(session.id, duration);
-          console.log(`标记会话过期: ${session.id}, 持续时间: ${duration} 秒`);
+          logger.info(`标记会话过期: ${session.id}, 持续时间: ${duration} 秒`);
 
           // 扣除用户点数（每分钟1点）
           const minutes = Math.ceil(duration / 60);
           try {
             const { UserModel } = await import('./user.model.js');
             await UserModel.deductCredits(session.user_id, minutes);
-            console.log(`已扣除用户 ${session.user_id} 的点数: ${minutes} 点 (超时会话 ${session.id})`);
+            logger.info(`已扣除用户 ${session.user_id} 的点数: ${minutes} 点 (超时会话 ${session.id})`);
 
             // 触发 Webhook 事件
             const { createWebhookEvent } = await import('../utils/webhook.js');
@@ -789,14 +789,14 @@ export class SessionModel {
               expired_at: now,
             });
           } catch (error) {
-            console.error(`扣除点数失败 (超时会话 ${session.id}):`, error);
+            logger.error(`扣除点数失败 (超时会话 ${session.id}):`, error);
           }
         }
       }
 
       return expiredSessions.length;
     } catch (error) {
-      console.error('检查超时会话失败:', error);
+      logger.error('检查超时会话失败:', error);
       return 0;
     }
   }
@@ -810,7 +810,7 @@ export class SessionModel {
         .first();
       return result ? Number(result.count) : 0;
     } catch (error) {
-      console.error('统计活跃会话数失败:', error);
+      logger.error('统计活跃会话数失败:', error);
       return 0;
     }
   }
@@ -821,7 +821,7 @@ export class SessionModel {
       const result = await db('sessions').sum('credits_used as total').first();
       return result && result.total ? Number(result.total) : 0;
     } catch (error) {
-      console.error('计算已使用点数失败:', error);
+      logger.error('计算已使用点数失败:', error);
       return 0;
     }
   }
@@ -925,7 +925,7 @@ export class SessionModel {
         totalPages: Math.ceil((totalResult ? Number(totalResult.count) : 0) / limit),
       };
     } catch (error) {
-      console.error('分页查询会话失败:', error);
+      logger.error('分页查询会话失败:', error);
       return {
         items: [],
         total: 0,

@@ -1,3 +1,4 @@
+import { logger } from '@shared/utils/logger.js';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { UserModel, UpdateUserInput } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
@@ -163,15 +164,15 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
         }
 
         // 强制刷新内存数据，确保显示最新状态
-        console.log('开始强制刷新内存数据...');
+        logger.info('开始强制刷新内存数据...');
         await memoryStore.loadInitialData();
-        console.log('内存数据刷新完成');
+        logger.info('内存数据刷新完成');
 
         // 获取所有机器的详细状态
         const allMachines = memoryStore.getAllMachines();
-        console.log('内存中的机器详细状态:');
+        logger.info('内存中的机器详细状态:');
         for (const machine of allMachines) {
-          console.log(
+          logger.info(
             `- 机器 ${machine.machine_id}: 状态=${machine.online ? '在线' : '离线'}, 活跃会话=${machine.active_sessions}`
           );
         }
@@ -181,8 +182,8 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
         const updatedSessionStats = memoryStore.getSessionStats();
 
         // 输出调试信息
-        console.log(`当前在线机器数量: ${updatedMachineStats.online}/${updatedMachineStats.total}`);
-        console.log(`当前活跃会话数量: ${updatedSessionStats.active}/${updatedSessionStats.total}`);
+        logger.info(`当前在线机器数量: ${updatedMachineStats.online}/${updatedMachineStats.total}`);
+        logger.info(`当前活跃会话数量: ${updatedSessionStats.active}/${updatedSessionStats.total}`);
 
         // 获取点数统计
         const creditsData = await UserModel.getCreditsStats();

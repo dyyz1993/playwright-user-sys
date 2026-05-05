@@ -1,3 +1,4 @@
+import { logger } from '@shared/utils/logger.js';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 
 function getErrorMessage(e: unknown): string {
@@ -76,7 +77,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
 
         // 验证输入
         if (!username || !password) {
-          console.log('Username or password is empty');
+          logger.info('Username or password is empty');
           request.flash('error', '用户名和密码不能为空');
           return reply.redirect('/admin/login');
         }
@@ -86,7 +87,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         const user = await UserModel.findByUsername(username);
 
         if (!user) {
-          console.log('User not found');
+          logger.info('User not found');
           request.flash('error', '用户名或密码错误');
           return reply.redirect('/admin/login');
         }
@@ -96,7 +97,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         const { valid: isPasswordValid, needsMigration } = await verifyPasswordWithMigration(password, user.password);
 
         if (!isPasswordValid) {
-          console.log('Invalid password');
+          logger.info('Invalid password');
           request.flash('error', '用户名或密码错误');
           return reply.redirect('/admin/login');
         }
@@ -109,7 +110,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
 
         // 检查用户状态
         if (user.status !== 'active') {
-          console.log('User is not active');
+          logger.info('User is not active');
           request.flash('error', '账号已被禁用');
           return reply.redirect('/admin/login');
         }
@@ -148,7 +149,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         // 重定向到仪表盘
         return reply.redirect('/admin');
       } catch (error: unknown) {
-        console.error('Login error:', error);
+        logger.error('Login error:', error);
         request.flash('error', '登录失败: ' + getErrorMessage(error));
         return reply.redirect('/admin/login');
       }
@@ -217,7 +218,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: unknown) {
-        console.error('获取仪表盘数据失败:', error);
+        logger.error('获取仪表盘数据失败:', error);
         const errorMessage = getErrorMessage(error) || '未知错误';
 
         return reply.view('pages/dashboard', {
@@ -609,8 +610,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         });
 
         // 调试日志
-        console.log(`[DEBUG] /admin/sessions: page=${page}, limit=${limit}, filters=`, JSON.stringify(filters));
-        console.log(`[DEBUG] /admin/sessions: items.length=${items.length}, total=${total}`);
+        logger.info(`[DEBUG] /admin/sessions: page=${page}, limit=${limit}, filters=`, JSON.stringify(filters));
+        logger.info(`[DEBUG] /admin/sessions: items.length=${items.length}, total=${total}`);
 
         return reply.view('pages/sessions', {
           title: '会话管理',
@@ -859,7 +860,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           // 暂时将已使用的积分设为 0
           const usedCredits = 0;
 
-          console.log('[DEBUG PROFILE VIEW] About to render view...');
+          logger.info('[DEBUG PROFILE VIEW] About to render view...');
 
           return reply.view('pages/profile', {
             title: '个人资料',
@@ -892,9 +893,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        console.log('[PROFILE] Accessing profile page');
-        console.log('[PROFILE] request.user:', request.user);
-        console.log('[PROFILE] request.cookies:', request.cookies);
+        logger.info('[PROFILE] Accessing profile page');
+        logger.info('[PROFILE] request.user:', request.user);
+        logger.info('[PROFILE] request.cookies:', request.cookies);
 
         // 获取当前用户的详细信息
         const { UserModel } = await import('../models/user.model.js');
@@ -931,8 +932,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           flash: request.flash,
         });
       } catch (error: unknown) {
-        console.error('[PROFILE ERROR] Error details:', error);
-        console.error('[PROFILE ERROR] Error stack:', error instanceof Error ? error.stack : String(error));
+        logger.error('[PROFILE ERROR] Error details:', error);
+        logger.error('[PROFILE ERROR] Error stack:', error instanceof Error ? error.stack : String(error));
         request.log.error({ err: error }, '获取个人资料失败');
         request.flash('error', '获取个人资料失败: ' + getErrorMessage(error));
         return reply.redirect('/admin');

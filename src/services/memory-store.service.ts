@@ -1,3 +1,4 @@
+import { logger } from '@shared/utils/logger.js';
 /**
  * 内存数据存储服务
  * 用于存储实时状态数据，如机器状态、会话状态等
@@ -88,7 +89,7 @@ class MemoryStoreService extends EventEmitter {
     this.cleanupTimer = setInterval(
       () => {
         try {
-          console.log('开始清理过期数据...');
+          logger.info('开始清理过期数据...');
 
           // 清理过期会话，保留 24 小时内的数据
           this.cleanupOldSessions(24 * 60 * 60 * 1000);
@@ -96,9 +97,9 @@ class MemoryStoreService extends EventEmitter {
           // 清理长时间离线的机器数据，保留 7 天内的数据
           this.cleanupOfflineMachines(7 * 24 * 60 * 60 * 1000);
 
-          console.log('数据清理完成');
+          logger.info('数据清理完成');
         } catch (error) {
-          console.error('清理过期数据时出错:', error);
+          logger.error('清理过期数据时出错:', error);
         }
       },
       60 * 60 * 1000
@@ -113,14 +114,14 @@ class MemoryStoreService extends EventEmitter {
     this.consistencyCheckTimer = setInterval(
       async () => {
         try {
-          console.log('开始数据一致性检查...');
+          logger.info('开始数据一致性检查...');
 
           // 检查机器和会话数据的一致性
           await this.checkDataConsistency();
 
-          console.log('数据一致性检查完成');
+          logger.info('数据一致性检查完成');
         } catch (error) {
-          console.error('数据一致性检查时出错:', error);
+          logger.error('数据一致性检查时出错:', error);
         }
       },
       5 * 60 * 1000
@@ -138,7 +139,7 @@ class MemoryStoreService extends EventEmitter {
     if (status.grpc_port !== undefined) logFields.push(`grpc_port=${status.grpc_port}`);
     if (status.cpu_usage !== undefined) logFields.push(`cpu_usage=${status.cpu_usage}`);
     if (status.memory_usage !== undefined) logFields.push(`memory_usage=${status.memory_usage}`);
-    console.log(`[MemoryStore] updateMachineStatus: ${logFields.join(', ')}`);
+    logger.info(`[MemoryStore] updateMachineStatus: ${logFields.join(', ')}`);
 
     // 创建新的状态对象
     const newStatus: MachineRealTimeStatus = {
@@ -157,7 +158,7 @@ class MemoryStoreService extends EventEmitter {
     };
 
     // 调试日志 - 显示最终状态
-    console.log(
+    logger.info(
       `[MemoryStore] 机器状态已更新: ${newStatus.machine_id}, grpc_port=${newStatus.grpc_port ?? '未设置'}, online=${newStatus.online}`
     );
 
@@ -190,7 +191,7 @@ class MemoryStoreService extends EventEmitter {
     if (status) {
       this.machines.delete(machineId);
       this.emit('machine:removed', { machineId });
-      console.log(`从内存中移除机器: ${machineId}`);
+      logger.info(`从内存中移除机器: ${machineId}`);
     }
   }
 
@@ -331,7 +332,7 @@ class MemoryStoreService extends EventEmitter {
     }
 
     if (removedCount > 0) {
-      console.log(`清理了 ${removedCount} 台长时间离线的机器`);
+      logger.info(`清理了 ${removedCount} 台长时间离线的机器`);
     }
   }
 
@@ -353,7 +354,7 @@ class MemoryStoreService extends EventEmitter {
         // 检查内存中标记为在线的机器是否真的有连接
         for (const [machineId, machine] of this.machines.entries()) {
           if (machine.online && !activeConnections.includes(machineId)) {
-            console.log(`发现不一致: 机器 ${machineId} 在内存中标记为在线，但实际没有连接`);
+            logger.info(`发现不一致: 机器 ${machineId} 在内存中标记为在线，但实际没有连接`);
             machine.online = false;
             this.machines.set(machineId, machine);
 
@@ -366,7 +367,7 @@ class MemoryStoreService extends EventEmitter {
         for (const connectedMachineId of activeConnections) {
           const machine = this.machines.get(connectedMachineId);
           if (machine && !machine.online) {
-            console.log(`发现不一致: 机器 ${connectedMachineId} 有活跃连接，但在内存中标记为离线`);
+            logger.info(`发现不一致: 机器 ${connectedMachineId} 有活跃连接，但在内存中标记为离线`);
             machine.online = true;
             this.machines.set(connectedMachineId, machine);
 
@@ -386,7 +387,7 @@ class MemoryStoreService extends EventEmitter {
           (session.status === SessionStatus.CREATED || session.status === SessionStatus.CONNECTED) &&
           !activeSessionIds.has(sessionId)
         ) {
-          console.log(`发现不一致: 会话 ${sessionId} 在内存中标记为活跃，但在数据库中不是活跃的`);
+          logger.info(`发现不一致: 会话 ${sessionId} 在内存中标记为活跃，但在数据库中不是活跃的`);
 
           // 更新内存中的状态
           session.status = SessionStatus.DISCONNECTED;
@@ -400,7 +401,7 @@ class MemoryStoreService extends EventEmitter {
 
         const memorySession = this.sessions.get(dbSession.id);
         if (!memorySession) {
-          console.log(`发现不一致: 会话 ${dbSession.id} 在数据库中是活跃的，但在内存中不存在`);
+          logger.info(`发现不一致: 会话 ${dbSession.id} 在数据库中是活跃的，但在内存中不存在`);
 
           // 将数据库中的会话添加到内存中
           if (dbSession.machine_id) {
@@ -421,7 +422,7 @@ class MemoryStoreService extends EventEmitter {
       // 更新每台机器的活跃会话数
       this.updateMachineSessionCounts();
     } catch (error) {
-      console.error('数据一致性检查失败:', error);
+      logger.error('数据一致性检查失败:', error);
     }
   }
 
@@ -455,28 +456,28 @@ class MemoryStoreService extends EventEmitter {
 
         // 加载机器数据
         const machinesData = await MachineModel.findAll();
-        console.log(`从数据库加载了 ${machinesData.items.length} 台机器`);
+        logger.info(`从数据库加载了 ${machinesData.items.length} 台机器`);
 
         // 获取当前活跃连接的机器 ID
         let activeConnections: string[] = [];
         if (connectionManager) {
           try {
             activeConnections = connectionManager.getActiveConnections();
-            console.log(`当前活跃连接的机器: ${activeConnections.length} 台`);
-            console.log(`活跃连接的机器 ID: ${JSON.stringify(activeConnections)}`);
+            logger.info(`当前活跃连接的机器: ${activeConnections.length} 台`);
+            logger.info(`活跃连接的机器 ID: ${JSON.stringify(activeConnections)}`);
           } catch (connError) {
-            console.error('获取活跃连接失败:', connError);
+            logger.error('获取活跃连接失败:', connError);
             activeConnections = [];
           }
         } else {
-          console.warn('连接管理器不存在，所有机器将标记为离线');
+          logger.warn('连接管理器不存在，所有机器将标记为离线');
         }
 
         // 强制将所有机器标记为离线，除非有活跃连接
         for (const machine of machinesData.items) {
           // 检查机器是否真正在线（有活跃连接）
           const isReallyOnline = activeConnections.includes(machine.id);
-          console.log(`机器 ${machine.id} 状态: ${isReallyOnline ? '在线' : '离线'}`);
+          logger.info(`机器 ${machine.id} 状态: ${isReallyOnline ? '在线' : '离线'}`);
 
           this.machines.set(machine.id, {
             machine_id: machine.id,
@@ -494,7 +495,7 @@ class MemoryStoreService extends EventEmitter {
           });
         }
       } catch (error) {
-        console.error('加载机器数据或获取活跃连接失败:', error);
+        logger.error('加载机器数据或获取活跃连接失败:', error);
 
         // 如果无法获取活跃连接，则使用数据库中的状态，但将所有机器标记为离线
         const machines = await MachineModel.findAll();
@@ -518,7 +519,7 @@ class MemoryStoreService extends EventEmitter {
 
       // 加载活跃会话数据
       const activeSessions = await SessionModel.findActiveSessions();
-      console.log(`从数据库加载了 ${activeSessions.length} 个活跃会话`);
+      logger.info(`从数据库加载了 ${activeSessions.length} 个活跃会话`);
 
       // 过滤出在真正在线机器上的会话
       const validSessions = activeSessions.filter((session) => {
@@ -529,7 +530,7 @@ class MemoryStoreService extends EventEmitter {
         return machine && machine.online;
       });
 
-      console.log(`其中 ${validSessions.length} 个会话在真正在线的机器上`);
+      logger.info(`其中 ${validSessions.length} 个会话在真正在线的机器上`);
 
       for (const session of validSessions) {
         // 确保必要的字段存在且不为 null
@@ -558,11 +559,11 @@ class MemoryStoreService extends EventEmitter {
         this.machines.set(machineId, machine);
       }
 
-      console.log(
+      logger.info(
         `内存中现有 ${this.machines.size} 台机器（${this.getOnlineMachines().length} 台在线）和 ${this.sessions.size} 个活跃会话`
       );
     } catch (error) {
-      console.error('从数据库加载初始数据失败:', error);
+      logger.error('从数据库加载初始数据失败:', error);
     }
   }
 }

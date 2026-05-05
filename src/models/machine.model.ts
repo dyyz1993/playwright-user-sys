@@ -109,7 +109,7 @@ export class MachineModel {
     }
 
     // 输出调试信息
-    console.log(`更新机器数据 (${id}):`, updateData);
+    logger.info(`更新机器数据 (${id}):`, updateData);
 
     // 移除未定义的字段
     Object.keys(updateData).forEach((key) => {
@@ -133,7 +133,7 @@ export class MachineModel {
   // 获取所有机器（分页）
   static async findAll(query: PaginationQuery = {}): Promise<PaginatedResponse<MachineInfo>> {
     try {
-      console.log('开始查询机器数据');
+      logger.info('开始查询机器数据');
       const page = parseInt(query.page || '1', 10);
       const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
@@ -145,7 +145,7 @@ export class MachineModel {
         db('machines').count('id as count').first(),
       ]);
 
-      console.log(`找到 ${machines.length} 台机器，总数 ${total ? total.count : 0}`);
+      logger.info(`找到 ${machines.length} 台机器，总数 ${total ? total.count : 0}`);
 
       return {
         items: machines.map((machine) => ({
@@ -176,16 +176,16 @@ export class MachineModel {
   // 获取可用机器（实例数量最少的）
   static async findAvailable(): Promise<MachineInfo | null> {
     try {
-      console.log('开始查找可用机器');
+      logger.info('开始查找可用机器');
 
       // 直接从 connectionManager 获取已连接的机器
       const { connectionManager } = await import('../services/machine-grpc.service.js');
       const connectedMachineIds = connectionManager.getAllConnectedMachines();
 
-      console.log(`当前有 ${connectedMachineIds.length} 台已连接的机器`);
+      logger.info(`当前有 ${connectedMachineIds.length} 台已连接的机器`);
 
       if (connectedMachineIds.length === 0) {
-        console.log('没有已连接的机器');
+        logger.info('没有已连接的机器');
         return null;
       }
 
@@ -195,16 +195,16 @@ export class MachineModel {
         .whereRaw('instance_count < max_instances')
         .orderBy('instance_count', 'asc');
 
-      console.log(`找到 ${machines.length} 台可用的已连接机器`);
+      logger.info(`找到 ${machines.length} 台可用的已连接机器`);
 
       if (machines.length === 0) {
-        console.log('没有可用的已连接机器（所有机器实例数已满）');
+        logger.info('没有可用的已连接机器（所有机器实例数已满）');
         return null;
       }
 
       // 选择实例数量最少的机器
       const machine = machines[0];
-      console.log(`选择机器: ${machine.id}, 当前实例数: ${machine.instance_count}/${machine.max_instances}`);
+      logger.info(`选择机器: ${machine.id}, 当前实例数: ${machine.instance_count}/${machine.max_instances}`);
 
       return {
         id: machine.id,
@@ -221,7 +221,7 @@ export class MachineModel {
         lastSeen: machine.last_seen,
       };
     } catch (error) {
-      console.error('查找可用机器失败:', error);
+      logger.error('查找可用机器失败:', error);
       return null;
     }
   }
@@ -285,7 +285,7 @@ export class MachineModel {
         totalPages: 1,
       };
     } catch (error) {
-      console.error(`查询${status}状态的机器失败:`, error);
+      logger.error(`查询${status}状态的机器失败:`, error);
       return {
         items: [],
         total: 0,
@@ -304,7 +304,7 @@ export class MachineModel {
 
       return result;
     } catch (error) {
-      console.error('删除旧机器记录失败:', error);
+      logger.error('删除旧机器记录失败:', error);
       return 0;
     }
   }
@@ -317,7 +317,7 @@ export class MachineModel {
 
       return result > 0;
     } catch (error) {
-      console.error(`删除机器失败 (${id}):`, error);
+      logger.error(`删除机器失败 (${id}):`, error);
       return false;
     }
   }
@@ -328,7 +328,7 @@ export class MachineModel {
       const result = await db('machines').count('id as count').first();
       return result ? Number(result.count) : 0;
     } catch (error) {
-      console.error('统计机器数失败:', error);
+      logger.error('统计机器数失败:', error);
       return 0;
     }
   }
@@ -339,7 +339,7 @@ export class MachineModel {
       const result = await db('machines').where('status', 'online').count('id as count').first();
       return result ? Number(result.count) : 0;
     } catch (error) {
-      console.error('统计在线机器数失败:', error);
+      logger.error('统计在线机器数失败:', error);
       return 0;
     }
   }
@@ -364,7 +364,7 @@ export class MachineModel {
         lastSeen: machine.last_seen,
       }));
     } catch (error) {
-      console.error('获取所有机器失败:', error);
+      logger.error('获取所有机器失败:', error);
       return [];
     }
   }
@@ -413,7 +413,7 @@ export class MachineModel {
         healthStatus,
       };
     } catch (error) {
-      console.error('获取机器详情失败:', error);
+      logger.error('获取机器详情失败:', error);
       return null;
     }
   }
@@ -492,7 +492,7 @@ export class MachineModel {
         };
       }
     } catch (error) {
-      console.error('健康检查失败:', error);
+      logger.error('健康检查失败:', error);
       return {
         machineId: id,
         status: 'unhealthy',

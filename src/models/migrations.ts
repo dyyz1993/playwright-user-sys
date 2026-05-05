@@ -1,3 +1,4 @@
+import { logger } from '@shared/utils/logger.js';
 import { db } from '../config/database.js';
 import { env } from '../config/env.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';
@@ -24,7 +25,7 @@ export async function createTables() {
       table.timestamps(true, true);
     });
 
-    console.log('✅ 用户表创建成功');
+    logger.info('✅ 用户表创建成功');
   }
 
   // 创建实例机器表
@@ -45,7 +46,7 @@ export async function createTables() {
       table.timestamps(true, true);
     });
 
-    console.log('✅ 实例机器表创建成功');
+    logger.info('✅ 实例机器表创建成功');
   }
 
   // 创建会话表
@@ -68,7 +69,7 @@ export async function createTables() {
       table.timestamps(true, true);
     });
 
-    console.log('✅ 会话表创建成功');
+    logger.info('✅ 会话表创建成功');
   }
 
   // 创建操作日志表
@@ -82,7 +83,7 @@ export async function createTables() {
       table.timestamps(true, true);
     });
 
-    console.log('✅ 操作日志表创建成功');
+    logger.info('✅ 操作日志表创建成功');
   }
 
   // 创建请求日志表
@@ -99,7 +100,7 @@ export async function createTables() {
       table.timestamps(true, true);
     });
 
-    console.log('✅ 请求日志表创建成功');
+    logger.info('✅ 请求日志表创建成功');
   }
 
   // 创建 Webhook 事件表
@@ -116,7 +117,7 @@ export async function createTables() {
       table.timestamps(true, true);
     });
 
-    console.log('✅ Webhook 事件表创建成功');
+    logger.info('✅ Webhook 事件表创建成功');
   }
 
   // 创建积分历史表
@@ -132,7 +133,7 @@ export async function createTables() {
       table.timestamps(true, true);
     });
 
-    console.log('✅ 积分历史表创建成功');
+    logger.info('✅ 积分历史表创建成功');
   }
 }
 
@@ -148,16 +149,16 @@ export async function createIndexes() {
       } else {
         await db.raw(`CREATE INDEX IF NOT EXISTS "${indexName}" ON "${table}" ("${column}")`);
       }
-      console.log(`✅ 索引 ${indexName} 创建成功`);
+      logger.info(`✅ 索引 ${indexName} 创建成功`);
     } catch (err: unknown) {
       const error = err as { errno?: number; code?: string; message?: string };
       if (
         isMySQL &&
         (error.errno === 1061 || error.code === 'ER_DUP_KEYNAME' || error.message?.includes('already exists'))
       ) {
-        console.log(`⏭️ 索引 ${indexName} 已存在，跳过`);
+        logger.info(`⏭️ 索引 ${indexName} 已存在，跳过`);
       } else if (isSQLite && error.message?.includes('already exists')) {
-        console.log(`⏭️ 索引 ${indexName} 已存在，跳过`);
+        logger.info(`⏭️ 索引 ${indexName} 已存在，跳过`);
       } else {
         throw err;
       }
@@ -198,7 +199,7 @@ export async function initAdminUser() {
       updated_at: new Date(),
     });
 
-    console.log(`✅ 管理员账号 ${env.ADMIN_USERNAME} 创建成功`);
+    logger.info(`✅ 管理员账号 ${env.ADMIN_USERNAME} 创建成功`);
   } else {
     // 强制更新密码和角色，确保可以通过环境变量重置
     await db('users').where({ id: adminUser.id }).update({
@@ -208,20 +209,20 @@ export async function initAdminUser() {
       updated_at: new Date(),
     });
 
-    console.log(`✅ 管理员账号 ${env.ADMIN_USERNAME} 已更新 (确保密码与环境变量同步)`);
+    logger.info(`✅ 管理员账号 ${env.ADMIN_USERNAME} 已更新 (确保密码与环境变量同步)`);
   }
 }
 
 // 运行所有迁移
 export async function runMigrations() {
   try {
-    console.log('🔄 开始数据库迁移...');
+    logger.info('🔄 开始数据库迁移...');
     await createTables();
     await createIndexes();
     await initAdminUser();
-    console.log('✅ 数据库迁移完成');
+    logger.info('✅ 数据库迁移完成');
   } catch (error) {
-    console.error('❌ 数据库迁移失败:', error);
+    logger.error('❌ 数据库迁移失败:', error);
     throw error;
   }
 }

@@ -575,7 +575,7 @@ export class BrowserService extends EventEmitter {
       } else {
         browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy));
       }
-      console.log('primaryPage', primaryPage);
+      logger.info('primaryPage', primaryPage);
       // if (primaryPage) {
       //   await this.createTargetHandler(
       //     sessionId,
@@ -943,16 +943,16 @@ export class BrowserService extends EventEmitter {
           });
         })
         .catch((error) => {
-          console.error('injectMouseTrackingScript error:', error);
+          logger.error('injectMouseTrackingScript error:', error);
         });
     } catch (error) {
-      console.error(`Failed to inject mouse tracking script for :`, error);
+      logger.error(`Failed to inject mouse tracking script for :`, error);
     }
   }
 
   private handleTargetChangeHandler(_sessionId: string) {
     return async (target: Target) => {
-      console.info(`Target changed:  ${target.type()}`, target.url());
+      logger.info(`Target changed:  ${target.type()}`, target.url());
       if (target.type() === 'page') {
         const page = await target.page();
         if (!page || page.isClosed() || page.url().startsWith('devtools://')) return;
@@ -964,7 +964,7 @@ export class BrowserService extends EventEmitter {
    */
   private createTargetHandler(sessionId: string, fingerprint: BrowserFingerprintWithHeaders) {
     return async (target: Target) => {
-      console.info(`Target created:  ${target.type()}`, target.url());
+      logger.info(`Target created:  ${target.type()}`, target.url());
       try {
         if (target.type() !== 'page') return;
         const page = await target.page();

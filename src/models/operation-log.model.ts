@@ -1,3 +1,4 @@
+import { logger } from '@shared/utils/logger.js';
 import { db } from '../config/database.js';
 import { PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
 import { OperationLogRow } from '@shared/types/tables.js';
@@ -70,14 +71,14 @@ export class OperationLogModel {
           details: log.details ? (typeof log.details === 'string' ? JSON.parse(log.details) : log.details) : null,
         };
       } catch (parseError) {
-        console.error(`解析日志详情失败 (ID: ${id}):`, parseError);
+        logger.error(`解析日志详情失败 (ID: ${id}):`, parseError);
         return {
           ...log,
           details: { error: '无法解析的数据', raw: log.details },
         };
       }
     } catch (error) {
-      console.error(`查找日志失败 (ID: ${id}):`, error);
+      logger.error(`查找日志失败 (ID: ${id}):`, error);
       return null;
     }
   }
@@ -104,7 +105,7 @@ export class OperationLogModel {
         totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
       };
     } catch (error) {
-      console.error(`获取管理员 ${adminId} 的操作日志失败:`, error);
+      logger.error(`获取管理员 ${adminId} 的操作日志失败:`, error);
       return {
         items: [],
         total: 0,
@@ -140,7 +141,7 @@ export class OperationLogModel {
         totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
       };
     } catch (error) {
-      console.error(`获取用户 ${userId} 的操作日志失败:`, error);
+      logger.error(`获取用户 ${userId} 的操作日志失败:`, error);
       return {
         items: [],
         total: 0,
@@ -173,7 +174,7 @@ export class OperationLogModel {
         totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
       };
     } catch (error) {
-      console.error('获取操作日志失败:', error);
+      logger.error('获取操作日志失败:', error);
       // 返回空数据
       return {
         items: [],
@@ -249,7 +250,7 @@ export class OperationLogModel {
         totalPages: Math.ceil(total / limit),
       };
     } catch (error) {
-      console.error('分页查询操作日志失败:', error);
+      logger.error('分页查询操作日志失败:', error);
       return {
         items: [],
         total: 0,
@@ -291,7 +292,7 @@ export class OperationLogModel {
         byAction,
       };
     } catch (error) {
-      console.error('获取操作统计失败:', error);
+      logger.error('获取操作统计失败:', error);
       return { total: 0, byAction: {} };
     }
   }

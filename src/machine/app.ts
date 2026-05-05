@@ -3,6 +3,7 @@ import { logger } from '@shared/utils/logger.js';
 import { browserService } from './browser.service.js';
 import { ProxyService } from './proxy.service.js';
 import { startGrpcServer, GrpcClient, setGrpcServerConfig } from './grpc.service.js';
+import { startHealthServer, stopHealthServer } from './health.service.js';
 import retry from 'async-retry';
 
 // 机器端状态枚举
@@ -119,6 +120,9 @@ export class MachineServer {
       // 处理进程退出
       this.setupProcessHandlers();
 
+      // 启动健康检查 HTTP 服务
+      startHealthServer();
+
       // 设置状态为运行中
       this.setState(MachineState.RUNNING);
 
@@ -187,6 +191,9 @@ export class MachineServer {
 
       // 关闭所有浏览器实例
       await browserService.closeAllBrowsers();
+
+      // 停止健康检查 HTTP 服务
+      await stopHealthServer();
 
       // 停止代理服务器（使用此实例的代理服务）
       await this.proxyService.stop();

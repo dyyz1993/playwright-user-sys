@@ -10,6 +10,7 @@ import { promisify } from 'util';
 import { browserService } from './browser.service.js';
 import { logger } from '@shared/utils/logger.js';
 import { MachineConfig } from './config.js';
+import { setGrpcConnected } from './health.service.js';
 
 // 存储上一次CPU使用情况，用于计算使用率
 let lastCpuInfo: { idle: number; total: number } | null = null;
@@ -257,6 +258,7 @@ export class GrpcClient extends EventEmitter {
                   logger.warn('取消连接时出错:', cancelError);
                 }
                 this.connected = false;
+                setGrpcConnected(false);
               }
 
               logger.info('尝试连接到管理端...');
@@ -278,6 +280,7 @@ export class GrpcClient extends EventEmitter {
               this.call.on('end', () => {
                 logger.info('管理端关闭了连接');
                 this.connected = false;
+                setGrpcConnected(false);
 
                 // 停止心跳
                 this.stopHeartbeat();
@@ -293,6 +296,7 @@ export class GrpcClient extends EventEmitter {
               this.call.on('error', (error: any) => {
                 logger.error('连接错误:', error);
                 this.connected = false;
+                setGrpcConnected(false);
 
                 // 停止心跳
                 this.stopHeartbeat();
@@ -335,6 +339,7 @@ export class GrpcClient extends EventEmitter {
               logger.info(`使用 write 方法发送消息结果: ${writeResult}`);
 
               this.connected = true;
+              setGrpcConnected(true);
               this.emit('connected');
 
               // 启动心跳
@@ -503,6 +508,7 @@ export class GrpcClient extends EventEmitter {
 
       // 如果发送失败，标记连接已断开
       this.connected = false;
+      setGrpcConnected(false);
       this.emit('error', error);
 
       try {

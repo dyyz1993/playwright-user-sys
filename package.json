@@ -123,9 +123,10 @@
     "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
-    "ajv": "^6.15.0",
+
     "axios": "^1.8.4",
     "dotenv-cli": "^8.0.0",
+    "ajv": "^6.15.0",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",

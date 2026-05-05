@@ -86,7 +86,10 @@
     "test:tier": "NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=4096\" npx vitest run tests/integration/security-vulnerabilities.test.ts tests/integration/multi-user-concurrency.test.ts tests/integration/three-tier-architecture.test.ts",
     "test:tier:security": "NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=4096\" npx vitest run tests/integration/security-vulnerabilities.test.ts",
     "test:tier:concurrency": "NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=4096\" npx vitest run tests/integration/multi-user-concurrency.test.ts",
-    "test:tier:architecture": "NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=4096\" npx vitest run tests/integration/three-tier-architecture.test.ts"
+    "test:tier:architecture": "NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=4096\" npx vitest run tests/integration/three-tier-architecture.test.ts",
+    "check:types": "bash scripts/check-type-safety.sh",
+    "check:all": "pnpm lint && pnpm format:check && pnpm build && pnpm check:types && pnpm test:unit",
+    "quality": "pnpm check:all"
   },
   "keywords": [],
   "author": "xuyingzhou",

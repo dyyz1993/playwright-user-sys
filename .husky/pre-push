@@ -1,36 +1,44 @@
-#!/usr/bin/env sh
-. "$(dirname "$0")/_/husky.sh"
+# Pre-push hook — 第二道防线（即使 --no-verify 跳过 pre-commit，这里仍会检查）
+# CI 是第三道防线 — 所有检查必须通过才能合并
 
-echo "=========================================="
-echo "Pre-push 检查 - 第二道防线"
-echo "=========================================="
+echo ""
+echo "╔══════════════════════════════════════════════╗"
+echo "║  🛡️  Pre-push 质量门禁（双重防线）              ║"
+echo "╚══════════════════════════════════════════════╝"
 echo ""
 echo "即使使用了 --no-verify 跳过 pre-commit，"
-echo "pre-push 仍会运行检查。"
+echo "此 hook 仍会运行。CI 也会强制检查。"
 echo ""
 
-echo "1. 运行 ESLint 和 Prettier 检查..."
-pnpm lint-staged || {
-  echo "❌ 代码格式或语法检查失败"
-  echo "请修复错误后再推送"
+FAILED=0
+
+# 1. 完整 ESLint（不仅是 staged 文件）
+echo "1️⃣  ESLint 全量检查..."
+pnpm lint || FAILED=1
+
+# 2. TypeScript 类型检查
+echo ""
+echo "2️⃣  TypeScript 类型检查..."
+pnpm build || FAILED=1
+
+# 3. 单元测试
+echo ""
+echo "3️⃣  单元测试..."
+pnpm test:unit || FAILED=1
+
+# 4. any/unknown 数量检查
+echo ""
+echo "4️⃣  类型安全数量检查..."
+bash scripts/check-type-safety.sh || FAILED=1
+
+if [ "$FAILED" -ne 0 ]; then
+  echo ""
+  echo "❌ Pre-push 检查失败，推送被阻止"
+  echo "请修复所有错误后重试"
+  echo ""
   exit 1
-}
+fi
 
 echo ""
-echo "2. 运行 TypeScript 类型检查..."
-pnpm build || {
-  echo "❌ TypeScript 类型检查失败"
-  echo "请修复类型错误后再推送"
-  exit 1
-}
-
+echo "✅ Pre-push 检查通过，即将推送..."
 echo ""
-echo "3. 运行单元测试..."
-pnpm test:unit || {
-  echo "❌ 单元测试失败"
-  echo "请修复失败的测试后再推送"
-  exit 1
-}
-
-echo ""
-echo "✅ Pre-push 检查通过"

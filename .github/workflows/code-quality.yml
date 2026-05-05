@@ -1,0 +1,91 @@
+name: Code Quality Gate
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@10.8.0
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-quality
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-quality-
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: 1. ESLint 检查
+        run: |
+          echo "═══════════════════════════════════════"
+          echo "  ESLint 全量检查"
+          echo "═══════════════════════════════════════"
+          pnpm lint
+
+      - name: 2. Prettier 格式检查
+        run: |
+          echo "═══════════════════════════════════════"
+          echo "  Prettier 格式检查"
+          echo "═══════════════════════════════════════"
+          pnpm format:check
+
+      - name: 3. TypeScript 类型检查
+        run: |
+          echo "═══════════════════════════════════════"
+          echo "  TypeScript 类型检查 (tsc --noEmit)"
+          echo "═══════════════════════════════════════"
+          pnpm build
+
+      - name: 4. 类型安全数量检查
+        run: |
+          echo "═══════════════════════════════════════"
+          echo "  any/unknown 类型数量限制检查"
+          echo "═══════════════════════════════════════"
+          bash scripts/check-type-safety.sh
+
+      - name: 5. 单元测试
+        run: |
+          echo "═══════════════════════════════════════"
+          echo "  单元测试"
+          echo "═══════════════════════════════════════"
+          pnpm test:unit
+
+  feishu-notify:
+    name: Feishu Notification
+    if: always()
+    needs: [quality-check]
+    uses: dyyz1993/ci-tools/.github/workflows/feishu-notify.yml@main
+    with:
+      jobs: '{"quality-check":"${{ needs.quality-check.result }}"}'
+      sha: ${{ github.sha }}
+      ref: ${{ github.ref_name }}
+      actor: ${{ github.actor }}
+      repo: ${{ github.repository }}
+      run-id: ${{ github.run_id }}
+    secrets:
+      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}

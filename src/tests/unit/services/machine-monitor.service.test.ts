@@ -152,9 +152,7 @@ describe('MachineMonitorService', () => {
     });
 
     it('内存无数据时应该加载初始数据', async () => {
-      vi.mocked(memoryStore.getAllMachines)
-        .mockReturnValueOnce([])
-        .mockReturnValueOnce([]);
+      vi.mocked(memoryStore.getAllMachines).mockReturnValueOnce([]).mockReturnValueOnce([]);
 
       const { checkMachineStatus } = await import('../../../services/machine-monitor.service.js');
 

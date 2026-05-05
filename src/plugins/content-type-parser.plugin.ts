@@ -21,8 +21,8 @@ export default fp(async function (fastify: FastifyInstance) {
           const json = JSON.parse(body as string);
           done(null, json);
         } catch (parseError) {
-          const error = new Error('Invalid JSON');
-          (error as any).statusCode = 400;
+          const error = new Error('Invalid JSON') as Error & { statusCode: number };
+          error.statusCode = 400;
           done(error, undefined);
         }
       }

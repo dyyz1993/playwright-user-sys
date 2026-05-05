@@ -77,7 +77,7 @@ export function generateToken(payload: { id: number; username: string; role: Use
 }
 
 // 验证 JWT Token
-export function verifyToken(token: string): any {
+export function verifyToken(token: string): jwt.JwtPayload | null {
   try {
     // 在测试环境中优先使用环境变量，如果没有则使用默认值
     let secret: string;
@@ -86,7 +86,7 @@ export function verifyToken(token: string): any {
     } else {
       secret = String(env.JWT_SECRET);
     }
-    return jwt.verify(token, secret);
+    return jwt.verify(token, secret) as jwt.JwtPayload;
   } catch (_error) {
     return null;
   }

@@ -727,9 +727,7 @@ describe('MachineController', () => {
     it('应该成功清理旧机器', async () => {
       vi.mocked(cleanupOldMachines).mockResolvedValue(undefined);
 
-      const { cleanupOldMachines: controllerCleanup } = await import(
-        '../../../controllers/machine.controller.js'
-      );
+      const { cleanupOldMachines: controllerCleanup } = await import('../../../controllers/machine.controller.js');
 
       const request = {
         body: { daysThreshold: 60 },
@@ -752,9 +750,7 @@ describe('MachineController', () => {
     it('使用默认阈值清理', async () => {
       vi.mocked(cleanupOldMachines).mockResolvedValue(undefined);
 
-      const { cleanupOldMachines: controllerCleanup } = await import(
-        '../../../controllers/machine.controller.js'
-      );
+      const { cleanupOldMachines: controllerCleanup } = await import('../../../controllers/machine.controller.js');
 
       const request = {
         body: {},
@@ -771,9 +767,7 @@ describe('MachineController', () => {
     it('清理失败应该返回500错误', async () => {
       vi.mocked(cleanupOldMachines).mockRejectedValue(new Error('cleanup failed'));
 
-      const { cleanupOldMachines: controllerCleanup } = await import(
-        '../../../controllers/machine.controller.js'
-      );
+      const { cleanupOldMachines: controllerCleanup } = await import('../../../controllers/machine.controller.js');
 
       const request = {
         body: {},

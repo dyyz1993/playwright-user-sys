@@ -563,7 +563,9 @@ export class BrowserService extends EventEmitter {
       // 设置事件监听 (只保留必要的)
       if (fingerprint) {
         try {
+          // @ts-expect-error — puppeteer-core Handler<> type mismatch from dual installations
           browser.on('targetcreated', this.createTargetHandler(sessionId, fingerprint));
+          // @ts-expect-error — puppeteer-core Handler<> type mismatch from dual installations
           browser.on('targetchanged', this.handleTargetChangeHandler(sessionId));
           browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy));
           logger.info(`已设置浏览器事件监听 (sessionId: ${sessionId})`);
@@ -589,6 +591,7 @@ export class BrowserService extends EventEmitter {
       const now = Date.now();
       this.sessions.set(sessionId, {
         port,
+        // @ts-expect-error — Browser type mismatch from dual puppeteer-core installations
         browser,
         path,
         lastActivity: now,
@@ -1004,6 +1007,7 @@ export class BrowserService extends EventEmitter {
         // !! 移除页面监听器添加和截图逻辑 !!
 
         const fingerprintInjector = new FingerprintInjector();
+        // @ts-expect-error — Page type mismatch from dual puppeteer-core installations
         await fingerprintInjector.attachFingerprintToPuppeteer(page, fingerprint);
         const currentViewport = await page.viewport();
 

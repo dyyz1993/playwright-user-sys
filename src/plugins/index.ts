@@ -34,7 +34,7 @@ export default fp(async function (fastify: FastifyInstance) {
 
   // 注册 CORS 插件
   const allowedOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+    ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
     : ['http://localhost:3000', 'http://localhost:5173'];
 
   await fastify.register(cors, {

@@ -43,98 +43,102 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // 登录处理
-  fastify.post('/admin/login', {
-    config: {
-      rateLimit: {
-        max: 5,
-        timeWindow: '1 minute',
+  fastify.post(
+    '/admin/login',
+    {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: '1 minute',
+        },
       },
     },
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const body = request.body as any;
-      const username = body.username;
-      const password = body.password;
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const body = request.body as any;
+        const username = body.username;
+        const password = body.password;
 
-      // 验证输入
-      if (!username || !password) {
-        console.log('Username or password is empty');
-        request.flash('error', '用户名和密码不能为空');
-        return reply.redirect('/admin/login');
-      }
+        // 验证输入
+        if (!username || !password) {
+          console.log('Username or password is empty');
+          request.flash('error', '用户名和密码不能为空');
+          return reply.redirect('/admin/login');
+        }
 
-      // 验证用户凭据
-      const { UserModel } = await import('../models/user.model.js');
-      const user = await UserModel.findByUsername(username);
+        // 验证用户凭据
+        const { UserModel } = await import('../models/user.model.js');
+        const user = await UserModel.findByUsername(username);
 
-      if (!user) {
-        console.log('User not found');
-        request.flash('error', '用户名或密码错误');
-        return reply.redirect('/admin/login');
-      }
+        if (!user) {
+          console.log('User not found');
+          request.flash('error', '用户名或密码错误');
+          return reply.redirect('/admin/login');
+        }
 
-      // 验证密码
-      const { verifyPasswordWithMigration, hashPassword } = await import('../utils/auth.js');
-      const { valid: isPasswordValid, needsMigration } = await verifyPasswordWithMigration(password, user.password);
+        // 验证密码
+        const { verifyPasswordWithMigration, hashPassword } = await import('../utils/auth.js');
+        const { valid: isPasswordValid, needsMigration } = await verifyPasswordWithMigration(password, user.password);
 
-      if (!isPasswordValid) {
-        console.log('Invalid password');
-        request.flash('error', '用户名或密码错误');
-        return reply.redirect('/admin/login');
-      }
+        if (!isPasswordValid) {
+          console.log('Invalid password');
+          request.flash('error', '用户名或密码错误');
+          return reply.redirect('/admin/login');
+        }
 
-      if (needsMigration) {
-        const newHash = await hashPassword(password);
-        await UserModel.update(user.id, { password: newHash } as any);
-        request.log.info({ userId: user.id }, 'Password migrated from SHA-256 to bcrypt');
-      }
+        if (needsMigration) {
+          const newHash = await hashPassword(password);
+          await UserModel.update(user.id, { password: newHash } as any);
+          request.log.info({ userId: user.id }, 'Password migrated from SHA-256 to bcrypt');
+        }
 
-      // 检查用户状态
-      if (user.status !== 'active') {
-        console.log('User is not active');
-        request.flash('error', '账号已被禁用');
-        return reply.redirect('/admin/login');
-      }
+        // 检查用户状态
+        if (user.status !== 'active') {
+          console.log('User is not active');
+          request.flash('error', '账号已被禁用');
+          return reply.redirect('/admin/login');
+        }
 
-      // 生成 JWT Token
-      const { generateToken } = await import('../utils/auth.js');
-      const token = generateToken({
-        id: user.id,
-        username: user.username,
-        role: user.role,
-      });
-
-      // 设置 Cookie
-      reply.setCookie('token', token, {
-        path: '/',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax', // 使用 lax 提高兼容性
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
-      });
-
-      // 记录登录操作日志
-      const { OperationLogModel } = await import('../models/operation-log.model.js');
-      OperationLogModel.create({
-        admin_id: user.id,
-        action: '登录',
-        details: {
+        // 生成 JWT Token
+        const { generateToken } = await import('../utils/auth.js');
+        const token = generateToken({
+          id: user.id,
           username: user.username,
           role: user.role,
-          ip: request.ip,
-        },
-      }).catch((logError) => {
-        request.log.error({ err: logError }, '记录登录操作日志失败');
-      });
+        });
 
-      // 重定向到仪表盘
-      return reply.redirect('/admin');
-    } catch (error: any) {
-      console.error('Login error:', error);
-      request.flash('error', '登录失败: ' + error.message);
-      return reply.redirect('/admin/login');
+        // 设置 Cookie
+        reply.setCookie('token', token, {
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax', // 使用 lax 提高兼容性
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
+        });
+
+        // 记录登录操作日志
+        const { OperationLogModel } = await import('../models/operation-log.model.js');
+        OperationLogModel.create({
+          admin_id: user.id,
+          action: '登录',
+          details: {
+            username: user.username,
+            role: user.role,
+            ip: request.ip,
+          },
+        }).catch((logError) => {
+          request.log.error({ err: logError }, '记录登录操作日志失败');
+        });
+
+        // 重定向到仪表盘
+        return reply.redirect('/admin');
+      } catch (error: any) {
+        console.error('Login error:', error);
+        request.flash('error', '登录失败: ' + error.message);
+        return reply.redirect('/admin/login');
+      }
     }
-  });
+  );
 
   // 仪表盘页面
   fastify.get(

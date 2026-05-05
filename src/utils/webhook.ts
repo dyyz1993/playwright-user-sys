@@ -4,7 +4,11 @@ import { WebhookEvent, WebhookEventModel } from '../models/webhook-event.model.j
 import { UserModel } from '../models/user.model.js';
 
 // 创建 Webhook 事件
-export async function createWebhookEvent(userId: number, eventType: WebhookEventType, payload: any): Promise<void> {
+export async function createWebhookEvent(
+  userId: number,
+  eventType: WebhookEventType,
+  payload: Record<string, unknown>
+): Promise<void> {
   const user = await UserModel.findById(userId);
 
   // 只有当用户配置了 webhook URL 时才创建事件

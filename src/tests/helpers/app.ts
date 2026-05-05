@@ -3,7 +3,7 @@ import authPlugin from '../../plugins/auth.plugin.js';
 import errorHandlerPlugin from '../../plugins/error-handler.plugin.js';
 import userRoutes from '../../routes/user.routes.js';
 import authRoutes from '../../routes/auth.routes.js';
-import adminApiRoutes from '../../routes/admin-api.routes.js';
+import adminApiRoutes from '../../routes/admin-api/index.js';
 import adminApiAuthRoutes from '../../routes/admin-api-auth.routes.js';
 import sessionRoutes from '../../routes/session.routes.js';
 import machineRoutes from '../../routes/machine.routes.js';

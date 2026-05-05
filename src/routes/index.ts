@@ -4,7 +4,7 @@ import userRoutes from './user.routes.js';
 import sessionRoutes from './session.routes.js';
 import machineRoutes from './machine.routes.js';
 import adminRoutes from './admin.routes.js';
-import adminApiRoutes from './admin-api.routes.js';
+import adminApiRoutes from './admin-api/index.js';
 import adminApiAuthRoutes from './admin-api-auth.routes.js';
 import adminMachineApiRoutes from './admin-machine-api.routes.js';
 import fileRoutes from './file.routes.js';

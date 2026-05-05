@@ -56,7 +56,7 @@ server.listen(0, '127.0.0.1', async () => {
 
   // Enable console logging
   page.on('console', (msg) => console.log('[Browser console]', msg.text()));
-  page.on('pageerror', (err: Error) => console.error('[Browser error]', err.message));
+  page.on('pageerror', (err: unknown) => console.error('[Browser error]', (err as Error).message));
 
   console.log('Navigating to:', url);
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 });

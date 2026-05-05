@@ -44,7 +44,7 @@ export class ProxyService {
     this.server.on('upgrade', this.handleWebSocketUpgrade.bind(this));
 
     // 处理代理错误
-    this.proxy.on('error', (err, req, res: ServerResponse) => {
+    this.proxy.on('error', ((err: Error, req: IncomingMessage, res: ServerResponse | Socket) => {
       logger.error('代理错误:', err);
 
       try {
@@ -61,13 +61,13 @@ export class ProxyService {
         logger.error('从请求中提取 sessionId 失败:', error);
       }
 
-      if (res && typeof res.writeHead === 'function') {
-        res.writeHead(500);
-        res.end('Proxy Error');
+      if (res && 'writeHead' in res && typeof res.writeHead === 'function') {
+        (res as ServerResponse).writeHead(500);
+        (res as ServerResponse).end('Proxy Error');
       } else if (res && typeof res.destroy === 'function') {
         res.destroy();
       }
-    });
+    }) as any);
   }
 
   /**

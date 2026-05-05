@@ -250,7 +250,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.createUser
+    userController.createUser as any
   );
 
   // 获取所有用户（仅管理员）
@@ -269,7 +269,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.getAllUsers
+    userController.getAllUsers as any
   );
 
   // 获取单个用户（仅管理员）
@@ -290,7 +290,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.getUserById
+    userController.getUserById as any
   );
 
   // 更新用户（仅管理员）
@@ -312,7 +312,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.updateUser
+    userController.updateUser as any
   );
 
   // 重置用户 API Key（仅管理员）
@@ -333,7 +333,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.resetApiKey
+    userController.resetApiKey as any
   );
 
   // 注意：添加点数功能已移至管理员API路由
@@ -356,6 +356,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.deleteUser
+    userController.deleteUser as any
   );
 }

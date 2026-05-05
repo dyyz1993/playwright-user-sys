@@ -139,7 +139,7 @@ export async function createTables() {
 // 创建性能优化索引
 export async function createIndexes() {
   const isMySQL = db.client.config.client === 'mysql2';
-  const isSQLite = db.client.config.client === 'sqlite3' || db.client.config.client === 'better-sqlite3';
+  const isSQLite = db.client.config.client === 'better-sqlite3';
 
   const safeCreateIndex = async (indexName: string, table: string, column: string) => {
     try {

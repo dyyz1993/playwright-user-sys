@@ -487,7 +487,7 @@ export class MachineModel {
           machineId: id,
           status: 'unhealthy',
           grpcConnected: false,
-          error: grpcError.message || 'gRPC 连接失败',
+          error: (grpcError as Error).message || 'gRPC 连接失败',
           checkedAt: new Date(),
         };
       }
@@ -497,7 +497,7 @@ export class MachineModel {
         machineId: id,
         status: 'unhealthy',
         grpcConnected: false,
-        error: error.message || '健康检查失败',
+        error: (error as Error).message || '健康检查失败',
         checkedAt: new Date(),
       };
     }

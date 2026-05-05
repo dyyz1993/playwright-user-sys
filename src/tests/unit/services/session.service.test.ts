@@ -23,6 +23,7 @@ vi.mock('../../../models/session.model.js', () => ({
     findById: vi.fn(),
     update: vi.fn(),
     markDisconnected: vi.fn(),
+    countActiveByUserId: vi.fn().mockResolvedValue(0),
   },
 }));
 

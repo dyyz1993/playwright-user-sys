@@ -32,9 +32,9 @@ const proto = grpc.loadPackageDefinition(packageDefinition).machine as any;
  * 负责管理与机器的连接
  */
 class MachineConnectionManager extends EventEmitter {
-  private connections: Map<string, any> = new Map();
+  private connections: Map<string, grpc.ServerDuplexStream<unknown, unknown>> = new Map();
   private pendingRequests: Map<string, { resolve: Function; reject: Function; timer: NodeJS.Timeout }> = new Map();
-  private clients: Map<string, any> = new Map();
+  private clients: Map<string, grpc.Client> = new Map();
 
   constructor() {
     super();
@@ -43,7 +43,7 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 添加机器连接
    */
-  addConnection(machineId: string, call: any): void {
+  addConnection(machineId: string, call: grpc.ServerDuplexStream<unknown, unknown>): void {
     // 如果已经有连接，先移除
     if (this.connections.has(machineId)) {
       this.removeConnection(machineId);
@@ -54,7 +54,7 @@ class MachineConnectionManager extends EventEmitter {
     logger.info(`机器连接已添加: ${machineId}`);
 
     // 设置数据处理器
-    call.on('data', (message: any) => {
+    call.on('data', (message: Record<string, unknown>) => {
       try {
         this.handleMachineMessage(machineId, message);
       } catch (error) {
@@ -69,7 +69,7 @@ class MachineConnectionManager extends EventEmitter {
     });
 
     // 设置错误处理器
-    call.on('error', (error: any) => {
+    call.on('error', (error: unknown) => {
       logger.error(`机器连接错误 (${machineId}):`, error);
       this.removeConnection(machineId);
     });
@@ -196,7 +196,7 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 处理来自机器的消息
    */
-  private async handleMachineMessage(machineId: string, message: any): Promise<void> {
+  private async handleMachineMessage(machineId: string, message: Record<string, unknown>): Promise<void> {
     try {
       logger.debug(`收到机器消息 (${machineId}): ${JSON.stringify(message)}`);
 
@@ -206,11 +206,21 @@ class MachineConnectionManager extends EventEmitter {
       }
       // 处理会话状态更新
       else if (message.session_status) {
-        await this.handleSessionStatus(machineId, message.session_status);
+        await this.handleSessionStatus(
+          machineId,
+          message.session_status as {
+            session_id: string;
+            status: string;
+            duration: number;
+          }
+        );
       }
       // 处理会话截图更新
       else if (message.session_screenshot) {
-        await this.handleSessionScreenshot(machineId, message.session_screenshot);
+        await this.handleSessionScreenshot(machineId, message.session_screenshot as {
+          session_id: string;
+          screenshot_url: string;
+        });
       }
       // 未知消息类型
       else {
@@ -224,7 +234,16 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 处理心跳消息
    */
-  private async handleHeartbeat(machineId: string, heartbeat: any): Promise<void> {
+  private async handleHeartbeat(
+    machineId: string,
+    heartbeat: {
+      cpu_usage?: unknown;
+      memory_usage?: unknown;
+      disk_usage?: unknown;
+      active_sessions?: unknown;
+      timestamp?: unknown;
+    }
+  ): Promise<void> {
     try {
       logger.debug(`收到心跳 (${machineId}): ${JSON.stringify(heartbeat)}`);
 
@@ -246,10 +265,10 @@ class MachineConnectionManager extends EventEmitter {
           ip: machine.ip,
           grpc_port: machine.grpcPort || 50052, // 默认值
           proxy_port: machine.proxyPort || 8080, // 默认值
-          cpu_usage: heartbeat.cpu_usage,
-          memory_usage: heartbeat.memory_usage,
-          disk_space: heartbeat.disk_usage || 0, // 使用心跳中的磁盘使用率
-          active_sessions: heartbeat.active_sessions,
+          cpu_usage: heartbeat.cpu_usage as number,
+          memory_usage: heartbeat.memory_usage as number,
+          disk_space: (heartbeat.disk_usage as number) || 0, // 使用心跳中的磁盘使用率
+          active_sessions: heartbeat.active_sessions as number,
           max_sessions: machine.maxInstances,
           last_heartbeat: new Date(),
         });
@@ -259,9 +278,9 @@ class MachineConnectionManager extends EventEmitter {
 
       // 同时更新数据库中的机器状态（作为备份）
       await MachineModel.update(machineId, {
-        cpuUsage: heartbeat.cpu_usage,
-        memoryUsage: heartbeat.memory_usage,
-        instanceCount: heartbeat.active_sessions,
+        cpuUsage: heartbeat.cpu_usage as number,
+        memoryUsage: heartbeat.memory_usage as number,
+        instanceCount: heartbeat.active_sessions as number,
         status: 'online',
       });
 
@@ -274,9 +293,25 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 处理会话截图更新
    */
-  private async handleSessionScreenshot(machineId: string, screenshot: any): Promise<void> {
+  private async handleSessionScreenshot(
+    machineId: string,
+    screenshot: unknown
+  ): Promise<void> {
+    if (
+      !screenshot ||
+      typeof screenshot !== 'object' ||
+      !('session_id' in screenshot) ||
+      !('screenshot_url' in screenshot)
+    ) {
+      logger.warn(`无效的截图消息格式`);
+      return;
+    }
+
+    const { session_id, screenshot_url } = screenshot as {
+      session_id: string;
+      screenshot_url: string;
+    };
     try {
-      const { session_id, screenshot_url } = screenshot;
       logger.info(`收到会话截图更新 (${machineId}, ${session_id}): ${screenshot_url}`);
 
       // 获取会话信息
@@ -293,16 +328,31 @@ class MachineConnectionManager extends EventEmitter {
 
       logger.info(`会话截图已更新 (${session_id}): ${screenshot_url}`);
     } catch (error) {
-      logger.error(`处理会话截图更新时出错 (${machineId}, ${screenshot.session_id}):`, error);
+      logger.error(`处理会话截图更新时出错 (${machineId}, ${session_id}):`, error);
     }
   }
 
   /**
    * 处理会话状态更新
    */
-  private async handleSessionStatus(machineId: string, status: any): Promise<void> {
+  private async handleSessionStatus(machineId: string, status: unknown): Promise<void> {
+    if (
+      !status ||
+      typeof status !== 'object' ||
+      !('session_id' in status) ||
+      !('status' in status) ||
+      !('duration' in status)
+    ) {
+      logger.warn(`无效的会话状态消息格式`);
+      return;
+    }
+
+    const { session_id, status: sessionStatus, duration: reportedDuration } = status as {
+      session_id: string;
+      status: string;
+      duration: number;
+    };
     try {
-      const { session_id, status: sessionStatus, duration: reportedDuration } = status;
       // 使用可变变量存储持续时间，以便后续可以修改
       let duration = reportedDuration;
       logger.info(
@@ -613,7 +663,38 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 启动浏览器实例
    */
-  async launchBrowser(machineId: string, sessionId: string, options: any): Promise<any> {
+  async launchBrowser(
+    machineId: string,
+    sessionId: string,
+    options: {
+      userAgent?: string;
+      proxy?: string;
+      viewport?: { width: number; height: number };
+      args?: string[];
+      storageStatePath?: string;
+      storageState?: {
+        cookies?: Array<{
+          name: string;
+          value: string;
+          domain: string;
+          path: string;
+          expires?: number;
+          httpOnly?: boolean;
+          secure?: boolean;
+          sameSite?: string;
+        }>;
+        origins?: Array<{
+          origin: string;
+          localStorage: Record<string, string> | Array<{ name: string; value: string }>;
+        }>;
+      };
+      sharedUserData?: boolean | string;
+      timezone?: string;
+      proxyBypass?: string;
+      userDataDir?: string;
+      userId?: number;
+    }
+  ): Promise<Record<string, unknown>> {
     if (!this.isConnected(machineId)) {
       throw new Error(`机器未连接: ${machineId}`);
     }
@@ -625,7 +706,7 @@ class MachineConnectionManager extends EventEmitter {
 
     logger.info(`向机器 ${machineId} 发送启动浏览器请求 (sessionId: ${sessionId})`);
 
-    const protoOptions: any = {};
+    const protoOptions: Record<string, unknown> = {};
 
     if (options.userAgent) {
       protoOptions.user_agent = options.userAgent;
@@ -651,10 +732,10 @@ class MachineConnectionManager extends EventEmitter {
     }
 
     if (options.storageState) {
-      const storageState: any = {};
+      const storageState: Record<string, unknown> = {};
 
       if (options.storageState.cookies && Array.isArray(options.storageState.cookies)) {
-        storageState.cookies = options.storageState.cookies.map((cookie: any) => ({
+        storageState.cookies = options.storageState.cookies.map((cookie: Record<string, unknown>) => ({
           name: cookie.name,
           value: cookie.value,
           domain: cookie.domain,
@@ -667,7 +748,7 @@ class MachineConnectionManager extends EventEmitter {
       }
 
       if (options.storageState.origins && Array.isArray(options.storageState.origins)) {
-        storageState.origins = options.storageState.origins.map((origin: any) => ({
+        storageState.origins = options.storageState.origins.map((origin: Record<string, unknown>) => ({
           origin: origin.origin,
           localStorage: origin.localStorage,
         }));
@@ -705,7 +786,7 @@ class MachineConnectionManager extends EventEmitter {
     metadata.set('machine_id', machineId);
 
     return new Promise((resolve, reject) => {
-      client.LaunchBrowser(request, metadata, (error: any, response: any) => {
+      client.LaunchBrowser(request, metadata, (error: unknown, response: Record<string, unknown>) => {
         if (error) {
           logger.error(`启动浏览器失败 (${machineId}, ${sessionId}):`, error);
           reject(error);
@@ -741,7 +822,7 @@ class MachineConnectionManager extends EventEmitter {
     metadata.set('machine_id', machineId);
 
     return new Promise((resolve, reject) => {
-      client.CloseBrowser(request, metadata, (error: any, response: any) => {
+      client.CloseBrowser(request, metadata, (error: unknown, response: { status: string }) => {
         if (error) {
           logger.error(`关闭浏览器失败 (${machineId}, ${sessionId}):`, error);
           reject(error);
@@ -758,13 +839,23 @@ class MachineConnectionManager extends EventEmitter {
   /**
    * 获取机器状态
    */
-  async getMachineStatus(machineId: string): Promise<any> {
+  async getMachineStatus(machineId: string): Promise<{
+    machine_id: string;
+    online: boolean;
+    cpu_usage: number;
+    memory_usage: number;
+    disk_space: number;
+    active_sessions: number;
+    max_sessions: number;
+    timestamp: number;
+  }> {
     if (!this.isConnected(machineId)) {
       return {
         machine_id: machineId,
         online: false,
         cpu_usage: 0,
         memory_usage: 0,
+        disk_space: 0,
         active_sessions: 0,
         max_sessions: 0,
         timestamp: Date.now(),
@@ -786,7 +877,7 @@ class MachineConnectionManager extends EventEmitter {
     metadata.set('machine_id', machineId);
 
     return new Promise((resolve, reject) => {
-      client.GetMachineStatus(request, metadata, (error: any, response: any) => {
+      client.GetMachineStatus(request, metadata, (error: unknown, response: Record<string, unknown>) => {
         if (error) {
           logger.error(`获取机器状态失败 (${machineId}):`, error);
           reject(error);
@@ -794,7 +885,16 @@ class MachineConnectionManager extends EventEmitter {
         }
 
         logger.info(`成功获取机器状态 (${machineId})`);
-        resolve(response);
+        resolve({
+          machine_id: response.machine_id as string,
+          online: response.online as boolean,
+          cpu_usage: response.cpu_usage as number,
+          memory_usage: response.memory_usage as number,
+          disk_space: response.disk_space as number,
+          active_sessions: response.active_sessions as number,
+          max_sessions: response.max_sessions as number,
+          timestamp: response.timestamp as number,
+        });
       });
     });
   }

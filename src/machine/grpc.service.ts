@@ -116,7 +116,7 @@ let _grpcClientInstance: GrpcClient | null = null;
 
 export class GrpcClient extends EventEmitter {
   private client: any;
-  private call: any;
+  private call: grpc.ClientDuplexStream<unknown, unknown> | null;
   private connected: boolean = false;
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private config: MachineConfig; // 实例级配置
@@ -192,7 +192,7 @@ export class GrpcClient extends EventEmitter {
 
         logger.info('注册机器:', request);
 
-        this.client.Register(request, (err: any, response: any) => {
+        this.client.Register(request, (err: unknown, response: Record<string, unknown>) => {
           if (err) {
             logger.error('注册失败:', err);
             reject(err);
@@ -267,7 +267,7 @@ export class GrpcClient extends EventEmitter {
               this.call = this.client.Connect();
 
               // 设置数据处理器
-              this.call.on('data', (message: any) => {
+              this.call.on('data', (message: Record<string, unknown>) => {
                 try {
                   logger.debug(`收到管理端消息: ${JSON.stringify(message)}`);
                   this.handleManagerMessage(message);
@@ -293,7 +293,7 @@ export class GrpcClient extends EventEmitter {
               });
 
               // 设置错误处理器
-              this.call.on('error', (error: any) => {
+              this.call.on('error', (error: unknown) => {
                 logger.error('连接错误:', error);
                 this.connected = false;
                 setGrpcConnected(false);
@@ -304,7 +304,13 @@ export class GrpcClient extends EventEmitter {
                 this.emit('error', error);
 
                 // 如果是连接断开错误，不让异常传播到外部
-                if (error && error.message && error.message.includes('UNAVAILABLE: Connection dropped')) {
+                if (
+                  error &&
+                  typeof error === 'object' &&
+                  'message' in error &&
+                  typeof error.message === 'string' &&
+                  error.message.includes('UNAVAILABLE: Connection dropped')
+                ) {
                   logger.warn('检测到 gRPC 连接断开错误，将在内部处理而不传播异常');
 
                   // 尝试重新连接
@@ -618,18 +624,19 @@ export class GrpcClient extends EventEmitter {
   /**
    * 处理来自管理服务器的消息
    */
-  private async handleManagerMessage(message: any) {
+  private async handleManagerMessage(message: Record<string, unknown>) {
     try {
       // 处理心跳请求
       if (message.heartbeat_request) {
         logger.debug(`收到心跳请求: ${JSON.stringify(message.heartbeat_request)}`);
-        this.handleHeartbeatRequest(message.heartbeat_request);
+        this.handleHeartbeatRequest(message.heartbeat_request as Record<string, unknown>);
         return;
       }
 
       // 处理关闭浏览器命令
       if (message.close_browser) {
-        const { session_id } = message.close_browser;
+        const closeBrowser = message.close_browser as { session_id: string };
+        const { session_id } = closeBrowser;
         logger.info(`收到关闭浏览器命令 (sessionId: ${session_id})`);
 
         // 关闭浏览器
@@ -674,7 +681,7 @@ export class GrpcClient extends EventEmitter {
       }
 
       // 处理永久关闭命令
-      if (message.shutdown && message.shutdown.permanent) {
+      if (message.shutdown && typeof message.shutdown === 'object' && 'permanent' in message.shutdown) {
         logger.info(`收到永久关闭命令，准备停止机器服务并退出`);
 
         try {
@@ -731,7 +738,7 @@ export class GrpcClient extends EventEmitter {
   /**
    * 处理心跳请求
    */
-  private handleHeartbeatRequest(_request: any) {
+  private handleHeartbeatRequest(_request: Record<string, unknown>) {
     try {
       // 构造心跳响应消息
       const response = {
@@ -907,58 +914,71 @@ export class GrpcClient extends EventEmitter {
 
 const serviceImplementation = {
   // 启动浏览器实例
-  LaunchBrowser: async (call: any, callback: any) => {
+  LaunchBrowser: async (
+    call: {
+      request: {
+        session_id: string;
+        options: Record<string, unknown>;
+        user_id?: number;
+      };
+    },
+    callback: (error: unknown | { code: number; message: string }, response?: Record<string, unknown>) => void
+  ) => {
     try {
       const request = call.request;
       logger.info(`收到启动浏览器请求:`, request);
 
       const { session_id, options, user_id } = request;
 
+      const protoOptions = options as Record<string, unknown>;
+
       // 转换 proto 格式的 options 到 TypeScript 接口格式
-      const convertedOptions: any = {};
+      const convertedOptions: Record<string, unknown> = {};
 
-      if (options.user_agent) {
-        convertedOptions.userAgent = options.user_agent;
+      if (protoOptions.user_agent) {
+        convertedOptions.userAgent = protoOptions.user_agent;
       }
 
-      if (options.proxy) {
-        convertedOptions.proxy = options.proxy;
+      if (protoOptions.proxy) {
+        convertedOptions.proxy = protoOptions.proxy;
       }
 
-      if (options.viewport) {
+      if (protoOptions.viewport) {
+        const viewport = protoOptions.viewport as { width: number; height: number };
         convertedOptions.viewport = {
-          width: options.viewport.width,
-          height: options.viewport.height,
+          width: viewport.width,
+          height: viewport.height,
         };
       }
 
-      if (options.args && Array.isArray(options.args)) {
-        convertedOptions.args = options.args;
+      if (protoOptions.args && Array.isArray(protoOptions.args)) {
+        convertedOptions.args = protoOptions.args;
       }
 
-      if (options.storage_state_path) {
-        convertedOptions.storageStatePath = options.storage_state_path;
+      if (protoOptions.storage_state_path) {
+        convertedOptions.storageStatePath = protoOptions.storage_state_path;
       }
 
-      if (options.storage_state) {
+      if (protoOptions.storage_state) {
+        const storageStateData = protoOptions.storage_state as Record<string, unknown>;
         // 转换 storage_state
-        const storageState: any = {};
+        const storageState: Record<string, unknown> = {};
 
-        if (options.storage_state.cookies && Array.isArray(options.storage_state.cookies)) {
-          storageState.cookies = options.storage_state.cookies.map((cookie: any) => ({
+        if (storageStateData.cookies && Array.isArray(storageStateData.cookies)) {
+          storageState.cookies = storageStateData.cookies.map((cookie: Record<string, unknown>) => ({
             name: cookie.name,
             value: cookie.value,
             domain: cookie.domain,
             path: cookie.path,
             expires: cookie.expires,
-            httpOnly: cookie.http_only,
+            httpOnly: cookie.httpOnly,
             secure: cookie.secure,
-            sameSite: cookie.same_site,
+            sameSite: cookie.sameSite,
           }));
         }
 
-        if (options.storage_state.origins && Array.isArray(options.storage_state.origins)) {
-          storageState.origins = options.storage_state.origins.map((origin: any) => ({
+        if (storageStateData.origins && Array.isArray(storageStateData.origins)) {
+          storageState.origins = storageStateData.origins.map((origin: Record<string, unknown>) => ({
             origin: origin.origin,
             localStorage: origin.localStorage,
           }));
@@ -968,24 +988,24 @@ const serviceImplementation = {
       }
 
       // 新增：shared_user_data 参数
-      if (options.shared_user_data !== undefined) {
-        convertedOptions.sharedUserData = options.shared_user_data;
+      if (protoOptions.shared_user_data !== undefined) {
+        convertedOptions.sharedUserData = protoOptions.shared_user_data;
       }
 
       // 新增：timezone 参数
-      if (options.timezone) {
-        convertedOptions.timezone = options.timezone;
+      if (protoOptions.timezone) {
+        convertedOptions.timezone = protoOptions.timezone;
       }
 
       // 新增：proxy_bypass 参数
-      if (options.proxy_bypass) {
-        convertedOptions.proxyBypass = options.proxy_bypass;
+      if (protoOptions.proxy_bypass) {
+        convertedOptions.proxyBypass = protoOptions.proxy_bypass;
       }
 
       // 保留向后兼容：如果客户端传递了 user_data_dir（已废弃）
-      if (options.user_data_dir) {
-        convertedOptions.userDataDir = options.user_data_dir;
-        logger.warn(`user_data_dir 参数已废弃，客户端传递了自定义路径: ${options.user_data_dir}`);
+      if (protoOptions.user_data_dir) {
+        convertedOptions.userDataDir = protoOptions.user_data_dir;
+        logger.warn(`user_data_dir 参数已废弃，客户端传递了自定义路径: ${protoOptions.user_data_dir}`);
       }
 
       // 传递 userId 用于计算 userDataDir

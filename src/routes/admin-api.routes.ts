@@ -72,18 +72,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const adminId = request.user?.id;
-        const body = request.body as any;
-
-        // 验证输入
-        if (!body.username || !body.password) {
-          return reply.status(400).send({ success: false, error: '用户名和密码不能为空' });
-        }
-
-        // 检查用户名是否已存在
-        const existingUser = await UserModel.findByUsername(body.username);
-        if (existingUser) {
-          return reply.status(409).send({ success: false, error: '用户名已存在' });
-        }
+        const body = request.body as z.infer<typeof adminCreateUserRequestSchema>;
 
         // 创建用户（使用 SHA256 哈希，与 UserModel 保持一致）
         const userData = {
@@ -92,7 +81,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           password: await hashPassword(body.password),
           role: body.role || UserRole.USER,
           status: UserStatus.ACTIVE,
-          credits: parseInt(body.credits) || 0,
+          credits: body.credits || 0,
           api_key: uuidv4(),
         };
 
@@ -128,9 +117,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             api_key: user.api_key,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '创建用户失败');
-        return reply.status(500).send({ success: false, error: '创建用户失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '创建用户失败: ' + message });
       }
     }
   );
@@ -240,9 +230,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             created_at: user.created_at,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取用户信息失败');
-        return reply.status(500).send({ success: false, error: '获取用户信息失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '获取用户信息失败: ' + message });
       }
     }
   );
@@ -270,7 +261,7 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         const adminId = request.user?.id;
         const params = request.params as { id: string };
         const userId = parseInt(params.id, 10);
-        const body = request.body as any;
+        const body = request.body as z.infer<typeof adminUpdateUserRequestSchema>;
 
         if (isNaN(userId)) {
           return reply.status(400).send({ success: false, error: '无效的用户 ID' });
@@ -324,9 +315,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             webhook_url: updatedUser.webhook_url,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '更新用户失败');
-        return reply.status(500).send({ success: false, error: '更新用户失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '更新用户失败: ' + message });
       }
     }
   );
@@ -386,9 +378,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           message: '用户删除成功',
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '删除用户失败');
-        return reply.status(500).send({ success: false, error: '删除用户失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '删除用户失败: ' + message });
       }
     }
   );
@@ -416,14 +409,14 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
         const adminId = request.user?.id;
         const params = request.params as { id: string };
         const userId = parseInt(params.id, 10);
-        const body = request.body as any;
+        const body = request.body as z.infer<typeof adminAddCreditsRequestSchema>;
 
         if (isNaN(userId)) {
           return reply.status(400).send({ success: false, error: '无效的用户 ID' });
         }
 
-        const amount = parseInt(body.amount);
-        if (isNaN(amount) || amount <= 0) {
+        const amount = body.amount;
+        if (!amount || amount <= 0) {
           return reply.status(400).send({ success: false, error: '无效的点数金额' });
         }
 
@@ -464,9 +457,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             credits: updatedUser.credits,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '添加点数失败');
-        return reply.status(500).send({ success: false, error: '添加点数失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '添加点数失败: ' + message });
       }
     }
   );
@@ -527,9 +521,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: { api_key: apiKey },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '重置 API Key 失败');
-        return reply.status(500).send({ success: false, error: '重置 API Key 失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '重置 API Key 失败: ' + message });
       }
     }
   );
@@ -623,9 +618,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           .header('Content-Type', 'text/csv; charset=utf-8')
           .header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`)
           .send(csvContent);
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '导出用户列表失败');
-        return reply.status(500).send({ success: false, error: '导出用户列表失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '导出用户列表失败: ' + message });
       }
     }
   );
@@ -753,9 +749,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             status: machine.status,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '添加机器失败');
-        return reply.status(500).send({ success: false, error: '添加机器失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '添加机器失败: ' + message });
       }
     }
   );
@@ -809,9 +806,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: stats,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取用户会话消耗统计失败');
-        return reply.status(500).send({ success: false, error: '获取用户会话消耗统计失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '获取用户会话消耗统计失败: ' + message });
       }
     }
   );
@@ -897,8 +895,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             }).catch((logError) => {
               request.log.error({ err: logError }, '记录操作日志失败');
             });
-          } catch (error: any) {
-            failed.push({ userId, error: error.message || '删除失败' });
+          } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '删除失败';
+            failed.push({ userId, error: message });
           }
         }
 
@@ -907,9 +906,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           message: `成功删除 ${deleted.length} 个用户${failed.length > 0 ? `，${failed.length} 个失败` : ''}`,
           data: { deleted, failed },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '批量删除用户失败');
-        return reply.status(500).send({ success: false, error: '批量删除用户失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '批量删除用户失败: ' + message });
       }
     }
   );
@@ -1005,8 +1005,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             }).catch((logError) => {
               request.log.error({ err: logError }, '记录操作日志失败');
             });
-          } catch (error: any) {
-            failed.push({ userId, error: error.message || '充值失败' });
+          } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '充值失败';
+            failed.push({ userId, error: message });
           }
         }
 
@@ -1015,9 +1016,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           message: `成功为 ${recharged.length} 个用户充值${failed.length > 0 ? `，${failed.length} 个失败` : ''}`,
           data: { recharged, failed },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '批量充值失败');
-        return reply.status(500).send({ success: false, error: '批量充值失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '批量充值失败: ' + message });
       }
     }
   );
@@ -1140,8 +1142,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
 
               released.push(sessionId);
             }
-          } catch (error: any) {
-            failed.push({ sessionId, error: error.message || '结束失败' });
+          } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '结束失败';
+            failed.push({ sessionId, error: message });
           }
         }
 
@@ -1150,9 +1153,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           message: `成功结束 ${released.length} 个会话${failed.length > 0 ? `，${failed.length} 个失败` : ''}`,
           data: { released, failed },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '批量结束会话失败');
-        return reply.status(500).send({ success: false, error: '批量结束会话失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '批量结束会话失败: ' + message });
       }
     }
   );
@@ -1221,9 +1225,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: logs,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取用户操作日志失败');
-        return reply.status(500).send({ success: false, error: '获取用户操作日志失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '获取用户操作日志失败: ' + message });
       }
     }
   );
@@ -1297,9 +1302,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: sessions,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '获取用户会话历史失败');
-        return reply.status(500).send({ success: false, error: '获取用户会话历史失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '获取用户会话历史失败: ' + message });
       }
     }
   );
@@ -1386,8 +1392,9 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
             }).catch((logError) => {
               request.log.error({ err: logError }, '记录操作日志失败');
             });
-          } catch (error: any) {
-            failed.push({ machineId, error: error.message || '重启失败' });
+          } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '重启失败';
+            failed.push({ machineId, error: message });
           }
         }
 
@@ -1396,9 +1403,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           message: `成功重启 ${restarted.length} 台机器${failed.length > 0 ? `，${failed.length} 台失败` : ''}`,
           data: { restarted, failed },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         request.log.error({ err: error }, '批量重启机器失败');
-        return reply.status(500).send({ success: false, error: '批量重启机器失败: ' + error.message });
+        const message = error instanceof Error ? error.message : '未知错误';
+        return reply.status(500).send({ success: false, error: '批量重启机器失败: ' + message });
       }
     }
   );
@@ -1489,10 +1497,10 @@ export default async function adminApiRoutes(fastify: FastifyInstance): Promise<
           success: true,
           data: result,
         });
-      } catch (error: any) {
-        request.log.error({ err: error }, '获取操作日志失败');
-        return reply.status(500).send({ success: false, error: '获取操作日志失败' });
-      }
+    } catch (error: unknown) {
+      request.log.error({ err: error }, '认证失败');
+      return reply.status(401).send({ success: false, error: '认证失败' });
+    }
     }
   );
 

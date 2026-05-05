@@ -84,7 +84,7 @@ export async function createBrowserSession(
     const now = new Date();
     await SessionModel.update(sessionId, {
       machine_id: machineId,
-      port: result.port,
+      port: result.port as number,
       status: isWebSocketDirect ? SessionStatus.CONNECTED : SessionStatus.CREATED,
       start_time: now,
     });

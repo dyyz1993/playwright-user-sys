@@ -3,6 +3,7 @@ import path from 'path';
 import { env } from './env.js';
 import { fileURLToPath } from 'url';
 import { logger } from '../shared/utils/logger.js';
+import { getSqliteClient } from './db-driver.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,7 +16,7 @@ const createDatabaseConfig = () => {
     logger.info(`使用 SQLite 数据库: ${dbPath}`);
 
     return {
-      client: 'better-sqlite3',
+      client: getSqliteClient(),
       connection: {
         filename: dbPath,
       },

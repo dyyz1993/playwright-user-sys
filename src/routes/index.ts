@@ -25,7 +25,13 @@ export default async function routes(fastify: FastifyInstance) {
 
   // 健康检查路由
   fastify.get('/health', async () => {
-    return { status: 'ok', timestamp: new Date() };
+    const { getSqliteClient } = await import('../config/db-driver.js');
+    return {
+      status: 'ok',
+      timestamp: new Date(),
+      dbDriver: getSqliteClient(),
+      dbType: process.env.DB_TYPE || 'sqlite',
+    };
   });
 
   // API 根路由

@@ -93,6 +93,7 @@
   "license": "Apache-2.0 WITH Commons-Clause",
   "packageManager": "pnpm@10.8.0",
   "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3"],
     "overrides": {
       "buffer-equal-constant-time": "npm:scmp@^2.1.0"
     }

@@ -21,6 +21,7 @@ const envSchema = z.object({
   DB_TYPE: z.enum(['sqlite', 'mysql']).default('sqlite'),
   DB_NAME: z.string().default('playwright_user_sys'),
   DB_PATH: z.string().optional(),
+  DB_DRIVER: z.enum(['better-sqlite3', 'node-sqlite']).default('better-sqlite3').optional(),
 
   // MySQL 配置
   DB_HOST: z.string().optional(),

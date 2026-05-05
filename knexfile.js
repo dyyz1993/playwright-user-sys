@@ -2,6 +2,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+function getSqliteClientFromEnv() {
+  return process.env.DB_DRIVER === 'node-sqlite' ? 'better-sqlite3' : 'better-sqlite3';
+}
+
 // 加载环境变量
 dotenv.config();
 
@@ -12,7 +16,7 @@ const __dirname = path.dirname(__filename);
 // 数据库配置
 const config = {
   development: {
-    client: process.env.DB_TYPE === 'mysql' ? 'mysql2' : 'better-sqlite3',
+    client: process.env.DB_TYPE === 'mysql' ? 'mysql2' : getSqliteClientFromEnv(),
     connection: process.env.DB_TYPE === 'mysql' ? {
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
@@ -54,7 +58,7 @@ const config = {
   },
   
   production: {
-    client: process.env.DB_TYPE === 'mysql' ? 'mysql2' : 'better-sqlite3',
+    client: process.env.DB_TYPE === 'mysql' ? 'mysql2' : getSqliteClientFromEnv(),
     connection: process.env.DB_TYPE === 'mysql' ? {
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,

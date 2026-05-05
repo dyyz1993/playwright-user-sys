@@ -34,8 +34,8 @@ jobs:
 
       - name: Build Docker images
         run: |
-          docker build -f docker/manager/Dockerfile.prod -t playwright-manager:e2e --target production .
-          docker build -f docker/machine/Dockerfile -t playwright-machine:e2e --target production .
+          docker buildx build -f docker/manager/Dockerfile.prod -t playwright-manager:e2e --target production --load .
+          docker buildx build -f docker/machine/Dockerfile -t playwright-machine:e2e --target production --load .
 
       - name: Start E2E environment
         run: |

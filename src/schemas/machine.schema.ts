@@ -75,3 +75,8 @@ export const getMachineByIdResponseSchema = successResponseSchema(machineDetailS
 
 // 获取机器会话响应模式
 export const getMachineSessionsResponseSchema = successResponseSchema(z.array(sessionListItemSchema));
+
+export type MachineBase = z.infer<typeof machineBaseSchema>;
+export type MachineDetail = z.infer<typeof machineDetailSchema>;
+export type RegisterMachineRequest = z.infer<typeof registerMachineRequestSchema>;
+export type UpdateMachineStatusRequest = z.infer<typeof updateMachineStatusRequestSchema>;

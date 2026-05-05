@@ -6,7 +6,11 @@ const ADMIN_CREDENTIALS = {
   password: 'REDACTED_ADMIN_PASS',
 };
 
-async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {
+async function login(
+  page: import('@playwright/test').Page,
+  username = ADMIN_CREDENTIALS.username,
+  password = ADMIN_CREDENTIALS.password
+) {
   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });
   await page.fill('input[name="username"]', username);
   await page.fill('input[name="password"]', password);

@@ -38,25 +38,7 @@ function initMachineManagement() {
   }
   
   // 绑定关闭模态框按钮事件
-  const closeModalButtons = document.querySelectorAll('.close-modal');
-  
-  closeModalButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const modal = this.closest('.modal');
-      modal.classList.add('hidden');
-    });
-  });
-  
-  // 点击模态框背景关闭模态框
-  const modals = document.querySelectorAll('.modal');
-  
-  modals.forEach(modal => {
-    modal.addEventListener('click', function(e) {
-      if (e.target === this) {
-        this.classList.add('hidden');
-      }
-    });
-  });
+  window.appUtils.Modal.initCloseHandlers();
 }
 
 // 查看机器详情
@@ -75,10 +57,8 @@ function viewMachineDetails(machineId) {
   // 显示模态框
   modal.classList.remove('hidden');
   
-  // 获取机器详情
-  fetch(`/api/machines/${machineId}`)
-    .then(response => response.json())
-    .then(data => {
+  window.appUtils.API.get('/api/machines/' + machineId)
+    .then(function(data) {
       if (data.success) {
         const machine = data.data;
         

@@ -31,7 +31,7 @@ export default fp(async function (fastify: FastifyInstance) {
     await fastify.register(rateLimit as any, {
       max: 100,
       timeWindow: '1 minute',
-      keyGenerator: (request) => request.ip,
+      keyGenerator: (request: { ip: string }) => request.ip,
     });
   }
 

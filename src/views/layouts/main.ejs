@@ -223,6 +223,47 @@
 
     // 全局工具对象
     window.appUtils = {
+      API: {
+        getCsrfToken: function() {
+          var meta = document.querySelector('meta[name="csrf-token"]');
+          return meta ? meta.getAttribute('content') || '' : '';
+        },
+        getHeaders: function() {
+          return {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': this.getCsrfToken()
+          };
+        },
+        get: function(url) {
+          return fetch(url, { credentials: 'same-origin', headers: this.getHeaders() })
+            .then(function(r) { return r.json(); });
+        },
+        post: function(url, data) {
+          return fetch(url, { method: 'POST', credentials: 'same-origin', headers: this.getHeaders(), body: JSON.stringify(data) })
+            .then(function(r) { return r.json(); });
+        },
+        put: function(url, data) {
+          return fetch(url, { method: 'PUT', credentials: 'same-origin', headers: this.getHeaders(), body: JSON.stringify(data) })
+            .then(function(r) { return r.json(); });
+        },
+        del: function(url) {
+          return fetch(url, { method: 'DELETE', credentials: 'same-origin', headers: this.getHeaders() })
+            .then(function(r) { return r.json(); });
+        }
+      },
+      Loading: {
+        setButtonLoading: function(button) {
+          var original = button.innerHTML;
+          button.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
+          button.disabled = true;
+          return original;
+        },
+        restoreButton: function(button, originalText) {
+          button.innerHTML = originalText;
+          button.disabled = false;
+        }
+      },
+
       // 显示通知（兼容旧API）
       showNotification: function(message, type = 'info') {
         Toast[type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'](message);

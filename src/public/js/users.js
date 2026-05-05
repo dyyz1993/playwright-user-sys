@@ -121,9 +121,8 @@ function initUserManagement() {
 
 // 添加用户
 function addUser(form) {
-  // 获取表单数据
-  const formData = new FormData(form);
-  const userData = {
+  var formData = new FormData(form);
+  var userData = {
     username: formData.get('username'),
     email: formData.get('email'),
     password: formData.get('password'),
@@ -131,80 +130,37 @@ function addUser(form) {
     credits: parseInt(formData.get('credits')) || 0
   };
 
-  // 显示加载状态
-  const submitButton = form.querySelector('button[type="submit"]');
-  const originalText = submitButton.innerHTML;
-  submitButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  submitButton.disabled = true;
+  var submitButton = form.querySelector('button[type="submit"]');
+  var originalText = window.appUtils.Loading.setButtonLoading(submitButton);
 
-  // 发送请求添加用户
-  fetch('/api/users', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-    },
-    body: JSON.stringify(userData),
-    credentials: 'same-origin'
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 关闭模态框
-      const modal = document.getElementById('add-user-modal');
-      modal.classList.add('hidden');
-
-      // 显示成功通知
-      window.appUtils.showNotification('用户已成功添加', 'success');
-
-      // 重新加载页面以显示新用户
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } else {
-      // 恢复按钮状态
-      submitButton.innerHTML = originalText;
-      submitButton.disabled = false;
-
-      // 显示错误通知
-      window.appUtils.showNotification(`添加用户失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    submitButton.innerHTML = originalText;
-    submitButton.disabled = false;
-
-    // 显示错误通知
-    window.appUtils.showNotification(`添加用户失败: ${error.message}`, 'error');
-  });
+  window.appUtils.API.post('/api/users', userData)
+    .then(function(data) {
+      if (data.success) {
+        var modal = document.getElementById('add-user-modal');
+        modal.classList.add('hidden');
+        window.appUtils.Toast.success('\u7528\u6237\u5df2\u6210\u529f\u6dfb\u52a0');
+        setTimeout(function() { window.location.reload(); }, 1000);
+      } else {
+        window.appUtils.Loading.restoreButton(submitButton, originalText);
+        window.appUtils.Toast.error('\u6dfb\u52a0\u7528\u6237\u5931\u8d25: ' + data.message);
+      }
+    })
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(submitButton, originalText);
+      window.appUtils.Toast.error('\u6dfb\u52a0\u7528\u6237\u5931\u8d25: ' + error.message);
+    });
 }
 
 // 打开编辑用户模态框
 function openEditUserModal(userId) {
-  // 显示加载状态
-  const modal = document.getElementById('edit-user-modal');
-  const modalBody = modal.querySelector('.modal-body');
+  var modal = document.getElementById('edit-user-modal');
+  var modalBody = modal.querySelector('.modal-body');
 
-  modalBody.innerHTML = `
-    <div class="flex justify-center items-center py-8">
-      <div class="spinner mr-3"></div>
-      <span>加载用户信息...</span>
-    </div>
-  `;
-
-  // 显示模态框
+  modalBody.innerHTML = '<div class="flex justify-center items-center py-8"><div class="spinner mr-3"></div><span>\u52a0\u8f7d\u7528\u6237\u4fe1\u606f...</span></div>';
   modal.classList.remove('hidden');
 
-  // 获取用户信息
-  fetch(`/api/admin/users/${userId}`, {
-    credentials: 'same-origin',
-    headers: {
-      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-    }
-  })
-    .then(response => response.json())
-    .then(data => {
+  window.appUtils.API.get('/api/admin/users/' + userId)
+    .then(function(data) {
       if (data.success) {
         const user = data.data;
 
@@ -390,116 +346,62 @@ function openEditUserModal(userId) {
 
 // 更新用户
 function updateUser(form) {
-  // 获取表单数据
-  const formData = new FormData(form);
-  const userId = formData.get('user_id');
-  const userData = {
+  var formData = new FormData(form);
+  var userId = formData.get('user_id');
+  var userData = {
     email: formData.get('email'),
     role: formData.get('role'),
     status: formData.get('status'),
     webhook_url: formData.get('webhook_url')
   };
 
-  // 如果提供了密码，则添加到请求数据中
-  const password = formData.get('password');
+  var password = formData.get('password');
   if (password) {
     userData.password = password;
   }
 
-  // 显示加载状态
-  const submitButton = form.querySelector('button[type="submit"]');
-  const originalText = submitButton.innerHTML;
-  submitButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  submitButton.disabled = true;
+  var submitButton = form.querySelector('button[type="submit"]');
+  var originalText = window.appUtils.Loading.setButtonLoading(submitButton);
 
-  // 发送请求更新用户
-  fetch(`/api/admin/users/${userId}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-    },
-    body: JSON.stringify(userData),
-    credentials: 'same-origin'
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 关闭模态框
-      const modal = document.getElementById('edit-user-modal');
-      modal.classList.add('hidden');
-
-      // 显示成功通知
-      window.appUtils.showNotification('用户信息已成功更新', 'success');
-
-      // 重新加载页面以显示更新后的用户信息
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } else {
-      // 恢复按钮状态
-      submitButton.innerHTML = originalText;
-      submitButton.disabled = false;
-
-      // 显示错误通知
-      window.appUtils.showNotification(`更新用户失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    submitButton.innerHTML = originalText;
-    submitButton.disabled = false;
-
-    // 显示错误通知
-    window.appUtils.showNotification(`更新用户失败: ${error.message}`, 'error');
-  });
+  window.appUtils.API.put('/api/admin/users/' + userId, userData)
+    .then(function(data) {
+      if (data.success) {
+        var modal = document.getElementById('edit-user-modal');
+        modal.classList.add('hidden');
+        window.appUtils.Toast.success('\u7528\u6237\u4fe1\u606f\u5df2\u6210\u529f\u66f4\u65b0');
+        setTimeout(function() { window.location.reload(); }, 1000);
+      } else {
+        window.appUtils.Loading.restoreButton(submitButton, originalText);
+        window.appUtils.Toast.error('\u66f4\u65b0\u7528\u6237\u5931\u8d25: ' + data.message);
+      }
+    })
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(submitButton, originalText);
+      window.appUtils.Toast.error('\u66f4\u65b0\u7528\u6237\u5931\u8d25: ' + error.message);
+    });
 }
 
 // 删除用户
 function deleteUser(userId) {
-  // 显示加载状态
-  const button = document.querySelector(`.delete-user-btn[data-user-id="${userId}"]`);
-  const originalText = button.innerHTML;
-  button.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  button.disabled = true;
+  var button = document.querySelector('.delete-user-btn[data-user-id="' + userId + '"]');
+  var originalText = window.appUtils.Loading.setButtonLoading(button);
 
-  // 发送请求删除用户
-  fetch(`/api/admin/users/${userId}`, {
-    method: 'DELETE',
-    headers: {
-      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-    },
-    credentials: 'same-origin'
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 显示成功通知
-      window.appUtils.showNotification('用户已成功删除', 'success');
-
-      // 从表格中移除用户行
-      const row = button.closest('tr');
-      row.classList.add('opacity-0', 'transition-opacity');
-      setTimeout(() => {
-        row.remove();
-      }, 300);
-    } else {
-      // 恢复按钮状态
-      button.innerHTML = originalText;
-      button.disabled = false;
-
-      // 显示错误通知
-      window.appUtils.showNotification(`删除用户失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    button.innerHTML = originalText;
-    button.disabled = false;
-
-    // 显示错误通知
-    window.appUtils.showNotification(`删除用户失败: ${error.message}`, 'error');
-  });
+  window.appUtils.API.del('/api/admin/users/' + userId)
+    .then(function(data) {
+      if (data.success) {
+        window.appUtils.Toast.success('\u7528\u6237\u5df2\u6210\u529f\u5220\u9664');
+        var row = button.closest('tr');
+        row.classList.add('opacity-0', 'transition-opacity');
+        setTimeout(function() { row.remove(); }, 300);
+      } else {
+        window.appUtils.Loading.restoreButton(button, originalText);
+        window.appUtils.Toast.error('\u5220\u9664\u7528\u6237\u5931\u8d25: ' + data.message);
+      }
+    })
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(button, originalText);
+      window.appUtils.Toast.error('\u5220\u9664\u7528\u6237\u5931\u8d25: ' + error.message);
+    });
 }
 
 // 打开添加点数模态框
@@ -516,117 +418,60 @@ function openAddCreditsModal(userId, username) {
 
 // 重置 API Key
 function resetApiKey(userId, apiKeyInput) {
-  // 显示加载状态
-  const resetButton = document.querySelector(`.reset-api-key[data-user-id="${userId}"]`);
-  const originalText = resetButton.innerHTML;
-  resetButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  resetButton.disabled = true;
+  var resetButton = document.querySelector('.reset-api-key[data-user-id="' + userId + '"]');
+  var originalText = window.appUtils.Loading.setButtonLoading(resetButton);
 
-  console.log('重置 API Key, userId:', userId);
-
-  // 发送请求重置 API Key
-  fetch(`/api/admin/users/${userId}/reset-api-key`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-    },
-    credentials: 'same-origin'
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 更新输入框中的 API Key
-      apiKeyInput.value = data.data.api_key;
-
-      // 显示成功通知
-      window.appUtils.showNotification('API Key 已成功重置', 'success');
-
-      // 恢复按钮状态
-      resetButton.innerHTML = originalText;
-      resetButton.disabled = false;
-    } else {
-      // 恢复按钮状态
-      resetButton.innerHTML = originalText;
-      resetButton.disabled = false;
-
-      // 显示错误通知
-      window.appUtils.showNotification(`重置 API Key 失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    resetButton.innerHTML = originalText;
-    resetButton.disabled = false;
-
-    // 显示错误通知
-    window.appUtils.showNotification(`重置 API Key 失败: ${error.message}`, 'error');
-  });
+  window.appUtils.API.post('/api/admin/users/' + userId + '/reset-api-key')
+    .then(function(data) {
+      if (data.success) {
+        apiKeyInput.value = data.data.api_key;
+        window.appUtils.Toast.success('API Key \u5df2\u6210\u529f\u91cd\u7f6e');
+        window.appUtils.Loading.restoreButton(resetButton, originalText);
+      } else {
+        window.appUtils.Loading.restoreButton(resetButton, originalText);
+        window.appUtils.Toast.error('\u91cd\u7f6e API Key \u5931\u8d25: ' + data.message);
+      }
+    })
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(resetButton, originalText);
+      window.appUtils.Toast.error('\u91cd\u7f6e API Key \u5931\u8d25: ' + error.message);
+    });
 }
 
 // 添加点数
 function addCredits(form) {
-  // 获取表单数据
-  const formData = new FormData(form);
-  const userId = formData.get('user_id');
-  const amount = parseInt(formData.get('amount'));
-  const reason = formData.get('reason');
+  var formData = new FormData(form);
+  var userId = formData.get('user_id');
+  var amount = parseInt(formData.get('amount'));
+  var reason = formData.get('reason');
 
   if (!amount || amount <= 0) {
-    window.appUtils.showNotification('请输入有效的点数金额', 'error');
+    window.appUtils.Toast.error('\u8bf7\u8f93\u5165\u6709\u6548\u7684\u70b9\u6570\u91d1\u989d');
     return;
   }
 
-  // 显示加载状态
-  const submitButton = form.querySelector('button[type="submit"]');
-  const originalText = submitButton.innerHTML;
-  submitButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  submitButton.disabled = true;
+  var submitButton = form.querySelector('button[type="submit"]');
+  var originalText = window.appUtils.Loading.setButtonLoading(submitButton);
 
-  // 发送请求添加点数
-  fetch(`/api/admin/users/${userId}/credits`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-    },
-    body: JSON.stringify({
-      amount,
-      reason
-    }),
-    credentials: 'same-origin'
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 关闭模态框
-      const modal = document.getElementById('add-credits-modal');
-      modal.classList.add('hidden');
-
-      // 显示成功通知
-      window.appUtils.showNotification(`已成功添加 ${amount} 点数`, 'success');
-
-      // 更新用户点数显示
-      const creditsCell = document.querySelector(`tr[data-user-id="${userId}"] .user-credits`);
-      if (creditsCell) {
-        const currentCredits = parseInt(creditsCell.textContent);
-        creditsCell.textContent = currentCredits + amount;
+  window.appUtils.API.post('/api/admin/users/' + userId + '/credits', { amount: amount, reason: reason })
+    .then(function(data) {
+      if (data.success) {
+        var modal = document.getElementById('add-credits-modal');
+        modal.classList.add('hidden');
+        window.appUtils.Toast.success('\u5df2\u6210\u529f\u6dfb\u52a0 ' + amount + ' \u70b9\u6570');
+        var creditsCell = document.querySelector('tr[data-user-id="' + userId + '"] .user-credits');
+        if (creditsCell) {
+          var currentCredits = parseInt(creditsCell.textContent);
+          creditsCell.textContent = currentCredits + amount;
+        }
+        window.appUtils.Loading.restoreButton(submitButton, originalText);
+      } else {
+        window.appUtils.Loading.restoreButton(submitButton, originalText);
+        window.appUtils.Toast.error('\u6dfb\u52a0\u70b9\u6570\u5931\u8d25: ' + data.message);
       }
-    } else {
-      // 恢复按钮状态
-      submitButton.innerHTML = originalText;
-      submitButton.disabled = false;
-
-      // 显示错误通知
-      window.appUtils.showNotification(`添加点数失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    submitButton.innerHTML = originalText;
-    submitButton.disabled = false;
-
-    // 显示错误通知
-    window.appUtils.showNotification(`添加点数失败: ${error.message}`, 'error');
-  });
+    })
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(submitButton, originalText);
+      window.appUtils.Toast.error('\u6dfb\u52a0\u70b9\u6570\u5931\u8d25: ' + error.message);
+    });
 }

@@ -136,10 +136,18 @@ export const userListQuerySchema = z.object({
 export const adminGetUsersResponseSchema = z.object({
   success: z.boolean(),
   data: z.object({
-    items: z.array(z.any()), // Will use userListItemSchema from user.schema
+    items: z.array(z.any()),
     total: z.number(),
     page: z.number(),
     limit: z.number(),
     totalPages: z.number(),
   }),
 });
+
+export type AdminLoginRequest = z.infer<typeof adminLoginRequestSchema>;
+export type AdminLoginResponse = z.infer<typeof adminLoginResponseSchema>;
+export type DashboardStats = z.infer<typeof dashboardStatsSchema>;
+export type AdminCreateUserRequest = z.infer<typeof adminCreateUserRequestSchema>;
+export type AdminUpdateUserRequest = z.infer<typeof adminUpdateUserRequestSchema>;
+export type AdminAddCreditsRequest = z.infer<typeof adminAddCreditsRequestSchema>;
+export type UserListQuery = z.infer<typeof userListQuerySchema>;

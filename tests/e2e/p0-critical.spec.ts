@@ -87,7 +87,11 @@ async function takeScreenshot(
  * 执行登录操作
  * 修复: 使用更可靠的方式等待登录完成，增加超时时间
  */
-async function login(page, username = ADMIN_CREDENTIALS.username, password = ADMIN_CREDENTIALS.password) {
+async function login(
+  page: import('@playwright/test').Page,
+  username = ADMIN_CREDENTIALS.username,
+  password = ADMIN_CREDENTIALS.password
+) {
   // 修复: 增加导航超时时间
   await page.goto(`${BASE_URL}/admin/login`, { timeout: 30000 });
   await page.fill('input[name="username"]', username);
@@ -110,9 +114,9 @@ async function login(page, username = ADMIN_CREDENTIALS.username, password = ADM
  * 检查页面是否没有JavaScript错误
  * 修复: 更宽松的错误检查，只记录严重错误
  */
-async function checkNoErrors(page) {
+async function checkNoErrors(page: import('@playwright/test').Page) {
   const errors: string[] = [];
-  page.on('pageerror', (error) => {
+  page.on('pageerror', (error: Error) => {
     // 只记录真正的JavaScript错误，忽略警告和次要错误
     if (error.message && !error.message.includes('warning') && !error.message.includes('deprecated')) {
       errors.push(error.message);

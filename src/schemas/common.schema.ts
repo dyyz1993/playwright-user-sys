@@ -48,3 +48,7 @@ export const idParamSchema = z.object({
 
 // 通用时间戳字段
 export const timestampSchema = z.string().or(z.date());
+
+export type ErrorResponse = z.infer<typeof errorResponseSchema>;
+export type PaginationQueryType = z.infer<typeof paginationQuerySchema>;
+export type IdParam = z.infer<typeof idParamSchema>;

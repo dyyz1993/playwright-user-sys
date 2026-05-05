@@ -858,9 +858,9 @@ export class BrowserService extends EventEmitter {
     await page.evaluateOnNewDocument((fnName) => {
       // document.removeEventListener('focusin', handleFocusin);
       document.addEventListener('focusin', function (event) {
-        if (typeof window[fnName] === 'function') {
+        if (typeof (window as unknown as Record<string, unknown>)[fnName] === 'function') {
           console.log('focusin', event.target);
-          window[fnName](); // Call the dynamic function
+          (window as unknown as Record<string, () => void>)[fnName](); // Call the dynamic function
         }
       });
     }, dynamicFunctionName);

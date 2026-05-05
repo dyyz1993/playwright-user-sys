@@ -1,6 +1,12 @@
 /* eslint-disable no-unused-vars */
 import { FastifyRequest, FastifyReply, RouteGenericInterface } from 'fastify';
 
+export type {
+  CreateSessionRequest as ZodCreateSessionRequest,
+  SessionDetail as ZodSessionDetail,
+} from '@schemas/index.js';
+export type { MachineDetail as ZodMachineDetail, MachineBase as ZodMachineBase } from '@schemas/index.js';
+
 // 扩展 FastifyRequest 类型
 declare module 'fastify' {
   interface FastifyInstance {
@@ -102,6 +108,7 @@ export type TypedHandler<T = any, U = any> = (
 ) => Promise<ApiResponse<U>>;
 
 // 会话创建参数
+// Note: Consider using ZodCreateSessionRequest from schemas for API validation
 export interface SessionCreateOptions {
   userAgent?: string;
   proxy?: string;
@@ -141,6 +148,7 @@ export interface SessionCreateOptions {
 }
 
 // 实例机器信息
+// Note: Consider using ZodMachineDetail from schemas for API responses
 export interface MachineInfo {
   id: string;
   hostname: string;

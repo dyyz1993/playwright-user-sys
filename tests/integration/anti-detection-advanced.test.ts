@@ -979,8 +979,8 @@ describe('高级反机器人检测验证测试 (2025)', () => {
       const span = document.createElement('span');
       span.style.fontSize = testSize;
       span.innerHTML = testString;
-      const defaultWidth = {};
-      const defaultHeight = {};
+      const defaultWidth: Record<string, number> = {};
+      const defaultHeight: Record<string, number> = {};
 
       // 创建基准宽度
       for (const baseFont of baseFonts) {

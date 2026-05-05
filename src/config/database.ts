@@ -138,13 +138,13 @@ const createDbProxy = () => {
         return undefined;
       }
       if (dbInstance) {
-        return dbInstance[prop];
+        return (dbInstance as unknown as Record<string | symbol, unknown>)[prop];
       }
       throw new Error('Database not initialized. Call initDatabase() first.');
     },
     set(target, prop, value) {
       if (dbInstance) {
-        dbInstance[prop] = value;
+        (dbInstance as unknown as Record<string | symbol, unknown>)[prop] = value;
         return true;
       }
       return false;

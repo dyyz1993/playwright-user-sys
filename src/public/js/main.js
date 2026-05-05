@@ -175,8 +175,20 @@ function setupFormValidation() {
 }
 
 // 显示通知
-function showNotification(message, type = 'info') {
-  window.appUtils.toast[type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'](message);
+function showNotification(message, type) {
+  window.appUtils.Toast[type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info'](message);
+}
+
+function confirmAction(message, callback) {
+  window.appUtils.confirmAction(message, callback);
+}
+
+function formatDate(date) {
+  return window.appUtils.formatDate(date);
+}
+
+function formatNumber(num) {
+  return window.appUtils.formatNumber(num);
 }
 
 // 确认对话框

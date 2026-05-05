@@ -1,14 +1,6 @@
-export interface UserResponseDTO {
-  id: number;
-  username: string;
-  email: string | null;
-  role: string;
-  status: string;
-  credits: number;
-  api_key: string | null;
-  webhook_url: string | null;
-  created_at: string;
-}
+import type { UserDetail, UserListItem, SessionDetail } from '@schemas/index.js';
+
+export type UserResponseDTO = UserDetail;
 
 export interface LoginUserDTO {
   id: number;
@@ -30,16 +22,9 @@ export interface CreateUserDTO {
   webhook_url: string | null;
 }
 
-export interface UserListItemDTO {
-  id: number;
-  username: string;
-  email: string | null;
-  role: string;
-  status: string;
-  credits: number;
-  created_at: string;
-}
+export type UserListItemDTO = UserListItem;
 
+// Differs from schema: updateUserResponseSchema omits api_key, but DTO includes all fields
 export interface UpdateUserDTO {
   id: number;
   username: string;
@@ -50,6 +35,7 @@ export interface UpdateUserDTO {
   webhook_url: string | null;
 }
 
+// Differs from schema: currentUserResponseSchema omits status from userDetail
 export interface CurrentUserDTO {
   id: number;
   username: string;
@@ -61,23 +47,7 @@ export interface CurrentUserDTO {
   created_at: string;
 }
 
-export interface SessionDetailDTO {
-  id: string;
-  status: string;
-  machine_id: string | null;
-  port: number | null;
-  options: Record<string, unknown> | null;
-  start_time: string | null;
-  end_time: string | null;
-  disconnected_at: string | null;
-  duration: number;
-  credits_used: number;
-  screenshot_url: string | null;
-  last_activity: string | null;
-  error_message: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
+export type SessionDetailDTO = SessionDetail;
 
 export interface CreateSessionResponseDTO {
   id: string;
@@ -88,6 +58,7 @@ export interface CreateSessionResponseDTO {
   created_at: string | null;
 }
 
+// Differs from machineDetailSchema: includes grpcPort/proxyPort which schema doesn't have
 export interface MachineMemoryDTO {
   id: string;
   hostname: string;

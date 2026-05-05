@@ -76,49 +76,25 @@ function initSettingsFunctions() {
 
 // 清理旧日志
 function clearOldLogs() {
-  // 显示加载状态
-  const confirmButton = document.getElementById('confirm-clear-logs');
-  const originalText = confirmButton.innerHTML;
-  confirmButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  confirmButton.disabled = true;
-  
-  // 发送请求清理旧日志
-  fetch('/api/admin/logs/clear', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 关闭模态框
-      const clearLogsModal = document.getElementById('clear-logs-modal');
-      clearLogsModal.classList.add('hidden');
-      
-      // 显示成功消息
-      window.appUtils.showNotification('旧日志已成功清理', 'success');
-      
-      // 恢复按钮状态
-      confirmButton.innerHTML = originalText;
-      confirmButton.disabled = false;
-    } else {
-      // 恢复按钮状态
-      confirmButton.innerHTML = originalText;
-      confirmButton.disabled = false;
-      
-      // 显示错误消息
-      window.appUtils.showNotification(`清理日志失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    confirmButton.innerHTML = originalText;
-    confirmButton.disabled = false;
-    
-    // 显示错误消息
-    window.appUtils.showNotification(`清理日志失败: ${error.message}`, 'error');
-  });
+  var confirmButton = document.getElementById('confirm-clear-logs');
+  var originalText = window.appUtils.Loading.setButtonLoading(confirmButton);
+
+  window.appUtils.API.post('/api/admin/logs/clear')
+    .then(function(data) {
+      if (data.success) {
+        var clearLogsModal = document.getElementById('clear-logs-modal');
+        clearLogsModal.classList.add('hidden');
+        window.appUtils.Toast.success('\u65e7\u65e5\u5fd7\u5df2\u6210\u529f\u6e05\u7406');
+        window.appUtils.Loading.restoreButton(confirmButton, originalText);
+      } else {
+        window.appUtils.Loading.restoreButton(confirmButton, originalText);
+        window.appUtils.Toast.error('\u6e05\u7406\u65e5\u5fd7\u5931\u8d25: ' + data.message);
+      }
+    })
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(confirmButton, originalText);
+      window.appUtils.Toast.error('\u6e05\u7406\u65e5\u5fd7\u5931\u8d25: ' + error.message);
+    });
 }
 
 // 备份数据库
@@ -179,9 +155,8 @@ function backupDatabase() {
 
 // 保存设置
 function saveSettings(form) {
-  // 获取表单数据
-  const formData = new FormData(form);
-  const settings = {
+  var formData = new FormData(form);
+  var settings = {
     email_notifications: formData.get('email-notifications') === 'on',
     webhook_notifications: formData.get('webhook-notifications') === 'on',
     session_timeout: parseInt(formData.get('session-timeout')),
@@ -190,45 +165,22 @@ function saveSettings(form) {
     ip_whitelist: formData.get('ip-restriction') === 'on' ? formData.get('ip-whitelist') : '',
     rate_limiting: formData.get('rate-limiting') === 'on'
   };
-  
-  // 显示加载状态
-  const submitButton = form.querySelector('button[type="submit"]');
-  const originalText = submitButton.innerHTML;
-  submitButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  submitButton.disabled = true;
-  
-  // 发送请求保存设置
-  fetch('/api/admin/settings', {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(settings)
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 显示成功消息
-      window.appUtils.showNotification('设置已成功保存', 'success');
-      
-      // 恢复按钮状态
-      submitButton.innerHTML = originalText;
-      submitButton.disabled = false;
-    } else {
-      // 恢复按钮状态
-      submitButton.innerHTML = originalText;
-      submitButton.disabled = false;
-      
-      // 显示错误消息
-      window.appUtils.showNotification(`保存设置失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    submitButton.innerHTML = originalText;
-    submitButton.disabled = false;
-    
-    // 显示错误消息
-    window.appUtils.showNotification(`保存设置失败: ${error.message}`, 'error');
-  });
+
+  var submitButton = form.querySelector('button[type="submit"]');
+  var originalText = window.appUtils.Loading.setButtonLoading(submitButton);
+
+  window.appUtils.API.put('/api/admin/settings', settings)
+    .then(function(data) {
+      if (data.success) {
+        window.appUtils.Toast.success('\u8bbe\u7f6e\u5df2\u6210\u529f\u4fdd\u5b58');
+        window.appUtils.Loading.restoreButton(submitButton, originalText);
+      } else {
+        window.appUtils.Loading.restoreButton(submitButton, originalText);
+        window.appUtils.Toast.error('\u4fdd\u5b58\u8bbe\u7f6e\u5931\u8d25: ' + data.message);
+      }
+    })
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(submitButton, originalText);
+      window.appUtils.Toast.error('\u4fdd\u5b58\u8bbe\u7f6e\u5931\u8d25: ' + error.message);
+    });
 }

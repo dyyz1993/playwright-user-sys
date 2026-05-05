@@ -102,16 +102,16 @@ export function toSessionDetail(session: Session): SessionDetailDTO {
     machine_id: session.machine_id ?? null,
     port: session.port ?? null,
     options: session.options ? (session.options as unknown as Record<string, unknown>) : null,
-    start_time: toISO(session.start_time),
-    end_time: toISO(session.end_time),
-    disconnected_at: toISO(session.disconnected_at),
+    start_time: toISO(session.start_time) as string | Date,
+    end_time: toISO(session.end_time) as string | Date,
+    disconnected_at: toISO(session.disconnected_at) as string | Date,
     duration: session.duration,
     credits_used: session.credits_used,
     screenshot_url: session.screenshot_url ?? null,
-    last_activity: toISO(session.last_activity),
+    last_activity: toISO(session.last_activity) as string | Date,
     error_message: session.error_message ?? null,
-    created_at: toISO(session.created_at),
-    updated_at: toISO(session.updated_at),
+    created_at: toISO(session.created_at) as string | Date,
+    updated_at: toISO(session.updated_at) as string | Date,
   };
 }
 

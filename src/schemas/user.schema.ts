@@ -95,3 +95,16 @@ export const userListItemSchema = userBaseSchema.extend({
   credits: z.number(),
   created_at: timestampSchema,
 });
+
+export type UserBase = z.infer<typeof userBaseSchema>;
+export type UserDetail = z.infer<typeof userDetailSchema>;
+export type LoginRequest = z.infer<typeof loginRequestSchema>;
+export type LoginResponse = z.infer<typeof loginResponseSchema>;
+export type CreateUserRequest = z.infer<typeof createUserRequestSchema>;
+export type CreateUserResponse = z.infer<typeof createUserResponseSchema>;
+export type UpdateUserRequest = z.infer<typeof updateUserRequestSchema>;
+export type UpdateUserResponse = z.infer<typeof updateUserResponseSchema>;
+export type ResetApiKeyResponse = z.infer<typeof resetApiKeyResponseSchema>;
+export type AddCreditsRequest = z.infer<typeof addCreditsRequestSchema>;
+export type AddCreditsResponse = z.infer<typeof addCreditsResponseSchema>;
+export type UserListItem = z.infer<typeof userListItemSchema>;

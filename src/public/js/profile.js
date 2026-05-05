@@ -95,164 +95,87 @@ function initProfileFunctions() {
 
 // 重新生成 API Key
 function regenerateApiKey() {
-  // 显示加载状态
-  const confirmButton = document.getElementById('confirm-regenerate-key');
-  const originalText = confirmButton.innerHTML;
-  confirmButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  confirmButton.disabled = true;
-  
-  // 发送请求重新生成 API Key
-  fetch('/api/users/me/apikey/regenerate', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 更新页面上的 API Key
-      const apiKeyInput = document.getElementById('api-key');
-      apiKeyInput.value = data.data.apiKey;
-      
-      // 关闭模态框
-      const regenerateKeyModal = document.getElementById('regenerate-key-modal');
-      regenerateKeyModal.classList.add('hidden');
-      
-      // 显示成功消息
-      window.appUtils.showNotification('API Key 已成功重新生成', 'success');
-      
-      // 恢复按钮状态
-      confirmButton.innerHTML = originalText;
-      confirmButton.disabled = false;
-    } else {
-      // 恢复按钮状态
-      confirmButton.innerHTML = originalText;
-      confirmButton.disabled = false;
-      
-      // 显示错误消息
-      window.appUtils.showNotification(`重新生成 API Key 失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    confirmButton.innerHTML = originalText;
-    confirmButton.disabled = false;
-    
-    // 显示错误消息
-    window.appUtils.showNotification(`重新生成 API Key 失败: ${error.message}`, 'error');
-  });
+  var confirmButton = document.getElementById('confirm-regenerate-key');
+  var originalText = window.appUtils.Loading.setButtonLoading(confirmButton);
+
+  window.appUtils.API.post('/api/users/me/apikey/regenerate')
+    .then(function(data) {
+      if (data.success) {
+        var apiKeyInput = document.getElementById('api-key');
+        apiKeyInput.value = data.data.apiKey;
+        var regenerateKeyModal = document.getElementById('regenerate-key-modal');
+        regenerateKeyModal.classList.add('hidden');
+        window.appUtils.Toast.success('API Key \u5df2\u6210\u529f\u91cd\u65b0\u751f\u6210');
+        window.appUtils.Loading.restoreButton(confirmButton, originalText);
+      } else {
+        window.appUtils.Loading.restoreButton(confirmButton, originalText);
+        window.appUtils.Toast.error('\u91cd\u65b0\u751f\u6210 API Key \u5931\u8d25: ' + data.message);
+      }
+    })
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(confirmButton, originalText);
+      window.appUtils.Toast.error('\u91cd\u65b0\u751f\u6210 API Key \u5931\u8d25: ' + error.message);
+    });
 }
 
 // 更新个人资料
 function updateProfile(form) {
-  // 获取表单数据
-  const formData = new FormData(form);
-  const userData = {
+  var formData = new FormData(form);
+  var userData = {
     email: formData.get('email'),
     webhook_url: formData.get('webhook-url')
   };
-  
-  // 显示加载状态
-  const submitButton = form.querySelector('button[type="submit"]');
-  const originalText = submitButton.innerHTML;
-  submitButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  submitButton.disabled = true;
-  
-  // 发送请求更新个人资料
-  fetch('/api/users/me', {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(userData)
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 显示成功消息
-      window.appUtils.showNotification('个人资料已成功更新', 'success');
-      
-      // 恢复按钮状态
-      submitButton.innerHTML = originalText;
-      submitButton.disabled = false;
-    } else {
-      // 恢复按钮状态
-      submitButton.innerHTML = originalText;
-      submitButton.disabled = false;
-      
-      // 显示错误消息
-      window.appUtils.showNotification(`更新个人资料失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    submitButton.innerHTML = originalText;
-    submitButton.disabled = false;
-    
-    // 显示错误消息
-    window.appUtils.showNotification(`更新个人资料失败: ${error.message}`, 'error');
-  });
+
+  var submitButton = form.querySelector('button[type="submit"]');
+  var originalText = window.appUtils.Loading.setButtonLoading(submitButton);
+
+  window.appUtils.API.put('/api/users/me', userData)
+    .then(function(data) {
+      if (data.success) {
+        window.appUtils.Toast.success('\u4e2a\u4eba\u8d44\u6599\u5df2\u6210\u529f\u66f4\u65b0');
+        window.appUtils.Loading.restoreButton(submitButton, originalText);
+      } else {
+        window.appUtils.Loading.restoreButton(submitButton, originalText);
+        window.appUtils.Toast.error('\u66f4\u65b0\u4e2a\u4eba\u8d44\u6599\u5931\u8d25: ' + data.message);
+      }
+    })
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(submitButton, originalText);
+      window.appUtils.Toast.error('\u66f4\u65b0\u4e2a\u4eba\u8d44\u6599\u5931\u8d25: ' + error.message);
+    });
 }
 
 // 更新密码
 function updatePassword(form) {
-  // 获取表单数据
-  const formData = new FormData(form);
-  const currentPassword = formData.get('current-password');
-  const newPassword = formData.get('new-password');
-  const confirmPassword = formData.get('confirm-password');
-  
-  // 验证新密码和确认密码是否匹配
+  var formData = new FormData(form);
+  var currentPassword = formData.get('current-password');
+  var newPassword = formData.get('new-password');
+  var confirmPassword = formData.get('confirm-password');
+
   if (newPassword !== confirmPassword) {
-    window.appUtils.showNotification('新密码和确认密码不匹配', 'error');
+    window.appUtils.Toast.error('\u65b0\u5bc6\u7801\u548c\u786e\u8ba4\u5bc6\u7801\u4e0d\u5339\u914d');
     return;
   }
-  
-  // 显示加载状态
-  const submitButton = form.querySelector('button[type="submit"]');
-  const originalText = submitButton.innerHTML;
-  submitButton.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  submitButton.disabled = true;
-  
-  // 发送请求更新密码
-  fetch('/api/users/me/password', {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      current_password: currentPassword,
-      new_password: newPassword
+
+  var submitButton = form.querySelector('button[type="submit"]');
+  var originalText = window.appUtils.Loading.setButtonLoading(submitButton);
+
+  window.appUtils.API.put('/api/users/me/password', {
+    current_password: currentPassword,
+    new_password: newPassword
+  })
+    .then(function(data) {
+      if (data.success) {
+        window.appUtils.Toast.success('\u5bc6\u7801\u5df2\u6210\u529f\u66f4\u65b0');
+        form.reset();
+        window.appUtils.Loading.restoreButton(submitButton, originalText);
+      } else {
+        window.appUtils.Loading.restoreButton(submitButton, originalText);
+        window.appUtils.Toast.error('\u66f4\u65b0\u5bc6\u7801\u5931\u8d25: ' + data.message);
+      }
     })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 显示成功消息
-      window.appUtils.showNotification('密码已成功更新', 'success');
-      
-      // 重置表单
-      form.reset();
-      
-      // 恢复按钮状态
-      submitButton.innerHTML = originalText;
-      submitButton.disabled = false;
-    } else {
-      // 恢复按钮状态
-      submitButton.innerHTML = originalText;
-      submitButton.disabled = false;
-      
-      // 显示错误消息
-      window.appUtils.showNotification(`更新密码失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    submitButton.innerHTML = originalText;
-    submitButton.disabled = false;
-    
-    // 显示错误消息
-    window.appUtils.showNotification(`更新密码失败: ${error.message}`, 'error');
-  });
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(submitButton, originalText);
+      window.appUtils.Toast.error('\u66f4\u65b0\u5bc6\u7801\u5931\u8d25: ' + error.message);
+    });
 }

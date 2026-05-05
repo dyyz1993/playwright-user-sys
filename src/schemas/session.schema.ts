@@ -138,3 +138,10 @@ export const getSessionScreenshotResponseSchema = successResponseSchema(
     screenshot_url: z.string(),
   })
 );
+
+export type SessionOptions = z.infer<typeof sessionOptionsSchema>;
+export type CreateSessionRequest = z.infer<typeof createSessionRequestSchema>;
+export type SessionBase = z.infer<typeof sessionBaseSchema>;
+export type SessionDetail = z.infer<typeof sessionDetailSchema>;
+export type CreateSessionResponse = z.infer<typeof createSessionResponseSchema>;
+export type SessionListItem = z.infer<typeof sessionListItemSchema>;

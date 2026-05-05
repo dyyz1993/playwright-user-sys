@@ -59,50 +59,27 @@ function initSessionManagement() {
 
 // 结束会话
 function endSession(sessionId) {
-  // 显示加载状态
-  const button = document.querySelector(`.end-session-btn[data-session-id="${sessionId}"]`);
-  const originalText = button.innerHTML;
-  button.innerHTML = '<div class="spinner inline-block mr-2"></div> 处理中...';
-  button.disabled = true;
-  
-  // 发送请求结束会话
-  fetch(`/api/sessions/${sessionId}/release`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // 更新会话状态
-      const statusCell = button.closest('tr').querySelector('.session-status');
-      statusCell.innerHTML = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">已结束</span>';
-      
-      // 禁用按钮
-      button.innerHTML = '<i class="fas fa-check"></i> 已结束';
-      button.classList.remove('bg-red-600', 'hover:bg-red-700');
-      button.classList.add('bg-gray-400', 'cursor-not-allowed');
-      
-      // 显示成功通知
-      window.appUtils.showNotification('会话已成功结束', 'success');
-    } else {
-      // 恢复按钮状态
-      button.innerHTML = originalText;
-      button.disabled = false;
-      
-      // 显示错误通知
-      window.appUtils.showNotification(`结束会话失败: ${data.message}`, 'error');
-    }
-  })
-  .catch(error => {
-    // 恢复按钮状态
-    button.innerHTML = originalText;
-    button.disabled = false;
-    
-    // 显示错误通知
-    window.appUtils.showNotification(`结束会话失败: ${error.message}`, 'error');
-  });
+  var button = document.querySelector('.end-session-btn[data-session-id="' + sessionId + '"]');
+  var originalText = window.appUtils.Loading.setButtonLoading(button);
+
+  window.appUtils.API.post('/api/sessions/' + sessionId + '/release')
+    .then(function(data) {
+      if (data.success) {
+        var statusCell = button.closest('tr').querySelector('.session-status');
+        statusCell.innerHTML = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">\u5df2\u7ed3\u675f</span>';
+        button.innerHTML = '<i class="fas fa-check"></i> \u5df2\u7ed3\u675f';
+        button.classList.remove('bg-red-600', 'hover:bg-red-700');
+        button.classList.add('bg-gray-400', 'cursor-not-allowed');
+        window.appUtils.Toast.success('\u4f1a\u8bdd\u5df2\u6210\u529f\u7ed3\u675f');
+      } else {
+        window.appUtils.Loading.restoreButton(button, originalText);
+        window.appUtils.Toast.error('\u7ed3\u675f\u4f1a\u8bdd\u5931\u8d25: ' + data.message);
+      }
+    })
+    .catch(function(error) {
+      window.appUtils.Loading.restoreButton(button, originalText);
+      window.appUtils.Toast.error('\u7ed3\u675f\u4f1a\u8bdd\u5931\u8d25: ' + error.message);
+    });
 }
 
 // 查看会话详情
@@ -122,10 +99,8 @@ function viewSessionDetails(sessionId) {
   // 显示模态框
   modal.classList.remove('hidden');
   
-  // 获取会话详情
-  fetch(`/api/sessions/${sessionId}`)
-    .then(response => response.json())
-    .then(data => {
+  window.appUtils.API.get('/api/sessions/' + sessionId)
+    .then(function(data) {
       if (data.success) {
         const session = data.data;
         

@@ -458,7 +458,7 @@ describe('真实Chrome浏览器集成测试', () => {
     await page.type('#kw', 'Playwright测试');
 
     // 验证输入值
-    const inputValue = await page.$eval('#kw', (el) => (el as HTMLInputElement).value);
+    const inputValue = await page.$eval('#kw', (el: Element) => (el as HTMLInputElement).value);
     expect(inputValue).toBe('Playwright测试');
 
     // 点击搜索按钮并处理可能的导航超时
@@ -477,7 +477,7 @@ describe('真实Chrome浏览器集成测试', () => {
 
     // 验证URL或输入值
     const url = page.url();
-    const finalInputValue = await page.$eval('#kw', (el) => (el as HTMLInputElement).value).catch(() => '');
+    const finalInputValue = await page.$eval('#kw', (el: Element) => (el as HTMLInputElement).value).catch(() => '');
 
     // 如果没有跳转到搜索结果页，至少验证输入值还在
     if (url.includes('baidu.com')) {

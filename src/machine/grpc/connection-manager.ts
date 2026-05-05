@@ -279,7 +279,9 @@ export class ConnectionManager {
       logger.warn(`收到未知类型的消息来自管理服务器: ${JSON.stringify(message)}`);
 
       for (const key in message) {
-        logger.debug(`消息字段 ${key}: ${typeof message[key]}, 值: ${JSON.stringify(message[key])}`);
+        logger.debug(
+          `消息字段 ${key}: ${typeof (message as Record<string, unknown>)[key]}, 值: ${JSON.stringify((message as Record<string, unknown>)[key])}`
+        );
       }
     } catch (error) {
       logger.error(`处理来自管理服务器的消息时出错:`, error);

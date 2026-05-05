@@ -298,7 +298,7 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       const creditsBefore: Record<number, number> = {};
       for (const user of testUsers) {
         const userRecord = await UserModel.findById(user.id);
-        creditsBefore[user.id] = userRecord.credits;
+        creditsBefore[user.id] = userRecord!.credits;
         console.log(`   用户 ${user.id} 创建前积分: ${creditsBefore[user.id]}`);
       }
 
@@ -344,8 +344,8 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       console.log('\n[步骤 4] 验证积分未扣费（后扣费模式）...');
       for (const user of testUsers) {
         const userRecord = await UserModel.findById(user.id);
-        console.log(`   用户 ${user.id} 创建后积分: ${userRecord.credits}`);
-        expect(userRecord.credits).toBe(creditsBefore[user.id]);
+        console.log(`   用户 ${user.id} 创建后积分: ${userRecord!.credits}`);
+        expect(userRecord!.credits).toBe(creditsBefore[user.id]);
       }
 
       console.log('\n✅ TIER-031 测试通过: 5个用户同时创建会话成功');
@@ -443,7 +443,7 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       for (const result of results) {
         const session = await SessionModel.findById(result.session.data.id);
         console.log(`   会话 ${result.session.data.id} -> 用户 ${result.userId}`);
-        expect(session.user_id).toBe(result.userId);
+        expect(session!.user_id).toBe(result.userId);
       }
 
       console.log('\n✅ TIER-033 测试通过: 会话相互隔离');
@@ -513,9 +513,9 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       let totalDeducted = 0;
       for (const user of testUsers) {
         const userRecord = await UserModel.findById(user.id);
-        const deducted = INITIAL_CREDITS - userRecord.credits;
+        const deducted = INITIAL_CREDITS - userRecord!.credits;
         totalDeducted += deducted;
-        console.log(`   用户 ${user.id}: 扣除 ${deducted} 积分，剩余 ${userRecord.credits}`);
+        console.log(`   用户 ${user.id}: 扣除 ${deducted} 积分，剩余 ${userRecord!.credits}`);
         // 10秒应该扣1点（<=1分钟按1分钟计）
         expect(deducted).toBe(1);
       }
@@ -658,8 +658,8 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
 
       for (const user of testUsers) {
         const userRecord = await UserModel.findById(user.id);
-        const deducted = INITIAL_CREDITS - userRecord.credits;
-        console.log(`   用户 ${user.id}: 扣除 ${deducted} 积分，剩余 ${userRecord.credits}`);
+        const deducted = INITIAL_CREDITS - userRecord!.credits;
+        console.log(`   用户 ${user.id}: 扣除 ${deducted} 积分，剩余 ${userRecord!.credits}`);
 
         // 65秒应该扣2点（>1分钟，<=2分钟）
         expect(deducted).toBe(2);

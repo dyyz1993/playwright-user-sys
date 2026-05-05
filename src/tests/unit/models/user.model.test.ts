@@ -39,13 +39,13 @@ describe('UserModel', () => {
     });
 
     expect(user).toBeTruthy();
-    expect(user.id).toBeDefined();
-    expect(user.username).toBe('testuser');
-    expect(user.password).not.toBe('password123'); // 密码被哈希
-    expect(user.api_key).toBeTruthy(); // API Key已生成
-    expect(user.credits).toBe(100);
-    expect(user.role).toBe(UserRole.USER);
-    expect(user.status).toBe(UserStatus.ACTIVE);
+    expect(user!.id).toBeDefined();
+    expect(user!.username).toBe('testuser');
+    expect(user!.password).not.toBe('password123'); // 密码被哈希
+    expect(user!.api_key).toBeTruthy(); // API Key已生成
+    expect(user!.credits).toBe(100);
+    expect(user!.role).toBe(UserRole.USER);
+    expect(user!.status).toBe(UserStatus.ACTIVE);
   });
 
   // ========================================
@@ -98,9 +98,9 @@ describe('UserModel', () => {
       credits: 50,
     });
 
-    const user = await UserModel.findById(created.id!);
+    const user = await UserModel.findById(created!.id!);
     expect(user).toBeTruthy();
-    expect(user!.id).toBe(created.id);
+    expect(user!.id).toBe(created!.id);
     expect(user!.username).toBe('testuser');
     expect(user!.credits).toBe(50);
   });
@@ -146,9 +146,9 @@ describe('UserModel', () => {
       password: await hashPassword('password123'),
     });
 
-    const user = await UserModel.findByApiKey(created.api_key!);
+    const user = await UserModel.findByApiKey(created!.api_key!);
     expect(user).toBeTruthy();
-    expect(user!.id).toBe(created.id);
+    expect(user!.id).toBe(created!.id);
     expect(user!.username).toBe('testuser');
   });
 
@@ -210,7 +210,7 @@ describe('UserModel', () => {
       credits: 100,
     });
 
-    const updated = await UserModel.addCredits(user.id!, 50);
+    const updated = await UserModel.addCredits(user!.id!, 50);
     expect(updated).toBeTruthy();
     expect(updated!.credits).toBe(150);
   });
@@ -225,7 +225,7 @@ describe('UserModel', () => {
       credits: 100,
     });
 
-    const updated = await UserModel.deductCredits(user.id!, 30);
+    const updated = await UserModel.deductCredits(user!.id!, 30);
     expect(updated).toBeTruthy();
     expect(updated!.credits).toBe(70);
   });
@@ -240,7 +240,7 @@ describe('UserModel', () => {
       credits: 10,
     });
 
-    await expect(UserModel.deductCredits(user.id!, 30)).rejects.toThrow('点数不足');
+    await expect(UserModel.deductCredits(user!.id!, 30)).rejects.toThrow('点数不足');
   });
 
   // ========================================
@@ -256,14 +256,14 @@ describe('UserModel', () => {
     const trx = await db.transaction();
 
     try {
-      await UserModel.deductCredits(user.id!, 30, trx);
+      await UserModel.deductCredits(user!.id!, 30, trx);
       await trx.rollback(); // 回滚
     } catch (_e) {
       await trx.rollback();
     }
 
     // 回滚后余额应该不变
-    const checkUser = await UserModel.findById(user.id!);
+    const checkUser = await UserModel.findById(user!.id!);
     expect(checkUser!.credits).toBe(100); // 仍是100
   });
 
@@ -284,14 +284,14 @@ describe('UserModel', () => {
     });
 
     const userCredits = new Map<number, number>();
-    userCredits.set(user1.id!, 30);
-    userCredits.set(user2.id!, 50);
+    userCredits.set(user1!.id!, 30);
+    userCredits.set(user2!.id!, 50);
 
     const count = await UserModel.batchDeductCredits(userCredits);
     expect(count).toBe(2);
 
-    const updated1 = await UserModel.findById(user1.id!);
-    const updated2 = await UserModel.findById(user2.id!);
+    const updated1 = await UserModel.findById(user1!.id!);
+    const updated2 = await UserModel.findById(user2!.id!);
     expect(updated1!.credits).toBe(70);
     expect(updated2!.credits).toBe(150);
   });
@@ -313,15 +313,15 @@ describe('UserModel', () => {
     });
 
     const userCredits = new Map<number, number>();
-    userCredits.set(user1.id!, 30);
-    userCredits.set(user2.id!, 50); // 这会失败
+    userCredits.set(user1!.id!, 30);
+    userCredits.set(user2!.id!, 50); // 这会失败
 
     const count = await UserModel.batchDeductCredits(userCredits);
     // 只有 user1 成功
     expect(count).toBe(1);
 
-    const updated1 = await UserModel.findById(user1.id!);
-    const updated2 = await UserModel.findById(user2.id!);
+    const updated1 = await UserModel.findById(user1!.id!);
+    const updated2 = await UserModel.findById(user2!.id!);
     expect(updated1!.credits).toBe(70);
     expect(updated2!.credits).toBe(10); // 未变化
   });
@@ -335,13 +335,13 @@ describe('UserModel', () => {
       password: await hashPassword('password123'),
     });
 
-    const oldApiKey = user.api_key;
-    const newApiKey = await UserModel.resetApiKey(user.id!);
+    const oldApiKey = user!.api_key;
+    const newApiKey = await UserModel.resetApiKey(user!.id!);
 
     expect(newApiKey).toBeTruthy();
     expect(newApiKey).not.toBe(oldApiKey);
 
-    const updated = await UserModel.findById(user.id!);
+    const updated = await UserModel.findById(user!.id!);
     expect(updated!.api_key).toBe(newApiKey);
   });
 
@@ -356,7 +356,7 @@ describe('UserModel', () => {
       credits: 100,
     });
 
-    const updated = await UserModel.update(user.id!, {
+    const updated = await UserModel.update(user!.id!, {
       email: 'new@example.com',
       credits: 200,
     });
@@ -390,10 +390,10 @@ describe('UserModel', () => {
       password: await hashPassword('password123'),
     });
 
-    const deleted = await UserModel.delete(user.id!);
+    const deleted = await UserModel.delete(user!.id!);
     expect(deleted).toBe(true);
 
-    const found = await UserModel.findById(user.id!);
+    const found = await UserModel.findById(user!.id!);
     expect(found).toBeNull();
   });
 

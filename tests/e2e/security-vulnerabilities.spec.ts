@@ -260,7 +260,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
         const jwt = await import('jsonwebtoken');
         const expiredToken = jwt.sign(
           { id: user.id, username: user.username, role: user.role },
-          process.env.NODE_ENV === 'test' ? 'test-secret-key' : process.env.JWT_SECRET,
+          process.env.NODE_ENV === 'test' ? 'test-secret-key' : process.env.JWT_SECRET!,
           { expiresIn: '-1h' } // 负数表示已过期
         );
 
@@ -391,7 +391,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
 
       // 步骤 2: 并发发送多个创建会话请求
       const concurrentRequests = 5;
-      const promises = [];
+      const promises: Promise<any>[] = [];
 
       for (let i = 0; i < concurrentRequests; i++) {
         promises.push(
@@ -579,7 +579,7 @@ test.describe('TIER 安全漏洞测试套件', () => {
 
       // 步骤 3: 并发发送多个释放会话请求
       const concurrentRequests = 5;
-      const promises = [];
+      const promises: Promise<any>[] = [];
 
       for (let i = 0; i < concurrentRequests; i++) {
         promises.push(

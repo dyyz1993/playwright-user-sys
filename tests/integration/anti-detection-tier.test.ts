@@ -142,16 +142,16 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
       // 生成 JWT token
       const { generateToken } = await import('../../src/utils/auth.js');
       const token = generateToken({
-        id: user.id!,
-        username: user.username!,
-        role: user.role!,
+        id: user!.id!,
+        username: user!.username!,
+        role: user!.role!,
       });
 
       testUsers.push({
-        id: user.id!,
-        username: user.username!,
+        id: user!.id!,
+        username: user!.username!,
         token,
-        apiKey: user.api_key || '',
+        apiKey: user!.api_key || '',
       });
     }
     console.log(`   ✅ 已创建 ${NUM_USERS} 个测试用户`);

@@ -74,7 +74,7 @@ describe('Disk Usage Tests', () => {
   });
 
   it('should get disk usage multiple times', async () => {
-    const usages = [];
+    const usages: number[] = [];
     for (let i = 0; i < 3; i++) {
       const usage = await getDiskUsage();
       usages.push(usage);

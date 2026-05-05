@@ -416,7 +416,7 @@ describe('SessionController', () => {
     });
 
     const { connectionManager } = await import('../../../services/machine-grpc.service.js');
-    vi.mocked(connectionManager.closeBrowser).mockResolvedValue(undefined);
+    vi.mocked(connectionManager.closeBrowser).mockResolvedValue(false);
 
     const { releaseSession } = await import('../../../controllers/session.controller.js');
 

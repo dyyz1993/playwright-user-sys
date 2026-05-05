@@ -45,10 +45,10 @@ describe('MachineModel', () => {
     });
 
     expect(machine).toBeTruthy();
-    expect(machine.id).toBe('machine-001');
-    expect(machine.hostname).toBe('test-host');
-    expect(machine.status).toBe('online');
-    expect(machine.maxInstances).toBe(10);
+    expect(machine!.id).toBe('machine-001');
+    expect(machine!.hostname).toBe('test-host');
+    expect(machine!.status).toBe('online');
+    expect(machine!.maxInstances).toBe(10);
   });
 
   // ========================================
@@ -68,9 +68,9 @@ describe('MachineModel', () => {
     });
 
     expect(updated).toBeTruthy();
-    expect(updated.id).toBe('machine-001');
-    expect(updated.hostname).toBe('updated-host');
-    expect(updated.ip).toBe('192.168.1.101');
+    expect(updated!.id).toBe('machine-001');
+    expect(updated!.hostname).toBe('updated-host');
+    expect(updated!.ip).toBe('192.168.1.101');
   });
 
   // ========================================

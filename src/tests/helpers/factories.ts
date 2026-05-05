@@ -25,7 +25,7 @@ export async function createTestUser(
   }> = {}
 ) {
   const timestamp = Date.now();
-  return UserModel.create({
+  const user = await UserModel.create({
     username: `testuser_${timestamp}`,
     password: await hashPassword('password123'),
     email: `test_${timestamp}@example.com`,
@@ -34,6 +34,7 @@ export async function createTestUser(
     credits: 100,
     ...overrides,
   });
+  return user!;
 }
 
 /**
@@ -51,7 +52,7 @@ export async function createTestAdmin(
   }> = {}
 ) {
   const timestamp = Date.now();
-  return UserModel.create({
+  const admin = await UserModel.create({
     username: `testadmin_${timestamp}`,
     password: await hashPassword('password123'),
     email: `admin_${timestamp}@example.com`,
@@ -60,6 +61,7 @@ export async function createTestAdmin(
     credits: 1000,
     ...overrides,
   });
+  return admin!;
 }
 
 /**
@@ -78,7 +80,7 @@ export async function createTestSession(
   }> = {}
 ) {
   const timestamp = Date.now();
-  return SessionModel.create({
+  const session = await SessionModel.create({
     user_id: userId,
     machine_id: `machine-${timestamp}`,
     port: 3000 + Math.floor(Math.random() * 1000),
@@ -87,6 +89,7 @@ export async function createTestSession(
     },
     ...overrides,
   });
+  return session!;
 }
 
 /**
@@ -107,7 +110,7 @@ export async function createTestMachine(
   }> = {}
 ) {
   const timestamp = Date.now();
-  return MachineModel.register({
+  const machine = await MachineModel.register({
     id: `machine-${timestamp}`,
     hostname: 'test-machine',
     ip: '127.0.0.1',
@@ -116,6 +119,7 @@ export async function createTestMachine(
     maxInstances: 10,
     ...overrides,
   });
+  return machine!;
 }
 
 /**
@@ -124,7 +128,7 @@ export async function createTestMachine(
  * @returns 用户数组
  */
 export async function createTestUsers(count: number) {
-  const users = [];
+  const users: Awaited<ReturnType<typeof createTestUser>>[] = [];
   for (let i = 0; i < count; i++) {
     const user = await createTestUser({
       username: `testuser_${Date.now()}_${i}`,
@@ -141,7 +145,7 @@ export async function createTestUsers(count: number) {
  * @returns 会话数组
  */
 export async function createTestSessions(userId: number, count: number) {
-  const sessions = [];
+  const sessions: Awaited<ReturnType<typeof createTestSession>>[] = [];
   for (let i = 0; i < count; i++) {
     const session = await createTestSession(userId);
     sessions.push(session);
@@ -155,7 +159,7 @@ export async function createTestSessions(userId: number, count: number) {
  * @returns 机器数组
  */
 export async function createTestMachines(count: number) {
-  const machines = [];
+  const machines: Awaited<ReturnType<typeof createTestMachine>>[] = [];
   for (let i = 0; i < count; i++) {
     const machine = await createTestMachine();
     machines.push(machine);

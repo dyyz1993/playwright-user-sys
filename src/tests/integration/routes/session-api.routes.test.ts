@@ -152,7 +152,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: `/api/sessions/${session.id}/release`,
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
       });
 
@@ -413,7 +413,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: `/api/sessions/${userSession.id}`,
         headers: {
-          'x-api-key': testUser.api_key,
+          'x-api-key': testUser.api_key!!,
         },
       });
 
@@ -425,7 +425,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: `/api/sessions/${adminSession.id}`,
         headers: {
-          'x-api-key': testUser.api_key,
+          'x-api-key': testUser.api_key!!,
         },
       });
 
@@ -437,7 +437,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: `/api/sessions/${userSession.id}/release`,
         headers: {
-          'x-api-key': testUser.api_key,
+          'x-api-key': testUser.api_key!!,
         },
       });
 
@@ -449,7 +449,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: `/api/sessions/${adminSession.id}/release`,
         headers: {
-          'x-api-key': testUser.api_key,
+          'x-api-key': testUser.api_key!!,
         },
       });
 
@@ -543,7 +543,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: '/api/sessions',
         headers: {
-          'x-api-key': testUser.api_key,
+          'x-api-key': testUser.api_key!!,
         },
       });
 
@@ -561,7 +561,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: `/api/sessions/${userSession.id}/screenshot`,
         headers: {
-          'x-api-key': testUser.api_key,
+          'x-api-key': testUser.api_key!!,
         },
       });
 
@@ -575,7 +575,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: `/api/sessions/${adminSession.id}/screenshot`,
         headers: {
-          'x-api-key': testUser.api_key,
+          'x-api-key': testUser.api_key!!,
         },
       });
 
@@ -696,17 +696,17 @@ describe('会话管理 API 集成测试', () => {
         app.inject({
           method: 'GET',
           url: '/api/sessions',
-          headers: { 'x-api-key': user.api_key },
+          headers: { 'x-api-key': user.api_key!! },
         }),
         app.inject({
           method: 'GET',
           url: '/api/sessions',
-          headers: { 'x-api-key': user.api_key },
+          headers: { 'x-api-key': user.api_key!! },
         }),
         app.inject({
           method: 'GET',
           url: '/api/sessions',
-          headers: { 'x-api-key': user.api_key },
+          headers: { 'x-api-key': user.api_key!! },
         }),
       ]);
 
@@ -823,7 +823,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
         payload: {
           userAgent: 'test-agent',
@@ -856,7 +856,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: `/api/sessions/${session.id}`,
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
       });
 
@@ -886,7 +886,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
       });
 
@@ -905,7 +905,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: `/api/sessions/${session.id}/release`,
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
       });
 
@@ -974,7 +974,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: '/api/sessions/non-existent-id',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
       });
 
@@ -993,7 +993,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: '/api/sessions?page=1&limit=10',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
       });
 
@@ -1039,7 +1039,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
         payload: {},
       });
@@ -1055,7 +1055,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
         payload: {
           userAgent: 'Mozilla/5.0 Test Browser',
@@ -1072,7 +1072,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
         payload: {
           viewport: {
@@ -1092,7 +1092,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
         payload: {
           viewport: {
@@ -1113,7 +1113,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
         payload: {
           viewport: {
@@ -1133,7 +1133,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
         payload: {
           cookies: {
@@ -1153,7 +1153,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
         payload: {
           localStorage: {
@@ -1421,7 +1421,7 @@ describe('会话管理 API 集成测试', () => {
       const user = await createTestUser();
       const session = await SessionModel.create({
         user_id: user.id,
-        machine_id: null,
+        machine_id: undefined,
       });
 
       expect(session?.machine_id).toBeNull();
@@ -1431,7 +1431,7 @@ describe('会话管理 API 集成测试', () => {
       const user = await createTestUser();
       const session = await SessionModel.create({
         user_id: user.id,
-        port: null,
+        port: undefined,
       });
 
       expect(session?.port).toBeNull();
@@ -1997,7 +1997,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: '/api/sessions/not-a-uuid',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
       });
 
@@ -2017,7 +2017,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
         payload: {},
       });
@@ -2039,7 +2039,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
         payload: {},
       });
@@ -2056,7 +2056,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions',
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
           'Content-Type': 'application/json',
         },
         payload: {
@@ -2081,7 +2081,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: '/api/sessions/non-existent-id/release',
         headers: {
-          'x-api-key': testUser.api_key,
+          'x-api-key': testUser.api_key!!,
         },
       });
 
@@ -2093,7 +2093,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'GET',
         url: '/api/sessions/non-existent-id',
         headers: {
-          'x-api-key': testUser.api_key,
+          'x-api-key': testUser.api_key!!,
         },
       });
 
@@ -2127,7 +2127,7 @@ describe('会话管理 API 集成测试', () => {
         method: 'POST',
         url: `/api/sessions/${session.id}/release`,
         headers: {
-          'x-api-key': user.api_key,
+          'x-api-key': user.api_key!!,
         },
       });
 

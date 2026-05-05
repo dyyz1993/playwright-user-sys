@@ -467,7 +467,7 @@ describe('完整三端架构集成测试', () => {
 
     // 步骤 3: 验证机器实例计数增加
     console.log('\n[步骤 3] 验证机器实例计数...');
-    const machine = await MachineModel.findById(session!.machine_id);
+    const machine = await MachineModel.findById(session!.machine_id!);
     expect(machine).toEqual(expect.any(Object));
     expect(machine!.instanceCount).toBe(1);
     console.log(`   ✅ 机器实例计数: ${machine!.instanceCount}`);

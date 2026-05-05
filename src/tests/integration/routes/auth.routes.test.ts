@@ -96,7 +96,7 @@ describe('Auth Routes集成测试', () => {
 
       // 验证token是有效的JWT
       const decoded = verifyToken(result.data.token);
-      expect(decoded.username).toBe('authuser');
+      expect(decoded!.username).toBe('authuser');
     });
 
     // ========================================

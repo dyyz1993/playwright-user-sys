@@ -118,25 +118,25 @@ describe('反机器人检测验证测试', () => {
       const user = await UserModel.create(userData);
 
       const token = generateToken({
-        id: user.id,
-        username: user.username,
-        role: user.role,
+        id: user!.id,
+        username: user!.username,
+        role: user!.role,
       });
 
-      let apiKey = user.api_key;
+      let apiKey = user!.api_key;
       if (!apiKey) {
         apiKey = generateApiKey();
-        await UserModel.update(user.id, { api_key: apiKey });
+        await UserModel.update(user!.id, { api_key: apiKey });
       }
 
       testUsers.push({
-        id: user.id!,
-        username: user.username!,
+        id: user!.id!,
+        username: user!.username!,
         token,
         apiKey,
       });
 
-      console.log(`   ✅ 用户 ${i + 1}: ${user.username} (积分: ${user.credits})`);
+      console.log(`   ✅ 用户 ${i + 1}: ${user!.username} (积分: ${user!.credits})`);
     }
     console.log(`   ✅ 创建了 ${testUsers.length} 个测试用户`);
 

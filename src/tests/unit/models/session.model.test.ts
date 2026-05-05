@@ -69,10 +69,10 @@ describe('SessionModel', () => {
     });
 
     expect(session).toBeTruthy();
-    expect(session.id).toBeDefined();
-    expect(session.user_id).toBe(testUser.id);
-    expect(session.machine_id).toBe(testMachine.id);
-    expect(session.status).toBe(SessionStatus.CREATED);
+    expect(session!.id).toBeDefined();
+    expect(session!.user_id).toBe(testUser.id);
+    expect(session!.machine_id).toBe(testMachine.id);
+    expect(session!.status).toBe(SessionStatus.CREATED);
   });
 
   // ========================================
@@ -83,9 +83,9 @@ describe('SessionModel', () => {
       user_id: testUser.id,
     });
 
-    const session = await SessionModel.findById(created.id);
+    const session = await SessionModel.findById(created!.id);
     expect(session).toBeTruthy();
-    expect(session!.id).toBe(created.id);
+    expect(session!.id).toBe(created!.id);
     expect(session!.status).toBe(SessionStatus.CREATED);
   });
 
@@ -124,7 +124,7 @@ describe('SessionModel', () => {
       user_id: testUser.id,
     });
 
-    const updated = await SessionModel.markConnected(session.id);
+    const updated = await SessionModel.markConnected(session!.id);
     expect(updated).toBeTruthy();
     expect(updated!.status).toBe(SessionStatus.CONNECTED);
   });
@@ -161,7 +161,7 @@ describe('SessionModel', () => {
       user_id: testUser.id,
     });
 
-    const updated = await SessionModel.markDisconnected(session.id, 0);
+    const updated = await SessionModel.markDisconnected(session!.id, 0);
 
     expect(updated).toBeTruthy();
     expect(updated!.credits_used).toBeGreaterThanOrEqual(0);
@@ -176,7 +176,7 @@ describe('SessionModel', () => {
     });
 
     const duration = 10 * 60; // 10分钟
-    const updated = await SessionModel.markExpired(session.id, duration);
+    const updated = await SessionModel.markExpired(session!.id, duration);
 
     expect(updated).toBeTruthy();
     expect(updated!.status).toBe(SessionStatus.EXPIRED);
@@ -192,7 +192,7 @@ describe('SessionModel', () => {
     });
 
     const duration = 5 * 60;
-    const updated = await SessionModel.markError(session.id, duration);
+    const updated = await SessionModel.markError(session!.id, duration);
 
     expect(updated).toBeTruthy();
     expect(updated!.status).toBe(SessionStatus.ERROR);
@@ -229,7 +229,7 @@ describe('SessionModel', () => {
       user_id: testUser.id,
     });
     // 手动更新为 CONNECTED 状态
-    await db('sessions').where('id', active.id).update({
+    await db('sessions').where('id', active!.id).update({
       status: SessionStatus.CONNECTED,
     });
 
@@ -237,7 +237,7 @@ describe('SessionModel', () => {
     const disconnected = await SessionModel.create({
       user_id: testUser.id,
     });
-    await db('sessions').where('id', disconnected.id).update({
+    await db('sessions').where('id', disconnected!.id).update({
       status: SessionStatus.DISCONNECTED,
     });
 
@@ -269,10 +269,10 @@ describe('SessionModel', () => {
       user_id: testUser.id,
     });
 
-    const _before = session.last_activity;
+    const _before = session!.last_activity;
     await new Promise((resolve) => setTimeout(resolve, 100)); // 等待一小段时间
 
-    const updated = await SessionModel.updateLastActivity(session.id);
+    const updated = await SessionModel.updateLastActivity(session!.id);
     expect(updated).toBeTruthy();
     // last_activity 应该被更新
     expect(updated!.last_activity).toBeTruthy();
@@ -339,7 +339,7 @@ describe('SessionModel', () => {
       options,
     });
 
-    const found = await SessionModel.findById(session.id);
+    const found = await SessionModel.findById(session!.id);
     expect(found!.options).toBeTruthy();
     expect(found!.options!.userAgent).toBe('test-agent');
   });

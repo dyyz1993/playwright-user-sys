@@ -39,14 +39,14 @@ export async function createTestUser(overrides: Partial<any> = {}): Promise<any>
     role: UserRole.USER,
     credits: 100,
     email: `test_${Date.now()}@example.com`,
-    webhook_url: null,
+    webhook_url: undefined,
   };
 
   const userData = { ...defaultUser, ...overrides };
 
   try {
     const user = await UserModel.create(userData);
-    console.log(`✅ 创建测试用户: ${user.username}, 积分: ${user.credits}`);
+    console.log(`✅ 创建测试用户: ${user!.username}, 积分: ${user!.credits}`);
     return user;
   } catch (error: any) {
     console.error('创建测试用户失败:', error.message);
@@ -103,7 +103,7 @@ export async function createTestMachine(overrides: Partial<any> = {}): Promise<a
 
   try {
     const machine = await MachineModel.register(machineData);
-    console.log(`✅ 创建测试机器: ${machine.id}, gRPC: ${grpcPort}, Proxy: ${proxyPort}`);
+    console.log(`✅ 创建测试机器: ${machine!.id}, gRPC: ${grpcPort}, Proxy: ${proxyPort}`);
     return machine;
   } catch (error: any) {
     console.error('创建测试机器失败:', error.message);
@@ -171,7 +171,7 @@ export async function createTestSession(userId: number, machineId: string, overr
 
   try {
     const session = await SessionModel.create(sessionData);
-    console.log(`✅ 创建测试会话: ${session.id}, 用户: ${userId}, 机器: ${machineId}`);
+    console.log(`✅ 创建测试会话: ${session!.id}, 用户: ${userId}, 机器: ${machineId}`);
     return session;
   } catch (error: any) {
     console.error('创建测试会话失败:', error.message);

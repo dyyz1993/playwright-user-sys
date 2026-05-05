@@ -1408,7 +1408,7 @@ describe('积分管理 API Routes 集成测试', () => {
       });
 
       // 并发添加
-      const promises = [];
+      const promises: Promise<any>[] = [];
       for (let i = 0; i < 10; i++) {
         promises.push(UserModel.addCredits(user!.id, 10));
       }
@@ -1431,7 +1431,7 @@ describe('积分管理 API Routes 集成测试', () => {
       });
 
       // 并发扣除（有些会失败因为余额不足）
-      const promises = [];
+      const promises: Promise<any>[] = [];
       for (let i = 0; i < 10; i++) {
         promises.push(
           UserModel.deductCredits(user!.id, 10).catch((_err) => {
@@ -1456,7 +1456,7 @@ describe('积分管理 API Routes 集成测试', () => {
         credits: 100,
       });
 
-      const promises = [];
+      const promises: Promise<any>[] = [];
 
       // 并发操作
       for (let i = 0; i < 5; i++) {
@@ -1475,7 +1475,7 @@ describe('积分管理 API Routes 集成测试', () => {
       const users = await createTestUsers(5);
 
       // 并发批量充值
-      const promises = [];
+      const promises: Promise<any>[] = [];
       for (const user of users) {
         promises.push(
           app.inject({
@@ -1513,7 +1513,7 @@ describe('积分管理 API Routes 集成测试', () => {
       });
 
       // 大量并发操作
-      const promises = [];
+      const promises: Promise<any>[] = [];
       for (let i = 0; i < 50; i++) {
         promises.push(UserModel.addCredits(user!.id, 1).catch((_err) => null));
       }

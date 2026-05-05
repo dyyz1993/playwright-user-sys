@@ -151,7 +151,10 @@ export async function createIndexes() {
       console.log(`✅ 索引 ${indexName} 创建成功`);
     } catch (err: unknown) {
       const error = err as { errno?: number; code?: string; message?: string };
-      if (isMySQL && (error.errno === 1061 || error.code === 'ER_DUP_KEYNAME' || error.message?.includes('already exists'))) {
+      if (
+        isMySQL &&
+        (error.errno === 1061 || error.code === 'ER_DUP_KEYNAME' || error.message?.includes('already exists'))
+      ) {
         console.log(`⏭️ 索引 ${indexName} 已存在，跳过`);
       } else if (isSQLite && error.message?.includes('already exists')) {
         console.log(`⏭️ 索引 ${indexName} 已存在，跳过`);

@@ -1,0 +1,107 @@
+name: E2E Smoke Test
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'LICENSE'
+  workflow_dispatch:
+
+jobs:
+  e2e-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build TypeScript
+        run: pnpm build:emit
+
+      - name: Build Docker images
+        run: |
+          docker build -f docker/manager/Dockerfile.prod -t playwright-manager:e2e --target production .
+          docker build -f docker/machine/Dockerfile -t playwright-machine:e2e --target production .
+
+      - name: Start E2E environment
+        run: |
+          docker compose -f docker/docker-compose.e2e.yml up -d
+
+          echo "Waiting for all services to become healthy..."
+          timeout 180 bash -c '
+            until docker compose -f docker/docker-compose.e2e.yml ps --format json | python3 -c "
+              import json, sys
+              data = [json.loads(line) for line in sys.stdin]
+              healthy = all(d.get(\"Health\",\"\") == \"healthy\" for d in data)
+              running = all(d.get(\"State\",\"\") == \"running\" for d in data)
+              sys.exit(0 if (healthy and running) else 1)
+            " 2>/dev/null; do
+              sleep 5
+              echo "  Still waiting..."
+              docker compose -f docker/docker-compose.e2e.yml ps
+            done
+          ' || {
+            echo "=== Services did not become healthy in time ==="
+            docker compose -f docker/docker-compose.e2e.yml ps
+            echo "=== Manager logs ==="
+            docker compose -f docker/docker-compose.e2e.yml logs manager 2>&1 | tail -50
+            echo "=== Machine logs ==="
+            docker compose -f docker/docker-compose.e2e.yml logs machine 2>&1 | tail -50
+            exit 1
+          }
+
+          echo "All services healthy!"
+          docker compose -f docker/docker-compose.e2e.yml ps
+
+      - name: Wait for machine registration
+        run: |
+          echo "Checking manager health..."
+          curl -sf http://localhost:3000/health | python3 -m json.tool
+          echo ""
+          echo "Checking machine health..."
+          curl -sf http://localhost:9100/health | python3 -m json.tool
+          echo ""
+          echo "Waiting 15s for gRPC registration..."
+          sleep 15
+
+      - name: Run E2E Smoke Test
+        run: |
+          BASE_URL=http://localhost:3000 \
+          ADMIN_USERNAME=admin \
+          ADMIN_PASSWORD=admin123 \
+          npx tsx scripts/e2e-smoke-test.ts
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Manager Logs ==="
+          docker compose -f docker/docker-compose.e2e.yml logs manager 2>&1 | tail -80
+          echo ""
+          echo "=== Machine Logs ==="
+          docker compose -f docker/docker-compose.e2e.yml logs machine 2>&1 | tail -80
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker/docker-compose.e2e.yml down -v
+
+  feishu-notify:
+    needs: e2e-test
+    if: always()
+    uses: dyyz1993/ci-tools/.github/workflows/feishu-notify.yml@main
+    with:
+      workflow_name: "E2E Smoke Test"
+    secrets: inherit

@@ -26,6 +26,8 @@ RUN npm install -g pnpm@10.8.0
 RUN --mount=type=cache,target=/root/.pnpm-store \
     pnpm install --frozen-lockfile
 
+RUN cd /app/node_modules/better-sqlite3 && npm run build-release
+
 # ============================================
 # Stage 2: Build
 # ============================================

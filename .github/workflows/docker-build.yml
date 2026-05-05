@@ -109,7 +109,7 @@ jobs:
           # Wait for health check with retries
           MAX_RETRIES=30
           for i in $(seq 1 $MAX_RETRIES); do
-            if docker exec manager-test node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" 2>/dev/null; then
+            if docker exec manager-test node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" 2>/dev/null; then
               echo "✅ Manager 健康检查通过 (第 ${i} 次尝试)"
               break
             fi
@@ -132,8 +132,8 @@ jobs:
           echo "📡 测试 API 端点..."
           
           # Test health endpoint
-          HEALTH=$(curl -s http://localhost:3000/api/health || echo "FAILED")
-          echo "   /api/health → ${HEALTH}"
+          HEALTH=$(curl -s http://localhost:3000/health || echo "FAILED")
+          echo "   /health → ${HEALTH}"
           
           # Test login page
           LOGIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/admin/login || echo "000")

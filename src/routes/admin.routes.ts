@@ -43,7 +43,14 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   });
 
   // 登录处理
-  fastify.post('/admin/login', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/admin/login', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '1 minute',
+      },
+    },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const body = request.body as any;
       const username = body.username;

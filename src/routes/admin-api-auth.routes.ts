@@ -19,6 +19,12 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
   fastify.post(
     '/api/admin/login',
     {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: '1 minute',
+        },
+      },
       schema: {
         body: zodToJsonSchema(adminLoginRequestSchema),
         response: {

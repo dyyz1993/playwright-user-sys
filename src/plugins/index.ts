@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 import sensible from '@fastify/sensible';
 import gracefulShutdown from 'fastify-graceful-shutdown';
@@ -24,9 +25,27 @@ import { logger } from '@shared/utils/logger.js';
 export default fp(async function (fastify: FastifyInstance) {
   logger.info('开始注册所有插件...');
 
+  // 注册 Rate Limit 插件
+  await fastify.register(rateLimit as any, {
+    max: 100,
+    timeWindow: '1 minute',
+    keyGenerator: (request) => request.ip,
+  });
+
   // 注册 CORS 插件
+  const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+    : ['http://localhost:3000', 'http://localhost:5173'];
+
   await fastify.register(cors, {
-    origin: true,
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'), false);
+      }
+    },
     credentials: true,
   });
 
@@ -66,15 +85,15 @@ export default fp(async function (fastify: FastifyInstance) {
   // 不设置 secret，因为 JWT token 本身已经签名了
   await fastify.register(cookie);
 
-  // 注册 Session 插件
   await fastify.register(session, {
     cookieName: 'sessionId',
     secret: config.jwt.secret,
     cookie: {
-      // secure: process.env.NODE_ENV === 'production',
-      secure: false,
-      // httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
     },
   });
 

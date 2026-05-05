@@ -13,6 +13,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post(
     '/login',
     {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: '1 minute',
+        },
+      },
       schema: {
         body: zodToJsonSchema(loginRequestSchema),
         response: {

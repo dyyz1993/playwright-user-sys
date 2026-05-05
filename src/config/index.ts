@@ -32,7 +32,7 @@ export const config = {
 
   // JWT 配置
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-secret-key',
+    secret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'development' ? 'dev-only-secret-key' : undefined as any),
     expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'],
   },
 
@@ -48,3 +48,7 @@ export const config = {
     prettyPrint: process.env.NODE_ENV !== 'production',
   },
 };
+
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is required in production');
+}

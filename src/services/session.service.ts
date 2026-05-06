@@ -6,6 +6,7 @@ import { logger } from '@shared/utils/logger.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { env } from '../config/env.js';
 import { db } from '../config/database.js';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface ReleaseSessionOptions {
   sessionId: string;
@@ -116,25 +117,15 @@ export async function createBrowserSession(
   options: SessionCreateOptions = {},
   isWebSocketDirect = false
 ) {
-  // 检查用户是否存在
   const user = await UserModel.findById(userId);
   if (!user) {
     throw new Error('用户不存在');
   }
 
-  // 检查用户点数是否足够
   if (user.credits <= 0) {
     throw new Error('点数不足，请联系管理员充值');
   }
 
-  // 检查用户活跃会话数量是否超过限制
-  const activeCount = await SessionModel.countActiveByUserId(user.id);
-  const maxSessions = env.MAX_SESSIONS_PER_USER;
-  if (activeCount >= maxSessions) {
-    throw new Error(`Session limit reached: user has ${activeCount} active sessions, max is ${maxSessions}`);
-  }
-
-  // 确保至少有一个默认的viewport
   if (!options.viewport) {
     options.viewport = {
       width: 1280,
@@ -144,7 +135,6 @@ export async function createBrowserSession(
 
   logger.info(`创建会话的选项: ${JSON.stringify(options)}`);
 
-  // 查找可用的实例机器
   logger.info('开始查找可用的实例机器');
   const machine = await MachineModel.findAvailable();
   if (!machine) {
@@ -155,64 +145,78 @@ export async function createBrowserSession(
   const machineId = machine.id;
   logger.info(`找到可用的实例机器: ${machineId}`);
 
-  // 创建会话记录
-  const session = await SessionModel.create({
-    user_id: userId,
-    options,
+  const { sessionId, createdAt } = await db.transaction(async (trx) => {
+    const activeResult = await trx('sessions')
+      .where({ user_id: userId })
+      .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED])
+      .count('id as count')
+      .first();
+    const activeCount = activeResult ? Number(activeResult.count) : 0;
+
+    if (activeCount >= env.MAX_SESSIONS_PER_USER) {
+      throw new Error(
+        `Session limit reached: user has ${activeCount} active sessions, max is ${env.MAX_SESSIONS_PER_USER}`
+      );
+    }
+
+    const machineInTx = await trx('machines')
+      .where({ id: machineId })
+      .whereRaw('instance_count < max_instances')
+      .first();
+    if (!machineInTx) {
+      throw new Error('Machine no longer available');
+    }
+
+    const newSessionId = uuidv4();
+    const now = new Date();
+    await trx('sessions').insert({
+      id: newSessionId,
+      user_id: userId,
+      machine_id: machineId,
+      status: SessionStatus.CREATED,
+      options: JSON.stringify(options),
+      created_at: now,
+      updated_at: now,
+    });
+
+    await trx('machines').where({ id: machineId }).increment('instance_count', 1);
+
+    return { sessionId: newSessionId, createdAt: now };
   });
 
-  if (!session) {
-    throw new Error('创建会话失败');
-  }
-
-  const sessionId = session.id;
   logger.info(`创建会话成功: ${sessionId}`);
 
   try {
-    // 获取 connectionManager 并启动浏览器
     const { connectionManager } = await import('../services/machine-grpc.service.js');
     logger.info(`向机器 ${machineId} 发送启动浏览器请求 (sessionId: ${sessionId})`);
 
-    // 将 userId 添加到 options 中，用于计算 userDataDir 路径
     const launchOptions = { ...options, userId };
     const result = await connectionManager.launchBrowser(machineId, sessionId, launchOptions);
     logger.info(`启动浏览器结果: ${JSON.stringify(result)}`);
 
-    // 更新会话记录
     const now = new Date();
     await SessionModel.update(sessionId, {
-      machine_id: machineId,
       port: result.port as number,
       status: isWebSocketDirect ? SessionStatus.CONNECTED : SessionStatus.CREATED,
       start_time: now,
     });
 
-    // 增加机器实例计数
-    await MachineModel.incrementInstanceCount(machineId);
-
     logger.info(`会话已更新并设置开始时间 (${sessionId}): ${now.toISOString()}`);
 
-    // 触发 Webhook 事件
     await createWebhookEvent(userId, WebhookEventType.SESSION_CREATED, {
       session_id: sessionId,
-      created_at: session.created_at,
+      created_at: createdAt,
     });
 
     logger.info(`原始 WebSocket 端点: ${result.browser_ws_endpoint}`);
 
-    // 构建直连URL
     let directUrl;
 
-    // 如果配置了公共访问的机器端点，优先使用该端点
     if (env.PUBLIC_MACHINE_ENDPOINT) {
       directUrl = `ws://${env.PUBLIC_MACHINE_ENDPOINT}?sessionId=${sessionId}`;
       logger.info(`使用公共端点构建 WebSocket 端点: ${directUrl}`);
     } else {
-      // 测试环境中，机器端在本地运行，需要使用 127.0.0.1
-      // 因为 getLocalIpAddress() 可能返回非 localhost 的 IP（如 192.168.x.x）
-      // 但机器端实际监听的是 0.0.0.0:proxyPort，本地访问应该用 127.0.0.1
       const machineIp = process.env.NODE_ENV === 'test' ? '127.0.0.1' : machine.ip || 'localhost';
-      // 使用机器的实际代理端口，如果没有则使用默认值8082
       const proxyPort = machine.proxyPort || 8082;
       directUrl = `ws://${machineIp}:${proxyPort}?sessionId=${sessionId}`;
       logger.info(`使用机器IP构建 WebSocket 端点: ${directUrl}`);
@@ -220,34 +224,30 @@ export async function createBrowserSession(
 
     logger.info(`构建的直接 WebSocket 端点: ${directUrl}`);
 
-    // 返回必要的信息
     return {
       sessionId,
       status: isWebSocketDirect ? SessionStatus.CONNECTED : SessionStatus.CREATED,
-      browserWSEndpoint: result.browser_ws_endpoint, // 原生CDP端点
-      directUrl, // 指向代理WebSocket的URL
+      browserWSEndpoint: result.browser_ws_endpoint,
+      directUrl,
       machineId,
-      created_at: session.created_at,
+      created_at: createdAt,
     };
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    // 检查是否是共享会话已存在的错误
-    // 注意：gRPC 会将业务错误包装成 grpc.status.FAILED_PRECONDITION
-    // 所以需要检查错误消息内容而不是 error.code
     const errorCode = (error as { code?: string }).code;
     if (
       errorCode === 'SHARED_SESSION_EXISTS' ||
       errMsg.includes('活跃的共享数据会话') ||
       errMsg.includes('每个用户同时只能有 1 个共享数据会话')
     ) {
-      // 这是预期的业务错误，不需要更新数据库状态
       logger.warn(`共享会话冲突: ${errMsg}`);
+      await db('machines').where({ id: machineId }).decrement('instance_count', 1);
+      await SessionModel.update(sessionId, { status: SessionStatus.ERROR });
       throw new Error(errMsg);
     }
 
-    await SessionModel.update(sessionId, {
-      status: SessionStatus.ERROR,
-    });
+    await SessionModel.update(sessionId, { status: SessionStatus.ERROR });
+    await MachineModel.decrementInstanceCount(machineId);
 
     logger.error(`会话错误信息: ${errMsg}`);
     logger.error(`启动浏览器实例失败 (sessionId: ${sessionId}):`, error);

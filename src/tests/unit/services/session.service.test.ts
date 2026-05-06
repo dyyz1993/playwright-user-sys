@@ -9,6 +9,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SessionStatus, WebhookEventType } from '../../../shared/types/index.js';
 
+vi.mock('uuid', () => ({
+  v4: vi.fn().mockReturnValue('session-001'),
+}));
+
 vi.mock('../../../models/user.model.js', () => ({
   UserModel: {
     findById: vi.fn(),
@@ -55,6 +59,28 @@ function createMockTrx(sessionData: Record<string, unknown> | null) {
   return Object.assign(trx, queryBuilder);
 }
 
+function createCreateSessionTrx() {
+  const sessionsChain = {
+    where: vi.fn().mockReturnThis(),
+    whereIn: vi.fn().mockReturnThis(),
+    count: vi.fn().mockReturnThis(),
+    first: vi.fn().mockResolvedValue({ count: 0 }),
+    insert: vi.fn().mockResolvedValue([1]),
+  };
+  const machinesChain = {
+    where: vi.fn().mockReturnThis(),
+    whereRaw: vi.fn().mockReturnThis(),
+    first: vi.fn().mockResolvedValue({ id: 'machine-001', instance_count: 0, max_instances: 10 }),
+    increment: vi.fn().mockResolvedValue(1),
+  };
+  const trx = vi.fn().mockImplementation((table: string) => {
+    if (table === 'sessions') return sessionsChain;
+    if (table === 'machines') return machinesChain;
+    return { where: vi.fn().mockReturnThis(), first: vi.fn().mockResolvedValue(null) };
+  });
+  return Object.assign(trx, { sessionsChain, machinesChain });
+}
+
 vi.mock('../../../config/database.js', () => ({
   db: Object.assign(vi.fn(), {
     transaction: vi.fn(),
@@ -76,6 +102,7 @@ vi.mock('../../../utils/webhook.js', () => ({
 vi.mock('../../../config/env.js', () => ({
   env: {
     PUBLIC_MACHINE_ENDPOINT: '',
+    MAX_SESSIONS_PER_USER: 5,
   },
 }));
 
@@ -132,11 +159,8 @@ describe('SessionService', () => {
       proxyPort: 8082,
     });
 
-    vi.mocked(SessionModel.create).mockResolvedValue({
-      id: 'session-001',
-      user_id: 1,
-      created_at: new Date(),
-    });
+    const trx = createCreateSessionTrx();
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     vi.mocked(connectionManager.launchBrowser).mockResolvedValue({
       port: 3000,
@@ -162,12 +186,11 @@ describe('SessionService', () => {
 
     expect(UserModel.findById).toHaveBeenCalledWith(1);
     expect(MachineModel.findAvailable).toHaveBeenCalled();
-    expect(SessionModel.create).toHaveBeenCalled();
+    expect(db.transaction).toHaveBeenCalled();
     expect(connectionManager.launchBrowser).toHaveBeenCalledWith('machine-001', 'session-001', expect.any(Object));
     expect(SessionModel.update).toHaveBeenCalledWith(
       'session-001',
       expect.objectContaining({
-        machine_id: 'machine-001',
         port: 3000,
         status: SessionStatus.CREATED,
       })
@@ -214,7 +237,7 @@ describe('SessionService', () => {
 
     await expect(createBrowserSession(1, {})).rejects.toThrow('当前没有可用的实例机器');
 
-    expect(SessionModel.create).not.toHaveBeenCalled();
+    expect(db.transaction).not.toHaveBeenCalled();
   });
 
   // ========================================
@@ -232,10 +255,8 @@ describe('SessionService', () => {
       proxyPort: 8082,
     });
 
-    vi.mocked(SessionModel.create).mockResolvedValue({
-      id: 'session-001',
-      created_at: new Date(),
-    });
+    const trx = createCreateSessionTrx();
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     vi.mocked(connectionManager.launchBrowser).mockResolvedValue({
       port: 3000,
@@ -264,6 +285,7 @@ describe('SessionService', () => {
     const envModule = await import('../../../config/env.js');
     vi.spyOn(envModule, 'env', 'get').mockReturnValue({
       PUBLIC_MACHINE_ENDPOINT: 'public.example.com:8082',
+      MAX_SESSIONS_PER_USER: 5,
     } as any);
 
     vi.mocked(UserModel.findById).mockResolvedValue({
@@ -277,10 +299,8 @@ describe('SessionService', () => {
       proxyPort: 8082,
     });
 
-    vi.mocked(SessionModel.create).mockResolvedValue({
-      id: 'session-001',
-      created_at: new Date(),
-    });
+    const trx = createCreateSessionTrx();
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     vi.mocked(connectionManager.launchBrowser).mockResolvedValue({
       port: 3000,
@@ -310,10 +330,8 @@ describe('SessionService', () => {
       ip: '192.168.1.1',
     });
 
-    vi.mocked(SessionModel.create).mockResolvedValue({
-      id: 'session-001',
-      created_at: new Date(),
-    });
+    const trx = createCreateSessionTrx();
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     vi.mocked(connectionManager.launchBrowser).mockRejectedValue(new Error('启动失败'));
 
@@ -324,6 +342,7 @@ describe('SessionService', () => {
     expect(SessionModel.update).toHaveBeenCalledWith('session-001', {
       status: SessionStatus.ERROR,
     });
+    expect(MachineModel.decrementInstanceCount).toHaveBeenCalledWith('machine-001');
   });
 
   // ========================================

@@ -177,7 +177,7 @@ export class NativeWebSocketProxyService {
       //   const originalUrl = new URL(originalWsEndpoint);
 
       //   const targetUrl = originalWsEndpoint;
-      const targetUrl = sessionResult.directUrl;
+      const targetUrl = sessionResult.internalTargetUrl || sessionResult.directUrl;
       //   // 替换主机部分为实际机器IP
       //   const targetUrl = originalWsEndpoint.replace(
       //     /^ws:\/\/(localhost|127\.0\.0\.1)/,

@@ -212,7 +212,10 @@ export async function createBrowserSession(
 
     let directUrl;
 
-    if (env.PUBLIC_MACHINE_ENDPOINT) {
+    if (env.PUBLIC_MANAGER_URL) {
+      directUrl = `ws://${env.PUBLIC_MANAGER_URL}/ws/connect?sessionId=${sessionId}`;
+      logger.info(`使用 Manager 公共 URL 构建 WebSocket 端点: ${directUrl}`);
+    } else if (env.PUBLIC_MACHINE_ENDPOINT) {
       directUrl = `ws://${env.PUBLIC_MACHINE_ENDPOINT}?sessionId=${sessionId}`;
       logger.info(`使用公共端点构建 WebSocket 端点: ${directUrl}`);
     } else {
@@ -222,6 +225,10 @@ export async function createBrowserSession(
       logger.info(`使用机器IP构建 WebSocket 端点: ${directUrl}`);
     }
 
+    const machineIp = process.env.NODE_ENV === 'test' ? '127.0.0.1' : machine.ip || 'localhost';
+    const proxyPort = machine.proxyPort || 8082;
+    const internalTargetUrl = `ws://${machineIp}:${proxyPort}?sessionId=${sessionId}`;
+
     logger.info(`构建的直接 WebSocket 端点: ${directUrl}`);
 
     return {
@@ -229,6 +236,7 @@ export async function createBrowserSession(
       status: isWebSocketDirect ? SessionStatus.CONNECTED : SessionStatus.CREATED,
       browserWSEndpoint: result.browser_ws_endpoint,
       directUrl,
+      internalTargetUrl,
       machineId,
       created_at: createdAt,
     };

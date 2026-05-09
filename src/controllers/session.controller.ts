@@ -59,7 +59,9 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
       const sessionResult = await sessionService.createBrowserSession(userId, options);
 
       // 构建前端 Viewer URL
-      const frontendBaseUrl = ((env as Record<string, unknown>).VITE_FRONTEND_URL as string) || 'http://localhost:5173';
+      const frontendBaseUrl =
+        env.VITE_FRONTEND_URL ||
+        (env.PUBLIC_MANAGER_URL ? `http://${env.PUBLIC_MANAGER_URL}` : 'http://localhost:5173');
       const viewerUrl = `${frontendBaseUrl}/viewer?sessionId=${sessionResult.sessionId}`;
       request.log.info(`构建的前端 Viewer URL: ${viewerUrl}`);
 

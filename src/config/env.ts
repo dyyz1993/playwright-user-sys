@@ -56,6 +56,13 @@ const envSchema = z.object({
   // 例如：'example.com:8082' 或 '192.168.1.100:8082'
   PUBLIC_MACHINE_ENDPOINT: z.string().optional(),
 
+  // 公共访问的 Manager URL，用于统一流量入口
+  // 例如：'manager.example.com:3000' 或 '192.168.1.100:3000'
+  PUBLIC_MANAGER_URL: z.string().optional(),
+
+  // 前端 URL，用于构建 viewer URL
+  VITE_FRONTEND_URL: z.string().optional(),
+
   // 每用户最大活跃会话数
   MAX_SESSIONS_PER_USER: z.coerce.number().default(20),
 });

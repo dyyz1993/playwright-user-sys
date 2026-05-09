@@ -152,7 +152,7 @@
   var grpcPort = '<%= locals.grpcPort || 50051 %>';
   var proxyPort = '<%= locals.proxyPort || 8081 %>';
   var baseUrl = window.location.origin;
-  var wsUrl = 'ws://' + window.location.hostname + ':' + proxyPort;
+  var wsUrl = 'ws://' + window.location.host + '/ws/connect';
 
   document.getElementById('api-base-url').textContent = baseUrl;
   document.getElementById('ws-proxy-url').textContent = wsUrl;

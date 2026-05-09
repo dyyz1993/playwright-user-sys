@@ -11,8 +11,9 @@ export async function getProfilePageData(userId: number) {
   const sessionStats = await SessionModel.getUserSessionStats(user.id);
   const usedCredits = sessionStats.total_credits_used;
 
-  const baseUrl = `http://${env.HOST}:${env.PORT}`;
-  const wsUrl = `ws://${env.HOST}:${env.PROXY_PORT}`;
+  const managerUrl = env.PUBLIC_MANAGER_URL || `${env.HOST}:${env.PORT}`;
+  const baseUrl = `http://${managerUrl}`;
+  const wsUrl = `ws://${managerUrl}/ws/connect`;
 
   return {
     userData: {

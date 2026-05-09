@@ -61,7 +61,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         reply.setCookie('token', token, {
           path: '/',
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
+          secure: request.protocol === 'https' || (request.headers['x-forwarded-proto'] as string) === 'https',
           sameSite: 'lax',
           maxAge: 7 * 24 * 60 * 60 * 1000,
         });

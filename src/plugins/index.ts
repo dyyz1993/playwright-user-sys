@@ -45,10 +45,23 @@ export default fp(async function (fastify: FastifyInstance) {
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'), false);
+        return callback(null, true);
       }
+      try {
+        const originHost = new URL(origin).host;
+        for (const allowed of allowedOrigins) {
+          try {
+            if (new URL(allowed).host === originHost) {
+              return callback(null, true);
+            }
+          } catch {
+            /* skip invalid URL */
+          }
+        }
+      } catch {
+        /* skip invalid origin */
+      }
+      callback(new Error('Not allowed by CORS'), false);
     },
     credentials: true,
   });

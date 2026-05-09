@@ -431,7 +431,7 @@
       this.openModal('quick-action-credits-modal');
 
       window.appUtils.API.get('/api/admin/users?limit=50').then(function(res) {
-        var users = res.data || res.users || [];
+        var users = (res.data && res.data.items) ? res.data.items : (Array.isArray(res.data) ? res.data : (res.users || []));
         select.innerHTML = '<option value="">请选择用户</option>';
         users.forEach(function(u) {
           var opt = document.createElement('option');

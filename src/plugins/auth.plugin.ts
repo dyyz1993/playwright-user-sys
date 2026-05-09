@@ -61,11 +61,19 @@ export default fp(async function (fastify: FastifyInstance) {
       const user = await UserModel.findById(decoded.id);
       if (!user) {
         request.log.warn({ userId: decoded.id }, '找不到用户');
+        const acceptHeader = request.headers.accept || '';
+        if (acceptHeader.includes('text/html')) {
+          return reply.redirect('/admin/login');
+        }
         return sendError(reply, '无效的用户', 401);
       }
 
       if (user.status !== UserStatus.ACTIVE) {
         request.log.warn({ username: user.username }, '用户已被禁用或暂停');
+        const acceptHeader = request.headers.accept || '';
+        if (acceptHeader.includes('text/html')) {
+          return reply.redirect('/admin/login');
+        }
         return sendError(reply, '用户已被禁用或暂停', 403);
       }
 
@@ -80,6 +88,10 @@ export default fp(async function (fastify: FastifyInstance) {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       request.log.error({ err: message }, '令牌验证失败');
+      const acceptHeader = request.headers.accept || '';
+      if (acceptHeader.includes('text/html')) {
+        return reply.redirect('/admin/login');
+      }
       return sendError(reply, '无效的令牌', 401);
     }
   });

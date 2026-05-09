@@ -1,0 +1,753 @@
+<div class="space-y-6">
+  <div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-medium text-gray-700">连接信息</h3>
+        <p class="text-sm text-gray-500 mt-1">API 连接参数和认证信息</p>
+      </div>
+      <button onclick="testConnection()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+        <i class="fas fa-plug mr-2"></i>测试连接
+      </button>
+    </div>
+    <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="border border-gray-200 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-500 uppercase">API Base URL</span>
+          <button onclick="appUtils.copyToClipboard(document.getElementById('api-base-url').textContent)" class="text-gray-400 hover:text-primary-600">
+            <i class="fas fa-copy"></i>
+          </button>
+        </div>
+        <p id="api-base-url" class="text-sm font-mono text-gray-800 break-all"></p>
+      </div>
+      <div class="border border-gray-200 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-500 uppercase">API Key</span>
+          <div class="flex items-center gap-2">
+            <button onclick="toggleApiKeyVisibility()" class="text-gray-400 hover:text-primary-600">
+              <i id="api-key-eye" class="fas fa-eye-slash"></i>
+            </button>
+            <button onclick="appUtils.copyToClipboard(document.getElementById('api-key-value').dataset.full)" class="text-gray-400 hover:text-primary-600">
+              <i class="fas fa-copy"></i>
+            </button>
+          </div>
+        </div>
+        <p id="api-key-value" class="text-sm font-mono text-gray-800 break-all" data-full="<%= locals.userApiKey || '' %>"></p>
+      </div>
+      <div class="border border-gray-200 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-500 uppercase">WebSocket Proxy</span>
+          <button onclick="appUtils.copyToClipboard(document.getElementById('ws-proxy-url').textContent)" class="text-gray-400 hover:text-primary-600">
+            <i class="fas fa-copy"></i>
+          </button>
+        </div>
+        <p id="ws-proxy-url" class="text-sm font-mono text-gray-800 break-all"></p>
+      </div>
+      <div class="border border-gray-200 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-500 uppercase">gRPC Port</span>
+          <button onclick="appUtils.copyToClipboard('<%= locals.grpcPort || 50051 %>')" class="text-gray-400 hover:text-primary-600">
+            <i class="fas fa-copy"></i>
+          </button>
+        </div>
+        <p class="text-sm font-mono text-gray-800"><%= locals.grpcPort || 50051 %></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+      <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-700">API 端点探索</h3>
+        </div>
+        <div class="border-b border-gray-200">
+          <nav class="flex -mb-px" id="api-group-tabs">
+            <button onclick="switchApiGroup('auth')" data-group="auth" class="group-tab whitespace-nowrap py-4 px-6 border-b-2 border-primary-500 text-sm font-medium text-primary-600">
+              <i class="fas fa-lock mr-1"></i>认证
+            </button>
+            <button onclick="switchApiGroup('sessions')" data-group="sessions" class="group-tab whitespace-nowrap py-4 px-6 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+              <i class="fas fa-desktop mr-1"></i>会话
+            </button>
+            <button onclick="switchApiGroup('users')" data-group="users" class="group-tab whitespace-nowrap py-4 px-6 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+              <i class="fas fa-user mr-1"></i>用户
+            </button>
+            <button onclick="switchApiGroup('files')" data-group="files" class="group-tab whitespace-nowrap py-4 px-6 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+              <i class="fas fa-file mr-1"></i>文件
+            </button>
+          </nav>
+        </div>
+        <div id="api-endpoints-container" class="p-6">
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-700">快捷操作</h3>
+        </div>
+        <div class="p-6 space-y-6">
+          <div>
+            <h4 class="text-sm font-medium text-gray-700 mb-3">
+              <i class="fas fa-user-plus mr-1 text-primary-500"></i>快速创建测试用户
+            </h4>
+            <div class="space-y-2">
+              <input type="text" id="quick-user-name" placeholder="用户名" class="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+              <input type="email" id="quick-user-email" placeholder="邮箱（可选）" class="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+              <button onclick="quickCreateUser()" class="w-full bg-primary-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                创建用户
+              </button>
+            </div>
+            <div id="quick-user-result" class="hidden mt-3 p-3 bg-gray-50 rounded-md text-xs font-mono break-all"></div>
+          </div>
+          <hr class="border-gray-200">
+          <div>
+            <h4 class="text-sm font-medium text-gray-700 mb-3">
+              <i class="fas fa-desktop mr-1 text-green-500"></i>快速创建会话
+            </h4>
+            <div class="space-y-2">
+              <select id="quick-session-user" class="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                <option value="">加载用户列表...</option>
+              </select>
+              <button onclick="quickCreateSession()" class="w-full bg-green-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                创建会话
+              </button>
+            </div>
+            <div id="quick-session-result" class="hidden mt-3 p-3 bg-gray-50 rounded-md text-xs font-mono break-all"></div>
+          </div>
+          <hr class="border-gray-200">
+          <div>
+            <h4 class="text-sm font-medium text-gray-700 mb-3">
+              <i class="fas fa-heartbeat mr-1 text-red-500"></i>连接测试结果
+            </h4>
+            <div id="connection-test-result" class="p-3 bg-gray-50 rounded-md text-sm text-gray-500">
+              点击顶部"测试连接"按钮
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .method-get { color: #16a34a; background-color: #f0fdf4; border-color: #bbf7d0; }
+  .method-post { color: #2563eb; background-color: #eff6ff; border-color: #bfdbfe; }
+  .method-put { color: #d97706; background-color: #fffbeb; border-color: #fde68a; }
+  .method-delete { color: #dc2626; background-color: #fef2f2; border-color: #fecaca; }
+  .json-response { background-color: #1e293b; color: #e2e8f0; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.5; }
+  .json-response .json-key { color: #93c5fd; }
+  .json-response .json-string { color: #86efac; }
+  .json-response .json-number { color: #fbbf24; }
+  .json-response .json-boolean { color: #f472b6; }
+  .json-response .json-null { color: #94a3b8; }
+  .code-tab.active { border-color: #0ea5e9; color: #0ea5e9; background-color: #f0f9ff; }
+  .endpoint-card { transition: all 0.2s ease; }
+  .endpoint-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+</style>
+
+<script>
+(function() {
+  var apiKey = '<%= (locals.userApiKey || "").replace(/'/g, "\\'") %>';
+  var grpcPort = '<%= locals.grpcPort || 50051 %>';
+  var proxyPort = '<%= locals.proxyPort || 8081 %>';
+  var baseUrl = window.location.origin;
+  var wsUrl = 'ws://' + window.location.hostname + ':' + proxyPort;
+
+  document.getElementById('api-base-url').textContent = baseUrl;
+  document.getElementById('ws-proxy-url').textContent = wsUrl;
+
+  var apiKeyVisible = false;
+  window.toggleApiKeyVisibility = function() {
+    apiKeyVisible = !apiKeyVisible;
+    var el = document.getElementById('api-key-value');
+    var eye = document.getElementById('api-key-eye');
+    if (apiKeyVisible) {
+      el.textContent = apiKey || '未设置';
+      eye.className = 'fas fa-eye';
+    } else {
+      el.textContent = apiKey ? apiKey.substring(0, 8) + '...' + apiKey.substring(apiKey.length - 4) : '未设置';
+      eye.className = 'fas fa-eye-slash';
+    }
+  };
+  toggleApiKeyVisibility();
+
+  var endpoints = {
+    auth: [
+      {
+        method: 'POST',
+        path: '/api/auth/login',
+        desc: '用户登录，返回 JWT Token',
+        body: {
+          username: 'admin',
+          password: 'your_password'
+        },
+        useCookie: true
+      },
+      {
+        method: 'GET',
+        path: '/api/auth/me',
+        desc: '获取当前登录用户信息（Cookie 认证）',
+        useCookie: true
+      },
+      {
+        method: 'GET',
+        path: '/api/auth/verify',
+        desc: '验证 Token / API Key 有效性',
+        useApiKey: true
+      }
+    ],
+    sessions: [
+      {
+        method: 'POST',
+        path: '/api/sessions',
+        desc: '创建新的浏览器会话',
+        body: {},
+        useApiKey: true
+      },
+      {
+        method: 'GET',
+        path: '/api/sessions',
+        desc: '获取当前用户的所有会话',
+        useApiKey: true
+      },
+      {
+        method: 'GET',
+        path: '/api/sessions/{id}',
+        desc: '获取指定会话详情',
+        params: [{ name: 'id', placeholder: 'session_id', desc: '会话 ID' }],
+        useApiKey: true
+      },
+      {
+        method: 'POST',
+        path: '/api/sessions/{id}/release',
+        desc: '释放指定会话',
+        params: [{ name: 'id', placeholder: 'session_id', desc: '会话 ID' }],
+        useApiKey: true
+      },
+      {
+        method: 'GET',
+        path: '/api/sessions/{id}/screenshot',
+        desc: '获取会话截图',
+        params: [{ name: 'id', placeholder: 'session_id', desc: '会话 ID' }],
+        useApiKey: true
+      }
+    ],
+    users: [
+      {
+        method: 'GET',
+        path: '/api/users/me',
+        desc: '获取当前用户资料（API Key 认证）',
+        useApiKey: true
+      },
+      {
+        method: 'PUT',
+        path: '/api/users/me',
+        desc: '更新当前用户资料',
+        body: {
+          email: 'new_email@example.com',
+          webhook_url: 'https://example.com/webhook'
+        },
+        useCookie: true
+      },
+      {
+        method: 'POST',
+        path: '/api/users/me/apikey/regenerate',
+        desc: '重新生成 API Key',
+        useCookie: true
+      }
+    ],
+    files: [
+      {
+        method: 'GET',
+        path: '/api/files',
+        desc: '获取已上传文件列表',
+        useCookie: true
+      },
+      {
+        method: 'POST',
+        path: '/api/files/upload',
+        desc: '上传文件（multipart/form-data）',
+        isUpload: true,
+        useCookie: true
+      }
+    ]
+  };
+
+  var currentGroup = 'auth';
+
+  window.switchApiGroup = function(group) {
+    currentGroup = group;
+    var tabs = document.querySelectorAll('.group-tab');
+    tabs.forEach(function(tab) {
+      if (tab.dataset.group === group) {
+        tab.className = 'group-tab whitespace-nowrap py-4 px-6 border-b-2 border-primary-500 text-sm font-medium text-primary-600';
+      } else {
+        tab.className = 'group-tab whitespace-nowrap py-4 px-6 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300';
+      }
+    });
+    renderEndpoints(group);
+  };
+
+  function renderEndpoints(group) {
+    var container = document.getElementById('api-endpoints-container');
+    var list = endpoints[group] || [];
+    var html = '<div class="space-y-4">';
+    list.forEach(function(ep, idx) {
+      html += renderEndpointCard(ep, group, idx);
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function renderEndpointCard(ep, group, idx) {
+    var methodClass = 'method-' + ep.method.toLowerCase();
+    var cardId = 'ep-' + group + '-' + idx;
+    var paramInputs = '';
+    if (ep.params) {
+      paramInputs += '<div class="mt-3 space-y-2">';
+      ep.params.forEach(function(p) {
+        paramInputs += '<div class="flex items-center gap-2">';
+        paramInputs += '<label class="text-xs font-medium text-gray-600 w-16">' + p.name + '</label>';
+        paramInputs += '<input type="text" data-param="' + p.name + '" placeholder="' + p.placeholder + '" class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary-500">';
+        paramInputs += '</div>';
+      });
+      paramInputs += '</div>';
+    }
+
+    var bodyHtml = '';
+    if (ep.isUpload) {
+      bodyHtml = '<div class="mt-3"><input type="file" id="' + cardId + '-file" class="block w-full text-sm text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-primary-50 file:text-primary-700"></div>';
+    } else if (ep.body) {
+      var bodyStr = JSON.stringify(ep.body, null, 2);
+      bodyHtml = '<div class="mt-3"><label class="text-xs font-medium text-gray-600 mb-1 block">Request Body</label>';
+      bodyHtml += '<textarea id="' + cardId + '-body" class="w-full px-3 py-2 border border-gray-300 rounded-md text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary-500" rows="4">' + escapeHtml(bodyStr) + '</textarea></div>';
+    }
+
+    var codeId = cardId + '-code';
+    var curlCmd = generateCurl(ep);
+    var jsSdkCode = generateJsSdk(ep);
+    var pythonCode = generatePython(ep);
+
+    var html = '';
+    html += '<div class="endpoint-card border border-gray-200 rounded-lg overflow-hidden">';
+    html += '<div class="px-4 py-3 bg-gray-50 flex items-center justify-between cursor-pointer" onclick="toggleEndpointBody(\'' + cardId + '\')">';
+    html += '<div class="flex items-center gap-3">';
+    html += '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ' + methodClass + ' border">' + ep.method + '</span>';
+    html += '<span class="text-sm font-mono text-gray-800">' + ep.path + '</span>';
+    html += '</div>';
+    html += '<div class="flex items-center gap-2">';
+    html += '<span class="text-xs text-gray-500">' + ep.desc + '</span>';
+    html += '<i id="' + cardId + '-chevron" class="fas fa-chevron-down text-gray-400 text-xs transition-transform"></i>';
+    html += '</div>';
+    html += '</div>';
+
+    html += '<div id="' + cardId + '-body" class="hidden border-t border-gray-200 p-4">';
+    html += paramInputs;
+    html += bodyHtml;
+
+    html += '<div class="mt-4 border border-gray-200 rounded-lg overflow-hidden">';
+    html += '<div class="flex border-b border-gray-200 bg-gray-50">';
+    html += '<button onclick="switchCodeTab(\'' + codeId + '\', \'curl\')" class="code-tab code-tab-curl active px-4 py-2 text-xs font-medium border-b-2" data-tab="curl">cURL</button>';
+    html += '<button onclick="switchCodeTab(\'' + codeId + '\', \'js\')" class="code-tab code-tab-js px-4 py-2 text-xs font-medium border-b-2 border-transparent text-gray-500" data-tab="js">JavaScript SDK</button>';
+    html += '<button onclick="switchCodeTab(\'' + codeId + '\', \'python\')" class="code-tab code-tab-python px-4 py-2 text-xs font-medium border-b-2 border-transparent text-gray-500" data-tab="python">Python</button>';
+    html += '<button onclick="appUtils.copyToClipboard(document.getElementById(\'' + codeId + '-curl\').textContent)" class="ml-auto px-3 py-2 text-xs text-gray-400 hover:text-primary-600"><i class="fas fa-copy"></i></button>';
+    html += '</div>';
+    html += '<pre id="' + codeId + '-curl" class="code-block-curl p-3 text-xs font-mono text-gray-800 bg-white overflow-x-auto whitespace-pre-wrap">' + escapeHtml(curlCmd) + '</pre>';
+    html += '<pre id="' + codeId + '-js" class="code-block-js hidden p-3 text-xs font-mono text-gray-800 bg-white overflow-x-auto whitespace-pre-wrap">' + escapeHtml(jsSdkCode) + '</pre>';
+    html += '<pre id="' + codeId + '-python" class="code-block-python hidden p-3 text-xs font-mono text-gray-800 bg-white overflow-x-auto whitespace-pre-wrap">' + escapeHtml(pythonCode) + '</pre>';
+    html += '</div>';
+
+    html += '<div class="mt-4 flex items-center gap-3">';
+    html += '<button onclick="sendRequest(\'' + group + '\', ' + idx + ')" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">';
+    html += '<i class="fas fa-paper-plane mr-2"></i>发送请求';
+    html += '</button>';
+    html += '<span id="' + cardId + '-status" class="text-xs text-gray-400"></span>';
+    html += '</div>';
+
+    html += '<div id="' + cardId + '-response" class="hidden mt-4 rounded-lg overflow-hidden">';
+    html += '<div class="flex items-center justify-between bg-gray-800 px-4 py-2">';
+    html += '<span class="text-xs text-gray-300">响应</span>';
+    html += '<button onclick="appUtils.copyToClipboard(document.getElementById(\'' + cardId + '-response-body\').textContent)" class="text-xs text-gray-400 hover:text-white"><i class="fas fa-copy mr-1"></i>复制</button>';
+    html += '</div>';
+    html += '<pre id="' + cardId + '-response-body" class="json-response p-4 overflow-x-auto max-h-80 overflow-y-auto"></pre>';
+    html += '</div>';
+
+    html += '</div>';
+    html += '</div>';
+    return html;
+  }
+
+  function generateCurl(ep) {
+    var resolvedPath = ep.path;
+    if (ep.params) {
+      ep.params.forEach(function(p) {
+        resolvedPath = resolvedPath.replace('{' + p.name + '}', p.placeholder);
+      });
+    }
+    var cmd = 'curl -X ' + ep.method + ' ' + baseUrl + resolvedPath;
+    if (ep.useApiKey && apiKey) {
+      cmd += ' \\\n  -H "x-api-key: ' + apiKey + '"';
+    }
+    if (ep.useApiKey || ep.useCookie) {
+      cmd += ' \\\n  -H "Content-Type: application/json"';
+    }
+    if (ep.body) {
+      cmd += ' \\\n  -d \'' + JSON.stringify(ep.body) + '\'';
+    }
+    if (ep.useCookie) {
+      cmd += ' \\\n  -H "Cookie: token=YOUR_JWT_TOKEN"';
+    }
+    return cmd;
+  }
+
+  function generateJsSdk(ep) {
+    var code = "import { Client } from './sdk/client.js';\n\n";
+    code += "const client = new Client({\n";
+    code += "  apiKey: '" + (apiKey || 'YOUR_API_KEY') + "',\n";
+    code += "  baseUrl: '" + baseUrl + "'\n";
+    code += "});\n\n";
+
+    if (ep.path.startsWith('/api/sessions')) {
+      if (ep.method === 'POST' && ep.path === '/api/sessions') {
+        code += "const session = await client.sessions.create();\n";
+        code += "console.log(session);";
+      } else if (ep.method === 'GET' && ep.path === '/api/sessions') {
+        code += "const sessions = await client.sessions.list();\n";
+        code += "console.log(sessions);";
+      } else if (ep.path.includes('{id}')) {
+        var action = ep.path.includes('release') ? 'release' : ep.path.includes('screenshot') ? 'getScreenshot' : 'get';
+        code += "const result = await client.sessions." + action + "('SESSION_ID');\n";
+        code += "console.log(result);";
+      }
+    } else {
+      code += "// Direct API call\n";
+      code += "const result = await client.request('" + ep.method + "', '" + ep.path + "'";
+      if (ep.body) {
+        code += ", " + JSON.stringify(ep.body);
+      }
+      code += ");\n";
+      code += "console.log(result);";
+    }
+    return code;
+  }
+
+  function generatePython(ep) {
+    var resolvedPath = ep.path;
+    if (ep.params) {
+      ep.params.forEach(function(p) {
+        resolvedPath = resolvedPath.replace('{' + p.name + '}', p.placeholder);
+      });
+    }
+    var code = "import requests\n\n";
+    code += "base_url = '" + baseUrl + "'\n";
+    if (ep.useApiKey) {
+      code += "api_key = '" + (apiKey || 'YOUR_API_KEY') + "'\n";
+      code += "headers = {\n";
+      code += "    'x-api-key': api_key,\n";
+      code += "    'Content-Type': 'application/json'\n";
+      code += "}\n";
+    } else if (ep.useCookie) {
+      code += "headers = {'Content-Type': 'application/json'}\n";
+      code += "cookies = {'token': 'YOUR_JWT_TOKEN'}\n";
+    }
+    code += "\n";
+    code += "response = requests." + ep.method.toLowerCase() + "(";
+    code += "f\"{base_url}" + resolvedPath + "\"";
+    if (ep.useApiKey) {
+      code += ", headers=headers";
+    }
+    if (ep.body) {
+      code += ", json=" + JSON.stringify(ep.body);
+    }
+    if (ep.useCookie && !ep.useApiKey) {
+      code += ", cookies=cookies";
+    }
+    code += ")\n";
+    code += "print(response.status_code)\n";
+    code += "print(response.json())";
+    return code;
+  }
+
+  window.toggleEndpointBody = function(cardId) {
+    var body = document.getElementById(cardId + '-body');
+    var chevron = document.getElementById(cardId + '-chevron');
+    if (body.classList.contains('hidden')) {
+      body.classList.remove('hidden');
+      chevron.style.transform = 'rotate(180deg)';
+    } else {
+      body.classList.add('hidden');
+      chevron.style.transform = 'rotate(0deg)';
+    }
+  };
+
+  window.switchCodeTab = function(codeId, tab) {
+    var prefix = codeId;
+    ['curl', 'js', 'python'].forEach(function(t) {
+      var block = document.getElementById(prefix + '-' + t);
+      var tabBtn = document.querySelector('[onclick*="switchCodeTab(\'' + codeId + '\',\'' + t + '\')"]');
+      if (t === tab) {
+        block.classList.remove('hidden');
+        if (tabBtn) tabBtn.className = 'code-tab code-tab-' + t + ' active px-4 py-2 text-xs font-medium border-b-2';
+      } else {
+        block.classList.add('hidden');
+        if (tabBtn) tabBtn.className = 'code-tab code-tab-' + t + ' px-4 py-2 text-xs font-medium border-b-2 border-transparent text-gray-500';
+      }
+    });
+  };
+
+  window.sendRequest = function(group, idx) {
+    var ep = endpoints[group][idx];
+    var cardId = 'ep-' + group + '-' + idx;
+    var statusEl = document.getElementById(cardId + '-status');
+    var responseEl = document.getElementById(cardId + '-response');
+    var responseBody = document.getElementById(cardId + '-response-body');
+
+    var resolvedPath = ep.path;
+    if (ep.params) {
+      var bodyContainer = document.getElementById(cardId + '-body');
+      ep.params.forEach(function(p) {
+        var input = bodyContainer.querySelector('[data-param="' + p.name + '"]');
+        if (input && input.value) {
+          resolvedPath = resolvedPath.replace('{' + p.name + '}', input.value);
+        } else {
+          resolvedPath = resolvedPath.replace('{' + p.name + '}', p.placeholder);
+        }
+      });
+    }
+
+    statusEl.textContent = '发送中...';
+    statusEl.className = 'text-xs text-yellow-500';
+
+    var fetchOptions = {
+      method: ep.method,
+      credentials: 'same-origin',
+      headers: {}
+    };
+
+    if (ep.useApiKey && apiKey) {
+      fetchOptions.headers['x-api-key'] = apiKey;
+    }
+
+    if (ep.isUpload) {
+      var fileInput = document.getElementById(cardId + '-file');
+      if (!fileInput || !fileInput.files.length) {
+        statusEl.textContent = '请选择文件';
+        statusEl.className = 'text-xs text-red-500';
+        return;
+      }
+      var formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      delete fetchOptions.headers;
+      fetchOptions.body = formData;
+    } else if (ep.body) {
+      fetchOptions.headers['Content-Type'] = 'application/json';
+      var bodyTextarea = document.getElementById(cardId + '-body');
+      try {
+        fetchOptions.body = bodyTextarea.value;
+      } catch(e) {
+        fetchOptions.body = JSON.stringify(ep.body);
+      }
+    }
+
+    var startTime = Date.now();
+    fetch(baseUrl + resolvedPath, fetchOptions)
+      .then(function(r) {
+        var elapsed = Date.now() - startTime;
+        var statusClass = r.status >= 200 && r.status < 300 ? 'text-xs text-green-500' : 'text-xs text-red-500';
+        statusEl.textContent = r.status + ' ' + r.statusText + ' (' + elapsed + 'ms)';
+        statusEl.className = statusClass;
+        return r.text().then(function(text) {
+          try {
+            return JSON.parse(text);
+          } catch(e) {
+            return { raw: text };
+          }
+        });
+      })
+      .then(function(data) {
+        responseEl.classList.remove('hidden');
+        responseBody.innerHTML = syntaxHighlight(JSON.stringify(data, null, 2));
+      })
+      .catch(function(err) {
+        var elapsed = Date.now() - startTime;
+        statusEl.textContent = 'Error (' + elapsed + 'ms)';
+        statusEl.className = 'text-xs text-red-500';
+        responseEl.classList.remove('hidden');
+        responseBody.innerHTML = syntaxHighlight(JSON.stringify({ error: err.message }, null, 2));
+      });
+  };
+
+  function syntaxHighlight(json) {
+    json = escapeHtml(json);
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+      var cls = 'json-number';
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) {
+          cls = 'json-key';
+        } else {
+          cls = 'json-string';
+        }
+      } else if (/true|false/.test(match)) {
+        cls = 'json-boolean';
+      } else if (/null/.test(match)) {
+        cls = 'json-null';
+      }
+      return '<span class="' + cls + '">' + match + '</span>';
+    });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  window.testConnection = function() {
+    var resultEl = document.getElementById('connection-test-result');
+    resultEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>测试中...';
+    resultEl.className = 'p-3 bg-blue-50 rounded-md text-sm text-blue-600';
+
+    var results = [];
+    var checks = [
+      { name: 'API 根', url: '/api', method: 'GET' },
+      { name: '健康检查', url: '/health', method: 'GET' },
+      { name: 'API Key 认证', url: '/api/users/me', method: 'GET', useApiKey: true }
+    ];
+
+    Promise.all(checks.map(function(check) {
+      var opts = { method: check.method, credentials: 'same-origin', headers: {} };
+      if (check.useApiKey && apiKey) {
+        opts.headers['x-api-key'] = apiKey;
+      }
+      return fetch(baseUrl + check.url, opts)
+        .then(function(r) {
+          return { name: check.name, status: r.status, ok: r.ok };
+        })
+        .catch(function(e) {
+          return { name: check.name, status: 0, ok: false, error: e.message };
+        });
+    })).then(function(responses) {
+      var allOk = responses.every(function(r) { return r.ok; });
+      var html = responses.map(function(r) {
+        if (r.ok) {
+          return '<div class="flex items-center gap-2 mb-1"><i class="fas fa-check-circle text-green-500"></i><span>' + r.name + ': ' + r.status + '</span></div>';
+        } else {
+          return '<div class="flex items-center gap-2 mb-1"><i class="fas fa-times-circle text-red-500"></i><span>' + r.name + ': ' + (r.error || r.status) + '</span></div>';
+        }
+      }).join('');
+
+      if (allOk) {
+        resultEl.innerHTML = html;
+        resultEl.className = 'p-3 bg-green-50 rounded-md text-sm text-green-700';
+        appUtils.toast.success('连接测试全部通过');
+      } else {
+        resultEl.innerHTML = html;
+        resultEl.className = 'p-3 bg-yellow-50 rounded-md text-sm text-yellow-700';
+        appUtils.toast.warning('部分检查未通过');
+      }
+    });
+  };
+
+  window.quickCreateUser = function() {
+    var name = document.getElementById('quick-user-name').value.trim();
+    var email = document.getElementById('quick-user-email').value.trim();
+    if (!name) {
+      appUtils.toast.error('请输入用户名');
+      return;
+    }
+    var password = 'test_' + Math.random().toString(36).substring(2, 10);
+    var data = { username: name, password: password, role: 'user' };
+    if (email) data.email = email;
+
+    appUtils.API.post('/api/users', data).then(function(res) {
+      var resultEl = document.getElementById('quick-user-result');
+      resultEl.classList.remove('hidden');
+      if (res.success || res.data) {
+        var info = '用户: ' + name + '\n密码: ' + password;
+        if (res.data && res.data.api_key) info += '\nAPI Key: ' + res.data.api_key;
+        resultEl.textContent = info;
+        resultEl.className = 'mt-3 p-3 bg-green-50 rounded-md text-xs font-mono break-all text-green-700';
+        appUtils.toast.success('用户创建成功');
+        loadUserDropdown();
+      } else {
+        resultEl.textContent = JSON.stringify(res, null, 2);
+        resultEl.className = 'mt-3 p-3 bg-red-50 rounded-md text-xs font-mono break-all text-red-700';
+        appUtils.toast.error('创建失败');
+      }
+    }).catch(function(err) {
+      appUtils.toast.error('请求失败: ' + err.message);
+    });
+  };
+
+  window.quickCreateSession = function() {
+    var select = document.getElementById('quick-session-user');
+    var userId = select.value;
+    if (!userId) {
+      appUtils.toast.error('请选择用户');
+      return;
+    }
+
+    var selectedOption = select.options[select.selectedIndex];
+    var userApiKey = selectedOption.dataset.apikey;
+    if (!userApiKey) {
+      appUtils.toast.error('该用户无 API Key');
+      return;
+    }
+
+    var resultEl = document.getElementById('quick-session-result');
+    resultEl.classList.remove('hidden');
+    resultEl.textContent = '创建中...';
+    resultEl.className = 'mt-3 p-3 bg-blue-50 rounded-md text-xs font-mono break-all text-blue-700';
+
+    fetch(baseUrl + '/api/sessions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': userApiKey
+      },
+      body: JSON.stringify({})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.success !== false && res.data) {
+        resultEl.textContent = JSON.stringify(res.data, null, 2);
+        resultEl.className = 'mt-3 p-3 bg-green-50 rounded-md text-xs font-mono break-all text-green-700';
+        appUtils.toast.success('会话创建成功');
+      } else {
+        resultEl.textContent = JSON.stringify(res, null, 2);
+        resultEl.className = 'mt-3 p-3 bg-red-50 rounded-md text-xs font-mono break-all text-red-700';
+        appUtils.toast.error('会话创建失败');
+      }
+    })
+    .catch(function(err) {
+      resultEl.textContent = err.message;
+      resultEl.className = 'mt-3 p-3 bg-red-50 rounded-md text-xs font-mono break-all text-red-700';
+    });
+  };
+
+  function loadUserDropdown() {
+    appUtils.API.get('/api/users?page=1&limit=50').then(function(res) {
+      var select = document.getElementById('quick-session-user');
+      select.innerHTML = '<option value="">选择用户...</option>';
+      var users = [];
+      if (res.data && Array.isArray(res.data)) {
+        users = res.data;
+      } else if (res.data && res.data.items) {
+        users = res.data.items;
+      }
+      users.forEach(function(u) {
+        var opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = u.username + ' (ID: ' + u.id + ')';
+        opt.dataset.apikey = u.api_key || '';
+        select.appendChild(opt);
+      });
+    }).catch(function() {
+      var select = document.getElementById('quick-session-user');
+      select.innerHTML = '<option value="">加载失败</option>';
+    });
+  }
+
+  renderEndpoints('auth');
+  loadUserDropdown();
+})();
+</script>

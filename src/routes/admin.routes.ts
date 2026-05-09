@@ -13,6 +13,7 @@ import { getCreditsHistoryPageData } from '../controllers/admin/credits-page.con
 import { getLogsPageData } from '../controllers/admin/logs-page.controller.js';
 import { getProfilePageData } from '../controllers/admin/profile-page.controller.js';
 import { sendError } from '../utils/response.js';
+import { env } from '../config/env.js';
 
 function getErrorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -81,7 +82,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         return reply.redirect('/admin/login');
       }
 
-      const data = await getDashboardData();
+      const data = await getDashboardData(request.user.id);
 
       return reply.view('pages/dashboard', {
         title: '仪表盘',
@@ -298,6 +299,33 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   );
 
   fastify.get(
+    '/admin/playground',
+    { onRequest: [fastify.verifyJWT] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        if (!requireAdmin(request, reply)) return reply.redirect('/admin');
+
+        const { getUserById } = await import('../services/user.service.js');
+        const fullUser = request.user ? await getUserById(request.user.id) : null;
+
+        return reply.view('pages/api-playground', {
+          title: 'API Playground',
+          subtitle: 'API 接口调试',
+          user: request.user,
+          userApiKey: fullUser?.api_key || '',
+          grpcPort: env.GRPC_PORT,
+          proxyPort: env.PROXY_PORT,
+          flash: request.flash,
+        });
+      } catch (error: unknown) {
+        request.log.error({ err: error }, '加载 API Playground 失败');
+        request.flash('error', '加载 API Playground 失败: ' + getErrorMessage(error));
+        return reply.redirect('/admin');
+      }
+    }
+  );
+
+  fastify.get(
     '/admin/files',
     { onRequest: [fastify.verifyJWT] },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -416,6 +444,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
               ...data.userData,
             },
             creditHistory: data.creditHistory,
+            baseUrl: data.baseUrl,
+            wsUrl: data.wsUrl,
+            proxyPort: data.proxyPort,
             flash: request.flash,
           });
         } catch (error: unknown) {
@@ -445,6 +476,9 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
             ...data.userData,
           },
           creditHistory: data.creditHistory,
+          baseUrl: data.baseUrl,
+          wsUrl: data.wsUrl,
+          proxyPort: data.proxyPort,
           flash: request.flash,
         });
       } catch (error: unknown) {

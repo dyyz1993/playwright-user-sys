@@ -53,13 +53,15 @@
   <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
     <h3 class="text-lg font-medium text-gray-700">会话管理</h3>
     <div class="flex items-center space-x-4">
-      <!-- 自动刷新开关 -->
       <div class="flex items-center">
         <input type="checkbox" id="auto-refresh" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mr-2">
         <label for="auto-refresh" class="text-sm text-gray-600">自动刷新</label>
       </div>
       <button id="refresh-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
         <i class="fas fa-sync-alt"></i>
+      </button>
+      <button id="quick-create-session-btn" class="bg-primary-600 hover:bg-primary-700 text-white px-3 py-2 rounded-md text-sm font-medium">
+        <i class="fas fa-plus mr-1"></i> 快速创建测试会话
       </button>
       <div class="relative">
         <button id="export-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
@@ -100,7 +102,6 @@
             <% }); %>
           </select>
         </div>
-        <!-- 排序下拉框 -->
         <div>
           <select id="sort-select" name="sort" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
             <option value="">默认排序</option>
@@ -176,18 +177,30 @@
           </tr>
         </thead>
         <%
-          // 定义活跃和已结束的状态列表（移到循环外部，避免重复声明）
           const activeStatuses = ['created', 'connected'];
           const endedStatuses = ['disconnected', 'expired', 'completed'];
         %>
         <tbody class="bg-white divide-y divide-gray-200">
           <% sessions.forEach(session => { %>
-            <tr class="session-row" data-session-id="<%= session.id %>" data-status="<%= session.status %>">
+            <%
+              const machineIp = session.machine_ip || '';
+              const machineProxyPort = session.machine_proxy_port || '';
+              const wsUrl = machineIp && machineProxyPort ? `ws://${machineIp}:${machineProxyPort}/ws/${session.id}` : '';
+              const httpProxyUrl = machineIp && session.port ? `http://${machineIp}:${session.port}` : '';
+              const apiEndpoint = `/api/sessions/${session.id}`;
+            %>
+            <tr class="session-row" data-session-id="<%= session.id %>" data-status="<%= session.status %>"
+                data-machine-ip="<%= machineIp %>" data-machine-proxy-port="<%= machineProxyPort %>" data-port="<%= session.port || '' %>">
               <td class="px-6 py-4 whitespace-nowrap">
                 <input type="checkbox" class="session-checkbox h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" data-session-id="<%= session.id %>">
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= session.id.substring(0, 8) %>...
+                <div class="flex items-center space-x-2">
+                  <span><%= session.id.substring(0, 8) %>...</span>
+                  <button class="text-gray-400 hover:text-primary-600 copy-btn" data-copy="<%= session.id %>" title="复制会话 ID">
+                    <i class="fas fa-copy text-xs"></i>
+                  </button>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
@@ -243,14 +256,109 @@
                 <%= session.credits_used || 0 %> 点
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div class="flex justify-end space-x-2">
-                  <a href="/admin/sessions/<%= session.id %>" class="text-primary-600 hover:text-primary-900">
+                <div class="flex justify-end items-center space-x-1">
+                  <a href="/admin/sessions/<%= session.id %>" class="text-primary-600 hover:text-primary-900 p-1" title="查看详情">
                     <i class="fas fa-eye"></i>
                   </a>
                   <% if (activeStatuses.includes(session.status)) { %>
-                    <button class="text-red-600 hover:text-red-900 end-session-btn" data-session-id="<%= session.id %>">
+                    <button class="text-red-600 hover:text-red-900 end-session-btn p-1" data-session-id="<%= session.id %>" title="结束会话">
                       <i class="fas fa-stop-circle"></i>
                     </button>
+                  <% } %>
+                  <button class="text-gray-400 hover:text-primary-600 session-info-toggle p-1" data-session-id="<%= session.id %>" title="连接信息">
+                    <i class="fas fa-info-circle"></i>
+                  </button>
+                  <div class="relative inline-block">
+                    <button class="text-gray-400 hover:text-primary-600 session-actions-toggle p-1" data-session-id="<%= session.id %>" title="快捷操作">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="session-actions-menu absolute right-0 mt-1 w-52 bg-white rounded-md shadow-lg py-1 z-20 hidden border border-gray-200">
+                      <button class="quick-action-copy flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-copy="<%= session.id %>">
+                        <i class="fas fa-copy text-gray-400 mr-3 w-4"></i> 复制会话 ID
+                      </button>
+                      <% if (wsUrl) { %>
+                        <button class="quick-action-copy flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-copy="<%= wsUrl %>">
+                          <i class="fas fa-link text-gray-400 mr-3 w-4"></i> 复制 WebSocket URL
+                        </button>
+                      <% } %>
+                      <% if (httpProxyUrl) { %>
+                        <button class="quick-action-copy flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-copy="<%= httpProxyUrl %>">
+                          <i class="fas fa-globe text-gray-400 mr-3 w-4"></i> 复制 HTTP 代理 URL
+                        </button>
+                      <% } %>
+                      <button class="quick-action-copy flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-copy="<%= apiEndpoint %>">
+                        <i class="fas fa-code text-gray-400 mr-3 w-4"></i> 复制 API 端点
+                      </button>
+                      <a href="/admin/api-playground?sessionId=<%= session.id %>" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-flask text-gray-400 mr-3 w-4"></i> API Playground
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr class="session-info-row hidden" id="info-row-<%= session.id %>">
+              <td colspan="9" class="px-6 py-0">
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <p class="text-xs text-gray-500 mb-1">会话 ID</p>
+                      <div class="flex items-center space-x-2">
+                        <code class="text-xs bg-white px-2 py-1 rounded border border-gray-200 break-all"><%= session.id %></code>
+                        <button class="text-gray-400 hover:text-primary-600 copy-btn flex-shrink-0" data-copy="<%= session.id %>">
+                          <i class="fas fa-copy text-xs"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <p class="text-xs text-gray-500 mb-1">WebSocket URL</p>
+                      <div class="flex items-center space-x-2">
+                        <code class="text-xs bg-white px-2 py-1 rounded border border-gray-200 break-all"><%= wsUrl || 'N/A' %></code>
+                        <% if (wsUrl) { %>
+                          <button class="text-gray-400 hover:text-primary-600 copy-btn flex-shrink-0" data-copy="<%= wsUrl %>">
+                            <i class="fas fa-copy text-xs"></i>
+                          </button>
+                        <% } %>
+                      </div>
+                    </div>
+                    <div>
+                      <p class="text-xs text-gray-500 mb-1">HTTP 代理 URL</p>
+                      <div class="flex items-center space-x-2">
+                        <code class="text-xs bg-white px-2 py-1 rounded border border-gray-200 break-all"><%= httpProxyUrl || 'N/A' %></code>
+                        <% if (httpProxyUrl) { %>
+                          <button class="text-gray-400 hover:text-primary-600 copy-btn flex-shrink-0" data-copy="<%= httpProxyUrl %>">
+                            <i class="fas fa-copy text-xs"></i>
+                          </button>
+                        <% } %>
+                      </div>
+                    </div>
+                    <div>
+                      <p class="text-xs text-gray-500 mb-1">API 端点</p>
+                      <div class="flex items-center space-x-2">
+                        <code class="text-xs bg-white px-2 py-1 rounded border border-gray-200 break-all">GET <%= apiEndpoint %></code>
+                        <button class="text-gray-400 hover:text-primary-600 copy-btn flex-shrink-0" data-copy="<%= apiEndpoint %>">
+                          <i class="fas fa-copy text-xs"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <% if (machineIp) { %>
+                  <div class="mt-3 pt-3 border-t border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p class="text-xs text-gray-500 mb-1">机器 IP</p>
+                        <span class="text-xs font-medium text-gray-700"><%= machineIp %></span>
+                      </div>
+                      <div>
+                        <p class="text-xs text-gray-500 mb-1">代理端口</p>
+                        <span class="text-xs font-medium text-gray-700"><%= machineProxyPort || 'N/A' %></span>
+                      </div>
+                      <div>
+                        <p class="text-xs text-gray-500 mb-1">会话端口</p>
+                        <span class="text-xs font-medium text-gray-700"><%= session.port || 'N/A' %></span>
+                      </div>
+                    </div>
+                  </div>
                   <% } %>
                 </div>
               </td>
@@ -266,7 +374,7 @@
         显示 <span class="font-medium"><%= (page - 1) * limit + 1 %></span> 到 <span class="font-medium"><%= Math.min(page * limit, totalSessions) %></span> 条，共 <span class="font-medium"><%= totalSessions %></span> 条
       </div>
       <div class="flex space-x-2">
-        <% // 构建分页 URL，保留筛选参数
+        <%
         const buildPageUrl = (pageNum) => {
           let url = `/admin/sessions?page=${pageNum}&limit=${limit}`;
           if (filters.status) url += `&status=${filters.status}`;
@@ -323,8 +431,47 @@
   </div>
 </div>
 
+<!-- 快速创建测试会话模态框 -->
+<div id="quick-create-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+      <h3 class="text-lg font-medium text-gray-900">快速创建测试会话</h3>
+      <button id="close-create-modal" class="text-gray-400 hover:text-gray-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">用户</label>
+        <select id="create-user-select" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+          <option value="">选择用户...</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">浏览器类型</label>
+        <select id="create-browser-select" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+          <option value="chromium">Chromium</option>
+          <option value="firefox">Firefox</option>
+          <option value="webkit">WebKit</option>
+        </select>
+      </div>
+      <div class="flex items-center">
+        <input type="checkbox" id="create-headless" checked class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mr-2">
+        <label for="create-headless" class="text-sm text-gray-700">无头模式 (Headless)</label>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t flex justify-end space-x-3">
+      <button id="cancel-create-session" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+        取消
+      </button>
+      <button id="confirm-create-session" class="bg-primary-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+        创建
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
-  // 结束会话模态框
   const endSessionButtons = document.querySelectorAll('.end-session-btn');
   const endSessionModal = document.getElementById('end-session-modal');
   const closeEndModal = document.getElementById('close-end-modal');
@@ -361,7 +508,6 @@
       const result = await response.json();
 
       if (result.success) {
-        // 刷新页面
         window.location.reload();
       } else {
         alert('结束会话失败: ' + result.message);
@@ -373,7 +519,6 @@
     }
   });
 
-  // 导出菜单
   const exportBtn = document.getElementById('export-btn');
   const exportMenu = document.getElementById('export-menu');
 
@@ -381,51 +526,168 @@
     exportMenu.classList.toggle('hidden');
   });
 
-  // 点击其他地方关闭导出菜单
   document.addEventListener('click', (e) => {
     if (!exportBtn?.contains(e.target) && !exportMenu?.contains(e.target)) {
       exportMenu?.classList.add('hidden');
     }
   });
 
-  // 点击模态框背景关闭模态框
   endSessionModal?.addEventListener('click', (e) => {
     if (e.target === endSessionModal) {
       endSessionModal.classList.add('hidden');
     }
   });
 
-  // 搜索功能（前端筛选，不影响 URL）
-  const searchInput = document.getElementById('search-sessions');
-  searchInput?.addEventListener('input', () => {
-    const searchTerm = searchInput.value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.appUtils.copyToClipboard(btn.getAttribute('data-copy'));
+    });
+  });
 
-    rows.forEach(row => {
-      const sessionId = row.querySelector('td:first-child').textContent.toLowerCase();
-      const username = row.querySelector('td:nth-child(2) .text-sm.font-medium').textContent.toLowerCase();
-      const machine = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+  document.querySelectorAll('.quick-action-copy').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.appUtils.copyToClipboard(btn.getAttribute('data-copy'));
+      const menu = btn.closest('.session-actions-menu');
+      if (menu) menu.classList.add('hidden');
+    });
+  });
 
-      if (sessionId.includes(searchTerm) || username.includes(searchTerm) || machine.includes(searchTerm)) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
+  document.querySelectorAll('.session-info-toggle').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sessionId = btn.getAttribute('data-session-id');
+      const infoRow = document.getElementById('info-row-' + sessionId);
+      if (infoRow) {
+        infoRow.classList.toggle('hidden');
+        btn.classList.toggle('text-primary-600');
+        btn.classList.toggle('text-gray-400');
       }
     });
   });
 
-  // 辅助函数：构建带筛选参数的 URL
+  document.querySelectorAll('.session-actions-toggle').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = btn.nextElementSibling;
+      document.querySelectorAll('.session-actions-menu').forEach(m => {
+        if (m !== menu) m.classList.add('hidden');
+      });
+      menu.classList.toggle('hidden');
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.session-actions-toggle') && !e.target.closest('.session-actions-menu')) {
+      document.querySelectorAll('.session-actions-menu').forEach(m => m.classList.add('hidden'));
+    }
+  });
+
+  const quickCreateBtn = document.getElementById('quick-create-session-btn');
+  const quickCreateModal = document.getElementById('quick-create-modal');
+  const closeCreateModal = document.getElementById('close-create-modal');
+  const cancelCreateSession = document.getElementById('cancel-create-session');
+  const confirmCreateSession = document.getElementById('confirm-create-session');
+  const createUserSelect = document.getElementById('create-user-select');
+
+  quickCreateBtn?.addEventListener('click', async () => {
+    quickCreateModal.classList.remove('hidden');
+    if (createUserSelect.options.length <= 1) {
+      try {
+        const result = await window.appUtils.API.get('/api/admin/users?limit=50');
+        if (result.success || result.items) {
+          const users = result.items || result.data || [];
+          users.forEach(user => {
+            const opt = document.createElement('option');
+            opt.value = user.id;
+            opt.textContent = user.username + ' (ID: ' + user.id + ')';
+            createUserSelect.appendChild(opt);
+          });
+        }
+      } catch (err) {
+        window.appUtils.toast.error('加载用户列表失败');
+      }
+    }
+  });
+
+  closeCreateModal?.addEventListener('click', () => {
+    quickCreateModal.classList.add('hidden');
+  });
+
+  cancelCreateSession?.addEventListener('click', () => {
+    quickCreateModal.classList.add('hidden');
+  });
+
+  quickCreateModal?.addEventListener('click', (e) => {
+    if (e.target === quickCreateModal) {
+      quickCreateModal.classList.add('hidden');
+    }
+  });
+
+  confirmCreateSession?.addEventListener('click', async () => {
+    const userId = createUserSelect.value;
+    if (!userId) {
+      window.appUtils.toast.warning('请选择用户');
+      return;
+    }
+
+    const originalText = window.appUtils.Loading.setButtonLoading(confirmCreateSession);
+
+    try {
+      const result = await window.appUtils.API.post('/api/admin/test/sessions', {
+        user_id: parseInt(userId),
+        count: 1
+      });
+
+      if (result.success) {
+        window.appUtils.toast.success('测试会话创建成功');
+        quickCreateModal.classList.add('hidden');
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        window.appUtils.toast.error('创建失败: ' + (result.error || result.message || '未知错误'));
+      }
+    } catch (err) {
+      window.appUtils.toast.error('创建失败: ' + err.message);
+    } finally {
+      window.appUtils.Loading.restoreButton(confirmCreateSession, originalText);
+    }
+  });
+
+  const searchInput = document.getElementById('search-sessions');
+  searchInput?.addEventListener('input', () => {
+    const searchTerm = searchInput.value.toLowerCase();
+    const rows = document.querySelectorAll('.session-row');
+
+    rows.forEach(row => {
+      const sessionId = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+      const username = row.querySelector('td:nth-child(3) .text-sm.font-medium').textContent.toLowerCase();
+      const machine = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+
+      if (sessionId.includes(searchTerm) || username.includes(searchTerm) || machine.includes(searchTerm)) {
+        row.style.display = '';
+        const infoRow = row.nextElementSibling;
+        if (infoRow && infoRow.classList.contains('session-info-row')) {
+          infoRow.style.display = '';
+        }
+      } else {
+        row.style.display = 'none';
+        const infoRow = row.nextElementSibling;
+        if (infoRow && infoRow.classList.contains('session-info-row')) {
+          infoRow.style.display = 'none';
+        }
+      }
+    });
+  });
+
   function buildUrl(params) {
     const url = new URL(window.location.href);
-    // 保留当前的分页参数
     if (!params.page && url.searchParams.has('page')) {
       params.page = url.searchParams.get('page');
     }
-    // 保留当前的 limit 参数
     if (!params.limit && url.searchParams.has('limit')) {
       params.limit = url.searchParams.get('limit');
     }
-    // 更新参数
     Object.keys(params).forEach(key => {
       if (params[key] === '' || params[key] === null || params[key] === undefined) {
         url.searchParams.delete(key);
@@ -436,34 +698,26 @@
     return url.toString();
   }
 
-  // 状态筛选 - 通过 URL 参数
   const statusFilter = document.getElementById('status-filter');
   statusFilter?.addEventListener('change', () => {
-    const selectedStatus = statusFilter.value;
-    window.location.href = buildUrl({ status: selectedStatus, page: 1 });
+    window.location.href = buildUrl({ status: statusFilter.value, page: 1 });
   });
 
-  // 用户筛选 - 通过 URL 参数
   const userFilter = document.getElementById('user-filter');
   userFilter?.addEventListener('change', () => {
-    const selectedUser = userFilter.value;
-    window.location.href = buildUrl({ userId: selectedUser, page: 1 });
+    window.location.href = buildUrl({ userId: userFilter.value, page: 1 });
   });
 
-  // 日期范围筛选 - 通过 URL 参数
   const dateRangeFilter = document.getElementById('date-range');
   dateRangeFilter?.addEventListener('change', () => {
-    const selectedRange = dateRangeFilter.value;
-    window.location.href = buildUrl({ dateRange: selectedRange, page: 1 });
+    window.location.href = buildUrl({ dateRange: dateRangeFilter.value, page: 1 });
   });
 
-  // 刷新按钮
   const refreshBtn = document.getElementById('refresh-btn');
   refreshBtn?.addEventListener('click', () => {
     window.location.reload();
   });
 
-  // 批量操作功能
   const selectAllSessionsCheckbox = document.getElementById('select-all-sessions');
   const sessionCheckboxes = document.querySelectorAll('.session-checkbox');
   const batchActions = document.getElementById('batch-actions');
@@ -473,7 +727,6 @@
 
   let selectedSessionIds = [];
 
-  // 全选/取消全选
   selectAllSessionsCheckbox?.addEventListener('change', () => {
     sessionCheckboxes.forEach(checkbox => {
       checkbox.checked = selectAllSessionsCheckbox.checked;
@@ -481,17 +734,14 @@
     updateSelectedSessions();
   });
 
-  // 单个复选框变化
   sessionCheckboxes.forEach(checkbox => {
     checkbox.addEventListener('change', () => {
       updateSelectedSessions();
-      // 更新全选框状态
       const allChecked = Array.from(sessionCheckboxes).every(cb => cb.checked);
       selectAllSessionsCheckbox.checked = allChecked && sessionCheckboxes.length > 0;
     });
   });
 
-  // 更新选中会话列表
   function updateSelectedSessions() {
     selectedSessionIds = Array.from(sessionCheckboxes)
       .filter(cb => cb.checked)
@@ -507,14 +757,12 @@
     }
   }
 
-  // 取消选择
   cancelSelectionBtn?.addEventListener('click', () => {
     sessionCheckboxes.forEach(cb => cb.checked = false);
     selectAllSessionsCheckbox.checked = false;
     updateSelectedSessions();
   });
 
-  // 批量结束会话
   batchReleaseBtn?.addEventListener('click', async () => {
     if (selectedSessionIds.length === 0) {
       alert('请选择要结束的会话');
@@ -550,10 +798,8 @@
     }
   });
 
-  // 加载统计数据
   async function loadStats() {
     try {
-      // 从 URL 获取当前的时间范围筛选参数
       const urlParams = new URLSearchParams(window.location.search);
       const dateRange = urlParams.get('dateRange') || 'all';
 
@@ -571,10 +817,8 @@
     }
   }
 
-  // 页面加载时获取统计数据
   loadStats();
 
-  // 排序功能
   const sortSelect = document.getElementById('sort-select');
   sortSelect?.addEventListener('change', () => {
     const sortValue = sortSelect.value;
@@ -582,7 +826,6 @@
       const [sort, order] = sortValue.split(':');
       window.location.href = buildUrl({ sort, order, page: 1 });
     } else {
-      // 清除排序
       const url = new URL(window.location.href);
       url.searchParams.delete('sort');
       url.searchParams.delete('order');
@@ -590,15 +833,13 @@
     }
   });
 
-  // 自动刷新功能
   const autoRefreshCheckbox = document.getElementById('auto-refresh');
   let refreshInterval = null;
 
   autoRefreshCheckbox?.addEventListener('change', () => {
     if (autoRefreshCheckbox.checked) {
-      // 每10秒刷新一次
       refreshInterval = setInterval(() => {
-        loadStats(); // 只刷新统计数据，不刷新整个页面
+        loadStats();
       }, 10000);
     } else {
       if (refreshInterval) {

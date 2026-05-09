@@ -80,6 +80,102 @@
   </div>
 </div>
 
+<div class="bg-white rounded-lg shadow p-4 mb-6">
+  <div class="flex items-center mb-3">
+    <i class="fas fa-bolt text-yellow-500 mr-2"></i>
+    <h3 class="text-sm font-semibold text-gray-700">快速操作</h3>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <button onclick="DashboardQuickActions.openCreateUserModal()" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+      <i class="fas fa-user-plus mr-1.5"></i>创建用户
+    </button>
+    <button onclick="DashboardQuickActions.openCreditsModal()" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+      <i class="fas fa-bolt mr-1.5"></i>充值积分
+    </button>
+    <button onclick="DashboardQuickActions.copyApiKey()" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+      <i class="fas fa-key mr-1.5"></i>复制我的 API Key
+    </button>
+    <button onclick="DashboardQuickActions.testConnection()" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+      <i class="fas fa-plug mr-1.5"></i>测试连接
+    </button>
+    <a href="/admin/playground" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+      <i class="fas fa-flask mr-1.5"></i>API Playground
+      <i class="fas fa-arrow-right ml-1 text-xs"></i>
+    </a>
+  </div>
+</div>
+
+<div id="quick-action-create-user-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+  <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-50" onclick="DashboardQuickActions.closeModal('quick-action-create-user-modal')"></div>
+  <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-medium text-gray-900">创建用户</h3>
+      <button onclick="DashboardQuickActions.closeModal('quick-action-create-user-modal')" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">用户名 <span class="text-red-500">*</span></label>
+        <input type="text" id="qa-create-username" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="输入用户名" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+        <input type="email" id="qa-create-email" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="可选">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">初始积分</label>
+        <input type="number" id="qa-create-credits" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="100" min="0">
+      </div>
+      <div id="qa-create-result" class="hidden bg-green-50 border border-green-200 rounded-md p-3">
+        <p class="text-sm text-green-700" id="qa-create-result-text"></p>
+        <div class="mt-2 flex items-center gap-2">
+          <code class="text-xs bg-green-100 px-2 py-1 rounded flex-1 break-all" id="qa-create-api-key"></code>
+          <button onclick="window.appUtils.copyToClipboard(document.getElementById('qa-create-api-key').textContent)" class="text-xs text-green-600 hover:text-green-800 whitespace-nowrap">
+            <i class="fas fa-copy"></i>
+          </button>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button onclick="DashboardQuickActions.closeModal('quick-action-create-user-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">取消</button>
+        <button onclick="DashboardQuickActions.submitCreateUser()" id="qa-create-submit-btn" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">创建</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="quick-action-credits-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+  <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-50" onclick="DashboardQuickActions.closeModal('quick-action-credits-modal')"></div>
+  <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-medium text-gray-900">充值积分</h3>
+      <button onclick="DashboardQuickActions.closeModal('quick-action-credits-modal')" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">选择用户 <span class="text-red-500">*</span></label>
+        <select id="qa-credits-user" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <option value="">加载中...</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">充值金额</label>
+        <input type="number" id="qa-credits-amount" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="100" min="1">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+        <input type="text" id="qa-credits-reason" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="可选" value="管理员手动充值">
+      </div>
+      <div class="flex justify-end gap-3">
+        <button onclick="DashboardQuickActions.closeModal('quick-action-credits-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">取消</button>
+        <button onclick="DashboardQuickActions.submitCredits()" id="qa-credits-submit-btn" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">充值</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 最近会话和系统状态 -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
   <!-- 最近会话 -->
@@ -220,8 +316,176 @@
               <span class="text-sm text-gray-600">Playwright 服务</span>
             </div>
             <span class="text-xs text-green-600 font-medium">正常</span>
-          </div>
-        </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var currentUserApiKey = '<%= locals.currentUserApiKey || "" %>';
+
+  window.DashboardQuickActions = {
+    openModal: function(id) {
+      var modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    },
+
+    closeModal: function(id) {
+      var modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    },
+
+    openCreateUserModal: function() {
+      document.getElementById('qa-create-result').classList.add('hidden');
+      document.getElementById('qa-create-username').value = '';
+      document.getElementById('qa-create-email').value = '';
+      document.getElementById('qa-create-credits').value = '100';
+      this.openModal('quick-action-create-user-modal');
+    },
+
+    submitCreateUser: function() {
+      var username = document.getElementById('qa-create-username').value.trim();
+      var email = document.getElementById('qa-create-email').value.trim();
+      var credits = parseInt(document.getElementById('qa-create-credits').value, 10) || 0;
+
+      if (!username) {
+        window.appUtils.toast.error('请输入用户名');
+        return;
+      }
+
+      var btn = document.getElementById('qa-create-submit-btn');
+      var originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '创建中...';
+
+      var password = 'pw_' + Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 6);
+
+      window.appUtils.API.post('/api/admin/users', {
+        username: username,
+        email: email || '',
+        password: password,
+        role: 'user',
+        credits: credits
+      }).then(function(res) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+
+        if (res.data) {
+          var resultDiv = document.getElementById('qa-create-result');
+          resultDiv.classList.remove('hidden');
+          document.getElementById('qa-create-result-text').textContent =
+            '用户 "' + res.data.username + '" 创建成功！初始密码: ' + password;
+          document.getElementById('qa-create-api-key').textContent = res.data.api_key || '';
+          window.appUtils.toast.success('用户创建成功');
+        } else {
+          window.appUtils.toast.error(res.error || '创建失败');
+        }
+      }).catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        window.appUtils.toast.error('请求失败: ' + err.message);
+      });
+    },
+
+    copyApiKey: function() {
+      if (currentUserApiKey) {
+        window.appUtils.copyToClipboard(currentUserApiKey);
+        window.appUtils.toast.success('API Key 已复制');
+      } else {
+        window.appUtils.API.get('/api/users/me').then(function(res) {
+          if (res.data && res.data.api_key) {
+            currentUserApiKey = res.data.api_key;
+            window.appUtils.copyToClipboard(currentUserApiKey);
+            window.appUtils.toast.success('API Key 已复制');
+          } else {
+            window.appUtils.toast.error('未找到 API Key');
+          }
+        }).catch(function(err) {
+          window.appUtils.toast.error('获取 API Key 失败: ' + err.message);
+        });
+      }
+    },
+
+    testConnection: function() {
+      window.appUtils.API.get('/api/admin/dashboard/stats').then(function(res) {
+        if (res.data || res.stats) {
+          window.appUtils.toast.success('连接正常 ✅');
+        } else {
+          window.appUtils.toast.error('连接失败 ❌');
+        }
+      }).catch(function(err) {
+        window.appUtils.toast.error('连接失败 ❌');
+      });
+    },
+
+    openCreditsModal: function() {
+      document.getElementById('qa-credits-amount').value = '100';
+      document.getElementById('qa-credits-reason').value = '管理员手动充值';
+      var select = document.getElementById('qa-credits-user');
+      select.innerHTML = '<option value="">加载中...</option>';
+      this.openModal('quick-action-credits-modal');
+
+      window.appUtils.API.get('/api/admin/users?limit=50').then(function(res) {
+        var users = res.data || res.users || [];
+        select.innerHTML = '<option value="">请选择用户</option>';
+        users.forEach(function(u) {
+          var opt = document.createElement('option');
+          opt.value = u.id;
+          opt.textContent = u.username + ' (积分: ' + (u.credits || 0) + ')';
+          select.appendChild(opt);
+        });
+      }).catch(function(err) {
+        select.innerHTML = '<option value="">加载失败</option>';
+        window.appUtils.toast.error('加载用户列表失败');
+      });
+    },
+
+    submitCredits: function() {
+      var userId = document.getElementById('qa-credits-user').value;
+      var amount = parseInt(document.getElementById('qa-credits-amount').value, 10);
+      var reason = document.getElementById('qa-credits-reason').value.trim() || '管理员手动充值';
+
+      if (!userId) {
+        window.appUtils.toast.error('请选择用户');
+        return;
+      }
+      if (!amount || amount <= 0) {
+        window.appUtils.toast.error('请输入有效的充值金额');
+        return;
+      }
+
+      var btn = document.getElementById('qa-credits-submit-btn');
+      var originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '充值中...';
+
+      window.appUtils.API.post('/api/admin/users/' + userId + '/credits', {
+        amount: amount,
+        reason: reason
+      }).then(function(res) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+
+        if (res.data) {
+          window.appUtils.toast.success('充值成功: 为 ' + res.data.username + ' 充值 ' + amount + ' 积分');
+          window.DashboardQuickActions.closeModal('quick-action-credits-modal');
+        } else {
+          window.appUtils.toast.error(res.error || '充值失败');
+        }
+      }).catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        window.appUtils.toast.error('充值失败: ' + err.message);
+      });
+    }
+  };
+})();
+</script>
       </div>
     </div>
   </div>

@@ -1,6 +1,7 @@
 import * as UserService from '../../services/user.service.js';
 import { CreditHistoryModel } from '../../models/credit-history.model.js';
 import { SessionModel } from '../../models/session.model.js';
+import { env } from '../../config/env.js';
 
 export async function getProfilePageData(userId: number) {
   const user = await UserService.getUserById(userId);
@@ -9,6 +10,9 @@ export async function getProfilePageData(userId: number) {
   const creditHistory = await CreditHistoryModel.findByUserId(user.id, 5);
   const sessionStats = await SessionModel.getUserSessionStats(user.id);
   const usedCredits = sessionStats.total_credits_used;
+
+  const baseUrl = `http://${env.HOST}:${env.PORT}`;
+  const wsUrl = `ws://${env.HOST}:${env.PROXY_PORT}`;
 
   return {
     userData: {
@@ -20,5 +24,8 @@ export async function getProfilePageData(userId: number) {
       used_credits: usedCredits,
     },
     creditHistory,
+    baseUrl,
+    wsUrl,
+    proxyPort: env.PROXY_PORT,
   };
 }

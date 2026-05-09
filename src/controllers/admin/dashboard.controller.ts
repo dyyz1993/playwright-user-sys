@@ -3,7 +3,7 @@ import { MachineModel } from '../../models/machine.model.js';
 import { UserModel } from '../../models/user.model.js';
 import * as UserService from '../../services/user.service.js';
 
-export async function getDashboardData() {
+export async function getDashboardData(userId?: number) {
   const [
     activeSessions,
     totalMachines,
@@ -24,6 +24,12 @@ export async function getDashboardData() {
     SessionModel.getRecentSessions(10),
   ]);
 
+  let currentUserApiKey = '';
+  if (userId) {
+    const fullUser = await UserService.getUserById(userId);
+    currentUserApiKey = fullUser?.api_key || '';
+  }
+
   return {
     stats: {
       activeSessions,
@@ -39,6 +45,7 @@ export async function getDashboardData() {
       diskUsage: 0,
     },
     recentSessions,
+    currentUserApiKey,
   };
 }
 
@@ -58,5 +65,6 @@ export function getEmptyDashboardData() {
       diskUsage: 0,
     },
     recentSessions: [],
+    currentUserApiKey: '',
   };
 }

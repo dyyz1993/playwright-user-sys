@@ -14,7 +14,13 @@ export const paginateMethods = {
       const offset = (page - 1) * limit;
 
       let query = db('sessions')
-        .select('sessions.*', 'users.username', 'machines.hostname as machine_name')
+        .select(
+          'sessions.*',
+          'users.username',
+          'machines.hostname as machine_name',
+          'machines.ip as machine_ip',
+          'machines.proxy_port as machine_proxy_port'
+        )
         .leftJoin('users', 'sessions.user_id', 'users.id')
         .leftJoin('machines', 'sessions.machine_id', 'machines.id');
 
@@ -118,7 +124,13 @@ export const paginateMethods = {
       const order = options?.order || 'desc';
 
       let query = db('sessions')
-        .select('sessions.*', 'users.username', 'machines.hostname as machine_name')
+        .select(
+          'sessions.*',
+          'users.username',
+          'machines.hostname as machine_name',
+          'machines.ip as machine_ip',
+          'machines.proxy_port as machine_proxy_port'
+        )
         .leftJoin('users', 'sessions.user_id', 'users.id')
         .leftJoin('machines', 'sessions.machine_id', 'machines.id');
 

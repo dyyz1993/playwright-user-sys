@@ -56,6 +56,10 @@ export function getMemoryUsage(): number {
 }
 
 export function getLocalIpAddress(): string {
+  const envIp = process.env.MACHINE_IP;
+  if (envIp) {
+    return envIp;
+  }
   const interfaces = os.networkInterfaces();
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name] || []) {

@@ -111,12 +111,7 @@
 
   <script>
     const sessionId = new URLSearchParams(window.location.search).get('sessionId');
-    const token = new URLSearchParams(window.location.search).get('token') || getCookie('token');
-
-    function getCookie(name) {
-      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-      return match ? match[2] : null;
-    }
+    const serverSessionData = <%- typeof sessionData !== 'undefined' && sessionData ? JSON.stringify(sessionData) : 'null' %>;
 
     function setStatus(type, text) {
       const badge = document.getElementById('status-badge');
@@ -129,9 +124,9 @@
     function updateSessionDetails(data) {
       document.getElementById('session-id-display').textContent = `ID: ${sessionId?.substring(0, 8)}...`;
       document.getElementById('detail-status').textContent = data.status || '-';
-      document.getElementById('detail-machine').textContent = data.machine_name || data.machine_id || '-';
+      document.getElementById('detail-machine').textContent = data.machine_id || '-';
       document.getElementById('detail-created').textContent = data.created_at ? new Date(data.created_at).toLocaleString() : '-';
-      document.getElementById('detail-ws-endpoint').textContent = data.directUrl || data.wsEndpoint || '-';
+      document.getElementById('detail-ws-endpoint').textContent = data.directUrl || '-';
 
       const connectCode = `const { chromium } = require('playwright');
 
@@ -164,7 +159,7 @@ await page.goto('https://example.com');`;
       setTimeout(() => t.remove(), 2000);
     }
 
-    async function loadSessionInfo() {
+    function initViewer() {
       if (!sessionId) {
         setStatus('error', 'No session ID');
         document.getElementById('error-section').classList.remove('hidden');
@@ -172,49 +167,38 @@ await page.goto('https://example.com');`;
         return;
       }
 
-      setStatus('connecting', 'Loading...');
-
-      try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const res = await fetch(`/api/sessions/${sessionId}`, { headers });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-
-        if (!json.data) throw new Error('No session data');
-
-        const session = json.data;
-        document.getElementById('session-details').classList.remove('hidden');
-        document.getElementById('connect-section').classList.remove('hidden');
-        updateSessionDetails(session);
-
-        const statusIcon = document.getElementById('session-status-icon');
-        if (session.status === 'created' || session.status === 'connected') {
-          setStatus('active', 'Active');
-          statusIcon.innerHTML = '<i class="fas fa-check text-green-400"></i>';
-          statusIcon.className = 'w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center';
-        } else {
-          setStatus('error', session.status);
-          statusIcon.innerHTML = '<i class="fas fa-times text-red-400"></i>';
-          statusIcon.className = 'w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center';
-        }
-
-        if (session.start_time) {
-          const elapsed = Math.floor((Date.now() - new Date(session.start_time).getTime()) / 1000);
-          const mins = Math.floor(elapsed / 60);
-          const secs = elapsed % 60;
-          document.getElementById('detail-duration').textContent = `${mins}m ${secs}s`;
-        }
-      } catch (err) {
-        setStatus('error', 'Failed');
+      if (!serverSessionData) {
+        setStatus('error', 'Not Found');
         document.getElementById('error-section').classList.remove('hidden');
-        document.getElementById('error-message').textContent = err.message;
-        document.getElementById('session-status-icon').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i>';
+        document.getElementById('error-message').textContent = 'Session not found or expired';
+        return;
+      }
+
+      const session = serverSessionData;
+      document.getElementById('session-details').classList.remove('hidden');
+      document.getElementById('connect-section').classList.remove('hidden');
+      updateSessionDetails(session);
+
+      const statusIcon = document.getElementById('session-status-icon');
+      if (session.status === 'created' || session.status === 'connected') {
+        setStatus('active', 'Active');
+        statusIcon.innerHTML = '<i class="fas fa-check text-green-400"></i>';
+        statusIcon.className = 'w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center';
+      } else {
+        setStatus('error', session.status);
+        statusIcon.innerHTML = '<i class="fas fa-times text-red-400"></i>';
+        statusIcon.className = 'w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center';
+      }
+
+      if (session.start_time) {
+        const elapsed = Math.floor((Date.now() - new Date(session.start_time).getTime()) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        document.getElementById('detail-duration').textContent = `${mins}m ${secs}s`;
       }
     }
 
-    loadSessionInfo();
+    initViewer();
   </script>
 </body>
 </html>

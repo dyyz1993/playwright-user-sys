@@ -14,6 +14,7 @@ import { getLogsPageData } from '../controllers/admin/logs-page.controller.js';
 import { getProfilePageData } from '../controllers/admin/profile-page.controller.js';
 import { sendError } from '../utils/response.js';
 import { env } from '../config/env.js';
+import { SessionModel } from '../models/session/index.js';
 
 function getErrorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -32,9 +33,38 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     if (!query.sessionId) {
       return reply.code(400).send('Missing sessionId parameter');
     }
+
+    let sessionData: Record<string, unknown> | null = null;
+    try {
+      const session = await SessionModel.findById(query.sessionId);
+      if (session) {
+        let directUrl: string | null = null;
+        if (env.PUBLIC_MANAGER_URL) {
+          directUrl = `ws://${env.PUBLIC_MANAGER_URL}/ws/connect?sessionId=${session.id}`;
+        } else if (env.PUBLIC_MACHINE_ENDPOINT) {
+          directUrl = `ws://${env.PUBLIC_MACHINE_ENDPOINT}?sessionId=${session.id}`;
+        } else if (session.machine_id) {
+          const host = request.headers.host || 'localhost:3011';
+          directUrl = `ws://${host}/ws/connect?sessionId=${session.id}`;
+        }
+
+        sessionData = {
+          id: session.id,
+          status: session.status,
+          machine_id: session.machine_id,
+          created_at: session.created_at instanceof Date ? session.created_at.toISOString() : session.created_at,
+          start_time: session.start_time instanceof Date ? session.start_time.toISOString() : session.start_time,
+          directUrl,
+        };
+      }
+    } catch (err) {
+      logger.error('Viewer: failed to load session:', err);
+    }
+
     return reply.view('pages/viewer', {
       title: 'Session Viewer',
       sessionId: query.sessionId,
+      sessionData,
     });
   });
 

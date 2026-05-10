@@ -295,8 +295,8 @@
                 // 可以添加重连逻辑
             };
             
-            // 连接视频WebSocket
-            const videoUrl = `ws://${window.location.host}/ws/${sessionId}/video`;
+            // 连接视频WebSocket (使用 stream 路径)
+            const videoUrl = `ws://${window.location.host}/ws/${sessionId}/stream`;
             videoSocket = new WebSocket(videoUrl);
             
             videoSocket.onopen = () => {

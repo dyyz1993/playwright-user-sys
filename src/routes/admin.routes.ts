@@ -1,5 +1,7 @@
 import { logger } from '@shared/utils/logger.js';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import * as path from 'path';
+import * as fs from 'fs';
 import { AdminLoginBodyRoute, DebugVerifyTokenBodyRoute } from '@shared/types/routes.js';
 import { webLogin } from '../services/auth.service.js';
 import { getDashboardData, getEmptyDashboardData } from '../controllers/admin/dashboard.controller.js';
@@ -31,41 +33,13 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   fastify.get('/viewer', async (request: FastifyRequest, reply: FastifyReply) => {
     const query = request.query as { sessionId?: string };
     if (!query.sessionId) {
-      return reply.code(400).send('Missing sessionId parameter');
+      return reply.redirect('/admin/login');
     }
 
-    let sessionData: Record<string, unknown> | null = null;
-    try {
-      const session = await SessionModel.findById(query.sessionId);
-      if (session) {
-        let directUrl: string | null = null;
-        if (env.PUBLIC_MANAGER_URL) {
-          directUrl = `ws://${env.PUBLIC_MANAGER_URL}/ws/connect?sessionId=${session.id}`;
-        } else if (env.PUBLIC_MACHINE_ENDPOINT) {
-          directUrl = `ws://${env.PUBLIC_MACHINE_ENDPOINT}?sessionId=${session.id}`;
-        } else if (session.machine_id) {
-          const host = request.headers.host || 'localhost:3011';
-          directUrl = `ws://${host}/ws/connect?sessionId=${session.id}`;
-        }
-
-        sessionData = {
-          id: session.id,
-          status: session.status,
-          machine_id: session.machine_id,
-          created_at: session.created_at instanceof Date ? session.created_at.toISOString() : session.created_at,
-          start_time: session.start_time instanceof Date ? session.start_time.toISOString() : session.start_time,
-          directUrl,
-        };
-      }
-    } catch (err) {
-      logger.error('Viewer: failed to load session:', err);
-    }
-
-    return reply.view('pages/viewer', {
-      title: 'Session Viewer',
-      sessionId: query.sessionId,
-      sessionData,
-    });
+    // 返回 remote-control.html，由前端处理实时画面显示
+    const htmlPath = path.join(process.cwd(), 'public', 'remote-control.html');
+    const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
+    return reply.type('text/html').send(htmlContent);
   });
 
   fastify.get('/admin/login', async (request: FastifyRequest, reply: FastifyReply) => {

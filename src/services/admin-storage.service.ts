@@ -1,6 +1,7 @@
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { UserModel } from '../models/user.model.js';
 import { join } from 'path';
+import { logger } from '@shared/utils/logger.js';
 
 export async function getStorageStats(query: {
   userId?: number;
@@ -71,7 +72,9 @@ export async function cleanupUserData(userIds: number[], type: 'sessions' | 'sha
       cleanedUsers: result.cleanedUsers,
       freedSpace: result.freedSpace,
     },
-  }).catch(() => {});
+  }).catch((err) => {
+    logger.warn('记录操作日志失败:', err);
+  });
 
   return result;
 }
@@ -88,7 +91,9 @@ export async function cleanupAllOldData(days: number | undefined, adminId: numbe
       deletedCount: result.deletedCount,
       freedSpace: result.freedSpace,
     },
-  }).catch(() => {});
+  }).catch((err) => {
+    logger.warn('记录操作日志失败:', err);
+  });
 
   return result;
 }

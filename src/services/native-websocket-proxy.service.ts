@@ -82,7 +82,6 @@ export class NativeWebSocketProxyService {
       try {
         const pathname = url.parse(request.url || '').pathname;
 
-        // 只处理/ws/connect路径
         if (pathname === '/ws/connect') {
           logger.info(`处理WebSocket升级请求: ${request.url}`);
           this.handleWebSocketUpgrade(request, socket, head).catch((error) => {
@@ -96,6 +95,27 @@ export class NativeWebSocketProxyService {
               logger.error('关闭socket失败:', socketError);
             }
           });
+        } else if (
+          pathname &&
+          pathname.startsWith('/ws/') &&
+          (pathname.endsWith('/stream') || pathname.endsWith('/events'))
+        ) {
+          const pathParts = pathname.split('/');
+          const sessionIdFromPath = pathParts[2];
+          if (sessionIdFromPath) {
+            logger.info(`处理Viewer WebSocket升级请求: ${pathname} (sessionId: ${sessionIdFromPath})`);
+            this.handleViewerWebSocketProxy(request, socket, head, sessionIdFromPath, pathname).catch((error) => {
+              logger.error(`Viewer WebSocket代理失败 (sessionId: ${sessionIdFromPath}):`, error);
+              try {
+                if (!socket.destroyed && socket.writable) {
+                  socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+                  socket.destroy();
+                }
+              } catch (socketError) {
+                logger.error('关闭socket失败:', socketError);
+              }
+            });
+          }
         }
       } catch (error) {
         logger.error('处理HTTP升级请求失败:', error);
@@ -340,6 +360,75 @@ export class NativeWebSocketProxyService {
         this.cleanupConnection(sessionId);
       }
 
+      if (!socket.destroyed && socket.writable) {
+        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+        socket.destroy();
+      }
+    }
+  }
+
+  private async handleViewerWebSocketProxy(
+    request: http.IncomingMessage,
+    socket: stream.Duplex,
+    head: Buffer,
+    sessionId: string,
+    pathname: string
+  ): Promise<void> {
+    try {
+      const session = await SessionModel.findById(sessionId);
+      if (!session) {
+        logger.error(`Viewer WebSocket代理：会话不存在 (sessionId: ${sessionId})`);
+        socket.write('HTTP/1.1 404 Not Found\r\n\r\nSession not found');
+        socket.destroy();
+        return;
+      }
+
+      if (session.status !== SessionStatus.CREATED && session.status !== SessionStatus.CONNECTED) {
+        logger.error(`Viewer WebSocket代理：会话状态无效 (sessionId: ${sessionId}, status: ${session.status})`);
+        socket.write('HTTP/1.1 410 Gone\r\n\r\nSession is not active');
+        socket.destroy();
+        return;
+      }
+
+      const machineId = session.machine_id;
+      if (!machineId) {
+        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\nNo machine assigned');
+        socket.destroy();
+        return;
+      }
+
+      const machineInfo = memoryStore.getMachine(machineId);
+      if (!machineInfo) {
+        socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nMachine not found');
+        socket.destroy();
+        return;
+      }
+
+      const machineIp = machineInfo.ip;
+      const proxyPort = machineInfo.proxy_port;
+      const targetUrl = `ws://${machineIp}:${proxyPort}${pathname}?sessionId=${sessionId}`;
+
+      logger.info(`Viewer WebSocket代理: sessionId=${sessionId}, target=${targetUrl}`);
+
+      (request as { sessionId?: string }).sessionId = sessionId;
+
+      socket.on('close', () => {
+        logger.info(`Viewer WebSocket连接关闭 (sessionId: ${sessionId}, path: ${pathname})`);
+      });
+
+      socket.on('error', (err: Error) => {
+        logger.error(`Viewer WebSocket连接错误 (sessionId: ${sessionId}):`, err);
+      });
+
+      this.proxy.ws(request, socket, head, { target: targetUrl }, (err: Error) => {
+        if (err) {
+          logger.error(`Viewer WebSocket代理连接失败 (sessionId: ${sessionId}):`, err);
+        } else {
+          logger.info(`Viewer WebSocket代理连接成功 (sessionId: ${sessionId}, path: ${pathname})`);
+        }
+      });
+    } catch (error) {
+      logger.error(`Viewer WebSocket代理失败 (sessionId: ${sessionId}):`, error);
       if (!socket.destroyed && socket.writable) {
         socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
         socket.destroy();

@@ -36,9 +36,11 @@ export default fp(async function (fastify: FastifyInstance) {
   }
 
   // 注册 CORS 插件
+  const defaultOrigins =
+    process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000', 'http://localhost:5173'];
   const allowedOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
-    : ['http://localhost:3000', 'http://localhost:5173'];
+    : defaultOrigins;
 
   // @ts-ignore — cors origin callback type mismatch with fastify-cors typings
   await fastify.register(cors, {
@@ -107,7 +109,7 @@ export default fp(async function (fastify: FastifyInstance) {
     cookieName: 'sessionId',
     secret: config.jwt.secret,
     cookie: {
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,

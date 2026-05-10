@@ -1,0 +1,86 @@
+# Module: auth
+# Reusable operation sequences
+
+login_flow_success:
+  description: "成功登录流程 - 使用正确的用户名和密码"
+  steps:
+    - action: fill
+      selector: "#username"
+      value: "admin"
+      description: "填写用户名"
+    - action: fill
+      selector: "#password"
+      value: "admin123"
+      description: "填写密码"
+    - action: click
+      selector: "button[type='submit']"
+      description: "点击登录按钮"
+  wait_after_submit: 2000
+  expected_result: "跳转到仪表盘页面 /admin"
+  verification:
+    - check_url: "http://192.168.0.29:3011/admin"
+    - check_element: "button:contains('创建用户')"
+
+login_flow_wrong_password:
+  description: "错误密码登录流程 - 验证错误提示"
+  steps:
+    - action: fill
+      selector: "#username"
+      value: "admin"
+      description: "填写用户名"
+    - action: fill
+      selector: "#password"
+      value: "wrongpassword"
+      description: "填写错误密码"
+    - action: click
+      selector: "button[type='submit']"
+      description: "点击登录按钮"
+  wait_after_submit: 1000
+  expected_result: "保持在登录页面，显示错误提示（toast 通知）"
+  verification:
+    - check_url: "http://192.168.0.29:3011/admin/login"
+    - check_element: "#username"
+    - check_element: "#password"
+  notes:
+    - "Toast 通知默认 3 秒后自动关闭，可能无法捕获"
+    - "通过检查页面是否保持在登录页面来验证错误密码被拒绝"
+    - "Toast 验证方法：使用 eval 检查 #toast-container 的子元素"
+
+login_flow_empty_fields:
+  description: "空字段验证流程 - 验证 HTML5 表单验证"
+  steps:
+    - action: eval
+      selector: "javascript"
+      value: "document.getElementById('username').value = ''; document.getElementById('password').value = '';"
+      description: "清空表单字段"
+    - action: click
+      selector: "button[type='submit']"
+      description: "尝试提交空表单"
+  expected_result: "HTML5 表单验证阻止提交，显示验证提示"
+  verification:
+    - check_validation: "#username"
+      expected: "valueMissing: true"
+    - check_validation: "#password"
+      expected: "valueMissing: true"
+    - check_validation_message: "请填写此字段。"
+
+logout_flow:
+  description: "退出登录流程"
+  steps:
+    - action: find
+      selector: "text"
+      value: "退出登录"
+      subaction: "click"
+      description: "查找并点击退出登录链接"
+  expected_result: "跳转回登录页面 /admin/login"
+  verification:
+    - check_url: "http://192.168.0.29:3011/admin/login"
+    - check_element: "#username"
+
+tips:
+  - "登录页面使用 HTML5 表单验证（required 属性）"
+  - "错误提示通过 toast 通知显示，默认 3 秒后自动关闭"
+  - "页面中有多个'退出登录'链接，使用 find text 会自动选择第一个匹配项"
+  - "Toast 通知容器 ID: toast-container"
+  - "成功登录后会跳转到 /admin 仪表盘页面"
+  - "仪表盘页面显示用户信息（admin）和系统概览"

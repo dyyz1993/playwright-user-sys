@@ -5,7 +5,11 @@ import { successResponseSchema } from './common.schema.js';
 // 管理员登录请求模式
 export const adminLoginRequestSchema = z.object({
   username: z.string().min(3).max(50),
-  password: z.string().min(6).max(100),
+  password: z
+    .string()
+    .min(8)
+    .max(100)
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, '密码必须至少8个字符，包含大小写字母和数字'),
 });
 
 // 管理员登录响应模式
@@ -38,7 +42,11 @@ export const dashboardStatsResponseSchema = successResponseSchema(dashboardStats
 // 管理员创建用户请求模式
 export const adminCreateUserRequestSchema = z.object({
   username: z.string().min(3).max(50),
-  password: z.string().min(6).max(100),
+  password: z
+    .string()
+    .min(8)
+    .max(100)
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, '密码必须至少8个字符，包含大小写字母和数字'),
   email: z.string().email().optional(),
   role: z.enum([UserRole.ADMIN, UserRole.USER]).optional(),
   credits: z.number().int().min(0).optional(),
@@ -80,7 +88,12 @@ export const adminUpdateUserRequestSchema = z.object({
   role: z.enum([UserRole.ADMIN, UserRole.USER]).optional(),
   status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]).optional(),
   webhook_url: z.string().url().optional(),
-  password: z.string().min(6).max(100).optional(),
+  password: z
+    .string()
+    .min(8)
+    .max(100)
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, '密码必须至少8个字符，包含大小写字母和数字')
+    .optional(),
 });
 
 // 管理员更新用户响应模式

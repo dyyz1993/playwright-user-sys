@@ -1,6 +1,7 @@
 import { MachineModel } from '../models/machine.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '@shared/utils/logger.js';
 
 export async function addMachine(
   body: { hostname: string; ip: string; grpcPort?: number; proxyPort?: number; maxInstances?: number },
@@ -38,7 +39,9 @@ export async function addMachine(
       grpcPort: body.grpcPort,
       proxyPort: body.proxyPort,
     },
-  }).catch(() => {});
+  }).catch((err) => {
+    logger.warn('记录操作日志失败:', err);
+  });
 
   return machine;
 }
@@ -75,7 +78,9 @@ export async function batchRestartMachines(
         admin_id: adminId,
         action: '批量重启机器',
         details: { hostname: machine.hostname },
-      }).catch(() => {});
+      }).catch((err) => {
+        logger.warn('记录操作日志失败:', err);
+      });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '重启失败';
       failed.push({ machineId, error: message });
@@ -112,7 +117,9 @@ export async function updateMachineConfig(
       ip: body.ip,
       maxInstances: body.maxInstances,
     },
-  }).catch(() => {});
+  }).catch((err) => {
+    logger.warn('记录操作日志失败:', err);
+  });
 
   return updatedMachine;
 }

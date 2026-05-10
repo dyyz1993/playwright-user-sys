@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { UserModel } from '../models/user.model.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';
 import { sendError } from '../utils/response.js';
-import { env } from '../config/env.js';
+import { getJwtSecret } from '../utils/auth.js';
 
 export default fp(async function (fastify: FastifyInstance) {
   // JWT 验证中间件
@@ -41,22 +41,10 @@ export default fp(async function (fastify: FastifyInstance) {
         }
       }
 
-      // 输出所有 cookie 信息以便调试
-      request.log.debug({ cookies: request.cookies }, '请求中的 cookie');
-      request.log.debug({ nodeEnv: process.env.NODE_ENV }, 'NODE_ENV');
-
-      // 使用配置中的 JWT 密钥
-      // 测试环境使用固定密钥
-      const jwtSecret =
-        process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
-      request.log.debug({ jwtSecret: jwtSecret ? 'set' : 'not set' }, 'JWT_SECRET');
-      request.log.debug('使用 JWT 密钥验证令牌');
-      request.log.debug({ tokenPrefix: token.substring(0, 20) + '...' }, 'Token 前缀');
+      // 使用统一的 JWT 密钥
+      const jwtSecret = getJwtSecret();
 
       const decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
-      request.log.debug({ decoded: JSON.stringify(decoded) }, '完整解码后的 token');
-      request.log.debug({ userId: decoded?.id }, '令牌验证成功，用户 ID');
-      request.log.debug({ tokenType: typeof decoded }, '令牌类型');
 
       const user = await UserModel.findById(decoded.id);
       if (!user) {
@@ -160,9 +148,7 @@ export default fp(async function (fastify: FastifyInstance) {
       try {
         const token = authHeader!.split(' ')[1];
 
-        // 使用配置中的 JWT 密钥
-        const jwtSecret =
-          process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
+        const jwtSecret = getJwtSecret();
         const decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
 
         const user = await UserModel.findById(decoded.id);

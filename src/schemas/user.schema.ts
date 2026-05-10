@@ -22,7 +22,11 @@ export const userDetailSchema = userBaseSchema.extend({
 // 登录请求模式
 export const loginRequestSchema = z.object({
   username: z.string().min(3).max(50),
-  password: z.string().min(6).max(100),
+  password: z
+    .string()
+    .min(8)
+    .max(100)
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, '密码必须至少8个字符，包含大小写字母和数字'),
 });
 
 // 登录响应模式
@@ -45,7 +49,11 @@ export const currentUserResponseSchema = successResponseSchema(
 // 创建用户请求模式
 export const createUserRequestSchema = z.object({
   username: z.string().min(3).max(50),
-  password: z.string().min(6).max(100),
+  password: z
+    .string()
+    .min(8)
+    .max(100)
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, '密码必须至少8个字符，包含大小写字母和数字'),
   email: z.string().email().optional(),
   role: z.enum([UserRole.ADMIN, UserRole.USER]).optional(),
   status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE, UserStatus.SUSPENDED]).optional(),
@@ -58,7 +66,12 @@ export const createUserResponseSchema = successResponseSchema(userDetailSchema.o
 
 // 更新用户请求模式
 export const updateUserRequestSchema = z.object({
-  password: z.string().min(6).max(100).optional(),
+  password: z
+    .string()
+    .min(8)
+    .max(100)
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, '密码必须至少8个字符，包含大小写字母和数字')
+    .optional(),
   email: z.string().email().optional(),
   status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE, UserStatus.SUSPENDED]).optional(),
   webhook_url: z.string().url().optional().nullable(),

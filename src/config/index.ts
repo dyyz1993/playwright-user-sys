@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { SignOptions } from 'jsonwebtoken';
+import { getJwtSecret } from '../utils/auth.js';
 
 // 加载环境变量
 dotenv.config();
@@ -32,13 +33,13 @@ export const config = {
 
   // JWT 配置
   jwt: {
-    secret: process.env.JWT_SECRET || (process.env.NODE_ENV === 'development' ? 'dev-only-secret-key' : undefined),
+    secret: getJwtSecret(),
     expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'],
   },
 
   // 会话配置
   session: {
-    timeout: process.env.SESSION_TIMEOUT ? parseInt(process.env.SESSION_TIMEOUT) : 60, // 分钟
+    timeout: process.env.SESSION_TIMEOUT ? parseInt(process.env.SESSION_TIMEOUT) : 60,
     maxPerUser: process.env.MAX_SESSIONS_PER_USER ? parseInt(process.env.MAX_SESSIONS_PER_USER) : 20,
   },
 

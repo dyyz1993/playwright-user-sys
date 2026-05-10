@@ -1,0 +1,143 @@
+# Module: admin-backend
+# Site: http://192.168.0.29:3011
+# Version: 2
+# Last updated: 2026-05-10
+# Updated in round: r2
+
+# 登录页面选择器（来自 auth 模块）
+login_page:
+  url: "http://192.168.0.29:3011/admin/login"
+  username_input: "#username"
+  password_input: "#password"
+  remember_me_checkbox: "#remember-me"
+  submit_button: "button[type='submit']"
+
+# 仪表盘页面选择器
+dashboard_page:
+  url: "http://192.168.0.29:3011/admin"
+  quick_actions:
+    create_user: "button:contains('创建用户')"
+    recharge_credits: "button:contains('充值积分')"
+    copy_api_key: "button:contains('复制我的 API Key')"
+    test_connection: "button:contains('测试连接')"
+  api_playground_link: "a:contains('API Playground')"
+  
+# 个人资料页面选择器
+profile_page:
+  url: "http://192.168.0.29:3011/admin/profile"
+  username_input: "#username"
+  email_input: "#email"
+  webhook_url_input: "#webhook-url"
+  save_button: "button:contains('保存更改')"
+  
+  password_section:
+    current_password: "#current-password"
+    new_password: "#new-password"
+    confirm_password: "#confirm-password"
+    update_button: "button:contains('更新密码')"
+    
+  api_key_section:
+    api_key_display: "#api-key"
+    copy_button: "#copy-api-key"
+    regenerate_button: "#regenerate-api-key"
+
+# 会话管理页面选择器
+sessions_page:
+  url: "http://192.168.0.29:3011/admin/sessions"
+  search_input: "#search-sessions"
+  status_filter: "#status-filter"
+  user_filter: "#user-filter"
+  sort_select: "#sort-select"
+  date_range: "#date-range"
+  auto_refresh: "#auto-refresh"
+  refresh_button: "#refresh-btn"
+  quick_create_button: "#quick-create-session-btn"
+  export_button: "#export-btn"
+
+# 用户管理页面选择器
+users_page:
+  url: "http://192.168.0.29:3011/admin/users"
+  add_user_button: "#add-user-btn"
+  batch_create_button: "#batch-create-btn"
+  search_input: "#search-users"
+  role_filter: "#role-filter"
+  status_filter: "#status-filter"
+  refresh_button: "#refresh-btn"
+  export_button: "#export-btn"
+
+# 机器管理页面选择器
+machines_page:
+  url: "http://192.168.0.29:3011/admin/machines"
+  add_machine_button: "#add-machine-btn"
+  batch_health_check_button: "#batch-health-check-btn"
+  search_input: "#search-machines"
+  status_filter: "#status-filter"
+  refresh_button: "#refresh-btn"
+
+# 文件上传页面选择器
+files_page:
+  url: "http://192.168.0.29:3011/admin/files"
+  file_input: "#file-input"
+  upload_button: "button:contains('上传文件')"
+
+# 设置页面选择器
+settings_page:
+  url: "http://192.168.0.29:3011/admin/settings"
+  email_notifications: "#email-notifications"
+  webhook_notifications: "#webhook-notifications"
+  session_timeout: "#session-timeout"
+  max_sessions: "#max-sessions"
+  ip_restriction: "#ip-restriction"
+  rate_limiting: "#rate-limiting"
+  clear_logs_button: "#clear-logs-btn"
+  backup_button: "#backup-btn"
+  save_button: "button:contains('保存设置')"
+
+# API Playground 页面选择器
+api_playground_page:
+  url: "http://192.168.0.29:3011/admin/playground"
+  connection_section:
+    test_connection_button: "button:contains('测试连接')"
+    api_base_url: "input[readonly]"
+    api_key: "input[readonly]"
+    websocket_proxy: "input[readonly]"
+    grpc_port: "input[readonly]"
+  endpoint_section:
+    tabs:
+      auth: "button:contains('认证')"
+      session: "button:contains('会话')"
+      user: "button:contains('用户')"
+      file: "button:contains('文件')"
+    code_example_tabs:
+      curl: "button:contains('cURL')"
+      javascript: "button:contains('JavaScript SDK')"
+      python: "button:contains('Python')"
+  quick_actions:
+    username_input: "input[placeholder*='用户名']"
+    email_input: "input[placeholder*='邮箱']"
+    create_user_button: "button:contains('创建用户')"
+    create_session_select: "select"
+
+# 未实现的页面（404）
+not_implemented:
+  api_playground_wrong_path:
+    url: "http://192.168.0.29:3011/admin/api-playground"
+    status: "404 Not Found"
+    note: "错误路径，正确路径是 /admin/playground"
+  operation_logs:
+    url: "http://192.168.0.29:3011/admin/operation-logs"
+    status: "404 Not Found"
+
+# 侧边栏导航
+sidebar:
+  links:
+    dashboard: "仪表盘"
+    users: "用户管理"
+    sessions: "会话管理"
+    machines: "机器管理"
+    operation_logs: "操作日志"
+    files: "文件上传"
+    api_playground: "API Playground"
+    profile: "个人资料"
+    settings: "设置"
+    logout: "退出登录"

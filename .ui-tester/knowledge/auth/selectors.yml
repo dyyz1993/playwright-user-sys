@@ -1,0 +1,38 @@
+# Module: auth
+# Site: http://192.168.0.29:3011
+# Version: 1
+# Last updated: 2026-05-10
+# Updated in round: r1
+
+login_page:
+  url: "http://192.168.0.29:3011/admin/login"
+  username_input: "#username"
+  password_input: "#password"
+  remember_me_checkbox: "#remember-me"
+  submit_button: "button[type='submit']"
+  
+  # 页面元素属性
+  form_validation:
+    username_required: true
+    password_required: true
+    validation_message: "请填写此字段。"
+
+dashboard_page:
+  url: "http://192.168.0.29:3011/admin"
+  logout_link: "退出登录"  # 使用 find text "退出登录" click - 页面中有 3 个退出登录链接
+  
+  # 快速操作按钮
+  quick_actions:
+    create_user: "button:contains('创建用户')"
+    recharge_credits: "button:contains('充值积分')"
+    copy_api_key: "button:contains('复制我的 API Key')"
+    test_connection: "button:contains('测试连接')"
+
+toast_notification:
+  container: "#toast-container"
+  notification_class: ".toast-notification"
+  types:
+    success: ".toast-success"
+    error: ".toast-error"
+    warning: ".toast-warning"
+    info: ".toast-info"

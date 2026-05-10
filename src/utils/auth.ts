@@ -13,6 +13,16 @@ export async function comparePassword(password: string, hash: string): Promise<b
   return bcrypt.compare(password, hash);
 }
 
+export function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'test') return 'test-secret-key-for-testing-only-32chars';
+    if (process.env.NODE_ENV === 'development') return 'dev-only-secret-key';
+    throw new Error('JWT_SECRET environment variable is required in production');
+  }
+  return secret;
+}
+
 export function isSha256Hash(hash: string): boolean {
   return /^[a-f0-9]{64}$/i.test(hash);
 }
@@ -44,15 +54,8 @@ export function generateApiKey(): string {
 
 // 生成 JWT Token
 export function generateToken(payload: { id: number; username: string; role: UserRole }): string {
-  // 在测试环境中优先使用环境变量，如果没有则使用默认值
-  let secret: string;
-  if (process.env.NODE_ENV === 'test') {
-    secret = process.env.JWT_SECRET || 'test-secret-key-for-testing-only-32chars';
-  } else {
-    secret = String(env.JWT_SECRET);
-  }
+  const secret = getJwtSecret();
 
-  // 在测试环境中，使用固定的过期时间，避免环境变量问题
   const expiresIn = process.env.NODE_ENV === 'test' ? '24h' : env.JWT_EXPIRES_IN || '1d';
 
   // 验证 payload 内容
@@ -79,13 +82,7 @@ export function generateToken(payload: { id: number; username: string; role: Use
 // 验证 JWT Token
 export function verifyToken(token: string): jwt.JwtPayload | null {
   try {
-    // 在测试环境中优先使用环境变量，如果没有则使用默认值
-    let secret: string;
-    if (process.env.NODE_ENV === 'test') {
-      secret = process.env.JWT_SECRET || 'test-secret-key-for-testing-only-32chars';
-    } else {
-      secret = String(env.JWT_SECRET);
-    }
+    const secret = getJwtSecret();
     return jwt.verify(token, secret) as jwt.JwtPayload;
   } catch (_error) {
     return null;

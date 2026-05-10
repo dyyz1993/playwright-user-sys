@@ -1,5 +1,6 @@
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { UserModel } from '../models/user.model.js';
+import { logger } from '@shared/utils/logger.js';
 
 export async function getUserOperationLogs(userId: number, options: { page: string; limit: string }) {
   const existingUser = await UserModel.findById(userId);
@@ -29,5 +30,7 @@ export async function createOperationLog(data: {
   details?: Record<string, unknown>;
   target_user_id?: number;
 }): Promise<void> {
-  OperationLogModel.create(data).catch(() => {});
+  OperationLogModel.create(data).catch((err) => {
+    logger.warn('记录操作日志失败:', err);
+  });
 }

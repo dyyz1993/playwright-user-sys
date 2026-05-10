@@ -1,0 +1,23 @@
+# Module: viewer
+# Site: http://192.168.0.29:3011
+# Version: 1
+# Last updated: 2026-05-10
+# Updated in round: r1
+
+viewer_page:
+  url_pattern: "/viewer?sessionId={sessionId}&token={token}"
+  status_badge: "#status-badge"
+  status_text: "#status-text"
+  session_details: "#session-details"
+  session_id_display: "#session-id-display"
+  detail_status: "#detail-status"
+  detail_machine: "#detail-machine"
+  detail_created: "#detail-created"
+  detail_duration: "#detail-duration"
+  detail_ws_endpoint: "#detail-ws-endpoint"
+  connect_section: "#connect-section"
+  connect_code: "#connect-code"
+  error_section: "#error-section"
+  error_message: "#error-message"
+  copy_code_button: "button:contains('Copy Code')"
+  copy_endpoint_button: "button:contains('Copy Endpoint')"

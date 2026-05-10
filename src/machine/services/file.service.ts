@@ -57,6 +57,8 @@ export class FileService {
     url: string,
     options?: { filename?: string; timeout?: number }
   ): Promise<{ filePath: string; size: number }> {
+    await this.checkDiskSpace(500 * 1024 * 1024);
+
     const parsedUrl = new URL(url);
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
       throw new Error(`不支持的协议: ${parsedUrl.protocol}`);
@@ -98,6 +100,8 @@ export class FileService {
   }
 
   async storeFile(sessionId: string, filename: string, data: Buffer): Promise<string> {
+    await this.checkDiskSpace(500 * 1024 * 1024);
+
     if (data.length > this.maxFileSize) {
       throw new Error(`文件大小 ${data.length} 超过限制 ${this.maxFileSize}`);
     }
@@ -155,6 +159,27 @@ export class FileService {
     const resolved = path.resolve(filePath);
     const tempDir = path.resolve(this.tempDir);
     return resolved.startsWith(tempDir);
+  }
+
+  private async checkDiskSpace(minRequiredBytes: number): Promise<void> {
+    try {
+      const { execSync } = await import('child_process');
+      const output = execSync('df -k .', { encoding: 'utf8' });
+      const lines = output.trim().split('\n');
+      const parts = lines[1].split(/\s+/);
+      const availableKB = parseInt(parts[3], 10);
+      const availableBytes = availableKB * 1024;
+
+      if (availableBytes < minRequiredBytes) {
+        throw new Error(
+          `磁盘空间不足: 可用 ${Math.round(availableBytes / 1024 / 1024)}MB，需要至少 ${Math.round(minRequiredBytes / 1024 / 1024)}MB`
+        );
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message.includes('磁盘空间不足')) {
+        throw error;
+      }
+    }
   }
 }
 

@@ -104,8 +104,22 @@ export async function startManager() {
 
     // 启动点数监控服务
     const { startCreditsMonitor } = await import('../services/credits-monitor.service.js');
-    const creditsMonitorTimer = startCreditsMonitor(5000); // 每5秒检查一次
+    const creditsMonitorTimer = startCreditsMonitor(5000);
     logger.info('✅ 点数监控服务已启动，检查间隔: 5秒');
+
+    // 启动临时文件定时清理（每6小时）
+    const tempCleanupInterval = setInterval(
+      async () => {
+        try {
+          const { cleanupExpiredUploads } = await import('../controllers/file.controller.js');
+          await cleanupExpiredUploads();
+          logger.info('定时清理过期上传文件完成');
+        } catch (error) {
+          logger.warn('定时清理过期上传文件失败:', error);
+        }
+      },
+      6 * 60 * 60 * 1000
+    );
 
     // 构建应用
     const fastify = await buildManager();
@@ -120,6 +134,8 @@ export async function startManager() {
 
       const { stopCreditsMonitor } = await import('../services/credits-monitor.service.js');
       stopCreditsMonitor(creditsMonitorTimer);
+
+      clearInterval(tempCleanupInterval);
     });
 
     // 启动 HTTP 服务器

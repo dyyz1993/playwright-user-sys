@@ -16,6 +16,15 @@ import type {
 } from '../../shared/types/grpc.js';
 import type { ServerUnaryCall, sendUnaryData, ServerDuplexStream } from '@grpc/grpc-js';
 
+let activeUploads = 0;
+const MAX_CONCURRENT_UPLOADS = 10;
+
+function checkUploadConcurrency(): void {
+  if (activeUploads >= MAX_CONCURRENT_UPLOADS) {
+    throw new Error(`并发上传数已达上限 (${MAX_CONCURRENT_UPLOADS})，请稍后重试`);
+  }
+}
+
 export const serviceImplementation = {
   LaunchBrowser: async (
     call: ServerUnaryCall<LaunchBrowserRequest, SessionResponse>,
@@ -250,6 +259,8 @@ export const serviceImplementation = {
   },
 
   TransferFile: async (call: ServerUnaryCall<any, any>, callback: sendUnaryData<any>) => {
+    checkUploadConcurrency();
+    activeUploads++;
     try {
       const { session_id, filename, data } = call.request;
       const { fileService } = await import('../services/file.service.js');
@@ -265,10 +276,14 @@ export const serviceImplementation = {
       const errMsg = error instanceof Error ? error.message : '文件传输失败';
       logger.error('文件传输失败:', error);
       callback(null, { success: false, error: errMsg, machine_file_path: '', filename: '', size: 0 });
+    } finally {
+      activeUploads--;
     }
   },
 
   DownloadAndInjectFile: async (call: ServerUnaryCall<any, any>, callback: sendUnaryData<any>) => {
+    checkUploadConcurrency();
+    activeUploads++;
     try {
       const { session_id, url, selector, frame_selector, filename, download_timeout } = call.request;
       const { fileService } = await import('../services/file.service.js');
@@ -294,6 +309,8 @@ export const serviceImplementation = {
       const errMsg = error instanceof Error ? error.message : '下载并注入文件失败';
       logger.error('下载并注入文件失败:', error);
       callback(null, { success: false, error: errMsg, machine_file_path: '', filename: '', size: 0 });
+    } finally {
+      activeUploads--;
     }
   },
 

@@ -5,6 +5,7 @@ import { ProxyService } from './proxy.service.js';
 import { startGrpcServer, GrpcClient, setGrpcServerConfig } from './grpc.service.js';
 import { startHealthServer, stopHealthServer } from './health.service.js';
 import retry from 'async-retry';
+import { fileService } from './services/file.service.js';
 
 // 机器端状态枚举
 export enum MachineState {
@@ -123,6 +124,9 @@ export class MachineServer {
       // 启动健康检查 HTTP 服务
       startHealthServer();
 
+      // 启动定时清理过期临时文件（每小时清理一次）
+      this.startFileCleanup();
+
       // 设置状态为运行中
       this.setState(MachineState.RUNNING);
 
@@ -189,6 +193,12 @@ export class MachineServer {
         this.cooldownTimer = null;
       }
 
+      // 清除文件清理定时器
+      if (this.cleanupInterval) {
+        clearInterval(this.cleanupInterval);
+        this.cleanupInterval = null;
+      }
+
       // 关闭所有浏览器实例
       await browserService.closeAllBrowsers();
 
@@ -223,6 +233,24 @@ export class MachineServer {
     process.on('SIGTERM', this.handleExit.bind(this));
     process.on('uncaughtException', this.handleUncaughtException.bind(this));
     process.on('unhandledRejection', this.handleUnhandledRejection.bind(this));
+  }
+
+  private cleanupInterval: NodeJS.Timeout | null = null;
+
+  private startFileCleanup(): void {
+    this.cleanupInterval = setInterval(
+      async () => {
+        try {
+          const count = await fileService.cleanupExpiredFiles();
+          if (count > 0) {
+            logger.info(`已清理 ${count} 个过期临时文件目录`);
+          }
+        } catch (error) {
+          logger.warn('定时清理临时文件失败:', error);
+        }
+      },
+      60 * 60 * 1000
+    );
   }
 
   /**

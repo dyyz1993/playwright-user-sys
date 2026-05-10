@@ -23,28 +23,25 @@ if (!fs.existsSync(tempDir)) {
  */
 export async function uploadFile(request: FastifyRequest, reply: FastifyReply) {
   try {
-    // 检查是否是管理员（这里可以根据需要调整权限）
     if (!request.user || request.user.role !== 'admin') {
       return sendError(reply, '需要管理员权限', 403);
     }
 
-    // 获取上传的文件
     const file = await request.file();
 
     if (!file) {
       return sendError(reply, '没有上传文件', 400);
     }
 
-    // 生成唯一文件名
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const fileName = uniqueSuffix + '-' + file.filename;
     const filePath = path.join(uploadDir, fileName);
 
-    // 保存文件
     await file.file.pipe(fs.createWriteStream(filePath));
 
-    // 返回文件信息
     const fileUrl = `/uploads/${fileName}`;
+
+    cleanupExpiredUploads().catch(() => {});
 
     return sendSuccess(
       reply,
@@ -248,6 +245,26 @@ export async function uploadFileForSession(request: FastifyRequest, reply: Fasti
   } catch (error: unknown) {
     logger.error('文件上传失败:', error);
     return sendError(reply, error instanceof Error ? error.message : '文件上传失败', 500);
+  }
+}
+
+export async function cleanupExpiredUploads(): Promise<void> {
+  const maxAge = 7 * 24 * 60 * 60 * 1000;
+  const cutoff = Date.now() - maxAge;
+
+  try {
+    const entries = fs.readdirSync(uploadDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile()) {
+        const filePath = path.join(uploadDir, entry.name);
+        const stat = fs.statSync(filePath);
+        if (stat.mtimeMs < cutoff) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    }
+  } catch {
+    // 静默失败
   }
 }
 

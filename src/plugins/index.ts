@@ -69,7 +69,14 @@ export default fp(async function (fastify: FastifyInstance) {
   });
 
   // 注册 Multipart 插件
-  await fastify.register(multipart);
+  await fastify.register(multipart, {
+    limits: {
+      fileSize: 100 * 1024 * 1024,
+      fieldSize: 1024 * 1024,
+      files: 5,
+      fields: 20,
+    },
+  });
 
   // 注册表单处理插件
   await fastify.register(formbody);

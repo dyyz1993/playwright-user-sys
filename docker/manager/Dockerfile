@@ -70,6 +70,7 @@ WORKDIR /app
 COPY --from=build --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=build --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=build --chown=nodejs:nodejs /app/package.json ./
+COPY --from=build --chown=nodejs:nodejs /app/public ./public
 
 # Create necessary directories
 RUN mkdir -p /app/data \

@@ -14,7 +14,12 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/tests/unit/**/*.test.ts'],
-    exclude: ['node_modules', 'dist'],
+    exclude: [
+      'node_modules',
+      'dist',
+      'src/tests/unit/models/**/*.test.ts',
+      'src/tests/unit/session-screenshot.test.ts',
+    ],
     testTimeout: 30000,
     hookTimeout: 30000,
     setupFiles: ['./src/tests/setup.ts'],

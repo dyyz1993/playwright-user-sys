@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>远程控制界面</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            margin: 0;
+        }
+        
+        .stats {
+            font-size: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .video-container {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+            background-color: #000;
+            border: 2px solid red;
+        }
+        
+        #video-display {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .touch-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            touch-action: none;
+        }
+        
+        .controls {
+            background-color: #ecf0f1;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid #bdc3c7;
+        }
+        
+        .control-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .control-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .control-btn.active {
+            background-color: #e74c3c;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .modal-close {
+            cursor: pointer;
+            font-size: 20px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .modal-footer {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>远程控制</h1>
+        <div class="stats">
+            <span id="fps-display">FPS: --</span>
+            <span id="bandwidth-display">带宽: -- KB/s</span>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="video-container">
+            <img id="video-display" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="视频流">
+            <div id="touch-layer" class="touch-layer"></div>
+        </div>
+        
+        <div class="controls">
+            <button id="btn-touchpad" class="control-btn active">触控板模式</button>
+            <button id="btn-keyboard" class="control-btn">键盘</button>
+            <button id="btn-clip" class="control-btn">裁剪区域</button>
+        </div>
+    </div>
+    
+    <!-- 键盘模态框 -->
+    <div id="keyboard-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>输入文本</h3>
+                <span class="modal-close" id="keyboard-close">&times;</span>
+            </div>
+            <div class="input-group">
+                <label for="keyboard-input">输入内容:</label>
+                <input type="text" id="keyboard-input" placeholder="请输入文本">
+            </div>
+            <div class="modal-footer">
+                <button id="keyboard-submit" class="control-btn">发送</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 裁剪区域模态框 -->
+    <div id="clip-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>设置裁剪区域</h3>
+                <span class="modal-close" id="clip-close">&times;</span>
+            </div>
+            <div class="input-group">
+                <label for="clip-x">X 坐标:</label>
+                <input type="number" id="clip-x" placeholder="X 坐标">
+            </div>
+            <div class="input-group">
+                <label for="clip-y">Y 坐标:</label>
+                <input type="number" id="clip-y" placeholder="Y 坐标">
+            </div>
+            <div class="input-group">
+                <label for="clip-width">宽度:</label>
+                <input type="number" id="clip-width" placeholder="宽度">
+            </div>
+            <div class="input-group">
+                <label for="clip-height">高度:</label>
+                <input type="number" id="clip-height" placeholder="高度">
+            </div>
+            <div class="modal-footer">
+                <button id="clip-reset" class="control-btn">重置</button>
+                <button id="clip-submit" class="control-btn">应用</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取URL参数
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+        
+        // 会话ID
+        const sessionId = getUrlParam('sessionId') || 'default';
+        
+        // WebSocket连接
+        let eventsSocket = null;
+        let videoSocket = null;
+        
+        // 状态变量
+        let isConnected = false;
+        let currentMode = 'touchpad';
+        let lastFrameTime = 0;
+        let frameCount = 0;
+        let fpsUpdateInterval = null;
+        let bandwidthTotal = 0;
+        let bandwidthCount = 0;
+        let bandwidthUpdateInterval = null;
+        let focusedElement = null;
+        
+        // DOM元素
+        const videoDisplay = document.getElementById('video-display');
+        const touchLayer = document.getElementById('touch-layer');
+        const fpsDisplay = document.getElementById('fps-display');
+        const bandwidthDisplay = document.getElementById('bandwidth-display');
+        const btnTouchpad = document.getElementById('btn-touchpad');
+        const btnKeyboard = document.getElementById('btn-keyboard');
+        const btnClip = document.getElementById('btn-clip');
+        const keyboardModal = document.getElementById('keyboard-modal');
+        const keyboardClose = document.getElementById('keyboard-close');
+        const keyboardInput = document.getElementById('keyboard-input');
+        const keyboardSubmit = document.getElementById('keyboard-submit');
+        const clipModal = document.getElementById('clip-modal');
+        const clipClose = document.getElementById('clip-close');
+        const clipX = document.getElementById('clip-x');
+        const clipY = document.getElementById('clip-y');
+        const clipWidth = document.getElementById('clip-width');
+        const clipHeight = document.getElementById('clip-height');
+        const clipReset = document.getElementById('clip-reset');
+        const clipSubmit = document.getElementById('clip-submit');
+        
+        // 初始化
+        function init() {
+            connectWebSockets();
+            setupEventListeners();
+            setupIntervals();
+        }
+        
+        // 连接WebSocket
+        function connectWebSockets() {
+            // 连接事件WebSocket
+            const eventsUrl = `ws://${window.location.host}/ws/${sessionId}/events`;
+            eventsSocket = new WebSocket(eventsUrl);
+            
+            eventsSocket.onopen = () => {
+                console.log('Events WebSocket connected');
+                // 发送初始化事件
+                sendEvent('init', {});
+            };
+            
+            eventsSocket.onmessage = handleEventsMessage;
+            
+            eventsSocket.onerror = (error) => {
+                console.error('Events WebSocket error:', error);
+            };
+            
+            eventsSocket.onclose = () => {
+                console.log('Events WebSocket closed');
+                isConnected = false;
+                // 可以添加重连逻辑
+            };
+            
+            // 连接视频WebSocket (使用 stream 路径)
+            const videoUrl = `ws://${window.location.host}/ws/${sessionId}/stream`;
+            videoSocket = new WebSocket(videoUrl);
+            
+            videoSocket.onopen = () => {
+                console.log('Video WebSocket connected');
+            };
+            
+            videoSocket.onmessage = handleVideoMessage;
+            
+            videoSocket.onerror = (error) => {
+                console.error('Video WebSocket error:', error);
+            };
+            
+            videoSocket.onclose = () => {
+                console.log('Video WebSocket closed');
+                // 可以添加重连逻辑
+            };
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 触控层事件
+            touchLayer.addEventListener('touchstart', handleTouchStart);
+            touchLayer.addEventListener('touchmove', handleTouchMove);
+            touchLayer.addEventListener('touchend', handleTouchEnd);
+            
+            // 按钮事件
+            btnTouchpad.addEventListener('click', () => {
+                setMode('touchpad');
+                btnTouchpad.classList.add('active');
+                btnKeyboard.classList.remove('active');
+            });
+            
+            btnKeyboard.addEventListener('click', () => {
+                showKeyboardModal();
+                btnKeyboard.classList.add('active');
+                btnTouchpad.classList.remove('active');
+            });
+            
+            btnClip.addEventListener('click', showClipModal);
+            
+            // 模态框事件
+            keyboardClose.addEventListener('click', hideKeyboardModal);
+            keyboardSubmit.addEventListener('click', submitKeyboardInput);
+            
+            clipClose.addEventListener('click', hideClipModal);
+            clipReset.addEventListener('click', resetClip);
+            clipSubmit.addEventListener('click', submitClip);
+        }
+        
+        // 设置定时器
+        function setupIntervals() {
+            // FPS计算
+            fpsUpdateInterval = setInterval(() => {
+                fpsDisplay.textContent = `FPS: ${frameCount}`;
+                frameCount = 0;
+            }, 1000);
+            
+            // 带宽计算
+            bandwidthUpdateInterval = setInterval(() => {
+                if (bandwidthCount > 0) {
+                    const avgBandwidth = (bandwidthTotal / bandwidthCount).toFixed(2);
+                    bandwidthDisplay.textContent = `带宽: ${avgBandwidth} KB/s`;
+                    bandwidthTotal = 0;
+                    bandwidthCount = 0;
+                }
+            }, 1000);
+        }
+        
+        // 处理事件WebSocket消息
+        function handleEventsMessage(event) {
+            try {
+                const message = JSON.parse(event.data);
+                console.log('Received event message:', message);
+                
+                switch (message.type) {
+                    case 'configSync':
+                        handleConfigSync(message.config);
+                        break;
+                    case 'form.field':
+                        handleFormField(message);
+                        break;
+                    case 'response':
+                        // 处理响应
+                        break;
+                    default:
+                        console.log('Unknown message type:', message.type);
+                }
+            } catch (error) {
+                console.error('Error parsing event message:', error);
+            }
+        }
+        
+        // 处理视频WebSocket消息
+        function handleVideoMessage(event) {
+            if (event.data instanceof Blob) {
+                // 计算带宽
+                updateBandwidth(event.data.size);
+                
+                // 更新帧率
+                frameCount++;
+                
+                // 显示图像
+                const url = URL.createObjectURL(event.data);
+                videoDisplay.src = url;
+                
+                // 释放之前的URL
+                const oldUrl = videoDisplay.dataset.oldUrl;
+                if (oldUrl) {
+                    URL.revokeObjectURL(oldUrl);
+                }
+                videoDisplay.dataset.oldUrl = url;
+            }
+        }
+        
+        // 更新带宽统计
+        function updateBandwidth(bytes) {
+            const kilobytes = bytes / 1024;
+            bandwidthTotal += kilobytes;
+            bandwidthCount++;
+        }
+        
+        // 处理配置同步
+        function handleConfigSync(config) {
+            console.log('Config sync:', config);
+            
+            // 更新裁剪区域输入框
+            if (config.clip) {
+                clipX.value = config.clip.x;
+                clipY.value = config.clip.y;
+                clipWidth.value = config.clip.width;
+                clipHeight.value = config.clip.height;
+            }
+        }
+        
+        // 处理表单字段通知
+        function handleFormField(data) {
+            console.log('Form field:', data);
+            focusedElement = {
+                selector: data.selector,
+                tag: data.tag
+            };
+            
+            // 可以显示键盘模态框
+            showKeyboardModal();
+        }
+        
+        // 发送事件
+        function sendEvent(type, data) {
+            if (eventsSocket && eventsSocket.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: 'event',
+                    event: {
+                        type: type,
+                        timestamp: Date.now(),
+                        ...data
+                    }
+                };
+                eventsSocket.send(JSON.stringify(message));
+            }
+        }
+        
+        // 更新配置
+        function sendConfigUpdate(config) {
+            if (eventsSocket && eventsSocket.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: 'updateConfig',
+                    data: config
+                };
+                eventsSocket.send(JSON.stringify(message));
+            }
+        }
+        
+        // 设置模式
+        function setMode(mode) {
+            currentMode = mode;
+        }
+        
+        // 触摸事件处理
+        let touchStartTime = 0;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let hasMoved = false;
+        let hasTriggeredMouseDown = false;
+        
+        function handleTouchStart(event) {
+            event.preventDefault();
+            
+            const touch = event.touches[0];
+            const rect = touchLayer.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            touchStartX = x;
+            touchStartY = y;
+            touchStartTime = Date.now();
+            hasMoved = false;
+            hasTriggeredMouseDown = false;
+            
+            // 立即发送鼠标移动事件
+            sendEvent('mousemove', { x, y });
+            
+            // 如果500ms内没有移动或结束，则触发mousedown
+            setTimeout(() => {
+                if (!hasMoved && !hasTriggeredMouseDown) {
+                    sendEvent('mouseDown', { x: touchStartX, y: touchStartY, button: 'left' });
+                    hasTriggeredMouseDown = true;
+                }
+            }, 500);
+        }
+        
+        function handleTouchMove(event) {
+            event.preventDefault();
+            
+            const touch = event.touches[0];
+            const rect = touchLayer.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            // 检查是否移动了足够的距离
+            const dx = x - touchStartX;
+            const dy = y - touchStartY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 5) {
+                hasMoved = true;
+                
+                // 发送鼠标移动事件
+                sendEvent('mouseMove', { x, y });
+            }
+        }
+        
+        function handleTouchEnd(event) {
+            event.preventDefault();
+            
+            const timeDiff = Date.now() - touchStartTime;
+            
+            if (!hasMoved) {
+                if (timeDiff < 500) {
+                    // 短按，触发点击
+                    sendEvent('mouseClick', { x: touchStartX, y: touchStartY, button: 'left' });
+                } else if (hasTriggeredMouseDown) {
+                    // 长按后释放，触发mouseup
+                    sendEvent('mouseUp', { x: touchStartX, y: touchStartY, button: 'left' });
+                }
+            } else if (hasTriggeredMouseDown) {
+                // 如果之前触发了mousedown，现在需要触发mouseup
+                const touch = event.changedTouches[0];
+                const rect = touchLayer.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                
+                sendEvent('mouseUp', { x, y, button: 'left' });
+            }
+        }
+        
+        // 键盘模态框
+        function showKeyboardModal() {
+            keyboardModal.style.display = 'flex';
+            keyboardInput.focus();
+        }
+        
+        function hideKeyboardModal() {
+            keyboardModal.style.display = 'none';
+        }
+        
+        function submitKeyboardInput() {
+            const text = keyboardInput.value;
+            if (text) {
+                if (focusedElement) {
+                    sendEvent('input', { value: text, selector: focusedElement.selector });
+                } else {
+                    sendEvent('input', { value: text });
+                }
+                keyboardInput.value = '';
+                hideKeyboardModal();
+            }
+        }
+        
+        // 裁剪区域模态框
+        function showClipModal() {
+            clipModal.style.display = 'flex';
+        }
+        
+        function hideClipModal() {
+            clipModal.style.display = 'none';
+        }
+        
+        function resetClip() {
+            clipX.value = '';
+            clipY.value = '';
+            clipWidth.value = '';
+            clipHeight.value = '';
+            
+            sendEvent('updateClip', null);
+        }
+        
+        function submitClip() {
+            const x = parseInt(clipX.value);
+            const y = parseInt(clipY.value);
+            const width = parseInt(clipWidth.value);
+            const height = parseInt(clipHeight.value);
+            
+            if (isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height)) {
+                alert('请输入有效的数字');
+                return;
+            }
+            
+            sendEvent('updateClip', { x, y, width, height });
+            hideClipModal();
+        }
+        
+        // 初始化应用
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

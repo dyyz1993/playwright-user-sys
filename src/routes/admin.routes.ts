@@ -37,7 +37,18 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     }
 
     // 返回 remote-control.html，由前端处理实时画面显示
-    const htmlPath = path.join(process.cwd(), 'public', 'remote-control.html');
+    // 开发环境: public/remote-control.html
+    // 生产环境: dist/src/public/remote-control.html
+    const isDev = process.env.NODE_ENV !== 'production';
+    const htmlPath = isDev
+      ? path.join(process.cwd(), 'public', 'remote-control.html')
+      : path.join(process.cwd(), 'dist', 'src', 'public', 'remote-control.html');
+
+    if (!fs.existsSync(htmlPath)) {
+      logger.error('remote-control.html not found:', htmlPath);
+      return reply.status(404).send('File not found');
+    }
+
     const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
     return reply.type('text/html').send(htmlContent);
   });

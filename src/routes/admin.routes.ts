@@ -27,6 +27,17 @@ function requireAdmin(request: FastifyRequest, reply: FastifyReply): boolean {
 }
 
 export default async function adminRoutes(fastify: FastifyInstance): Promise<void> {
+  fastify.get('/viewer', async (request: FastifyRequest, reply: FastifyReply) => {
+    const query = request.query as { sessionId?: string };
+    if (!query.sessionId) {
+      return reply.code(400).send('Missing sessionId parameter');
+    }
+    return reply.view('pages/viewer', {
+      title: 'Session Viewer',
+      sessionId: query.sessionId,
+    });
+  });
+
   fastify.get('/admin/login', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.view('pages/login-new', {
       title: '登录',

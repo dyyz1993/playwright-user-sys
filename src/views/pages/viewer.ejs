@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Session Viewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+    .glass { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.1); }
+    .pulse-dot { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .status-bar { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+    pre { background: #1e293b; border-radius: 8px; padding: 12px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+    code { color: #38bdf8; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <div id="app" class="flex-1 flex flex-col">
+    <div class="glass border-b border-slate-700/50 px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-primary-500/20 flex items-center justify-center">
+          <i class="fas fa-globe text-primary-400 text-sm"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-semibold text-white">Session Viewer</h1>
+          <p class="text-xs text-slate-400">Remote Browser Viewer</p>
+        </div>
+      </div>
+      <div id="status-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 pulse-dot"></span>
+        <span id="status-text">Connecting...</span>
+      </div>
+    </div>
+
+    <div class="flex-1 flex items-center justify-center p-6">
+      <div id="session-info" class="w-full max-w-2xl">
+        <div class="glass rounded-xl p-6 mb-4">
+          <div class="flex items-center gap-3 mb-4">
+            <div id="session-status-icon" class="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center">
+              <i class="fas fa-spinner fa-spin text-primary-400"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-semibold text-white">Session Information</h2>
+              <p class="text-sm text-slate-400" id="session-id-display">Loading...</p>
+            </div>
+          </div>
+
+          <div id="session-details" class="space-y-3 hidden">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-slate-800/50 rounded-lg p-3">
+                <p class="text-xs text-slate-400 mb-1">Status</p>
+                <p class="text-sm font-medium text-white" id="detail-status">-</p>
+              </div>
+              <div class="bg-slate-800/50 rounded-lg p-3">
+                <p class="text-xs text-slate-400 mb-1">Machine</p>
+                <p class="text-sm font-medium text-white" id="detail-machine">-</p>
+              </div>
+              <div class="bg-slate-800/50 rounded-lg p-3">
+                <p class="text-xs text-slate-400 mb-1">Created</p>
+                <p class="text-sm font-medium text-white" id="detail-created">-</p>
+              </div>
+              <div class="bg-slate-800/50 rounded-lg p-3">
+                <p class="text-xs text-slate-400 mb-1">Duration</p>
+                <p class="text-sm font-medium text-white" id="detail-duration">-</p>
+              </div>
+            </div>
+
+            <div class="bg-slate-800/50 rounded-lg p-3">
+              <p class="text-xs text-slate-400 mb-1">WebSocket Endpoint</p>
+              <div class="flex items-center gap-2">
+                <code class="text-xs break-all flex-1" id="detail-ws-endpoint">-</code>
+                <button onclick="copyEndpoint()" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-xs transition-colors">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="connect-section" class="glass rounded-xl p-6 hidden">
+          <h3 class="text-sm font-semibold text-white mb-3">Connect to this Session</h3>
+          <p class="text-xs text-slate-400 mb-4">Use the following code to connect via Playwright:</p>
+          <pre class="text-xs"><code id="connect-code"></code></pre>
+          <div class="mt-4 flex gap-3">
+            <button onclick="copyConnectCode()" class="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors">
+              <i class="fas fa-copy mr-2"></i>Copy Code
+            </button>
+            <button onclick="copyEndpoint()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors">
+              <i class="fas fa-link mr-2"></i>Copy Endpoint
+            </button>
+          </div>
+        </div>
+
+        <div id="error-section" class="glass rounded-xl p-6 hidden">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+              <i class="fas fa-exclamation-triangle text-red-400"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-semibold text-red-400">Error</h2>
+              <p class="text-sm text-slate-400" id="error-message">An error occurred</p>
+            </div>
+          </div>
+          <p class="text-xs text-slate-400">Please check that the session ID is valid and the session is still active.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sessionId = new URLSearchParams(window.location.search).get('sessionId');
+    const token = new URLSearchParams(window.location.search).get('token') || getCookie('token');
+
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : null;
+    }
+
+    function setStatus(type, text) {
+      const badge = document.getElementById('status-badge');
+      const statusText = document.getElementById('status-text');
+      const colors = { connecting: 'bg-yellow-500/10 text-yellow-400', active: 'bg-green-500/10 text-green-400', error: 'bg-red-500/10 text-red-400' };
+      badge.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${colors[type]}`;
+      statusText.textContent = text;
+    }
+
+    function updateSessionDetails(data) {
+      document.getElementById('session-id-display').textContent = `ID: ${sessionId?.substring(0, 8)}...`;
+      document.getElementById('detail-status').textContent = data.status || '-';
+      document.getElementById('detail-machine').textContent = data.machine_name || data.machine_id || '-';
+      document.getElementById('detail-created').textContent = data.created_at ? new Date(data.created_at).toLocaleString() : '-';
+      document.getElementById('detail-ws-endpoint').textContent = data.directUrl || data.wsEndpoint || '-';
+
+      const connectCode = `const { chromium } = require('playwright');
+
+const browser = await chromium.connectOverCDP('${data.directUrl || `ws://${window.location.host}/ws/connect?sessionId=${sessionId}`}');
+const context = browser.contexts()[0];
+const page = context.pages()[0] || await context.newPage();
+await page.goto('https://example.com');`;
+      document.getElementById('connect-code').textContent = connectCode;
+    }
+
+    function copyEndpoint() {
+      const el = document.getElementById('detail-ws-endpoint');
+      if (el && el.textContent && el.textContent !== '-') {
+        navigator.clipboard.writeText(el.textContent).then(() => showToast('Copied!'));
+      }
+    }
+
+    function copyConnectCode() {
+      const el = document.getElementById('connect-code');
+      if (el && el.textContent) {
+        navigator.clipboard.writeText(el.textContent).then(() => showToast('Copied!'));
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg text-sm z-50';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2000);
+    }
+
+    async function loadSessionInfo() {
+      if (!sessionId) {
+        setStatus('error', 'No session ID');
+        document.getElementById('error-section').classList.remove('hidden');
+        document.getElementById('error-message').textContent = 'No sessionId parameter provided';
+        return;
+      }
+
+      setStatus('connecting', 'Loading...');
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`/api/sessions/${sessionId}`, { headers });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+
+        if (!json.data) throw new Error('No session data');
+
+        const session = json.data;
+        document.getElementById('session-details').classList.remove('hidden');
+        document.getElementById('connect-section').classList.remove('hidden');
+        updateSessionDetails(session);
+
+        const statusIcon = document.getElementById('session-status-icon');
+        if (session.status === 'created' || session.status === 'connected') {
+          setStatus('active', 'Active');
+          statusIcon.innerHTML = '<i class="fas fa-check text-green-400"></i>';
+          statusIcon.className = 'w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center';
+        } else {
+          setStatus('error', session.status);
+          statusIcon.innerHTML = '<i class="fas fa-times text-red-400"></i>';
+          statusIcon.className = 'w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center';
+        }
+
+        if (session.start_time) {
+          const elapsed = Math.floor((Date.now() - new Date(session.start_time).getTime()) / 1000);
+          const mins = Math.floor(elapsed / 60);
+          const secs = elapsed % 60;
+          document.getElementById('detail-duration').textContent = `${mins}m ${secs}s`;
+        }
+      } catch (err) {
+        setStatus('error', 'Failed');
+        document.getElementById('error-section').classList.remove('hidden');
+        document.getElementById('error-message').textContent = err.message;
+        document.getElementById('session-status-icon').innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i>';
+      }
+    }
+
+    loadSessionInfo();
+  </script>
+</body>
+</html>

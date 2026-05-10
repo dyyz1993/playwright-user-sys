@@ -2,13 +2,16 @@ import * as stream from 'stream';
 import * as http from 'http';
 import * as url from 'url';
 import { z } from 'zod';
+import jwt from 'jsonwebtoken';
 import httpProxy from 'http-proxy';
 import { UserModel } from '../models/user.model.js';
+import { SessionModel } from '../models/session.model.js';
 import { logger } from '@shared/utils/logger.js';
 import { createBrowserSession, handleSessionDisconnect } from './session.service.js';
 import { memoryStore } from './memory-store.service.js';
+import { env } from '../config/env.js';
+import { SessionStatus } from '@shared/types/index.js';
 
-// WebSocket连接参数验证
 const wsConnectQuerySchema = z.object({
   apiKey: z.string().min(1),
   width: z.coerce.number().optional(),
@@ -20,6 +23,11 @@ const wsConnectQuerySchema = z.object({
   localStorage: z.record(z.string(), z.string()).optional(),
   sharedUserData: z.coerce.boolean().optional(),
   timezone: z.string().optional(),
+});
+
+const existingSessionQuerySchema = z.object({
+  sessionId: z.string().min(1),
+  token: z.string().optional(),
 });
 
 export class NativeWebSocketProxyService {
@@ -110,20 +118,150 @@ export class NativeWebSocketProxyService {
     socket: stream.Duplex,
     head: Buffer
   ): Promise<void> {
+    const parsedUrl = url.parse(request.url || '', true);
+    const queryParams = parsedUrl.query;
+    const sessionIdParam = queryParams.sessionId as string | undefined;
+    const apiKeyParam = queryParams.apiKey as string | undefined;
+
+    if (sessionIdParam) {
+      await this.handleExistingSessionProxy(request, socket, head, sessionIdParam, queryParams);
+    } else if (apiKeyParam) {
+      await this.handleNewSessionProxy(request, socket, head, queryParams);
+    } else {
+      logger.error('WebSocket连接缺少 sessionId 或 apiKey 参数');
+      socket.write('HTTP/1.1 400 Bad Request\r\n\r\nMissing sessionId or apiKey');
+      socket.destroy();
+    }
+  }
+
+  private async handleExistingSessionProxy(
+    request: http.IncomingMessage,
+    socket: stream.Duplex,
+    head: Buffer,
+    sessionId: string,
+    queryParams: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      existingSessionQuerySchema.parse(queryParams);
+
+      const token =
+        (queryParams.token as string) ||
+        (request.headers.authorization?.startsWith('Bearer ') ? request.headers.authorization.split(' ')[1] : null) ||
+        (request.headers.cookie
+          ? (request.headers.cookie
+              .split(';')
+              .map((c) => c.trim())
+              .find((c) => c.startsWith('token='))
+              ?.split('=')[1] ?? null)
+          : null);
+
+      if (!token) {
+        logger.error(`已有会话代理缺少认证信息 (sessionId: ${sessionId})`);
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nMissing authentication');
+        socket.destroy();
+        return;
+      }
+
+      const jwtSecret =
+        process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
+
+      let decoded: { id: number; role: string };
+      try {
+        decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
+      } catch {
+        logger.error(`已有会话代理JWT验证失败 (sessionId: ${sessionId})`);
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nInvalid token');
+        socket.destroy();
+        return;
+      }
+
+      const user = await UserModel.findById(decoded.id);
+      if (!user) {
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nUser not found');
+        socket.destroy();
+        return;
+      }
+
+      const session = await SessionModel.findById(sessionId);
+      if (!session) {
+        logger.error(`已有会话代理：会话不存在 (sessionId: ${sessionId})`);
+        socket.write('HTTP/1.1 404 Not Found\r\n\r\nSession not found');
+        socket.destroy();
+        return;
+      }
+
+      if (session.status !== SessionStatus.CREATED && session.status !== SessionStatus.CONNECTED) {
+        logger.error(`已有会话代理：会话状态无效 (sessionId: ${sessionId}, status: ${session.status})`);
+        socket.write('HTTP/1.1 410 Gone\r\n\r\nSession is not active');
+        socket.destroy();
+        return;
+      }
+
+      const machineId = session.machine_id;
+      if (!machineId) {
+        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\nNo machine assigned');
+        socket.destroy();
+        return;
+      }
+
+      const machineInfo = memoryStore.getMachine(machineId);
+      if (!machineInfo) {
+        socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nMachine not found');
+        socket.destroy();
+        return;
+      }
+
+      const machineIp = machineInfo.ip;
+      const proxyPort = machineInfo.proxy_port;
+      const targetUrl = `ws://${machineIp}:${proxyPort}?sessionId=${sessionId}`;
+
+      logger.info(`已有会话代理: sessionId=${sessionId}, machineId=${machineId}, target=${targetUrl}`);
+
+      (request as { sessionId?: string }).sessionId = sessionId;
+      this.activeConnections.add(sessionId);
+
+      const cleanupHandler = () => {
+        this.cleanupConnection(sessionId);
+      };
+
+      socket.on('close', () => {
+        logger.info(`客户端WebSocket连接关闭 (sessionId: ${sessionId})`);
+        cleanupHandler();
+      });
+
+      socket.on('error', (err: Error) => {
+        logger.error(`客户端WebSocket连接错误 (sessionId: ${sessionId}):`, err);
+      });
+
+      this.proxy.ws(request, socket, head, { target: targetUrl }, (err: Error) => {
+        if (err) {
+          logger.error(`代理WebSocket连接失败 (sessionId: ${sessionId}):`, err);
+          cleanupHandler();
+        } else {
+          logger.info(`WebSocket代理连接成功 (sessionId: ${sessionId})`);
+        }
+      });
+    } catch (error) {
+      logger.error(`已有会话代理失败 (sessionId: ${sessionId}):`, error);
+      if (!socket.destroyed && socket.writable) {
+        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+        socket.destroy();
+      }
+    }
+  }
+
+  private async handleNewSessionProxy(
+    request: http.IncomingMessage,
+    socket: stream.Duplex,
+    head: Buffer,
+    queryParams: Record<string, unknown>
+  ): Promise<void> {
     let sessionId: string | null = null;
-    let userId: number | null = null;
-    let machineId: string | null = null;
 
     try {
-      // 解析查询参数
-      const parsedUrl = url.parse(request.url || '', true);
-      const queryParams = parsedUrl.query;
-
-      // 验证API密钥和其他参数
       const validatedParams = wsConnectQuerySchema.parse(queryParams);
       logger.info(`WebSocket连接参数: ${JSON.stringify(validatedParams)}`);
 
-      // 验证API密钥
       const user = await UserModel.findByApiKey(validatedParams.apiKey as string);
       if (!user) {
         logger.error('无效的API密钥');
@@ -132,9 +270,8 @@ export class NativeWebSocketProxyService {
         return;
       }
 
-      userId = user.id;
+      const userId = user.id;
 
-      // 创建会话
       const sessionOptions = {
         userAgent: validatedParams.userAgent,
         proxy: validatedParams.proxy,
@@ -152,48 +289,31 @@ export class NativeWebSocketProxyService {
       logger.info(`为用户 ${userId} 创建浏览器会话`);
       const sessionResult = await createBrowserSession(userId, sessionOptions, true);
       sessionId = sessionResult.sessionId;
-      machineId = sessionResult.machineId;
+      const machineId = sessionResult.machineId;
       logger.info(`会话创建成功: ${sessionId}`);
 
-      // 保存sessionId到请求对象，用于错误处理
       (request as { sessionId?: string }).sessionId = sessionId;
-
-      // 记录活动连接
       this.activeConnections.add(sessionId);
 
-      // 原始CDP端点URL (可能包含localhost或127.0.0.1)
       const originalWsEndpoint = sessionResult.browserWSEndpoint;
 
-      // 从memoryStore获取机器的实际IP
       const machineInfo = memoryStore.getMachine(machineId);
       if (!machineInfo) {
         throw new Error(`无法获取机器信息: ${machineId}`);
       }
 
-      const machineIp = machineInfo.ip;
-      logger.info(`获取到机器真实IP: ${machineIp} (machineId: ${machineId})`);
+      logger.info(`获取到机器真实IP: ${machineInfo.ip} (machineId: ${machineId})`);
 
-      // 解析原始WebSocket URL
-      //   const originalUrl = new URL(originalWsEndpoint);
-
-      //   const targetUrl = originalWsEndpoint;
       const targetUrl = sessionResult.internalTargetUrl || sessionResult.directUrl;
-      //   // 替换主机部分为实际机器IP
-      //   const targetUrl = originalWsEndpoint.replace(
-      //     /^ws:\/\/(localhost|127\.0\.0\.1)/,
-      //     `ws://${machineIp}`
-      //   );
 
       logger.info(`原始WebSocket端点: ${originalWsEndpoint}`);
       logger.info(`修正后的WebSocket端点: ${targetUrl}`);
       logger.info(`使用代理转发到目标WebSocket: ${targetUrl} (sessionId: ${sessionId})`);
 
-      // 设置清理函数
       const cleanupHandler = () => {
         this.cleanupConnection(sessionId!);
       };
 
-      // 监听socket关闭事件
       socket.on('close', () => {
         logger.info(`客户端WebSocket连接关闭 (sessionId: ${sessionId})`);
         cleanupHandler();
@@ -203,7 +323,6 @@ export class NativeWebSocketProxyService {
         logger.error(`客户端WebSocket连接错误 (sessionId: ${sessionId}):`, err);
       });
 
-      // 使用HTTP代理直接转发WebSocket请求
       this.proxy.ws(request, socket, head, { target: targetUrl }, (err: Error) => {
         if (err) {
           logger.error(`代理WebSocket连接失败 (sessionId: ${sessionId}):`, err);
@@ -217,7 +336,6 @@ export class NativeWebSocketProxyService {
     } catch (error) {
       logger.error('处理WebSocket连接失败:', error);
 
-      // 如果会话已创建但出错，确保清理资源
       if (sessionId) {
         this.cleanupConnection(sessionId);
       }

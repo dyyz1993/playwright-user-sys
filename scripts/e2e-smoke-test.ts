@@ -160,8 +160,12 @@ async function main() {
 
     // ── Step 5: Connect to browser & scrape example.com ───────────
     console.log('[Step 5] Connect to browser and scrape example.com...');
-    const connectUrl = directUrl || browserWSEndpoint;
-    if (!connectUrl) throw new Error('No browser connection URL available');
+    const rawUrl = directUrl || browserWSEndpoint;
+    if (!rawUrl) throw new Error('No browser connection URL available');
+
+    const separator = rawUrl.includes('?') ? '&' : '?';
+    const connectUrl = jwt ? `${rawUrl}${separator}token=${jwt}` : rawUrl;
+    console.log(`  connectUrl=${connectUrl.split('token=')[0]}token=***`);
 
     const browser = await chromium.connectOverCDP(connectUrl);
     console.log('  Connected via CDP');

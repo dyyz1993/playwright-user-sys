@@ -251,9 +251,9 @@ export const serviceImplementation = {
 
   TransferFile: async (call: ServerUnaryCall<any, any>, callback: sendUnaryData<any>) => {
     try {
-      const { sessionId, filename, data } = call.request;
+      const { session_id, filename, data } = call.request;
       const { fileService } = await import('../services/file.service.js');
-      const machineFilePath = await fileService.storeFile(sessionId, filename, Buffer.from(data));
+      const machineFilePath = await fileService.storeFile(session_id, filename, Buffer.from(data));
       callback(null, {
         success: true,
         error: '',
@@ -270,18 +270,18 @@ export const serviceImplementation = {
 
   DownloadAndInjectFile: async (call: ServerUnaryCall<any, any>, callback: sendUnaryData<any>) => {
     try {
-      const { sessionId, url, selector, frameSelector, filename, downloadTimeout } = call.request;
+      const { session_id, url, selector, frame_selector, filename, download_timeout } = call.request;
       const { fileService } = await import('../services/file.service.js');
       const { browserInjectService } = await import('../services/browser-inject.service.js');
-      const { filePath, size } = await fileService.downloadFromUrl(sessionId, url, {
+      const { filePath, size } = await fileService.downloadFromUrl(session_id, url, {
         filename: filename || undefined,
-        timeout: downloadTimeout || undefined,
+        timeout: download_timeout || undefined,
       });
       const result = await browserInjectService.injectFile({
-        sessionId,
+        sessionId: session_id,
         filePath,
         selector,
-        frameSelector: frameSelector || undefined,
+        frameSelector: frame_selector || undefined,
       });
       callback(null, {
         success: result.success,
@@ -299,18 +299,18 @@ export const serviceImplementation = {
 
   InjectFile: async (call: ServerUnaryCall<any, any>, callback: sendUnaryData<any>) => {
     try {
-      const { sessionId, machineFilePath, selector, frameSelector } = call.request;
+      const { session_id, machine_file_path, selector, frame_selector } = call.request;
       const { browserInjectService } = await import('../services/browser-inject.service.js');
       const result = await browserInjectService.injectFile({
-        sessionId,
-        filePath: machineFilePath,
+        sessionId: session_id,
+        filePath: machine_file_path,
         selector,
-        frameSelector: frameSelector || undefined,
+        frameSelector: frame_selector || undefined,
       });
       callback(null, {
         success: result.success,
         error: result.error || '',
-        machine_file_path: machineFilePath,
+        machine_file_path: machine_file_path,
         filename: '',
         size: 0,
       });

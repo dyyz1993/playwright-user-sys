@@ -94,6 +94,9 @@ async function apiRequest(
   }
   if (options.jwt) headers['Authorization'] = `Bearer ${options.jwt}`;
   if (options.apiKey) headers['x-api-key'] = options.apiKey;
+  if (options.formData && typeof (options.formData as any).getHeaders === 'function') {
+    Object.assign(headers, (options.formData as any).getHeaders());
+  }
 
   const fullUrl = urlPath.startsWith('http') ? urlPath : `${config.baseUrl}${urlPath}`;
   const res = await fetch(fullUrl, {
@@ -168,6 +171,7 @@ async function main(): Promise<void> {
   let testUserId: number | undefined;
   let sessionId = '';
   let browserWsUrl = '';
+  let sharedBrowser: import('playwright').Browser | null = null;
   let initialCredits = config.testCredits;
 
   try {
@@ -243,9 +247,11 @@ async function main(): Promise<void> {
         throw new Error(`Create session failed: ${JSON.stringify(sessionRes)}`);
       }
       sessionId = sessionRes.data.id;
-      browserWsUrl = sessionRes.data.directUrl || sessionRes.data.browserWSEndpoint || '';
+      const rawUrl = sessionRes.data.directUrl || sessionRes.data.browserWSEndpoint || '';
+      const separator = rawUrl.includes('?') ? '&' : '?';
+      browserWsUrl = jwt ? `${rawUrl}${separator}token=${jwt}` : rawUrl;
       console.log(`    sessionId=${sessionId}`);
-      console.log(`    browserWsUrl=${browserWsUrl}`);
+      console.log(`    browserWsUrl=${browserWsUrl.split('token=')[0]}token=***`);
     });
 
     // ── Step 5: Playwright CDP connection ─────────────────────────
@@ -256,11 +262,11 @@ async function main(): Promise<void> {
         const connectUrl = browserWsUrl;
         if (!connectUrl) throw new Error('No browser connection URL available');
 
-        const browser = await chromium.connectOverCDP(connectUrl);
+        sharedBrowser = await chromium.connectOverCDP(connectUrl);
         console.log('    Connected via CDP');
 
-        const contexts = browser.contexts();
-        const context = contexts.length > 0 ? contexts[0] : await browser.newContext();
+        const contexts = sharedBrowser.contexts();
+        const context = contexts.length > 0 ? contexts[0] : await sharedBrowser.newContext();
         const page = await context.newPage();
 
         await page.goto('https://example.com', {
@@ -275,8 +281,7 @@ async function main(): Promise<void> {
         }
 
         await page.close();
-        await browser.close();
-        console.log('    Browser disconnected');
+        console.log('    Page closed (browser kept alive for steps 6-7)');
       });
     } else {
       console.log(`  ⏭️  Step 5/${totalSteps}: Playwright CDP 连接 — SKIPPED\n`);
@@ -288,29 +293,29 @@ async function main(): Promise<void> {
       await runStep(6, '文件上传 + 注入浏览器', async () => {
         const { chromium } = await import('playwright');
 
-        if (!browserWsUrl) throw new Error('No browser connection URL');
+        if (!sharedBrowser) throw new Error('No browser connection available');
 
         tempFilePath = path.join(os.tmpdir(), `e2e-upload-${Date.now()}.txt`);
         fs.writeFileSync(tempFilePath, 'Hello from E2E acceptance test!');
 
         const fileBuffer = fs.readFileSync(tempFilePath);
-        const formData = new FormData();
-        formData.append('file', new Blob([fileBuffer]), path.basename(tempFilePath));
-        formData.append('sessionId', sessionId);
+        const nativeFormData = new FormData();
+        nativeFormData.append('sessionId', sessionId);
+        nativeFormData.append('file', new Blob([fileBuffer]), path.basename(tempFilePath));
 
-        const uploadRes = await apiRequest('POST', '/api/files/upload-session', {
-          apiKey,
-          formData,
-        });
+        const uploadRes = await fetch(`${config.baseUrl}/api/files/upload-session`, {
+          method: 'POST',
+          headers: { 'x-api-key': apiKey! },
+          body: nativeFormData,
+        }).then(r => r.json()).catch(() => ({ success: false }));
         if (!uploadRes.success || !uploadRes.data?.machineFilePath) {
           throw new Error(`Upload failed: ${JSON.stringify(uploadRes)}`);
         }
         const machineFilePath = uploadRes.data.machineFilePath;
         console.log(`    Uploaded, machineFilePath=${machineFilePath}`);
 
-        const browser = await chromium.connectOverCDP(browserWsUrl);
-        const contexts = browser.contexts();
-        const context = contexts.length > 0 ? contexts[0] : await browser.newContext();
+        const contexts = sharedBrowser!.contexts();
+        const context = contexts.length > 0 ? contexts[0] : await sharedBrowser!.newContext();
         const page = await context.newPage();
 
         await page.goto('data:text/html,<input type="file" id="upload">');
@@ -336,7 +341,6 @@ async function main(): Promise<void> {
         }
 
         await page.close();
-        await browser.close();
         console.log(`    File injected and verified (files.length=${fileCount})`);
       });
       if (tempFilePath && fs.existsSync(tempFilePath)) {
@@ -351,11 +355,10 @@ async function main(): Promise<void> {
       await runStep(7, 'URL 文件下载注入', async () => {
         const { chromium } = await import('playwright');
 
-        if (!browserWsUrl) throw new Error('No browser connection URL');
+        if (!sharedBrowser) throw new Error('No browser connection available');
 
-        const browser = await chromium.connectOverCDP(browserWsUrl);
-        const contexts = browser.contexts();
-        const context = contexts.length > 0 ? contexts[0] : await browser.newContext();
+        const contexts = sharedBrowser.contexts();
+        const context = contexts.length > 0 ? contexts[0] : await sharedBrowser.newContext();
         const page = await context.newPage();
 
         await page.goto('data:text/html,<input type="file" id="url-upload">');
@@ -366,7 +369,7 @@ async function main(): Promise<void> {
           {
             apiKey,
             body: {
-              url: 'https://www.w3.org/TR/PNG/iso_8859-1.txt',
+              url: 'https://www.w3.org/TR/2003/REC-PNG-20031110/iso_8859-1.txt',
               selector: '#url-upload',
             },
           }
@@ -384,7 +387,10 @@ async function main(): Promise<void> {
         }
 
         await page.close();
-        await browser.close();
+        if (sharedBrowser) {
+          await sharedBrowser.close();
+          sharedBrowser = null;
+        }
         console.log(`    URL file injected and verified (files.length=${fileCount})`);
       });
     } else {

@@ -67,6 +67,16 @@ export const statsMethods = {
     }
   },
 
+  async countAll(): Promise<number> {
+    try {
+      const result = await db('sessions').count('id as count').first();
+      return result ? Number(result.count) : 0;
+    } catch (error) {
+      logger.error('统计总会话数失败:', error);
+      return 0;
+    }
+  },
+
   async sumUsedCredits(): Promise<number> {
     try {
       const result = await db('sessions').sum('credits_used as total').first();

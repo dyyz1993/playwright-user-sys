@@ -44,7 +44,11 @@ export const currentUserResponseSchema = successResponseSchema(
 
 // 创建用户请求模式
 export const createUserRequestSchema = z.object({
-  username: z.string().min(3).max(50),
+  username: z
+    .string()
+    .min(3)
+    .max(50)
+    .regex(/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/, '用户名只能包含字母、数字、下划线、横线和中文'),
   password: z
     .string()
     .min(8)
@@ -87,7 +91,7 @@ export const resetApiKeyResponseSchema = successResponseSchema(
 
 // 添加点数请求模式
 export const addCreditsRequestSchema = z.object({
-  amount: z.number().int().positive(),
+  amount: z.number().int().positive().max(1000000, '单次充值金额不能超过 1,000,000'),
 });
 
 // 添加点数响应模式

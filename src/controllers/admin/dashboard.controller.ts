@@ -6,6 +6,7 @@ import * as UserService from '../../services/user.service.js';
 export async function getDashboardData(userId?: number) {
   const [
     activeSessions,
+    totalSessions,
     totalMachines,
     onlineMachines,
     totalUsers,
@@ -15,6 +16,7 @@ export async function getDashboardData(userId?: number) {
     recentSessions,
   ] = await Promise.all([
     SessionModel.countActiveSessions(),
+    SessionModel.countAll(),
     MachineModel.countAll(),
     MachineModel.countOnline(),
     UserService.countAll(),
@@ -33,6 +35,7 @@ export async function getDashboardData(userId?: number) {
   return {
     stats: {
       activeSessions,
+      totalSessions,
       totalMachines,
       onlineMachines,
       totalUsers,
@@ -53,6 +56,7 @@ export function getEmptyDashboardData() {
   return {
     stats: {
       activeSessions: 0,
+      totalSessions: 0,
       totalMachines: 0,
       onlineMachines: 0,
       totalUsers: 0,

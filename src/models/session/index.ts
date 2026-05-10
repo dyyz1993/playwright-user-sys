@@ -33,6 +33,7 @@ class SessionModel {
   static getUserSessionStats = statsMethods.getUserSessionStats;
   static countActiveByUserId = statsMethods.countActiveByUserId;
   static countActiveSessions = statsMethods.countActiveSessions;
+  static countAll = statsMethods.countAll;
   static sumUsedCredits = statsMethods.sumUsedCredits;
   static getStats = statsMethods.getStats;
 

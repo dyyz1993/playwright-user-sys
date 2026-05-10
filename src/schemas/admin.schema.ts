@@ -37,7 +37,11 @@ export const dashboardStatsResponseSchema = successResponseSchema(dashboardStats
 
 // 管理员创建用户请求模式
 export const adminCreateUserRequestSchema = z.object({
-  username: z.string().min(3).max(50),
+  username: z
+    .string()
+    .min(3)
+    .max(50)
+    .regex(/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/, '用户名只能包含字母、数字、下划线、横线和中文'),
   password: z
     .string()
     .min(8)
@@ -115,7 +119,7 @@ export const adminDeleteUserResponseSchema = z.object({
 
 // 管理员添加点数请求模式
 export const adminAddCreditsRequestSchema = z.object({
-  amount: z.number().int().positive(),
+  amount: z.number().int().positive().max(1000000, '单次充值金额不能超过 1,000,000'),
   reason: z.string().optional(),
 });
 

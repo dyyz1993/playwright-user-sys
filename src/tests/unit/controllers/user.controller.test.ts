@@ -122,7 +122,7 @@ describe('UserController', () => {
       },
       body: {
         username: 'newuser',
-        password: 'password123',
+        password: 'Test1234',
         email: 'newuser@example.com',
         role: UserRole.USER,
         credits: 100,
@@ -171,7 +171,7 @@ describe('UserController', () => {
       },
       body: {
         username: 'existinguser',
-        password: 'password123',
+        password: 'Test1234',
       },
       log: {
         error: vi.fn(),
@@ -201,7 +201,7 @@ describe('UserController', () => {
       },
       body: {
         // Missing required username field
-        password: 'password123',
+        password: 'Test1234',
       },
       log: {
         error: vi.fn(),

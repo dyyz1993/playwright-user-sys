@@ -90,7 +90,7 @@ describe('AuthController', () => {
     const request = {
       body: {
         username: 'testuser',
-        password: 'password123',
+        password: 'Test1234',
       },
       log: {
         error: vi.fn(),
@@ -105,7 +105,7 @@ describe('AuthController', () => {
     await login(request as any, reply as any);
 
     expect(UserModel.findByUsername).toHaveBeenCalledWith('testuser');
-    expect(verifyPasswordWithMigration).toHaveBeenCalledWith('password123', 'hashed_password');
+    expect(verifyPasswordWithMigration).toHaveBeenCalledWith('Test1234', 'hashed_password');
     expect(generateToken).toHaveBeenCalled();
     expect(sendSuccess).toHaveBeenCalledWith(
       reply,
@@ -130,7 +130,7 @@ describe('AuthController', () => {
     const request = {
       body: {
         username: 'testuser',
-        password: 'password123',
+        password: 'Test1234',
       },
       log: {
         error: vi.fn(),
@@ -204,7 +204,7 @@ describe('AuthController', () => {
     const request = {
       body: {
         username: 'testuser',
-        password: 'password123',
+        password: 'Test1234',
       },
       log: {
         error: vi.fn(),

@@ -88,7 +88,7 @@ describe('admin-api user routes - auth enforcement', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/admin/users',
-      payload: { username: 'test', password: 'pass' },
+      payload: { username: 'test', password: 'Test1234' },
     });
     expect([401, 500]).toContain(res.statusCode);
   });
@@ -182,7 +182,7 @@ describe('admin-api user routes - authenticated CRUD', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/admin/users',
-      payload: { username: 'newuser', password: 'pass123' },
+      payload: { username: 'newuser', password: 'Test1234' },
     });
 
     expect(res.statusCode).toBe(201);

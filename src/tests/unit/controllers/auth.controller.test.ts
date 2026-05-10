@@ -167,7 +167,7 @@ describe('AuthController', () => {
     const request = {
       body: {
         username: 'testuser',
-        password: 'wrongpassword',
+        password: 'Wrongpass1',
       },
       log: {
         error: vi.fn(),

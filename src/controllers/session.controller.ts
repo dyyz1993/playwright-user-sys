@@ -14,6 +14,7 @@ import {
   toSessionReleaseDTO,
 } from '@shared/mappers/index.js';
 import { IdParamRoute, PaginationQueryRoute } from '@shared/types/routes.js';
+import { logger } from '@shared/utils/logger.js';
 
 import * as sessionService from '../services/session.service.js';
 import { connectionManager } from '../services/machine-grpc.service.js';
@@ -327,6 +328,78 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
   }
 }
 
+export async function injectFileToSession(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    if (!request.user) {
+      return sendError(reply, '用户未认证', 401);
+    }
+
+    const { id } = request.params as { id: string };
+    const { machineFilePath, selector, frameSelector } = request.body as any;
+    const userId = request.user.id;
+
+    if (!machineFilePath || !selector) {
+      return sendError(reply, '缺少 machineFilePath 或 selector', 400);
+    }
+
+    const session = await SessionModel.findById(id);
+    if (!session || (session.user_id !== userId && request.user.role !== 'admin')) {
+      return sendError(reply, '会话不存在', 404);
+    }
+    if (!session.machine_id) {
+      return sendError(reply, '会话没有关联的机器', 400);
+    }
+
+    const { fileTransferService } = await import('../services/file-transfer.service.js');
+    const result = await fileTransferService.injectFile(
+      id,
+      session.machine_id,
+      machineFilePath,
+      selector,
+      frameSelector
+    );
+    return sendSuccess(reply, result, '文件注入成功');
+  } catch (error: unknown) {
+    logger.error('文件注入失败:', error);
+    return sendError(reply, error instanceof Error ? error.message : '文件注入失败', 500);
+  }
+}
+
+export async function uploadUrlToSession(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    if (!request.user) {
+      return sendError(reply, '用户未认证', 401);
+    }
+
+    const { id } = request.params as { id: string };
+    const { url, selector, frameSelector, filename, downloadTimeout } = request.body as any;
+    const userId = request.user.id;
+
+    if (!url || !selector) {
+      return sendError(reply, '缺少 url 或 selector', 400);
+    }
+
+    const session = await SessionModel.findById(id);
+    if (!session || (session.user_id !== userId && request.user.role !== 'admin')) {
+      return sendError(reply, '会话不存在', 404);
+    }
+    if (!session.machine_id) {
+      return sendError(reply, '会话没有关联的机器', 400);
+    }
+
+    const { fileTransferService } = await import('../services/file-transfer.service.js');
+    const result = await fileTransferService.downloadAndInject(id, session.machine_id, url, selector, {
+      frameSelector,
+      filename,
+      timeout: downloadTimeout,
+    });
+    return sendSuccess(reply, result, 'URL 文件下载并注入成功');
+  } catch (error: unknown) {
+    logger.error('URL 文件注入失败:', error);
+    return sendError(reply, error instanceof Error ? error.message : 'URL 文件注入失败', 500);
+  }
+}
+
 export default {
   createSession,
   getSession,
@@ -335,4 +408,6 @@ export default {
   getAllSessions,
   closeSession,
   getSessionScreenshot,
+  injectFileToSession,
+  uploadUrlToSession,
 };

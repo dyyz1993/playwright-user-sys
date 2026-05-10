@@ -18,6 +18,15 @@ service MachineService {
 
   // 获取机器状态
   rpc GetMachineStatus(MachineStatusRequest) returns (MachineStatusResponse);
+
+  // 传输文件到机器
+  rpc TransferFile(TransferFileRequest) returns (TransferFileResponse);
+
+  // 下载URL文件并注入浏览器
+  rpc DownloadAndInjectFile(DownloadAndInjectFileRequest) returns (FileInjectResponse);
+
+  // 注入机器上已有文件到浏览器
+  rpc InjectFile(InjectFileRequest) returns (FileInjectResponse);
 }
 
 // 注册请求
@@ -188,4 +197,47 @@ message MachineStatusResponse {
   int32 active_sessions = 5;
   int32 max_sessions = 6;
   int64 timestamp = 7;
+}
+
+// 文件传输请求
+message TransferFileRequest {
+  string session_id = 1;
+  string filename = 2;
+  bytes data = 3;
+}
+
+// 文件传输响应
+message TransferFileResponse {
+  bool success = 1;
+  string error = 2;
+  string machine_file_path = 3;
+  string filename = 4;
+  int64 size = 5;
+}
+
+// 下载URL并注入请求
+message DownloadAndInjectFileRequest {
+  string session_id = 1;
+  string url = 2;
+  string selector = 3;
+  string frame_selector = 4;
+  string filename = 5;
+  int64 download_timeout = 6;
+}
+
+// 注入文件请求
+message InjectFileRequest {
+  string session_id = 1;
+  string machine_file_path = 2;
+  string selector = 3;
+  string frame_selector = 4;
+}
+
+// 文件注入响应
+message FileInjectResponse {
+  bool success = 1;
+  string error = 2;
+  string machine_file_path = 3;
+  string filename = 4;
+  int64 size = 5;
 }

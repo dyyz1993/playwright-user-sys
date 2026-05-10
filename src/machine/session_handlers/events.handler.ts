@@ -407,6 +407,10 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         handleMouseEvents(eventData.event.type, eventData.event, page, ws, sessionId, requestType);
         break;
 
+      case 'fileInjectInBrowser':
+        await handleFileInjectInBrowser(ws, sessionId, data);
+        break;
+
       // --- 其他指令 ---
       case 'page.goto':
         try {
@@ -682,6 +686,26 @@ function sendSessionEndedMessage(ws: WebSocket, reason: string): void {
     ws.send(JSON.stringify({ type: 'session_ended', data: { reason } }), (err) => {
       if (err) logger.error('Failed to send session_ended message:', err);
     });
+  }
+}
+
+async function handleFileInjectInBrowser(
+  ws: WebSocket,
+  sessionId: string,
+  data: { filepath: string; selector: string; frameSelector?: string }
+): Promise<void> {
+  try {
+    const { browserInjectService } = await import('../services/browser-inject.service.js');
+    const result = await browserInjectService.injectFile({
+      sessionId,
+      filePath: data.filepath,
+      selector: data.selector,
+      frameSelector: data.frameSelector,
+    });
+    sendResponse(ws, 'fileInjectInBrowser', result);
+  } catch (error: unknown) {
+    logger.error(`WebSocket 文件注入失败 (session: ${sessionId}):`, error);
+    sendResponse(ws, 'fileInjectInBrowser', { success: false, error: (error as Error).message });
   }
 }
 

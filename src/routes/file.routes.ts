@@ -144,4 +144,38 @@ export default async function fileRoutes(fastify: FastifyInstance): Promise<void
     },
     fileController.cleanupTempFiles
   );
+
+  // SDK 文件上传到会话（转发到 Machine）
+  fastify.post(
+    '/api/files/upload-session',
+    {
+      onRequest: [fastify.verifyJWTOrApiKey],
+      schema: {
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  fileId: { type: 'string' },
+                  sessionId: { type: 'string' },
+                  filename: { type: 'string' },
+                  size: { type: 'number' },
+                  machineFilePath: { type: 'string' },
+                },
+              },
+              message: { type: 'string' },
+            },
+          },
+          400: zodToJsonSchema(errorResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+          500: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['files'],
+      },
+    },
+    fileController.uploadFileForSession
+  );
 }

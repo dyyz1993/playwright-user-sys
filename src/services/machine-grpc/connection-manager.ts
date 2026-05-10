@@ -453,6 +453,83 @@ export class MachineConnectionManager extends EventEmitter {
     });
   }
 
+  async transferFile(machineId: string, sessionId: string, filename: string, data: Buffer): Promise<any> {
+    const client = await this.getClient(machineId);
+    if (!client) throw new Error(`Machine ${machineId} 未连接`);
+    const metadata = new grpc.Metadata();
+    metadata.set('machine_id', machineId);
+    return new Promise((resolve, reject) => {
+      client.TransferFile({ session_id: sessionId, filename, data }, metadata, (err: any, response: any) => {
+        if (err) return reject(err);
+        resolve(response);
+      });
+    });
+  }
+
+  async downloadAndInjectFile(
+    machineId: string,
+    params: {
+      sessionId: string;
+      url: string;
+      selector: string;
+      frameSelector?: string;
+      filename?: string;
+      timeout?: number;
+    }
+  ): Promise<any> {
+    const client = await this.getClient(machineId);
+    if (!client) throw new Error(`Machine ${machineId} 未连接`);
+    const metadata = new grpc.Metadata();
+    metadata.set('machine_id', machineId);
+    return new Promise((resolve, reject) => {
+      client.DownloadAndInjectFile(
+        {
+          session_id: params.sessionId,
+          url: params.url,
+          selector: params.selector,
+          frame_selector: params.frameSelector || '',
+          filename: params.filename || '',
+          download_timeout: params.timeout || 60000,
+        },
+        metadata,
+        (err: any, response: any) => {
+          if (err) return reject(err);
+          resolve(response);
+        }
+      );
+    });
+  }
+
+  async injectFile(
+    machineId: string,
+    params: {
+      sessionId: string;
+      machineFilePath: string;
+      selector: string;
+      frameSelector?: string;
+    }
+  ): Promise<any> {
+    const client = await this.getClient(machineId);
+    if (!client) throw new Error(`Machine ${machineId} 未连接`);
+    const metadata = new grpc.Metadata();
+    metadata.set('machine_id', machineId);
+    return new Promise((resolve, reject) => {
+      client.InjectFile(
+        {
+          session_id: params.sessionId,
+          machine_file_path: params.machineFilePath,
+          selector: params.selector,
+          frame_selector: params.frameSelector || '',
+        },
+        metadata,
+        (err: any, response: any) => {
+          if (err) return reject(err);
+          resolve(response);
+        }
+      );
+    });
+  }
+
   private async handleMachineMessage(machineId: string, message: MachineMessage): Promise<void> {
     try {
       logger.debug(`收到机器消息 (${machineId}): ${JSON.stringify(message)}`);

@@ -142,4 +142,76 @@ export default async function sessionRoutes(fastify: FastifyInstance): Promise<v
     },
     sessionController.getSessionScreenshot
   );
+
+  // 注入文件到浏览器
+  fastify.post(
+    '/:id/inject-file',
+    {
+      onRequest: [fastify.verifyJWTOrApiKey],
+      schema: {
+        params: zodToJsonSchema(idParamSchema),
+        body: {
+          type: 'object',
+          required: ['machineFilePath', 'selector'],
+          properties: {
+            machineFilePath: { type: 'string' },
+            selector: { type: 'string' },
+            frameSelector: { type: 'string' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: { type: 'object' },
+              message: { type: 'string' },
+            },
+          },
+          400: zodToJsonSchema(errorResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+          404: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['sessions'],
+      },
+    },
+    sessionController.injectFileToSession
+  );
+
+  // URL 文件下载并注入浏览器
+  fastify.post(
+    '/:id/upload-url',
+    {
+      onRequest: [fastify.verifyJWTOrApiKey],
+      schema: {
+        params: zodToJsonSchema(idParamSchema),
+        body: {
+          type: 'object',
+          required: ['url', 'selector'],
+          properties: {
+            url: { type: 'string' },
+            selector: { type: 'string' },
+            frameSelector: { type: 'string' },
+            filename: { type: 'string' },
+            downloadTimeout: { type: 'number' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: { type: 'object' },
+              message: { type: 'string' },
+            },
+          },
+          400: zodToJsonSchema(errorResponseSchema),
+          401: zodToJsonSchema(errorResponseSchema),
+          404: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['sessions'],
+      },
+    },
+    sessionController.uploadUrlToSession
+  );
 }

@@ -32,6 +32,9 @@ interface MachineServiceClient {
     metadata: grpc.Metadata,
     callback: (err: unknown, response: MachineStatusResponse) => void
   ): void;
+  TransferFile(request: any, metadata: grpc.Metadata, callback: (err: unknown, response: any) => void): void;
+  DownloadAndInjectFile(request: any, metadata: grpc.Metadata, callback: (err: unknown, response: any) => void): void;
+  InjectFile(request: any, metadata: grpc.Metadata, callback: (err: unknown, response: any) => void): void;
 }
 
 const proto = grpc.loadPackageDefinition(packageDefinition).machine as unknown as {

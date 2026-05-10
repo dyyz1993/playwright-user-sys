@@ -707,6 +707,14 @@ export class BrowserService extends EventEmitter {
         clearTimeout(this.disconnectionTimers.get(sessionId)!);
         this.disconnectionTimers.delete(sessionId);
       }
+      // 清理会话临时文件
+      try {
+        const { fileService } = await import('./services/file.service.js');
+        await fileService.cleanupSessionFiles(sessionId);
+      } catch (cleanupError) {
+        logger.warn(`清理会话临时文件失败 (${sessionId}):`, cleanupError);
+      }
+
       // !! 移除 sessionClosed emit !!
       this.emit('sessionClosed', sessionId, totalConnectedTime);
       logger.info(`浏览器已关闭 (sessionId: ${sessionId}, 总连接时长: ${totalConnectedTime}秒)`);

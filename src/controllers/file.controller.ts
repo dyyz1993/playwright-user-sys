@@ -1,6 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { CleanupTempFilesQueryRoute } from '@shared/types/routes.js';
+import { SessionModel } from '../models/session.model.js';
+import { logger } from '@shared/utils/logger.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -184,9 +186,75 @@ export async function cleanupTempFiles(request: FastifyRequest<CleanupTempFilesQ
   }
 }
 
+export async function uploadFileForSession(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    if (!request.user) {
+      return sendError(reply, '需要认证', 401);
+    }
+
+    const data = await request.file();
+    if (!data) {
+      return sendError(reply, '没有上传文件', 400);
+    }
+
+    const sessionIdField = data.fields?.sessionId;
+    const sessionId = (sessionIdField as any)?.value || sessionIdField;
+
+    if (!sessionId) {
+      return sendError(reply, '缺少 sessionId', 400);
+    }
+
+    const session = await SessionModel.findById(sessionId as string);
+    if (!session || session.user_id !== request.user.id) {
+      return sendError(reply, '会话不存在或不属于该用户', 404);
+    }
+    if (session.status !== 'connected') {
+      return sendError(reply, '会话不是活跃状态', 400);
+    }
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of data.file) {
+      chunks.push(chunk as Buffer);
+    }
+    const fileBuffer = Buffer.concat(chunks);
+
+    if (fileBuffer.length > 100 * 1024 * 1024) {
+      return sendError(reply, '文件大小超过限制 (100MB)', 400);
+    }
+
+    const { fileTransferService } = await import('../services/file-transfer.service.js');
+    const result = await fileTransferService.transferToMachine(
+      fileBuffer,
+      data.filename,
+      sessionId as string,
+      session.machine_id!
+    );
+
+    if (!result.success) {
+      return sendError(reply, result.error || '文件传输失败', 500);
+    }
+
+    return sendSuccess(
+      reply,
+      {
+        fileId: `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+        sessionId,
+        filename: data.filename,
+        size: fileBuffer.length,
+        machineFilePath: result.machineFilePath,
+      },
+      '文件上传成功'
+    );
+  } catch (error: unknown) {
+    logger.error('文件上传失败:', error);
+    return sendError(reply, error instanceof Error ? error.message : '文件上传失败', 500);
+  }
+}
+
 export default {
   uploadFile,
   uploadTempFile,
   getFileList,
   cleanupTempFiles,
+  uploadFileForSession,
 };

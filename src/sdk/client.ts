@@ -1,10 +1,14 @@
 import fetch from 'node-fetch';
 import { SessionCreateOptions, SessionStatus } from '@shared/types/index.js';
+import { Session } from './session.js';
+
+export { Session } from './session.js';
+export type { UploadFileOptions, UploadUrlOptions, UploadResult, SessionInfo } from './types.js';
 
 /**
- * 会话对象接口
+ * 会话数据接口（API 返回的原始数据）
  */
-export interface Session {
+export interface SessionData {
   id: string;
   status: SessionStatus;
   machine_id?: string;
@@ -116,29 +120,32 @@ export class SessionManager {
    * @param options 会话创建选项
    * @returns 创建的会话信息
    */
-  async create(options?: SessionCreateOptions): Promise<Session> {
-    const response = await this.client.request<Session>('POST', '/api/sessions', options);
+  async create(options?: SessionCreateOptions): Promise<SessionData> {
+    const response = await this.client.request<SessionData>('POST', '/api/sessions', options);
     return response.data;
   }
 
   /**
-   * 获取会话信息
-   * @param sessionId 会话ID
-   * @returns 会话信息
+   * 创建会话并返回 Session 实例（支持文件上传等操作）
    */
-  async get(sessionId: string): Promise<Session> {
-    const response = await this.client.request<Session>('GET', `/api/sessions/${sessionId}`);
+  async createAndConnect(options?: SessionCreateOptions): Promise<Session> {
+    const data = await this.create(options);
+    return new Session(this.client['baseUrl'], this.client['apiKey'], data);
+  }
+
+  /**
+   * 获取会话信息
+   */
+  async get(sessionId: string): Promise<SessionData> {
+    const response = await this.client.request<SessionData>('GET', `/api/sessions/${sessionId}`);
     return response.data;
   }
 
   /**
    * 获取所有会话
-   * @param page 页码
-   * @param limit 每页数量
-   * @returns 会话列表
    */
-  async list(page: number = 1, limit: number = 10): Promise<Session[]> {
-    const response = await this.client.request<Session[]>('GET', `/api/sessions?page=${page}&limit=${limit}`);
+  async list(page: number = 1, limit: number = 10): Promise<SessionData[]> {
+    const response = await this.client.request<SessionData[]>('GET', `/api/sessions?page=${page}&limit=${limit}`);
     return response.data;
   }
 

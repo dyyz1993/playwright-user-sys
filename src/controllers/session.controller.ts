@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import path from 'path';
 import { SessionModel } from '../models/session.model.js';
 import { UserModel } from '../models/user.model.js';
 import { sendSuccess, sendError, sendCreated } from '../utils/response.js';
@@ -342,6 +343,11 @@ export async function injectFileToSession(request: FastifyRequest, reply: Fastif
       return sendError(reply, '缺少 machineFilePath 或 selector', 400);
     }
 
+    const normalizedPath = path.normalize(machineFilePath);
+    if (normalizedPath.includes('..') || !normalizedPath.startsWith('data/temp')) {
+      return sendError(reply, '非法文件路径', 400);
+    }
+
     const session = await SessionModel.findById(id);
     if (!session || (session.user_id !== userId && request.user.role !== 'admin')) {
       return sendError(reply, '会话不存在', 404);
@@ -377,6 +383,33 @@ export async function uploadUrlToSession(request: FastifyRequest, reply: Fastify
 
     if (!url || !selector) {
       return sendError(reply, '缺少 url 或 selector', 400);
+    }
+
+    try {
+      const parsedUrl = new URL(url);
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        return sendError(reply, '只支持 http/https 协议', 400);
+      }
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '169.254.169.254'];
+      if (
+        blockedHosts.includes(hostname) ||
+        hostname.startsWith('10.') ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('172.16.') ||
+        hostname.startsWith('172.17.') ||
+        hostname.startsWith('172.18.') ||
+        hostname.startsWith('172.19.') ||
+        hostname.startsWith('172.2') ||
+        hostname.startsWith('172.30.') ||
+        hostname.startsWith('172.31.') ||
+        hostname.endsWith('.internal') ||
+        hostname.endsWith('.local')
+      ) {
+        return sendError(reply, '不允许下载内网地址', 400);
+      }
+    } catch {
+      return sendError(reply, '无效的 URL', 400);
     }
 
     const session = await SessionModel.findById(id);

@@ -64,6 +64,31 @@ export class FileService {
       throw new Error(`不支持的协议: ${parsedUrl.protocol}`);
     }
 
+    const hostname = parsedUrl.hostname.toLowerCase();
+    const blockedPatterns = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '169.254.169.254', 'metadata.google.internal'];
+    const blockedPrefixes = [
+      '10.',
+      '172.16.',
+      '172.17.',
+      '172.18.',
+      '172.19.',
+      '172.2',
+      '172.30.',
+      '172.31.',
+      '192.168.',
+    ];
+    const blockedSuffixes = ['.internal', '.local', '.localhost'];
+
+    if (blockedPatterns.includes(hostname)) {
+      throw new Error(`不允许下载内网地址: ${hostname}`);
+    }
+    if (blockedPrefixes.some((prefix) => hostname.startsWith(prefix))) {
+      throw new Error(`不允许下载内网地址: ${hostname}`);
+    }
+    if (blockedSuffixes.some((suffix) => hostname.endsWith(suffix))) {
+      throw new Error(`不允许下载内网地址: ${hostname}`);
+    }
+
     const finalDir = path.join(this.tempDir, sessionId);
     await fs.mkdir(finalDir, { recursive: true });
 

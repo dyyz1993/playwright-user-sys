@@ -191,7 +191,7 @@ async function handleFileUploadStart(ws: WebSocket, sessionId: string, data: Fil
 
     // 生成唯一文件名
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const fileName = uniqueSuffix + '-' + data.filename;
+    const fileName = uniqueSuffix + '-' + path.basename(data.filename);
     const filePath = path.join(sessionTempDir, fileName);
 
     // 存储上传状态

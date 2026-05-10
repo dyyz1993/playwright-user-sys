@@ -34,7 +34,7 @@ export async function uploadFile(request: FastifyRequest, reply: FastifyReply) {
     }
 
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const fileName = uniqueSuffix + '-' + file.filename;
+    const fileName = uniqueSuffix + '-' + path.basename(file.filename);
     const filePath = path.join(uploadDir, fileName);
 
     await file.file.pipe(fs.createWriteStream(filePath));
@@ -77,9 +77,8 @@ export async function uploadTempFile(request: FastifyRequest, reply: FastifyRepl
       return sendError(reply, '没有上传文件', 400);
     }
 
-    // 生成唯一文件名
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const fileName = uniqueSuffix + '-' + file.filename;
+    const fileName = uniqueSuffix + '-' + path.basename(file.filename);
     const filePath = path.join(tempDir, fileName);
 
     // 保存文件

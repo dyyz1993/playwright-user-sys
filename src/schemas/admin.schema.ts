@@ -4,12 +4,8 @@ import { successResponseSchema } from './common.schema.js';
 
 // 管理员登录请求模式
 export const adminLoginRequestSchema = z.object({
-  username: z.string().min(3).max(50),
-  password: z
-    .string()
-    .min(8)
-    .max(100)
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, '密码必须至少8个字符，包含大小写字母和数字'),
+  username: z.string().min(1).max(50),
+  password: z.string().min(1),
 });
 
 // 管理员登录响应模式

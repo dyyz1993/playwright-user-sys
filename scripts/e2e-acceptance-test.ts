@@ -167,6 +167,7 @@ async function main(): Promise<void> {
   let apiKey = '';
   let testUserId: number | undefined;
   let sessionId = '';
+  let browserWsUrl = '';
   let initialCredits = config.testCredits;
 
   try {
@@ -242,11 +243,9 @@ async function main(): Promise<void> {
         throw new Error(`Create session failed: ${JSON.stringify(sessionRes)}`);
       }
       sessionId = sessionRes.data.id;
-      const directUrl = sessionRes.data.directUrl;
-      const browserWSEndpoint = sessionRes.data.browserWSEndpoint;
+      browserWsUrl = sessionRes.data.directUrl || sessionRes.data.browserWSEndpoint || '';
       console.log(`    sessionId=${sessionId}`);
-      console.log(`    directUrl=${directUrl}`);
-      console.log(`    wsEndpoint=${browserWSEndpoint}`);
+      console.log(`    browserWsUrl=${browserWsUrl}`);
     });
 
     // ── Step 5: Playwright CDP connection ─────────────────────────
@@ -254,10 +253,7 @@ async function main(): Promise<void> {
       await runStep(5, 'Playwright CDP 连接 + 页面验证', async () => {
         const { chromium } = await import('playwright');
 
-        const sessionInfo = await apiRequest('GET', `/api/sessions/${sessionId}`, { apiKey });
-        const directUrl = sessionInfo.data?.directUrl;
-        const browserWSEndpoint = sessionInfo.data?.browserWSEndpoint;
-        const connectUrl = directUrl || browserWSEndpoint;
+        const connectUrl = browserWsUrl;
         if (!connectUrl) throw new Error('No browser connection URL available');
 
         const browser = await chromium.connectOverCDP(connectUrl);
@@ -292,9 +288,7 @@ async function main(): Promise<void> {
       await runStep(6, '文件上传 + 注入浏览器', async () => {
         const { chromium } = await import('playwright');
 
-        const sessionInfo = await apiRequest('GET', `/api/sessions/${sessionId}`, { apiKey });
-        const directUrl = sessionInfo.data?.directUrl || sessionInfo.data?.browserWSEndpoint;
-        if (!directUrl) throw new Error('No browser connection URL');
+        if (!browserWsUrl) throw new Error('No browser connection URL');
 
         tempFilePath = path.join(os.tmpdir(), `e2e-upload-${Date.now()}.txt`);
         fs.writeFileSync(tempFilePath, 'Hello from E2E acceptance test!');
@@ -314,7 +308,7 @@ async function main(): Promise<void> {
         const machineFilePath = uploadRes.data.machineFilePath;
         console.log(`    Uploaded, machineFilePath=${machineFilePath}`);
 
-        const browser = await chromium.connectOverCDP(directUrl);
+        const browser = await chromium.connectOverCDP(browserWsUrl);
         const contexts = browser.contexts();
         const context = contexts.length > 0 ? contexts[0] : await browser.newContext();
         const page = await context.newPage();
@@ -357,11 +351,9 @@ async function main(): Promise<void> {
       await runStep(7, 'URL 文件下载注入', async () => {
         const { chromium } = await import('playwright');
 
-        const sessionInfo = await apiRequest('GET', `/api/sessions/${sessionId}`, { apiKey });
-        const directUrl = sessionInfo.data?.directUrl || sessionInfo.data?.browserWSEndpoint;
-        if (!directUrl) throw new Error('No browser connection URL');
+        if (!browserWsUrl) throw new Error('No browser connection URL');
 
-        const browser = await chromium.connectOverCDP(directUrl);
+        const browser = await chromium.connectOverCDP(browserWsUrl);
         const contexts = browser.contexts();
         const context = contexts.length > 0 ? contexts[0] : await browser.newContext();
         const page = await context.newPage();

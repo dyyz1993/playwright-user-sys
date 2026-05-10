@@ -98,6 +98,15 @@ jobs:
           ADMIN_PASSWORD=admin123 \
           npx tsx scripts/e2e-smoke-test.ts
 
+      - name: Run Deployment Acceptance Test
+        if: success()
+        run: |
+          BASE_URL=http://localhost:3000 \
+          ADMIN_USERNAME=admin \
+          ADMIN_PASSWORD=admin123 \
+          TIMEOUT=120000 \
+          npx tsx scripts/e2e-acceptance-test.ts
+
       - name: Collect logs on failure
         if: failure()
         run: |

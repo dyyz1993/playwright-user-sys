@@ -1,0 +1,57 @@
+name: Deploy Acceptance Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Target URL'
+        required: true
+        default: 'http://192.168.0.29:3011'
+      skip_playwright:
+        description: 'Skip Playwright tests'
+        type: boolean
+        default: false
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Install Playwright browsers
+        if: ${{ inputs.skip_playwright != true }}
+        run: npx playwright install chromium
+
+      - name: Run Acceptance Test
+        run: npx tsx scripts/e2e-acceptance-test.ts
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          ADMIN_USERNAME: admin
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          SKIP_PLAYWRIGHT: ${{ inputs.skip_playwright }}
+
+  feishu-notify:
+    name: Feishu Notification
+    needs: [acceptance]
+    if: always()
+    uses: dyyz1993/ci-tools/.github/workflows/feishu-notify.yml@main
+    with:
+      jobs: '{"acceptance":"${{ needs.acceptance.result }}"}'
+      sha: ${{ github.sha }}
+      ref: ${{ github.ref_name }}
+      actor: ${{ github.actor }}
+      repo: ${{ github.repository }}
+      run-id: ${{ github.run_id }}
+    secrets: inherit

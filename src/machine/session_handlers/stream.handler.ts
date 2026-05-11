@@ -19,10 +19,12 @@ interface StreamInfo {
   isActive: boolean;
   useCdpScreencast: boolean;
   timerId: NodeJS.Timeout | null;
+  starvationTimer: NodeJS.Timeout | null;
   currentFps: number;
   config: StreamConfig;
   frameCount: number;
   startTime: number;
+  lastFrameTime: number;
 }
 
 interface StreamConfig {
@@ -75,6 +77,7 @@ async function startCdpScreencast(streamInfo: StreamInfo): Promise<void> {
         const buffer = Buffer.from(event.data, 'base64');
         ws.send(buffer, { binary: true });
         streamInfo.frameCount++;
+        streamInfo.lastFrameTime = Date.now();
 
         await cdpSession.send('Page.screencastFrameAck', {
           sessionId: event.sessionId,
@@ -115,6 +118,25 @@ async function startCdpScreencast(streamInfo: StreamInfo): Promise<void> {
     streamInfo.frameCount = 0;
 
     logger.info('CDP Screencast started', { sessionId, config });
+
+    streamInfo.lastFrameTime = Date.now();
+    streamInfo.starvationTimer = setInterval(() => {
+      if (!streamInfo.isActive) {
+        clearInterval(streamInfo.starvationTimer!);
+        streamInfo.starvationTimer = null;
+        return;
+      }
+      const elapsed = Date.now() - streamInfo.lastFrameTime;
+      if (elapsed > 3000 && streamInfo.useCdpScreencast) {
+        logger.warn(`Frame starvation for ${sessionId}: no frame for ${elapsed}ms, falling back to screenshot loop`);
+        streamInfo.useCdpScreencast = false;
+        if (streamInfo.starvationTimer) {
+          clearInterval(streamInfo.starvationTimer);
+          streamInfo.starvationTimer = null;
+        }
+        startScreenshotLoop(streamInfo);
+      }
+    }, 2000);
   } catch (err) {
     logger.error('CDP Screencast start failed, falling back to screenshot loop', {
       sessionId,
@@ -209,6 +231,7 @@ function startScreenshotLoop(streamInfo: StreamInfo): void {
     const success = await captureAndSend(ws, page, sessionId);
 
     if (success && activeStreams.has(ws)) {
+      streamInfo.lastFrameTime = Date.now();
       streamInfo.timerId = setTimeout(scheduleNextCapture, intervalMs);
     } else {
       cleanupStreamConnection(ws);
@@ -269,10 +292,12 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
       isActive: false,
       useCdpScreencast: true,
       timerId: null,
+      starvationTimer: null,
       currentFps: initialFps,
       config: streamConfig,
       frameCount: 0,
       startTime: 0,
+      lastFrameTime: Date.now(),
     };
     activeStreams.set(ws, streamInfo);
 
@@ -357,6 +382,11 @@ async function cleanupStreamConnection(ws: WebSocket): Promise<void> {
 
     if (streamInfo.timerId) {
       clearTimeout(streamInfo.timerId);
+    }
+
+    if (streamInfo.starvationTimer) {
+      clearInterval(streamInfo.starvationTimer);
+      streamInfo.starvationTimer = null;
     }
 
     activeStreams.delete(ws);

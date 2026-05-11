@@ -452,22 +452,17 @@ export class NativeWebSocketProxyService {
         bridged = true;
         logger.info(`Viewer WS bridge active - piping raw bytes (sessionId: ${sessionId})`);
 
-        // Pipe: client → machine (raw WS frames)
+        // Pipe: client → machine only (raw WS frames)
+        // machine → client is already handled by the existing on('data') handler below
         socket.on('data', (chunk: Buffer) => {
           if (!netSocket.destroyed && netSocket.writable) {
             netSocket.write(chunk);
           }
         });
-
-        // Pipe: machine → client (raw WS frames)
-        netSocket.on('data', (chunk: Buffer) => {
-          if (!socket.destroyed && socket.writable) {
-            socket.write(chunk);
-          }
-        });
       }
 
       // Handle machine response (should be 101 Switching Protocols)
+      // Also pipes machine → client WS frames after handshake
       let machineRespBuffer = Buffer.alloc(0);
       netSocket.on('data', (chunk: Buffer) => {
         if (!machineHeaderReceived) {

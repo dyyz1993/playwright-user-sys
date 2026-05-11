@@ -52,20 +52,6 @@
       background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, transparent 70%);
       pointer-events: none;
     }
-    #browser-screen {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-    }
-    .touch-layer {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 10;
-      touch-action: none;
-      cursor: crosshair;
-    }
     .preset-btn { transition: all 0.15s ease; }
     .preset-btn:hover { transform: translateY(-1px); }
     .status-pill { font-variant-numeric: tabular-nums; }
@@ -168,8 +154,7 @@
     <div class="flex-1 flex min-h-0">
       <!-- 画面容器 -->
       <div id="video-container" class="flex-1 relative bg-black min-h-0">
-        <img id="browser-screen" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="远程浏览器画面">
-        <div id="touch-layer" class="touch-layer"></div>
+        <iframe id="browser-viewer-frame" src="" style="width:100%;height:100%;border:none;" allow="clipboard-read; clipboard-write"></iframe>
         <!-- 连接中遮罩 -->
         <div id="connecting-overlay" class="absolute inset-0 bg-black/80 flex items-center justify-center z-20">
           <div class="text-center">
@@ -292,15 +277,10 @@
   <script>
     let sessionId = null;
     let demoApiKey = null;
-    let streamWs = null;
-    let eventsWs = null;
     let sessionStartTime = null;
     let countdownTimer = null;
     let heartbeatTimer = null;
     let statsTimer = null;
-    let frameCount = 0;
-    let bandwidthTotal = 0;
-    let bandwidthCount = 0;
     let creditsUsed = 0;
     const activityLog = [];
 
@@ -329,9 +309,9 @@
         demoApiKey = data.data.demoApiKey;
         sessionStartTime = Date.now();
         showBrowser();
-        connectWebSockets();
         startTimers();
         enableDemoButtons();
+        logActivity('浏览器已启动');
       } catch (e) {
         showError('网络错误，请稍后重试');
         btn.disabled = false;
@@ -350,6 +330,11 @@
       $('hero-section').classList.add('hidden');
       $('browser-section').classList.remove('hidden');
       $('browser-section').classList.add('flex');
+      var viewerFrame = $('browser-viewer-frame');
+      viewerFrame.src = '/browser-viewer/index.html?sessionId=' + sessionId + '&wsHost=' + window.location.host;
+      viewerFrame.onload = function() {
+        $('connecting-overlay').classList.add('hidden');
+      };
     }
 
     function enableDemoButtons() {
@@ -374,14 +359,6 @@
       }, 60000);
 
       statsTimer = setInterval(() => {
-        $('panel-fps').textContent = `${frameCount} FPS`;
-        frameCount = 0;
-        if (bandwidthCount > 0) {
-          $('panel-bandwidth').textContent = `${(bandwidthTotal / bandwidthCount).toFixed(1)} KB/s`;
-          bandwidthTotal = 0;
-          bandwidthCount = 0;
-        }
-
         creditsUsed = Math.max(creditsUsed, Math.floor((Date.now() - sessionStartTime) / 60000));
         $('panel-credits').textContent = `${creditsUsed} 积分`;
       }, 1000);
@@ -419,220 +396,21 @@
         .catch(() => {});
     }
 
-    // ========== WebSocket 连接 ==========
-    function connectWebSockets() {
-      const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsBase = `${wsProto}//${location.host}`;
-
-      streamWs = new WebSocket(`${wsBase}/ws/${sessionId}/stream`);
-
-      streamWs.onopen = () => {
-        console.log('Stream WS connected');
-      };
-
-      streamWs.onmessage = (e) => {
-        if (e.data instanceof Blob) {
-          bandwidthTotal += e.data.size / 1024;
-          bandwidthCount++;
-          frameCount++;
-
-          const url = URL.createObjectURL(e.data);
-          const img = $('browser-screen');
-          const oldUrl = img.dataset.oldUrl;
-          img.src = url;
-          if (oldUrl) URL.revokeObjectURL(oldUrl);
-          img.dataset.oldUrl = url;
-        }
-      };
-
-      streamWs.onerror = (err) => console.error('Stream WS error:', err);
-      streamWs.onclose = () => console.log('Stream WS closed');
-
-      eventsWs = new WebSocket(`${wsBase}/ws/${sessionId}/events`);
-
-      eventsWs.onopen = () => {
-        console.log('Events WS connected');
-        setConnected(true);
-        sendEvent('init', {});
-        navigateTo('https://www.baidu.com');
-        logActivity('浏览器已启动，默认导航到百度');
-      };
-
-      eventsWs.onmessage = (e) => {
-        try {
-          const msg = JSON.parse(e.data);
-          if (msg.type === 'configSync') {
-            console.log('Config sync:', msg.config);
-          }
-        } catch {}
-      };
-
-      eventsWs.onerror = (err) => {
-        console.error('Events WS error:', err);
-        setConnected(false);
-      };
-
-      eventsWs.onclose = () => {
-        console.log('Events WS closed');
-        setConnected(false);
-      };
-    }
-
-    // ========== 事件发送 ==========
-    function sendEvent(type, data) {
-      if (eventsWs && eventsWs.readyState === WebSocket.OPEN) {
-        eventsWs.send(JSON.stringify({
-          type: 'event',
-          event: {
-            type: type,
-            timestamp: Date.now(),
-            ...data
-          }
-        }));
-      }
-    }
-
-    // ========== 鼠标/触摸事件 ==========
-    function setupMouseEvents() {
-      const layer = $('touch-layer');
-
-      layer.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        const rect = layer.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        sendEvent('mouseDown', { x, y, button: mapButton(e.button) });
-      });
-
-      layer.addEventListener('mousemove', (e) => {
-        const rect = layer.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        sendEvent('mouseMove', { x, y });
-      });
-
-      layer.addEventListener('mouseup', (e) => {
-        e.preventDefault();
-        const rect = layer.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        sendEvent('mouseUp', { x, y, button: mapButton(e.button) });
-      });
-
-      layer.addEventListener('click', (e) => {
-        e.preventDefault();
-        const rect = layer.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        sendEvent('mouseClick', { x, y, button: mapButton(e.button) });
-      });
-
-      layer.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const rect = layer.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        sendEvent('wheel', { x, y, deltaX: e.deltaX, deltaY: e.deltaY });
-      }, { passive: false });
-
-      layer.addEventListener('contextmenu', (e) => e.preventDefault());
-
-      document.addEventListener('keydown', (e) => {
-        if (document.activeElement === $('url-input')) return;
-        sendEvent('keyDown', { key: e.key, code: e.code, modifiers: getModifiers(e) });
-        if (['Tab', 'Backspace', 'Enter'].includes(e.key)) e.preventDefault();
-      });
-
-      document.addEventListener('keyup', (e) => {
-        if (document.activeElement === $('url-input')) return;
-        sendEvent('keyUp', { key: e.key, code: e.code, modifiers: getModifiers(e) });
-      });
-
-      let touchStartTime = 0, touchStartX = 0, touchStartY = 0;
-      let hasMoved = false, hasTriggeredMouseDown = false;
-
-      layer.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = layer.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        touchStartX = x; touchStartY = y;
-        touchStartTime = Date.now();
-        hasMoved = false; hasTriggeredMouseDown = false;
-        sendEvent('mouseMove', { x, y });
-        setTimeout(() => {
-          if (!hasMoved && !hasTriggeredMouseDown) {
-            sendEvent('mouseDown', { x: touchStartX, y: touchStartY, button: 'left' });
-            hasTriggeredMouseDown = true;
-          }
-        }, 500);
-      }, { passive: false });
-
-      layer.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = layer.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        const dist = Math.sqrt((x - touchStartX) ** 2 + (y - touchStartY) ** 2);
-        if (dist > 5) {
-          hasMoved = true;
-          sendEvent('mouseMove', { x, y });
-        }
-      }, { passive: false });
-
-      layer.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        const dt = Date.now() - touchStartTime;
-        if (!hasMoved) {
-          if (dt < 500) {
-            sendEvent('mouseClick', { x: touchStartX, y: touchStartY, button: 'left' });
-          } else if (hasTriggeredMouseDown) {
-            sendEvent('mouseUp', { x: touchStartX, y: touchStartY, button: 'left' });
-          }
-        } else if (hasTriggeredMouseDown) {
-          const t = e.changedTouches[0];
-          const rect = layer.getBoundingClientRect();
-          sendEvent('mouseUp', { x: t.clientX - rect.left, y: t.clientY - rect.top, button: 'left' });
-        }
-      }, { passive: false });
-    }
-
-    function mapButton(btn) {
-      return ['left', 'middle', 'right'][btn] || 'left';
-    }
-
-    function getModifiers(e) {
-      const m = [];
-      if (e.ctrlKey) m.push('ctrl');
-      if (e.shiftKey) m.push('shift');
-      if (e.altKey) m.push('alt');
-      if (e.metaKey) m.push('meta');
-      return m;
-    }
-
-    // ========== URL 导航 ==========
+    // ========== 导航（通过 iframe） ==========
     function navigateTo(url) {
       if (!url) return;
       if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
       $('url-input').value = url;
-      if (eventsWs && eventsWs.readyState === WebSocket.OPEN) {
-        eventsWs.send(JSON.stringify({
-          type: 'event',
-          event: {
-            type: 'navigate',
-            timestamp: Date.now(),
-            url: url
-          }
-        }));
-        logActivity(`导航到 ${url}`);
+      var viewerFrame = $('browser-viewer-frame');
+      if (viewerFrame.contentWindow && viewerFrame.contentWindow.BrowserViewer) {
+        viewerFrame.contentWindow.BrowserViewer.instance && viewerFrame.contentWindow.BrowserViewer.instance.navigateTo(url);
       }
+      logActivity(`导航到 ${url}`);
     }
 
-    function goBack() { sendEvent('goBack', {}); }
-    function goForward() { sendEvent('goForward', {}); }
-    function doRefresh() { sendEvent('refresh', {}); logActivity('刷新页面'); }
+    function goBack() { logActivity('后退'); }
+    function goForward() { logActivity('前进'); }
+    function doRefresh() { logActivity('刷新页面'); }
 
     // ========== 使用记录 ==========
     function logActivity(action) {
@@ -871,8 +649,6 @@ dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('d
       if (countdownTimer) clearInterval(countdownTimer);
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       if (statsTimer) clearInterval(statsTimer);
-      if (streamWs) { streamWs.close(); streamWs = null; }
-      if (eventsWs) { eventsWs.close(); eventsWs = null; }
     }
 
     window.addEventListener('beforeunload', () => {
@@ -883,7 +659,6 @@ dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('d
     });
 
     // ========== 初始化 ==========
-    setupMouseEvents();
   </script>
 </body>
 </html>

@@ -80,3 +80,21 @@ export type MachineBase = z.infer<typeof machineBaseSchema>;
 export type MachineDetail = z.infer<typeof machineDetailSchema>;
 export type RegisterMachineRequest = z.infer<typeof registerMachineRequestSchema>;
 export type UpdateMachineStatusRequest = z.infer<typeof updateMachineStatusRequestSchema>;
+
+export const batchOperationRequestSchema = z.object({
+  machineIds: z.array(z.string().min(1)).min(1),
+});
+
+export const updateMachineInputSchema = z.object({
+  hostname: z.string().min(1).optional(),
+  ip: z.string().optional(),
+  grpcPort: z.number().optional(),
+  proxyPort: z.number().optional(),
+  cpuUsage: z.number().min(0).max(100).optional(),
+  memoryUsage: z.number().min(0).max(100).optional(),
+  diskUsage: z.number().min(0).max(100).optional(),
+  instanceCount: z.number().int().min(0).optional(),
+  maxInstances: z.number().int().positive().optional(),
+  status: z.enum(['online', 'offline', 'busy']).optional(),
+  lastSeen: z.date().optional(),
+});

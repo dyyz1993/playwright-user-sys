@@ -421,7 +421,7 @@ describe('完整三端架构集成测试', () => {
    * 3. 管理端通过gRPC分配机器
    * 4. 机器端启动Chrome浏览器
    * 5. 返回WebSocket连接信息给客户端
-   * 6. 验证后扣费模式
+   * 6. 验证预扣费模式（创建时扣1分，释放时多退少补）
    */
   it('TIER-003: 创建会话完整流程测试', { timeout: 60000 }, async () => {
     const user = testUsers[0];
@@ -472,11 +472,11 @@ describe('完整三端架构集成测试', () => {
     expect(machine!.instanceCount).toBe(1);
     console.log(`   ✅ 机器实例计数: ${machine!.instanceCount}`);
 
-    // 步骤 4: 验证用户积分未变化（后扣费模式）
-    console.log('\n[步骤 4] 验证后扣费模式...');
+    // 步骤 4: 验证预扣费模式（创建时扣1分）
+    console.log('\n[步骤 4] 验证预扣费模式...');
     const userAfter = await UserModel.findById(user.id);
-    expect(userAfter!.credits).toBe(initialCredits);
-    console.log(`   ✅ 用户积分: ${userAfter!.credits} (创建会话后未扣费)`);
+    expect(userAfter!.credits).toBe(initialCredits - 1);
+    console.log(`   ✅ 用户积分: ${userAfter!.credits} (创建会话后预扣1分)`);
 
     // 步骤 5: 使用puppeteer-core连接到真实Chrome
     console.log('\n[步骤 5] 使用puppeteer-core连接Chrome...');

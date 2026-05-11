@@ -206,7 +206,9 @@ export class DemoService {
       const demoSessions = sessions.filter((s) => s.user_id === this.demoUserId);
       for (const s of demoSessions) {
         logger.info(`清理残留 demo 会话: ${s.id}`);
-        await this.releaseSession(s.id).catch(() => {});
+        await this.releaseSession(s.id).catch((err) =>
+          logger.warn('Demo会话释放失败', { sessionId: s.id, error: (err as Error).message })
+        );
       }
     } catch (error) {
       logger.warn('清理残留 demo 会话失败:', error);

@@ -40,12 +40,12 @@ export class FileService {
       const chunkPath = path.join(dir, chunkFile);
       const data = await fs.readFile(chunkPath);
       writeStream.write(data);
-      await fs.unlink(chunkPath).catch(() => {});
+      await fs.unlink(chunkPath).catch((err) => logger.debug('清理临时文件失败', { chunkPath, error: err.message }));
     }
 
     return new Promise((resolve, reject) => {
       writeStream.end(() => {
-        fs.rm(dir, { recursive: true }).catch(() => {});
+        fs.rm(dir, { recursive: true }).catch((err) => logger.debug('清理目录失败', { dir, error: err.message }));
         resolve(finalPath);
       });
       writeStream.on('error', reject);

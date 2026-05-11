@@ -6,7 +6,7 @@ import { UserModel } from '../models/user.model.js';
 import { sendSuccess, sendError, sendCreated, getSafeErrorMessage } from '../utils/response.js';
 import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
-import { createSessionRequestSchema } from '../schemas/index.js';
+import { createSessionRequestSchema, injectFileRequestSchema, uploadUrlRequestSchema } from '../schemas/index.js';
 import { env } from '../config/env.js';
 import {
   serializeSessionTimestamps,
@@ -336,7 +336,7 @@ export async function injectFileToSession(request: FastifyRequest, reply: Fastif
     }
 
     const { id } = request.params as { id: string };
-    const { machineFilePath, selector, frameSelector } = request.body as any;
+    const { machineFilePath, selector, frameSelector } = injectFileRequestSchema.parse(request.body);
     const userId = request.user.id;
 
     if (!machineFilePath || !selector) {
@@ -378,7 +378,7 @@ export async function uploadUrlToSession(request: FastifyRequest, reply: Fastify
     }
 
     const { id } = request.params as { id: string };
-    const { url, selector, frameSelector, filename, downloadTimeout } = request.body as any;
+    const { url, selector, frameSelector, filename, downloadTimeout } = uploadUrlRequestSchema.parse(request.body);
     const userId = request.user.id;
 
     if (!url || !selector) {

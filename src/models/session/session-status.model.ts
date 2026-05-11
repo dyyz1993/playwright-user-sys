@@ -35,11 +35,11 @@ export const statusMethods = {
   async markDisconnected(id: string, duration: number): Promise<Session | null> {
     const { logger } = await import('@shared/utils/logger.js');
 
-    return db.transaction(async (trx) => {
+    await db.transaction(async (trx) => {
       const session = await trx('sessions').where({ id }).first();
       if (!session) {
         logger.error(`标记会话已断开失败: 会话不存在 (${id})`);
-        return null;
+        return;
       }
 
       const initialCreditsUsed = session.credits_used || 0;
@@ -95,8 +95,8 @@ export const statusMethods = {
         const rowsAffected = Array.isArray(updateResult) ? updateResult[0] : updateResult;
 
         if (rowsAffected === 0) {
-          logger.info(`会话已是终态或已被其他请求更新 (${id}), 直接返回当前状态`);
-          return await crudMethods.findById(id);
+          logger.info(`会话已是终态或已被其他请求更新 (${id}), 跳过后续扣费`);
+          return;
         }
 
         logger.info(`数据库更新成功 (${id}), 影响行数: ${rowsAffected}`);
@@ -105,7 +105,6 @@ export const statusMethods = {
 
         if (creditsToDeduct > 0) {
           try {
-            const { UserModel } = await import('../user.model.js');
             const affectedRows = await trx('users')
               .where({ id: userId })
               .where('credits', '>=', creditsToDeduct)
@@ -141,13 +140,12 @@ export const statusMethods = {
         } else {
           logger.info(`无需额外扣费 (${id}), credits_used 未增加`);
         }
-
-        return await crudMethods.findById(id);
       } catch (error) {
         logger.error(`标记会话已断开失败 (${id}):`, error);
-        return null;
       }
     });
+
+    return crudMethods.findById(id);
   },
 
   async markExpired(id: string, duration: number): Promise<Session | null> {

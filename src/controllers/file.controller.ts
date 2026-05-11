@@ -41,7 +41,7 @@ export async function uploadFile(request: FastifyRequest, reply: FastifyReply) {
 
     const fileUrl = `/uploads/${fileName}`;
 
-    cleanupExpiredUploads().catch(() => {});
+    cleanupExpiredUploads().catch((err) => logger.warn('后台清理过期文件失败', { error: err.message }));
 
     return sendSuccess(
       reply,

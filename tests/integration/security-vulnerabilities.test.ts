@@ -1042,12 +1042,12 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
      * 3. 验证不会出现0扣费
      *
      * 说明:
-     * 系统采用后扣费模式（在会话结束时扣费）
-     * - 创建会话时不扣费
-     * - 结束会话时根据使用时长扣费
+     * 系统采用预扣费模式（在会话创建时预扣1分，结束时多退少补）
+     * - 创建会话时预扣1分
+     * - 结束会话时根据实际使用时长结算（多退少补）
      * - 最少扣费1分钟（1积分）
      */
-    it('TIER-048: 计费逻辑验证 - 后扣费模式，最短会话扣费1分钟', { timeout: 60000 }, async () => {
+    it('TIER-048: 计费逻辑验证 - 预扣费模式，最短会话扣费1分钟', { timeout: 60000 }, async () => {
       const user = testUsers[0];
 
       console.log('\n[步骤 1] 记录用户初始积分...');
@@ -1055,7 +1055,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       const initialCredits = userBefore!.credits;
       console.log(`   初始积分: ${initialCredits}`);
 
-      console.log('\n[步骤 2] 创建会话（不扣费，使用API Key）...');
+      console.log('\n[步骤 2] 创建会话（预扣1分，使用API Key）...');
       const createResponse = await managerApp.inject({
         method: 'POST',
         url: '/api/sessions',
@@ -1070,10 +1070,10 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
       const sessionId = sessionData.data.id; // 响应格式: { success: true, data: { id: ... } }
       console.log(`   会话ID: ${sessionId}`);
 
-      // 验证创建会话后积分未变（后扣费）
+      // 验证创建会话后积分已预扣1分（预扣费模式）
       const userAfterCreate = await UserModel.findById(user.id);
-      expect(userAfterCreate!.credits).toBe(initialCredits);
-      console.log('   ✅ 创建会话后积分未变（后扣费模式）');
+      expect(userAfterCreate!.credits).toBe(initialCredits - 1);
+      console.log('   ✅ 创建会话后积分已预扣1分（预扣费模式）');
 
       console.log('\n[步骤 3] 立即结束会话（< 1分钟）...');
       await new Promise((resolve) => setTimeout(resolve, 1100)); // 等待1.1秒以确保duration至少为1秒

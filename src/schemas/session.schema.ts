@@ -145,3 +145,17 @@ export type SessionBase = z.infer<typeof sessionBaseSchema>;
 export type SessionDetail = z.infer<typeof sessionDetailSchema>;
 export type CreateSessionResponse = z.infer<typeof createSessionResponseSchema>;
 export type SessionListItem = z.infer<typeof sessionListItemSchema>;
+
+export const injectFileRequestSchema = z.object({
+  machineFilePath: z.string().min(1),
+  selector: z.string().min(1),
+  frameSelector: z.string().optional(),
+});
+
+export const uploadUrlRequestSchema = z.object({
+  url: z.string().url(),
+  selector: z.string().min(1),
+  frameSelector: z.string().optional(),
+  filename: z.string().optional(),
+  downloadTimeout: z.number().int().positive().optional(),
+});

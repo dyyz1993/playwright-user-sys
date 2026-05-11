@@ -1,7 +1,7 @@
 import { logger } from '@shared/utils/logger.js';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
-import { MachineModel, UpdateMachineInput } from '../models/machine.model.js';
+import { z, ZodError } from 'zod';
+import { MachineModel } from '../models/machine.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { sendSuccess, sendError, sendCreated, sendPaginated, getSafeErrorMessage } from '../utils/response.js';
 import { PaginationQuery } from '@shared/types/index.js';
@@ -9,6 +9,8 @@ import {
   registerMachineRequestSchema,
   updateMachineStatusRequestSchema,
   paginationQuerySchema,
+  batchOperationRequestSchema,
+  updateMachineInputSchema,
 } from '../schemas/index.js';
 import { toMachineMemoryDTO, toMachineInfoDTO } from '@shared/mappers/index.js';
 import { IdParamRoute, CleanupOldMachinesBodyRoute } from '@shared/types/routes.js';
@@ -426,11 +428,11 @@ export async function healthCheck(request: FastifyRequest<IdParamRoute>, reply: 
 // 批量健康检查
 export async function batchHealthCheck(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const { machineIds } = request.body as { machineIds: string[] };
-
-    if (!Array.isArray(machineIds) || machineIds.length === 0) {
+    const parsed = batchOperationRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
       return sendError(reply, '无效的机器 ID 列表', 400);
     }
+    const { machineIds } = parsed.data;
 
     const results = await MachineModel.batchHealthCheck(machineIds);
 
@@ -453,7 +455,7 @@ export async function batchHealthCheck(request: FastifyRequest, reply: FastifyRe
 export async function updateMachineConfig(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
     const machineId = request.params.id;
-    const updateData = request.body as UpdateMachineInput;
+    const updateData = updateMachineInputSchema.parse(request.body);
 
     // 检查机器是否存在
     const existingMachine = await MachineModel.findById(machineId);

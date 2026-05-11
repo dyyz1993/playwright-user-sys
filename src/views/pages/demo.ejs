@@ -331,7 +331,7 @@
       $('browser-section').classList.remove('hidden');
       $('browser-section').classList.add('flex');
       var viewerFrame = $('browser-viewer-frame');
-      viewerFrame.src = '/browser-viewer/index.html?sessionId=' + sessionId + '&wsHost=' + window.location.host;
+      viewerFrame.src = '/browser-viewer/index.html?sessionId=' + sessionId;
       viewerFrame.onload = function() {
         $('connecting-overlay').classList.add('hidden');
       };

@@ -64,8 +64,9 @@ export class UserModel {
   }
 
   // 通过 ID 查找用户
-  static async findById(id: number): Promise<User | null> {
-    const result = await db('users').where({ id }).first();
+  static async findById(id: number, trx?: Knex.Transaction): Promise<User | null> {
+    const queryBuilder = trx || db;
+    const result = await queryBuilder('users').where({ id }).first();
     return result ?? null;
   }
 
@@ -130,18 +131,20 @@ export class UserModel {
 
   // 扣除点数
   static async deductCredits(id: number, amount: number, trx?: Knex.Transaction): Promise<User | null> {
-    const user = await this.findById(id);
-    if (!user) return null;
+    const queryBuilder = trx || db;
 
-    if (user.credits < amount) {
+    const affectedRows = await queryBuilder('users')
+      .where({ id })
+      .where('credits', '>=', amount)
+      .decrement('credits', amount);
+
+    if (affectedRows === 0) {
       throw new Error('点数不足');
     }
-    logger.info(`🔴 扣除点数: ${amount} 点, 用户 ${id} 剩余 ${user.credits - amount} 点`);
 
-    const queryBuilder = trx || db;
-    await queryBuilder('users').where({ id }).decrement('credits', amount);
+    logger.info(`🔴 扣除点数: ${amount} 点, 用户 ${id}`);
 
-    return trx ? user : this.findById(id);
+    return this.findById(id, trx);
   }
 
   /**

@@ -878,10 +878,10 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
         return data.data.id;
       });
 
-      console.log('\n[步骤 2] 验证创建后积分未变化...');
+      console.log('\n[步骤 2] 验证创建后积分已预扣...');
       const userAfterCreate = await UserModel.findById(user.id);
-      expect(userAfterCreate!.credits).toBe(initialCredits);
-      console.log('   ✅ 创建会话后积分未扣除（后扣费模式）');
+      expect(userAfterCreate!.credits).toBe(initialCredits - successfulCreates.length);
+      console.log(`   ✅ 创建会话后积分已预扣 ${successfulCreates.length} 分`);
 
       console.log('\n[步骤 3] 使用会话3秒...');
       await new Promise((resolve) => setTimeout(resolve, 3000));

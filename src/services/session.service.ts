@@ -73,32 +73,38 @@ export async function releaseSession(options: ReleaseSessionOptions): Promise<Re
     }
 
     if (creditsDiff !== 0) {
-      const user = await trx('users').where({ id: userId }).first();
-      if (user) {
-        if (creditsDiff > 0) {
-          await trx('users').where({ id: userId }).decrement('credits', creditsDiff);
-        } else {
-          await trx('users').where({ id: userId }).increment('credits', -creditsDiff);
+      if (creditsDiff > 0) {
+        const absDiff = creditsDiff;
+        const affected = await trx('users')
+          .where({ id: userId })
+          .where('credits', '>=', absDiff)
+          .decrement('credits', absDiff);
+        if (affected === 0) {
+          await trx('users').where({ id: userId }).update({ credits: 0, updated_at: now });
         }
-
-        const balanceAfter = user.credits + -creditsDiff;
-        await trx('credit_history').insert({
-          user_id: userId,
-          amount: Math.abs(creditsDiff),
-          action: creditsDiff > 0 ? 'use' : 'refund',
-          balance_after: balanceAfter,
-          description: `Session settlement: ${sessionId.substring(0, 8)}... (${duration}s, pre-deducted: ${initialCreditsUsed}, actual: ${creditsUsed})`,
-          metadata: JSON.stringify({
-            session_id: sessionId,
-            duration,
-            pre_deducted: initialCreditsUsed,
-            actual: creditsUsed,
-            diff: creditsDiff,
-          }),
-          created_at: now,
-          updated_at: now,
-        });
+      } else {
+        await trx('users').where({ id: userId }).increment('credits', -creditsDiff);
       }
+
+      const userAfterSettlement = await trx('users').where({ id: userId }).first();
+      const balanceAfter = userAfterSettlement!.credits;
+
+      await trx('credit_history').insert({
+        user_id: userId,
+        amount: Math.abs(creditsDiff),
+        action: creditsDiff > 0 ? 'use' : 'refund',
+        balance_after: balanceAfter,
+        description: `Session settlement: ${sessionId.substring(0, 8)}... (${duration}s, pre-deducted: ${initialCreditsUsed}, actual: ${creditsUsed})`,
+        metadata: JSON.stringify({
+          session_id: sessionId,
+          duration,
+          pre_deducted: initialCreditsUsed,
+          actual: creditsUsed,
+          diff: creditsDiff,
+        }),
+        created_at: now,
+        updated_at: now,
+      });
     }
 
     if (machineId) {
@@ -187,13 +193,23 @@ export async function createBrowserSession(
 
     const now = new Date();
     if (!isDemo) {
-      await trx('users').where({ id: userId }).decrement('credits', SESSION_COST);
+      const affectedRows = await trx('users')
+        .where({ id: userId })
+        .where('credits', '>=', SESSION_COST)
+        .decrement('credits', SESSION_COST);
+
+      if (affectedRows === 0) {
+        throw new Error('积分不足，无法创建会话');
+      }
+
+      const userAfterDeduction = await trx('users').where({ id: userId }).first();
+      const balanceAfter = userAfterDeduction!.credits;
 
       await trx('credit_history').insert({
         user_id: userId,
         amount: SESSION_COST,
         action: 'use',
-        balance_after: user.credits - SESSION_COST,
+        balance_after: balanceAfter,
         description: `Session pre-deduct: user ${userId}`,
         metadata: JSON.stringify({ type: 'pre_deduct' }),
         created_at: now,

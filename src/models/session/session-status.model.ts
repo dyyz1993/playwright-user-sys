@@ -35,106 +35,119 @@ export const statusMethods = {
   async markDisconnected(id: string, duration: number): Promise<Session | null> {
     const { logger } = await import('@shared/utils/logger.js');
 
-    const session = await crudMethods.findById(id);
-    if (!session) {
-      logger.error(`标记会话已断开失败: 会话不存在 (${id})`);
-      return null;
-    }
-
-    const initialCreditsUsed = session.credits_used || 0;
-    const userId = session.user_id;
-
-    let finalDuration = duration;
-    if (finalDuration === 0 && session.start_time) {
-      const now = new Date();
-      const rawSession = await db('sessions').where({ id }).select('start_time').first();
-      const rawStartTime = rawSession?.start_time;
-
-      if (rawStartTime && typeof rawStartTime === 'string') {
-        const startTime = new Date(rawStartTime.replace(' ', 'T') + '.000Z');
-        finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
-        logger.info(
-          `根据开始时间计算持续时间 (${id}): 原始时间=${rawStartTime}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`
-        );
-      } else {
-        const startTime = new Date(session.start_time);
-        finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
-        logger.info(`降级处理：使用 Date 对象计算持续时间 (${id}): 持续时间=${finalDuration}秒`);
-      }
-    }
-
-    if (finalDuration < 0) {
-      finalDuration = 0;
-      logger.warn(`持续时间为负数，重置为0 (${id})`);
-    }
-
-    const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
-
-    logger.info(
-      `标记会话已断开 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${initialCreditsUsed}点`
-    );
-
-    try {
-      const updateResult = await db('sessions')
-        .where({ id })
-        .whereNotIn('status', [
-          SessionStatus.DISCONNECTED,
-          SessionStatus.ERROR,
-          SessionStatus.EXPIRED,
-          SessionStatus.COMPLETED,
-        ])
-        .update({
-          status: SessionStatus.DISCONNECTED,
-          end_time: new Date(),
-          duration: finalDuration,
-          credits_used: creditsUsed,
-          updated_at: new Date(),
-        });
-
-      const rowsAffected = Array.isArray(updateResult) ? updateResult[0] : updateResult;
-
-      if (rowsAffected === 0) {
-        logger.info(`会话已是终态或已被其他请求更新 (${id}), 直接返回当前状态`);
-        return await crudMethods.findById(id);
+    return db.transaction(async (trx) => {
+      const session = await trx('sessions').where({ id }).first();
+      if (!session) {
+        logger.error(`标记会话已断开失败: 会话不存在 (${id})`);
+        return null;
       }
 
-      logger.info(`数据库更新成功 (${id}), 影响行数: ${rowsAffected}`);
+      const initialCreditsUsed = session.credits_used || 0;
+      const userId = session.user_id;
 
-      const creditsToDeduct = Math.max(0, creditsUsed - initialCreditsUsed);
+      let finalDuration = duration;
+      if (finalDuration === 0 && session.start_time) {
+        const now = new Date();
+        const rawSession = await trx('sessions').where({ id }).select('start_time').first();
+        const rawStartTime = rawSession?.start_time;
 
-      if (creditsToDeduct > 0) {
-        try {
-          const { UserModel } = await import('../user.model.js');
-          const user = await UserModel.findById(userId);
-          const balanceAfter = user ? user.credits - creditsToDeduct : 0;
-
-          await UserModel.deductCredits(userId, creditsToDeduct);
+        if (rawStartTime && typeof rawStartTime === 'string') {
+          const startTime = new Date(rawStartTime.replace(' ', 'T') + '.000Z');
+          finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
           logger.info(
-            `🔴 扣除点数: ${creditsToDeduct} 点, 用户 ${userId} (初始${initialCreditsUsed} -> ${creditsUsed})`
+            `根据开始时间计算持续时间 (${id}): 原始时间=${rawStartTime}, 当前时间=${now.toISOString()}, 持续时间=${finalDuration}秒`
           );
-
-          const { CreditHistoryModel } = await import('../credit-history.model.js');
-          await CreditHistoryModel.create({
-            user_id: userId,
-            amount: creditsToDeduct,
-            action: 'use',
-            balance_after: balanceAfter,
-            description: `Session usage: ${id.substring(0, 8)}... (${finalDuration}s)`,
-            metadata: { session_id: id, duration: finalDuration },
-          });
-          logger.info(`✅ 创建积分历史记录: 用户 ${userId}, 扣除 ${creditsToDeduct} 点, 剩余 ${balanceAfter} 点`);
-        } catch (error) {
-          logger.error(`扣除用户 ${userId} 的点数失败:`, error);
+        } else {
+          const startTime = new Date(session.start_time);
+          finalDuration = Math.ceil((now.getTime() - startTime.getTime()) / 1000);
+          logger.info(`降级处理：使用 Date 对象计算持续时间 (${id}): 持续时间=${finalDuration}秒`);
         }
-      } else {
-        logger.info(`无需额外扣费 (${id}), credits_used 未增加`);
       }
 
-      return await crudMethods.findById(id);
-    } catch (error) {
-      logger.error(`标记会话已断开失败 (${id}):`, error);
-      return null;
-    }
+      if (finalDuration < 0) {
+        finalDuration = 0;
+        logger.warn(`持续时间为负数，重置为0 (${id})`);
+      }
+
+      const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
+
+      logger.info(
+        `标记会话已断开 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${initialCreditsUsed}点`
+      );
+
+      try {
+        const updateResult = await trx('sessions')
+          .where({ id })
+          .whereNotIn('status', [
+            SessionStatus.DISCONNECTED,
+            SessionStatus.ERROR,
+            SessionStatus.EXPIRED,
+            SessionStatus.COMPLETED,
+          ])
+          .update({
+            status: SessionStatus.DISCONNECTED,
+            end_time: new Date(),
+            duration: finalDuration,
+            credits_used: creditsUsed,
+            updated_at: new Date(),
+          });
+
+        const rowsAffected = Array.isArray(updateResult) ? updateResult[0] : updateResult;
+
+        if (rowsAffected === 0) {
+          logger.info(`会话已是终态或已被其他请求更新 (${id}), 直接返回当前状态`);
+          return await crudMethods.findById(id);
+        }
+
+        logger.info(`数据库更新成功 (${id}), 影响行数: ${rowsAffected}`);
+
+        const creditsToDeduct = Math.max(0, creditsUsed - initialCreditsUsed);
+
+        if (creditsToDeduct > 0) {
+          try {
+            const { UserModel } = await import('../user.model.js');
+            const affectedRows = await trx('users')
+              .where({ id: userId })
+              .where('credits', '>=', creditsToDeduct)
+              .decrement('credits', creditsToDeduct);
+
+            if (affectedRows === 0) {
+              await trx('users').where({ id: userId }).update({ credits: 0, updated_at: new Date() });
+            }
+
+            const userAfter = await trx('users').where({ id: userId }).first();
+            const balanceAfter = userAfter ? userAfter.credits : 0;
+
+            logger.info(
+              `🔴 扣除点数: ${creditsToDeduct} 点, 用户 ${userId} (初始${initialCreditsUsed} -> ${creditsUsed}), 剩余 ${balanceAfter}`
+            );
+
+            const { CreditHistoryModel } = await import('../credit-history.model.js');
+            await CreditHistoryModel.create(
+              {
+                user_id: userId,
+                amount: creditsToDeduct,
+                action: 'use',
+                balance_after: balanceAfter,
+                description: `Session usage: ${id.substring(0, 8)}... (${finalDuration}s)`,
+                metadata: { session_id: id, duration: finalDuration },
+              },
+              trx
+            );
+            logger.info(`✅ 创建积分历史记录: 用户 ${userId}, 扣除 ${creditsToDeduct} 点, 剩余 ${balanceAfter} 点`);
+          } catch (error) {
+            logger.error(`扣除用户 ${userId} 的点数失败:`, error);
+          }
+        } else {
+          logger.info(`无需额外扣费 (${id}), credits_used 未增加`);
+        }
+
+        return await crudMethods.findById(id);
+      } catch (error) {
+        logger.error(`标记会话已断开失败 (${id}):`, error);
+        return null;
+      }
+    });
   },
 
   async markExpired(id: string, duration: number): Promise<Session | null> {

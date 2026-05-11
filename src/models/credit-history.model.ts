@@ -1,3 +1,4 @@
+import { Knex } from 'knex';
 import { db } from '../config/database.js';
 import { CreditHistoryRow } from '@shared/types/tables.js';
 
@@ -10,9 +11,13 @@ export interface CreditHistory extends Omit<CreditHistoryRow, 'metadata' | 'crea
 // 点数历史记录模型类
 export class CreditHistoryModel {
   // 创建点数历史记录
-  static async create(data: Omit<CreditHistory, 'id' | 'created_at' | 'updated_at'>): Promise<CreditHistory> {
+  static async create(
+    data: Omit<CreditHistory, 'id' | 'created_at' | 'updated_at'>,
+    trx?: Knex.Transaction
+  ): Promise<CreditHistory> {
     const now = new Date();
-    const result = await db('credit_history').insert({
+    const queryBuilder = trx || db;
+    const result = await queryBuilder('credit_history').insert({
       ...data,
       created_at: now,
       updated_at: now,

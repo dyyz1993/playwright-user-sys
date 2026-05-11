@@ -345,11 +345,11 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
       console.log(`   会话总数: ${sessions.total}, 活跃会话: ${createdSessions.length}`);
       expect(createdSessions.length).toBe(successfulResults.length);
 
-      console.log('\n[步骤 4] 验证积分未扣费（后扣费模式）...');
+      console.log('\n[步骤 4] 验证积分预扣费（预扣模式）...');
       for (const result of successfulResults) {
         const userRecord = await UserModel.findById(result.userId);
         console.log(`   用户 ${result.userId} 创建后积分: ${userRecord!.credits}`);
-        expect(userRecord!.credits).toBe(creditsBefore[result.userId]);
+        expect(userRecord!.credits).toBe(creditsBefore[result.userId] - 1);
       }
 
       console.log('\n✅ TIER-031 测试通过: 并发会话创建验证完成');

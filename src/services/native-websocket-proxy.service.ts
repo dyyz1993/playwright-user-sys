@@ -455,9 +455,6 @@ export class NativeWebSocketProxyService {
         // Pipe: client → machine only (raw WS frames)
         // machine → client is already handled by the existing on('data') handler below
         socket.on('data', (chunk: Buffer) => {
-          if (process.env.DEBUG_WS_BRIDGE === '1') {
-            logger.info(`WS bridge C→M: ${chunk.length} bytes (sessionId: ${sessionId})`);
-          }
           if (!netSocket.destroyed && netSocket.writable) {
             netSocket.write(chunk);
           }
@@ -501,9 +498,6 @@ export class NativeWebSocketProxyService {
         }
         // If headers already processed, data goes through bridge
         else if (machineHeaderReceived && !socket.destroyed && socket.writable) {
-          if (process.env.DEBUG_WS_BRIDGE === '1') {
-            logger.info(`WS bridge M→C: ${chunk.length} bytes (sessionId: ${sessionId})`);
-          }
           socket.write(chunk);
         }
       });

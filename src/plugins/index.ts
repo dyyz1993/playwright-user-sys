@@ -165,5 +165,12 @@ export default fp(async function (fastify: FastifyInstance) {
     decorateReply: false, // 避免与其他静态文件插件冲突
   });
 
+  // 注册 browser-viewer 静态文件插件
+  await fastify.register(staticFiles, {
+    root: path.join(rootDir, 'public/browser-viewer'),
+    prefix: '/browser-viewer/',
+    decorateReply: false,
+  });
+
   logger.info('所有插件注册完成');
 });

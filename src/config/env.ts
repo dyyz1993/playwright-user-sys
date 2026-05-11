@@ -1,4 +1,3 @@
-import { logger } from '@shared/utils/logger.js';
 import { config } from 'dotenv';
 import { z } from 'zod';
 import path from 'path';
@@ -71,7 +70,7 @@ const envSchema = z.object({
 const _env = envSchema.safeParse(process.env);
 
 if (!_env.success) {
-  logger.error('❌ 环境变量验证失败:', _env.error.format());
+  console.error('❌ 环境变量验证失败:', _env.error.format());
   throw new Error('环境变量验证失败');
 }
 

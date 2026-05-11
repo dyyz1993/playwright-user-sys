@@ -101,6 +101,16 @@ export const statusMethods = {
 
         logger.info(`数据库更新成功 (${id}), 影响行数: ${rowsAffected}`);
 
+        if (session.machine_id) {
+          await trx('machines')
+            .where({ id: session.machine_id })
+            .update({
+              instance_count: trx.raw('CASE WHEN instance_count > 0 THEN instance_count - 1 ELSE 0 END'),
+              updated_at: new Date(),
+            });
+          logger.info(`已递减机器实例计数 (${session.machine_id}), 会话: ${id}`);
+        }
+
         const creditsToDeduct = Math.max(0, creditsUsed - initialCreditsUsed);
 
         if (creditsToDeduct > 0) {

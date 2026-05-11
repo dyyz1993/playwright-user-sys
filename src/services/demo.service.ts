@@ -8,27 +8,32 @@ import { hashPassword } from '../utils/auth.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const DEMO_USER_USERNAME = 'demo_user';
-const DEMO_SESSION_TIMEOUT = parseInt(process.env.DEMO_SESSION_TIMEOUT || '300', 10);
-const DEMO_MAX_SESSIONS = parseInt(process.env.DEMO_MAX_SESSIONS || '10', 10);
+const DEMO_MAX_SESSIONS = parseInt(process.env.DEMO_MAX_SESSIONS || '20', 10);
+const DEMO_IDLE_TIMEOUT = parseInt(process.env.DEMO_IDLE_TIMEOUT || '300', 10);
+const DEMO_ABSOLUTE_TIMEOUT = 30 * 60 * 1000;
 
 interface DemoSessionTracker {
   sessionId: string;
-  ip: string;
   createdAt: Date;
   expiresAt: Date;
-  timeoutHandle: ReturnType<typeof setTimeout>;
+  absoluteTimeoutHandle: ReturnType<typeof setTimeout>;
   lastActivity: Date;
+  creditsUsed: number;
 }
 
 export class DemoService {
   private activeSessions = new Map<string, DemoSessionTracker>();
-  private ipSessions = new Map<string, string>();
   private demoUserId: number | null = null;
   private demoApiKey: string | null = null;
   private _initialized = false;
+  private cleanupInterval: ReturnType<typeof setInterval>;
 
   get initialized(): boolean {
     return this._initialized;
+  }
+
+  constructor() {
+    this.cleanupInterval = setInterval(() => this.cleanupIdleSessions(), 60000);
   }
 
   async initialize(): Promise<void> {
@@ -65,19 +70,14 @@ export class DemoService {
     }
   }
 
-  async createSession(ip: string): Promise<{ sessionId: string; expiresAt: Date; maxDuration: number }> {
+  async createSession(ip: string): Promise<{
+    sessionId: string;
+    demoApiKey: string;
+    expiresAt: Date;
+    maxDuration: number;
+  }> {
     if (process.env.DEMO_ENABLED === 'false') {
       throw new Error('Demo 功能已禁用');
-    }
-
-    const existingSessionId = this.ipSessions.get(ip);
-    if (existingSessionId) {
-      const tracker = this.activeSessions.get(existingSessionId);
-      if (tracker && tracker.expiresAt > new Date()) {
-        throw new Error('您已有一个进行中的体验会话');
-      }
-      this.ipSessions.delete(ip);
-      this.activeSessions.delete(existingSessionId);
     }
 
     if (this.activeSessions.size >= DEMO_MAX_SESSIONS) {
@@ -98,34 +98,38 @@ export class DemoService {
     );
 
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + DEMO_SESSION_TIMEOUT * 1000);
+    const expiresAt = new Date(now.getTime() + DEMO_ABSOLUTE_TIMEOUT);
 
-    const timeoutHandle = setTimeout(() => {
+    const absoluteTimeoutHandle = setTimeout(() => {
+      logger.info(`Demo 会话绝对超时释放: ${session.sessionId}`);
       this.releaseSession(session.sessionId).catch((err) => {
         logger.warn(`Demo 会话超时释放失败: ${session.sessionId}`, err);
       });
-    }, DEMO_SESSION_TIMEOUT * 1000);
+    }, DEMO_ABSOLUTE_TIMEOUT);
 
     const tracker: DemoSessionTracker = {
       sessionId: session.sessionId,
-      ip,
       createdAt: now,
       expiresAt,
-      timeoutHandle,
+      absoluteTimeoutHandle,
       lastActivity: now,
+      creditsUsed: 0,
     };
     this.activeSessions.set(session.sessionId, tracker);
-    this.ipSessions.set(ip, session.sessionId);
 
-    logger.info(`Demo 会话已创建: ${session.sessionId}, IP: ${ip}, 超时: ${DEMO_SESSION_TIMEOUT}s`);
-    return { sessionId: session.sessionId, expiresAt, maxDuration: DEMO_SESSION_TIMEOUT };
+    logger.info(`Demo 会话已创建: ${session.sessionId}, IP: ${ip}, 空闲超时: ${DEMO_IDLE_TIMEOUT}s`);
+    return {
+      sessionId: session.sessionId,
+      demoApiKey: this.demoApiKey!,
+      expiresAt,
+      maxDuration: DEMO_IDLE_TIMEOUT,
+    };
   }
 
   async releaseSession(sessionId: string): Promise<void> {
     const tracker = this.activeSessions.get(sessionId);
     if (tracker) {
-      clearTimeout(tracker.timeoutHandle);
-      this.ipSessions.delete(tracker.ip);
+      clearTimeout(tracker.absoluteTimeoutHandle);
       this.activeSessions.delete(sessionId);
     }
 
@@ -144,22 +148,56 @@ export class DemoService {
     }
   }
 
-  getSessionStatus(sessionId: string): { status: string; remainingSeconds: number } | null {
+  getSessionStatus(
+    sessionId: string
+  ): { status: string; remainingSeconds: number; creditsUsed: number; elapsedSeconds: number } | null {
     const tracker = this.activeSessions.get(sessionId);
     if (!tracker) return null;
 
-    const remaining = Math.max(0, Math.floor((tracker.expiresAt.getTime() - Date.now()) / 1000));
+    const elapsed = Math.floor((Date.now() - tracker.createdAt.getTime()) / 1000);
+    const idleMs = Date.now() - tracker.lastActivity.getTime();
+    const remaining = Math.max(0, DEMO_IDLE_TIMEOUT - Math.floor(idleMs / 1000));
     return {
-      status: tracker.expiresAt > new Date() ? 'active' : 'expired',
+      status: idleMs < DEMO_IDLE_TIMEOUT * 1000 ? 'active' : 'expired',
       remainingSeconds: remaining,
+      creditsUsed: tracker.creditsUsed,
+      elapsedSeconds: elapsed,
     };
   }
 
   refreshActivity(sessionId: string): boolean {
     const tracker = this.activeSessions.get(sessionId);
-    if (!tracker || tracker.expiresAt <= new Date()) return false;
+    if (!tracker) return false;
+    const idleMs = Date.now() - tracker.lastActivity.getTime();
+    if (idleMs > DEMO_IDLE_TIMEOUT * 1000) return false;
     tracker.lastActivity = new Date();
     return true;
+  }
+
+  addCreditsUsed(sessionId: string, credits: number): void {
+    const tracker = this.activeSessions.get(sessionId);
+    if (tracker) {
+      tracker.creditsUsed += credits;
+    }
+  }
+
+  getActiveCount(): number {
+    return this.activeSessions.size;
+  }
+
+  getMaxSessions(): number {
+    return DEMO_MAX_SESSIONS;
+  }
+
+  private async cleanupIdleSessions(): Promise<void> {
+    const now = Date.now();
+    for (const [sessionId, tracker] of this.activeSessions) {
+      const idleMs = now - tracker.lastActivity.getTime();
+      if (idleMs > DEMO_IDLE_TIMEOUT * 1000) {
+        logger.info(`Demo 会话空闲超时: ${sessionId}, 空闲 ${Math.floor(idleMs / 1000)}s`);
+        await this.releaseSession(sessionId);
+      }
+    }
   }
 
   private async cleanupStaleSessions(): Promise<void> {
@@ -177,5 +215,9 @@ export class DemoService {
 
   get demoUserApiKey(): string | null {
     return this.demoApiKey;
+  }
+
+  destroy(): void {
+    clearInterval(this.cleanupInterval);
   }
 }

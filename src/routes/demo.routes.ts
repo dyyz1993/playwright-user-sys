@@ -16,7 +16,7 @@ export default async function demoRoutes(fastify: FastifyInstance) {
     return reply.view('pages/demo', {
       title: '远程浏览器体验',
       demoEnabled: process.env.DEMO_ENABLED !== 'false',
-      maxDuration: parseInt(process.env.DEMO_SESSION_TIMEOUT || '300', 10),
+      idleTimeout: parseInt(process.env.DEMO_IDLE_TIMEOUT || '300', 10),
     });
   });
 
@@ -33,7 +33,7 @@ export default async function demoRoutes(fastify: FastifyInstance) {
       return reply.code(201).send({ success: true, data: result });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '创建会话失败';
-      const code = msg.includes('已有') ? 429 : msg.includes('较多') ? 503 : 500;
+      const code = msg.includes('较多') ? 503 : 500;
       return reply.code(code).send({ success: false, error: msg });
     }
   });
@@ -45,6 +45,25 @@ export default async function demoRoutes(fastify: FastifyInstance) {
       return reply.code(404).send({ success: false, error: '会话不存在' });
     }
     return reply.send({ success: true, data: { sessionId: id, ...status } });
+  });
+
+  fastify.post('/api/demo/activity', async (request, reply) => {
+    const { sessionId } = request.body as { sessionId?: string };
+    if (!sessionId) {
+      return reply.code(400).send({ success: false, error: '缺少 sessionId' });
+    }
+    const refreshed = demoService.refreshActivity(sessionId);
+    return reply.send({ success: refreshed });
+  });
+
+  fastify.get('/api/demo/stats', async (_request, reply) => {
+    return reply.send({
+      success: true,
+      data: {
+        activeSessions: demoService.getActiveCount(),
+        maxSessions: demoService.getMaxSessions(),
+      },
+    });
   });
 
   fastify.delete('/api/demo/session', async (request, reply) => {

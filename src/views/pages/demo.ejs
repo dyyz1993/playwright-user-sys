@@ -69,6 +69,27 @@
     .preset-btn { transition: all 0.15s ease; }
     .preset-btn:hover { transform: translateY(-1px); }
     .status-pill { font-variant-numeric: tabular-nums; }
+    .demo-btn {
+      transition: all 0.15s ease;
+    }
+    .demo-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.1);
+    }
+    .demo-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .activity-log-item {
+      animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    #side-panel::-webkit-scrollbar { width: 4px; }
+    #side-panel::-webkit-scrollbar-track { background: transparent; }
+    #side-panel::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 2px; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col overflow-hidden">
@@ -91,14 +112,14 @@
       </button>
       <div id="hero-error" class="mt-4 text-red-400 text-sm hidden"></div>
       <div class="mt-8 flex items-center justify-center gap-6 text-xs text-slate-600">
-        <span><i class="fas fa-clock mr-1"></i>限时 5 分钟</span>
+        <span><i class="fas fa-clock mr-1"></i>5 分钟空闲自动释放</span>
         <span><i class="fas fa-shield-alt mr-1"></i>无需注册</span>
         <span><i class="fas fa-bolt mr-1"></i>即开即用</span>
       </div>
     </div>
   </div>
 
-  <!-- ========== 浏览器画面区域（初始隐藏） ========== -->
+  <!-- ========== 浏览器画面 + 侧边面板（初始隐藏） ========== -->
   <div id="browser-section" class="hidden flex-1 flex flex-col min-h-0">
     <!-- 顶部导航栏 -->
     <div class="glass border-b border-slate-800/50 px-4 py-2 flex items-center gap-3 shrink-0">
@@ -133,43 +154,123 @@
         <button onclick="navigateTo('https://example.com')" class="preset-btn px-2.5 py-1 rounded-md text-xs bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700/60 border border-slate-700/30">Example</button>
       </div>
 
+      <div class="flex items-center gap-1.5 ml-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-400 pulse-dot"></span>
+        <span id="header-countdown" class="text-amber-400 font-medium status-pill text-xs">05:00</span>
+      </div>
+
       <button onclick="endDemo()" class="ml-2 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors">
         <i class="fas fa-times mr-1"></i>结束
       </button>
     </div>
 
-    <!-- 画面容器 -->
-    <div id="video-container" class="flex-1 relative bg-black min-h-0">
-      <img id="browser-screen" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="远程浏览器画面">
-      <div id="touch-layer" class="touch-layer"></div>
-      <!-- 连接中遮罩 -->
-      <div id="connecting-overlay" class="absolute inset-0 bg-black/80 flex items-center justify-center z-20">
-        <div class="text-center">
-          <i class="fas fa-spinner fa-spin text-primary-400 text-3xl mb-3"></i>
-          <p class="text-slate-300 text-sm">正在连接远程浏览器...</p>
+    <!-- 主体：画面 + 侧边面板 -->
+    <div class="flex-1 flex min-h-0">
+      <!-- 画面容器 -->
+      <div id="video-container" class="flex-1 relative bg-black min-h-0">
+        <img id="browser-screen" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="远程浏览器画面">
+        <div id="touch-layer" class="touch-layer"></div>
+        <!-- 连接中遮罩 -->
+        <div id="connecting-overlay" class="absolute inset-0 bg-black/80 flex items-center justify-center z-20">
+          <div class="text-center">
+            <i class="fas fa-spinner fa-spin text-primary-400 text-3xl mb-3"></i>
+            <p class="text-slate-300 text-sm">正在连接远程浏览器...</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 底部状态栏 -->
-    <div class="glass border-t border-slate-800/50 px-4 py-2 flex items-center justify-between text-xs shrink-0">
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-1.5">
-          <span id="conn-dot" class="w-1.5 h-1.5 rounded-full bg-yellow-400 pulse-dot"></span>
-          <span id="conn-status" class="text-slate-400">连接中</span>
+      <!-- ========== 功能面板 ========== -->
+      <div id="side-panel" class="w-72 shrink-0 border-l border-slate-800/50 bg-slate-900/50 overflow-y-auto flex flex-col">
+        <!-- 会话信息 -->
+        <div class="p-3 border-b border-slate-800/30">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <i class="fas fa-info-circle mr-1 text-primary-400"></i>会话信息
+          </h3>
+          <div class="space-y-1.5 text-xs">
+            <div class="flex justify-between">
+              <span class="text-slate-500">状态</span>
+              <span id="panel-status" class="text-green-400"><i class="fas fa-circle text-[6px] mr-1"></i>已连接</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">已运行</span>
+              <span id="panel-elapsed" class="text-slate-300 status-pill">00:00</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">空闲剩余</span>
+              <span id="panel-remaining" class="text-amber-400 font-medium status-pill">05:00</span>
+            </div>
+          </div>
         </div>
-        <div class="flex items-center gap-1.5 text-slate-500">
-          <i class="fas fa-tachometer-alt"></i>
-          <span id="fps-display" class="status-pill">-- FPS</span>
+
+        <!-- 积分消耗 -->
+        <div class="p-3 border-b border-slate-800/30">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <i class="fas fa-coins mr-1 text-amber-400"></i>积分消耗
+          </h3>
+          <div class="space-y-1.5 text-xs">
+            <div class="flex justify-between">
+              <span class="text-slate-500">已消耗</span>
+              <span id="panel-credits" class="text-slate-300">0 积分</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">速率</span>
+              <span class="text-slate-300">~1 积分/分钟</span>
+            </div>
+          </div>
         </div>
-        <div class="flex items-center gap-1.5 text-slate-500">
-          <i class="fas fa-signal"></i>
-          <span id="bandwidth-display" class="status-pill">-- KB/s</span>
+
+        <!-- 功能体验 -->
+        <div class="p-3 border-b border-slate-800/30">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <i class="fas fa-tools mr-1 text-purple-400"></i>功能体验
+          </h3>
+          <div class="space-y-2">
+            <button id="btn-screenshot" onclick="demoScreenshot()" disabled
+              class="demo-btn w-full px-3 py-2 rounded-lg text-xs bg-primary-500/10 text-primary-300 border border-primary-500/20 hover:bg-primary-500/20 text-left">
+              <i class="fas fa-camera mr-2"></i>截图体验
+            </button>
+            <div id="screenshot-preview" class="hidden">
+              <img id="demo-screenshot" class="w-full rounded border border-slate-700/50" alt="截图预览">
+            </div>
+
+            <button id="btn-upload" onclick="demoFileUpload()" disabled
+              class="demo-btn w-full px-3 py-2 rounded-lg text-xs bg-green-500/10 text-green-300 border border-green-500/20 hover:bg-green-500/20 text-left">
+              <i class="fas fa-upload mr-2"></i>文件上传体验
+            </button>
+
+            <button id="btn-url-download" onclick="demoUrlDownload()" disabled
+              class="demo-btn w-full px-3 py-2 rounded-lg text-xs bg-purple-500/10 text-purple-300 border border-purple-500/20 hover:bg-purple-500/20 text-left">
+              <i class="fas fa-download mr-2"></i>URL 下载体验
+            </button>
+          </div>
         </div>
-      </div>
-      <div class="flex items-center gap-1.5">
-        <i class="fas fa-hourglass-half text-amber-400/70"></i>
-        <span id="countdown-display" class="text-amber-400 font-medium status-pill">05:00</span>
+
+        <!-- 性能指标 -->
+        <div class="p-3 border-b border-slate-800/30">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            <i class="fas fa-tachometer-alt mr-1 text-cyan-400"></i>性能
+          </h3>
+          <div class="space-y-1.5 text-xs">
+            <div class="flex justify-between">
+              <span class="text-slate-500">帧率</span>
+              <span id="panel-fps" class="text-slate-300 status-pill">-- FPS</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">带宽</span>
+              <span id="panel-bandwidth" class="text-slate-300 status-pill">-- KB/s</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 使用记录 -->
+        <div class="p-3 flex-1 min-h-0 flex flex-col">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 shrink-0">
+            <i class="fas fa-list mr-1 text-slate-400"></i>使用记录
+          </h3>
+          <div id="activity-log" class="flex-1 overflow-y-auto space-y-1 text-xs min-h-[60px]">
+            <div class="text-slate-600 italic">暂无记录</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -181,7 +282,7 @@
         <i class="fas fa-hourglass-end text-amber-400 text-2xl"></i>
       </div>
       <h2 class="text-xl font-bold text-white mb-2">体验时间已结束</h2>
-      <p class="text-slate-400 text-sm mb-6">感谢您的体验，会话已自动关闭</p>
+      <p class="text-slate-400 text-sm mb-6">感谢您的体验，会话因空闲超时已自动关闭</p>
       <button onclick="location.reload()" class="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium transition-colors">
         <i class="fas fa-redo mr-2"></i>重新体验
       </button>
@@ -190,13 +291,20 @@
 
   <script>
     let sessionId = null;
+    let demoApiKey = null;
     let streamWs = null;
     let eventsWs = null;
-    let remainingSeconds = 0;
+    let sessionStartTime = null;
     let countdownTimer = null;
+    let heartbeatTimer = null;
+    let statsTimer = null;
     let frameCount = 0;
     let bandwidthTotal = 0;
     let bandwidthCount = 0;
+    let creditsUsed = 0;
+    const activityLog = [];
+
+    const IDLE_TIMEOUT = <%= idleTimeout %>;
 
     function $(id) { return document.getElementById(id); }
 
@@ -218,10 +326,12 @@
         }
 
         sessionId = data.data.sessionId;
-        remainingSeconds = data.data.maxDuration;
+        demoApiKey = data.data.demoApiKey;
+        sessionStartTime = Date.now();
         showBrowser();
         connectWebSockets();
-        startCountdown();
+        startTimers();
+        enableDemoButtons();
       } catch (e) {
         showError('网络错误，请稍后重试');
         btn.disabled = false;
@@ -242,12 +352,78 @@
       $('browser-section').classList.add('flex');
     }
 
+    function enableDemoButtons() {
+      $('btn-screenshot').disabled = false;
+      $('btn-upload').disabled = false;
+      $('btn-url-download').disabled = false;
+    }
+
+    // ========== 定时器 ==========
+    function startTimers() {
+      updatePanelTimers();
+      countdownTimer = setInterval(updatePanelTimers, 1000);
+
+      heartbeatTimer = setInterval(() => {
+        if (sessionId) {
+          fetch('/api/demo/activity', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ sessionId })
+          });
+        }
+      }, 60000);
+
+      statsTimer = setInterval(() => {
+        $('panel-fps').textContent = `${frameCount} FPS`;
+        frameCount = 0;
+        if (bandwidthCount > 0) {
+          $('panel-bandwidth').textContent = `${(bandwidthTotal / bandwidthCount).toFixed(1)} KB/s`;
+          bandwidthTotal = 0;
+          bandwidthCount = 0;
+        }
+
+        creditsUsed = Math.max(creditsUsed, Math.floor((Date.now() - sessionStartTime) / 60000));
+        $('panel-credits').textContent = `${creditsUsed} 积分`;
+      }, 1000);
+    }
+
+    function updatePanelTimers() {
+      const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+      const em = Math.floor(elapsed / 60);
+      const es = elapsed % 60;
+      $('panel-elapsed').textContent = `${String(em).padStart(2, '0')}:${String(es).padStart(2, '0')}`;
+
+      fetch(`/api/demo/session/${sessionId}/status`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            const remaining = data.data.remainingSeconds;
+            const rm = Math.floor(remaining / 60);
+            const rs = remaining % 60;
+            const timeStr = `${String(rm).padStart(2, '0')}:${String(rs).padStart(2, '0')}`;
+            $('panel-remaining').textContent = timeStr;
+            $('header-countdown').textContent = timeStr;
+
+            if (remaining <= 60) {
+              $('panel-remaining').classList.add('text-red-400');
+              $('panel-remaining').classList.remove('text-amber-400');
+              $('header-countdown').classList.add('text-red-400');
+              $('header-countdown').classList.remove('text-amber-400');
+            }
+
+            if (data.data.status === 'expired') {
+              showExpired();
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
     // ========== WebSocket 连接 ==========
     function connectWebSockets() {
       const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsBase = `${wsProto}//${location.host}`;
 
-      // Stream: 接收画面帧
       streamWs = new WebSocket(`${wsBase}/ws/${sessionId}/stream`);
 
       streamWs.onopen = () => {
@@ -272,15 +448,14 @@
       streamWs.onerror = (err) => console.error('Stream WS error:', err);
       streamWs.onclose = () => console.log('Stream WS closed');
 
-      // Events: 发送鼠标/键盘事件
       eventsWs = new WebSocket(`${wsBase}/ws/${sessionId}/events`);
 
       eventsWs.onopen = () => {
         console.log('Events WS connected');
         setConnected(true);
         sendEvent('init', {});
-        // 默认导航
         navigateTo('https://www.baidu.com');
+        logActivity('浏览器已启动，默认导航到百度');
       };
 
       eventsWs.onmessage = (e) => {
@@ -303,7 +478,7 @@
       };
     }
 
-    // ========== 事件发送（复用 remote-control.html 协议） ==========
+    // ========== 事件发送 ==========
     function sendEvent(type, data) {
       if (eventsWs && eventsWs.readyState === WebSocket.OPEN) {
         eventsWs.send(JSON.stringify({
@@ -362,7 +537,6 @@
 
       layer.addEventListener('contextmenu', (e) => e.preventDefault());
 
-      // 键盘事件
       document.addEventListener('keydown', (e) => {
         if (document.activeElement === $('url-input')) return;
         sendEvent('keyDown', { key: e.key, code: e.code, modifiers: getModifiers(e) });
@@ -374,7 +548,6 @@
         sendEvent('keyUp', { key: e.key, code: e.code, modifiers: getModifiers(e) });
       });
 
-      // 触摸事件
       let touchStartTime = 0, touchStartX = 0, touchStartY = 0;
       let hasMoved = false, hasTriggeredMouseDown = false;
 
@@ -453,59 +626,169 @@
             url: url
           }
         }));
+        logActivity(`导航到 ${url}`);
       }
     }
 
     function goBack() { sendEvent('goBack', {}); }
     function goForward() { sendEvent('goForward', {}); }
-    function doRefresh() { sendEvent('refresh', {}); }
+    function doRefresh() { sendEvent('refresh', {}); logActivity('刷新页面'); }
 
-    // ========== 倒计时 ==========
-    function startCountdown() {
-      updateCountdownDisplay();
-      countdownTimer = setInterval(() => {
-        remainingSeconds--;
-        updateCountdownDisplay();
-        if (remainingSeconds <= 0) {
-          clearInterval(countdownTimer);
-          showExpired();
-        }
-      }, 1000);
+    // ========== 使用记录 ==========
+    function logActivity(action) {
+      const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      activityLog.unshift({ time, action });
+      if (activityLog.length > 50) activityLog.pop();
+      renderActivityLog();
     }
 
-    function updateCountdownDisplay() {
-      const m = Math.floor(Math.max(0, remainingSeconds) / 60);
-      const s = Math.max(0, remainingSeconds) % 60;
-      $('countdown-display').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-      if (remainingSeconds <= 30) {
-        $('countdown-display').classList.add('text-red-400');
-        $('countdown-display').classList.remove('text-amber-400');
+    function renderActivityLog() {
+      const container = $('activity-log');
+      if (activityLog.length === 0) {
+        container.innerHTML = '<div class="text-slate-600 italic">暂无记录</div>';
+        return;
       }
+      container.innerHTML = activityLog.map(item =>
+        `<div class="activity-log-item flex gap-2 py-0.5">
+          <span class="text-slate-600 shrink-0">${item.time}</span>
+          <span class="text-slate-400">${item.action}</span>
+        </div>`
+      ).join('');
+    }
+
+    // ========== 功能体验按钮 ==========
+    async function demoScreenshot() {
+      const btn = $('btn-screenshot');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>截图中...';
+      logActivity('正在截图...');
+
+      try {
+        const resp = await fetch(`/api/sessions/${sessionId}/screenshot`, {
+          headers: { 'x-api-key': demoApiKey }
+        });
+        const data = await resp.json();
+        if (data.success && data.data) {
+          const screenshotUrl = data.data.screenshot_url || data.data.screenshotUrl;
+          if (screenshotUrl) {
+            $('demo-screenshot').src = screenshotUrl;
+            $('screenshot-preview').classList.remove('hidden');
+            logActivity('截图成功！');
+          } else {
+            logActivity('截图成功（无预览URL）');
+          }
+        } else {
+          logActivity('截图失败: ' + (data.error || '未知错误'));
+        }
+      } catch (e) {
+        logActivity('截图失败: 网络错误');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-camera mr-2"></i>截图体验';
+    }
+
+    async function demoFileUpload() {
+      const btn = $('btn-upload');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>上传中...';
+      logActivity('正在准备文件上传...');
+
+      try {
+        const testContent = `Demo test file - uploaded at ${new Date().toISOString()}`;
+        const blob = new Blob([testContent], { type: 'text/plain' });
+        const formData = new FormData();
+        formData.append('file', blob, 'demo-test.txt');
+        formData.append('sessionId', sessionId);
+
+        const resp = await fetch('/api/files/upload-session', {
+          method: 'POST',
+          headers: { 'x-api-key': demoApiKey },
+          body: formData
+        });
+        const data = await resp.json();
+
+        if (data.success && data.data) {
+          logActivity(`文件上传成功: ${data.data.filename}`);
+
+          const fileTestUrl = `data:text/html;charset=utf-8,${encodeURIComponent(
+            '<h2 style="font-family:sans-serif;text-align:center;margin-top:40px">文件上传演示</h2>' +
+            '<div style="text-align:center;margin-top:20px;font-family:sans-serif">' +
+            '<input type="file" id="upload" style="margin:0 auto">' +
+            '<p id="result" style="color:#666;margin-top:10px">等待文件注入...</p>' +
+            '<script>document.getElementById("upload").addEventListener("change",function(){document.getElementById("result").textContent="文件已选择: "+document.getElementById("upload").files[0].name})<\/script></div>'
+          )}`;
+          navigateTo(fileTestUrl);
+
+          await new Promise(r => setTimeout(r, 2000));
+
+          const injectResp = await fetch(`/api/sessions/${sessionId}/inject-file`, {
+            method: 'POST',
+            headers: { 'x-api-key': demoApiKey, 'content-type': 'application/json' },
+            body: JSON.stringify({
+              machineFilePath: data.data.machineFilePath,
+              selector: '#upload'
+            })
+          });
+          const injectData = await injectResp.json();
+          if (injectData.success) {
+            logActivity('文件已注入浏览器 file input！');
+          } else {
+            logActivity('文件注入: ' + (injectData.message || '完成'));
+          }
+        } else {
+          logActivity('文件上传失败: ' + (data.error || '未知错误'));
+        }
+      } catch (e) {
+        logActivity('文件上传失败: 网络错误');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-upload mr-2"></i>文件上传体验';
+    }
+
+    async function demoUrlDownload() {
+      const btn = $('btn-url-download');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>下载中...';
+      logActivity('正在下载 URL 文件...');
+
+      try {
+        const injectResp = await fetch(`/api/sessions/${sessionId}/upload-url`, {
+          method: 'POST',
+          headers: { 'x-api-key': demoApiKey, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            url: 'https://www.baidu.com/img/PCtm_d9c8750bed0b3c7d089fa7d55720d6cf.png',
+            selector: 'body',
+            filename: 'baidu-logo-demo.png'
+          })
+        });
+        const data = await injectResp.json();
+        if (data.success) {
+          logActivity('URL 文件下载并注入成功！');
+        } else {
+          logActivity('URL 下载: ' + (data.message || data.error || '未知错误'));
+        }
+      } catch (e) {
+        logActivity('URL 下载失败: 网络错误');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-download mr-2"></i>URL 下载体验';
+    }
+
+    // ========== 状态更新 ==========
+    function setConnected(ok) {
+      $('panel-status').innerHTML = ok
+        ? '<i class="fas fa-circle text-[6px] mr-1"></i>已连接'
+        : '<i class="fas fa-circle text-[6px] mr-1"></i>已断开';
+      $('panel-status').className = ok ? 'text-green-400' : 'text-red-400';
+      if (ok) $('connecting-overlay').classList.add('hidden');
     }
 
     function showExpired() {
       $('expired-modal').classList.remove('hidden');
       cleanup();
-    }
-
-    // ========== 状态更新 ==========
-    function setConnected(ok) {
-      $('conn-dot').className = `w-1.5 h-1.5 rounded-full ${ok ? 'bg-green-400' : 'bg-red-400'} pulse-dot`;
-      $('conn-status').textContent = ok ? '已连接' : '已断开';
-      $('conn-status').className = ok ? 'text-green-400' : 'text-red-400';
-      if (ok) $('connecting-overlay').classList.add('hidden');
-    }
-
-    function setupStatsInterval() {
-      setInterval(() => {
-        $('fps-display').textContent = `${frameCount} FPS`;
-        frameCount = 0;
-        if (bandwidthCount > 0) {
-          $('bandwidth-display').textContent = `${(bandwidthTotal / bandwidthCount).toFixed(1)} KB/s`;
-          bandwidthTotal = 0;
-          bandwidthCount = 0;
-        }
-      }, 1000);
     }
 
     // ========== 结束/清理 ==========
@@ -525,6 +808,8 @@
 
     function cleanup() {
       if (countdownTimer) clearInterval(countdownTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (statsTimer) clearInterval(statsTimer);
       if (streamWs) { streamWs.close(); streamWs = null; }
       if (eventsWs) { eventsWs.close(); eventsWs = null; }
     }
@@ -538,7 +823,6 @@
 
     // ========== 初始化 ==========
     setupMouseEvents();
-    setupStatsInterval();
   </script>
 </body>
 </html>

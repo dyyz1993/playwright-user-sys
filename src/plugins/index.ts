@@ -46,6 +46,15 @@ export default fp(async function (fastify: FastifyInstance) {
   await fastify.register(cors, {
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin) return callback(null, true);
+      // Always allow same-origin requests (demo page needs fetch API)
+      try {
+        const originUrl = new URL(origin);
+        if (originUrl.origin === 'null' || originUrl.protocol === 'file:') {
+          return callback(null, true);
+        }
+      } catch {
+        /* ignore invalid origin */
+      }
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }

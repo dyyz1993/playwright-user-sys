@@ -1,6 +1,9 @@
 import http from 'http';
+import fs from 'fs/promises';
+import path from 'path';
 import { logger } from '@shared/utils/logger.js';
 import { browserService } from './browser.service.js';
+import { CONFIG } from './config.js';
 
 const startTime = Date.now();
 
@@ -34,11 +37,29 @@ export function startHealthServer(port?: number): void {
     return;
   }
 
-  server = http.createServer((req, res) => {
+  server = http.createServer(async (req, res) => {
     if (req.url === '/health' && req.method === 'GET') {
       const body = buildHealthResponse();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(body));
+    } else if (req.url?.startsWith('/screenshots/') && req.method === 'GET') {
+      try {
+        const filename = path.basename(req.url);
+        const filePath = path.join(CONFIG.dataDir, 'screenshots', filename);
+        const normalized = path.normalize(filePath);
+        const screenshotsDir = path.normalize(path.join(CONFIG.dataDir, 'screenshots'));
+        if (!normalized.startsWith(screenshotsDir)) {
+          res.writeHead(403);
+          res.end('Forbidden');
+          return;
+        }
+        const data = await fs.readFile(filePath);
+        res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': data.length });
+        res.end(data);
+      } catch {
+        res.writeHead(404);
+        res.end('Not Found');
+      }
     } else {
       res.writeHead(404);
       res.end('Not Found');

@@ -1,6 +1,8 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import path from 'path';
+import fs from 'fs/promises';
+import http from 'http';
 import { SessionModel } from '../models/session.model.js';
 import { UserModel } from '../models/user.model.js';
 import { sendSuccess, sendError, sendCreated, getSafeErrorMessage } from '../utils/response.js';
@@ -316,7 +318,7 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
       try {
         const { connectionManager } = await import('../services/machine-grpc.service.js');
         await connectionManager.requestScreenshot(session.machine_id, sessionId);
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       } catch (screenshotErr) {
         logger.warn(`触发实时截图失败 (sessionId: ${sessionId}):`, screenshotErr);
       }
@@ -327,8 +329,50 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
       return sendError(reply, '会话没有截图', 404);
     }
 
+    const screenshotUrl = refreshedSession.screenshot_url;
+    const __dirname = path.dirname(new URL(import.meta.url).pathname);
+    const rootDir = path.resolve(__dirname, '../..');
+    const localPath = path.join(rootDir, 'data', screenshotUrl.replace(/^\//, ''));
+
+    try {
+      await fs.access(localPath);
+    } catch {
+      if (refreshedSession.machine_id) {
+        try {
+          const machineHost = refreshedSession.machine_id;
+          const machineUrl = `http://${machineHost}:9100${screenshotUrl}`;
+
+          const buffer = await new Promise<Buffer>((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('timeout')), 5000);
+            http
+              .get(machineUrl, (res) => {
+                clearTimeout(timeout);
+                if (res.statusCode !== 200) {
+                  reject(new Error(`HTTP ${res.statusCode}`));
+                  return;
+                }
+                const chunks: Buffer[] = [];
+                res.on('data', (chunk) => chunks.push(chunk));
+                res.on('end', () => resolve(Buffer.concat(chunks)));
+                res.on('error', reject);
+              })
+              .on('error', (err) => {
+                clearTimeout(timeout);
+                reject(err);
+              });
+          });
+
+          await fs.mkdir(path.dirname(localPath), { recursive: true });
+          await fs.writeFile(localPath, buffer);
+          logger.info(`截图已从 machine 缓存到 manager (${buffer.length} bytes): ${localPath}`);
+        } catch (cacheErr) {
+          logger.warn(`从 machine 下载截图失败: ${cacheErr}`);
+        }
+      }
+    }
+
     return sendSuccess(reply, {
-      screenshot_url: refreshedSession.screenshot_url,
+      screenshot_url: screenshotUrl,
     });
   } catch (error) {
     request.log.error(error);

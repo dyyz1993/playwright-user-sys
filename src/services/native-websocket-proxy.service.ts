@@ -1,9 +1,12 @@
 import * as stream from 'stream';
 import * as http from 'http';
+import * as net from 'net';
+import * as crypto from 'crypto';
 import * as url from 'url';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import httpProxy from 'http-proxy';
+import { WebSocket as WSClient } from 'ws';
 import { UserModel } from '../models/user.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { logger } from '@shared/utils/logger.js';
@@ -408,24 +411,124 @@ export class NativeWebSocketProxyService {
       const proxyPort = machineInfo.proxy_port;
       const targetUrl = `ws://${machineIp}:${proxyPort}${pathname}?sessionId=${sessionId}`;
 
-      logger.info(`Viewer WebSocket代理: sessionId=${sessionId}, target=${targetUrl}`);
+      logger.info(`Viewer WS Bridge: sessionId=${sessionId}, target=${targetUrl}`);
 
       (request as { sessionId?: string }).sessionId = sessionId;
 
+      // Raw TCP bridge: forward WS upgrade to machine, then pipe raw bytes
+      // This avoids http-proxy's binary WS frame dropping issue
+      const netSocket = net.connect(proxyPort, machineIp, () => {
+        logger.info(`Viewer WS bridge TCP connected to ${machineIp}:${proxyPort} (sessionId: ${sessionId})`);
+
+        // Forward client's HTTP upgrade request to machine
+        // Include all relevant headers for proper WS negotiation
+        const reqHeaders = [
+          `${request.method} ${request.url} HTTP/1.1`,
+          `Host: ${machineIp}:${proxyPort}`,
+          'Connection: Upgrade',
+          'Upgrade: websocket',
+          `Sec-WebSocket-Key: ${request.headers['sec-websocket-key']}`,
+          `Sec-WebSocket-Version: ${request.headers['sec-websocket-version'] || '13'}`,
+        ];
+
+        // Intentionally skip Sec-WebSocket-Extensions to avoid permessage-deflate
+        // compression negotiation that breaks the raw TCP bridge
+
+        reqHeaders.push('\r\n');
+        netSocket.write(reqHeaders.join('\r\n'));
+
+        // Forward any data the client already sent (head buffer)
+        if (head && head.length > 0) {
+          netSocket.write(head);
+        }
+      });
+
+      let clientHeaderSent = false;
+      let machineHeaderReceived = false;
+      let bridged = false;
+
+      function startBridging() {
+        if (bridged) return;
+        bridged = true;
+        logger.info(`Viewer WS bridge active - piping raw bytes (sessionId: ${sessionId})`);
+
+        // Pipe: client → machine (raw WS frames)
+        socket.on('data', (chunk: Buffer) => {
+          if (!netSocket.destroyed && netSocket.writable) {
+            netSocket.write(chunk);
+          }
+        });
+
+        // Pipe: machine → client (raw WS frames)
+        netSocket.on('data', (chunk: Buffer) => {
+          if (!socket.destroyed && socket.writable) {
+            socket.write(chunk);
+          }
+        });
+      }
+
+      // Handle machine response (should be 101 Switching Protocols)
+      let machineRespBuffer = Buffer.alloc(0);
+      netSocket.on('data', (chunk: Buffer) => {
+        if (!machineHeaderReceived) {
+          machineRespBuffer = Buffer.concat([machineRespBuffer, chunk]);
+          const headerEnd = machineRespBuffer.indexOf('\r\n\r\n');
+          if (headerEnd !== -1) {
+            // Found complete HTTP response headers from machine
+            const headers = machineRespBuffer.slice(0, headerEnd).toString();
+            const remaining = machineRespBuffer.slice(headerEnd + 4);
+
+            logger.info(`Machine 101 response received (sessionId: ${sessionId}): ${headers.split('\r\n')[0]}`);
+
+            // Strip Sec-WebSocket-Extensions from machine's 101 response
+            // to prevent compression/RSV framing issues in the bridge
+            const cleanHeaders = headers
+              .split('\r\n')
+              .filter((line) => !line.toLowerCase().startsWith('sec-websocket-extensions'))
+              .join('\r\n');
+
+            // Forward cleaned 101 response to client
+            socket.write(Buffer.from(cleanHeaders + '\r\n\r\n'));
+            clientHeaderSent = true;
+            machineHeaderReceived = true;
+
+            // If there's body data after headers, write it
+            if (remaining.length > 0) {
+              socket.write(remaining);
+            }
+
+            startBridging();
+          }
+          // else: wait for more data to complete headers
+        }
+        // If headers already processed, data goes through bridge
+        else if (machineHeaderReceived && !socket.destroyed && socket.writable) {
+          socket.write(chunk);
+        }
+      });
+
+      netSocket.on('error', (err: Error) => {
+        logger.error(`Viewer WS TCP error (sessionId: ${sessionId}):`, err.message);
+        if (!socket.destroyed && socket.writable) {
+          socket.end();
+        }
+      });
+
+      netSocket.on('close', () => {
+        logger.info(`Viewer WS machine TCP closed (sessionId: ${sessionId})`);
+        if (!socket.destroyed && socket.writable) {
+          socket.end();
+        }
+      });
+
       socket.on('close', () => {
         logger.info(`Viewer WebSocket连接关闭 (sessionId: ${sessionId}, path: ${pathname})`);
+        netSocket.destroy();
       });
 
       socket.on('error', (err: Error) => {
-        logger.error(`Viewer WebSocket连接错误 (sessionId: ${sessionId}):`, err);
-      });
-
-      this.proxy.ws(request, socket, head, { target: targetUrl }, (err: Error) => {
-        if (err) {
-          logger.error(`Viewer WebSocket代理连接失败 (sessionId: ${sessionId}):`, err);
-        } else {
-          logger.info(`Viewer WebSocket代理连接成功 (sessionId: ${sessionId}, path: ${pathname})`);
-        }
+        logger.error(`Viewer WebSocket连接错误 (sessionId: ${sessionId}):`, err.message);
+        netSocket.destroy();
       });
     } catch (error) {
       logger.error(`Viewer WebSocket代理失败 (sessionId: ${sessionId}):`, error);

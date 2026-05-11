@@ -688,84 +688,145 @@
       btn.innerHTML = '<i class="fas fa-camera mr-2"></i>截图体验';
     }
 
+    function buildFileTestPageUrl() {
+      const html = `<!DOCTYPE html>
+<html><head><title>文件上传测试</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:30px auto;padding:24px;background:#f8fafc;color:#1e293b}
+h2{font-size:22px;margin-bottom:8px}
+p.sub{color:#94a3b8;font-size:14px;margin-bottom:20px}
+.upload-area{border:2px dashed #cbd5e1;border-radius:14px;padding:36px 20px;text-align:center;transition:.2s}
+.upload-area.dragover{border-color:#3b82f6;background:#eff6ff}
+#fileInput{display:none}
+.btn{display:inline-block;padding:10px 22px;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;margin-top:12px}
+.btn:hover{background:#2563eb}
+#result{margin-top:20px;padding:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;display:none}
+#result.show{display:block}
+.file-info{display:flex;align-items:center;gap:14px}
+.file-icon{font-size:30px}
+.file-details{text-align:left}
+.file-name{font-weight:700;color:#166534;font-size:15px}
+.file-meta{color:#64748b;font-size:13px;margin-top:2px}
+#progress{width:100%;height:4px;background:#e2e8f0;border-radius:2px;margin-top:14px;overflow:hidden;display:none}
+#progress.show{display:block}
+#progressBar{width:0;height:100%;background:#3b82f6;border-radius:2px;transition:width .3s}
+</style></head><body>
+<h2>📁 文件上传测试</h2>
+<p class="sub">演示远程文件上传：选择文件后自动注入远程浏览器</p>
+<div class="upload-area" id="dropZone">
+<p style="color:#64748b;margin-bottom:6px">📂 拖拽文件到这里</p>
+<p style="color:#94a3b8;font-size:13px;margin-bottom:4px">或</p>
+<button class="btn" onclick="document.getElementById('fileInput').click()">选择文件</button>
+<input type="file" id="fileInput">
+</div>
+<div id="progress"><div id="progressBar"></div></div>
+<div id="result"><div class="file-info"><span class="file-icon">✅</span><div class="file-details"><div class="file-name" id="fileName"></div><div class="file-meta" id="fileSize"></div><div class="file-meta" id="fileType"></div></div></div></div>
+<script>
+var fi=document.getElementById('fileInput'),rs=document.getElementById('result'),pg=document.getElementById('progress'),pb=document.getElementById('progressBar');
+function showFileResult(f){pg.classList.add('show');pb.style.width='50%';setTimeout(function(){pb.style.width='100%';setTimeout(function(){pg.classList.remove('show');document.getElementById('fileName').textContent=f.name;document.getElementById('fileSize').textContent='大小: '+(f.size/1024).toFixed(1)+' KB';document.getElementById('fileType').textContent='类型: '+(f.type||'未知');rs.classList.add('show')},300)},500)}
+fi.addEventListener('change',function(){if(this.files[0])showFileResult(this.files[0])});
+var dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('dragover')});
+dz.addEventListener('dragleave',function(){dz.classList.remove('dragover')});
+dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('dragover');var f=e.dataTransfer.files[0];if(f){fi.files=e.dataTransfer.files;showFileResult(f)}});
+<\/script></body></html>`;
+      return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+    }
+
     async function demoFileUpload() {
+      if (!sessionId) { showToast('请先开始体验'); return; }
       const btn = $('btn-upload');
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>上传中...';
-      logActivity('正在准备文件上传...');
 
-      try {
-        const testContent = `Demo test file - uploaded at ${new Date().toISOString()}`;
-        const blob = new Blob([testContent], { type: 'text/plain' });
-        const formData = new FormData();
-        formData.append('file', blob, 'demo-test.txt');
-        formData.append('sessionId', sessionId);
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.txt,.jpg,.jpeg,.png,.pdf,.csv,.json';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-upload mr-2"></i>文件上传体验'; return; }
 
-        const resp = await fetch('/api/files/upload-session', {
-          method: 'POST',
-          headers: { 'x-api-key': demoApiKey },
-          body: formData
-        });
-        const data = await resp.json();
+        logActivity(`已选择文件: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
 
-        if (data.success && data.data) {
-          logActivity(`文件上传成功: ${data.data.filename}`);
+        try {
+          const testPageUrl = buildFileTestPageUrl();
+          navigateTo(testPageUrl);
+          logActivity('正在打开测试页面...');
+          await new Promise(r => setTimeout(r, 2500));
 
-          const fileTestUrl = `data:text/html;charset=utf-8,${encodeURIComponent(
-            '<h2 style="font-family:sans-serif;text-align:center;margin-top:40px">文件上传演示</h2>' +
-            '<div style="text-align:center;margin-top:20px;font-family:sans-serif">' +
-            '<input type="file" id="upload" style="margin:0 auto">' +
-            '<p id="result" style="color:#666;margin-top:10px">等待文件注入...</p>' +
-            '<script>document.getElementById("upload").addEventListener("change",function(){document.getElementById("result").textContent="文件已选择: "+document.getElementById("upload").files[0].name})<\/script></div>'
-          )}`;
-          navigateTo(fileTestUrl);
+          logActivity('正在上传文件到远程服务器...');
+          const formData = new FormData();
+          formData.append('file', file, file.name);
+          formData.append('sessionId', sessionId);
 
-          await new Promise(r => setTimeout(r, 2000));
+          const uploadResp = await fetch('/api/files/upload-session', {
+            method: 'POST',
+            headers: { 'x-api-key': demoApiKey },
+            body: formData
+          });
+          const uploadData = await uploadResp.json();
 
+          if (!uploadData.success || !uploadData.data) {
+            logActivity('上传失败: ' + (uploadData.error || '未知错误'));
+            return;
+          }
+
+          logActivity(`文件已传输到远程服务器`);
+
+          logActivity('正在注入到远程浏览器...');
           const injectResp = await fetch(`/api/sessions/${sessionId}/inject-file`, {
             method: 'POST',
             headers: { 'x-api-key': demoApiKey, 'content-type': 'application/json' },
             body: JSON.stringify({
-              machineFilePath: data.data.machineFilePath,
-              selector: '#upload'
+              machineFilePath: uploadData.data.machineFilePath,
+              selector: '#fileInput'
             })
           });
           const injectData = await injectResp.json();
-          if (injectData.success) {
-            logActivity('文件已注入浏览器 file input！');
-          } else {
-            logActivity('文件注入: ' + (injectData.message || '完成'));
-          }
-        } else {
-          logActivity('文件上传失败: ' + (data.error || '未知错误'));
-        }
-      } catch (e) {
-        logActivity('文件上传失败: 网络错误');
-      }
 
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-upload mr-2"></i>文件上传体验';
+          if (injectData.success) {
+            logActivity(`✅ 上传成功！${file.name} 已注入远程浏览器`);
+          } else {
+            logActivity('注入结果: ' + (injectData.message || '完成'));
+          }
+        } catch (err) {
+          logActivity('上传失败: ' + err.message);
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-upload mr-2"></i>文件上传体验';
+        }
+      };
+
+      input.click();
     }
 
     async function demoUrlDownload() {
+      if (!sessionId) { showToast('请先开始体验'); return; }
       const btn = $('btn-url-download');
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>下载中...';
-      logActivity('正在下载 URL 文件...');
+      logActivity('正在下载远程文件...');
 
       try {
+        const testPageUrl = buildFileTestPageUrl();
+        navigateTo(testPageUrl);
+        logActivity('正在打开测试页面...');
+        await new Promise(r => setTimeout(r, 2500));
+
+        logActivity('正在下载远程图片并注入...');
         const injectResp = await fetch(`/api/sessions/${sessionId}/upload-url`, {
           method: 'POST',
           headers: { 'x-api-key': demoApiKey, 'content-type': 'application/json' },
           body: JSON.stringify({
             url: 'https://www.baidu.com/img/PCtm_d9c8750bed0b3c7d089fa7d55720d6cf.png',
-            selector: 'body',
+            selector: '#fileInput',
             filename: 'baidu-logo-demo.png'
           })
         });
         const data = await injectResp.json();
         if (data.success) {
-          logActivity('URL 文件下载并注入成功！');
+          logActivity('✅ 远程文件下载并注入成功！');
         } else {
           logActivity('URL 下载: ' + (data.message || data.error || '未知错误'));
         }

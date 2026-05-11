@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyInstance, FastifyRequest, FastifyReply, RouteHandlerMethod } from 'fastify';
 import userController from '../controllers/user.controller.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { userDetailSchema } from '../schemas/index.js';
@@ -235,7 +235,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.createUser as any
+    userController.createUser as RouteHandlerMethod
   );
 
   fastify.get(
@@ -253,7 +253,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.getAllUsers as any
+    userController.getAllUsers as RouteHandlerMethod
   );
 
   fastify.get(
@@ -273,7 +273,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.getUserById as any
+    userController.getUserById as RouteHandlerMethod
   );
 
   fastify.put(
@@ -294,7 +294,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.updateUser as any
+    userController.updateUser as RouteHandlerMethod
   );
 
   fastify.post(
@@ -314,7 +314,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.resetApiKey as any
+    userController.resetApiKey as RouteHandlerMethod
   );
 
   fastify.delete(
@@ -334,6 +334,6 @@ export default async function userRoutes(fastify: FastifyInstance) {
         security: [{ bearerAuth: [] }],
       },
     },
-    userController.deleteUser as any
+    userController.deleteUser as RouteHandlerMethod
   );
 }

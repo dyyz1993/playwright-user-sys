@@ -2,7 +2,15 @@ import fs from 'fs/promises';
 import path from 'path';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
-import type { UploadFileOptions, UploadUrlOptions, UploadResult, SessionInfo } from './types.js';
+import type {
+  UploadFileOptions,
+  UploadUrlOptions,
+  UploadResult,
+  SessionInfo,
+  UploadResponse,
+  UploadUrlResponse,
+  ScreenshotResponse,
+} from './types.js';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
@@ -87,7 +95,7 @@ export class Session {
       };
     }
 
-    const uploadData = (await response.json()) as any;
+    const uploadData = (await response.json()) as UploadResponse;
     const machineFilePath = uploadData.data?.machineFilePath;
 
     const injectUrl = `${this.baseUrl}/api/sessions/${this.info.id}/inject-file`;
@@ -153,7 +161,7 @@ export class Session {
       };
     }
 
-    const result = (await response.json()) as any;
+    const result = (await response.json()) as UploadUrlResponse;
     return {
       success: result.data?.success ?? true,
       filename: result.data?.filename ?? options?.filename ?? '',
@@ -166,7 +174,7 @@ export class Session {
     const response = await fetch(`${this.baseUrl}/api/sessions/${this.info.id}/screenshot`, {
       headers: { 'x-api-key': this.apiKey },
     });
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as ScreenshotResponse;
     return data.data?.screenshot_url ?? data.data?.screenshotUrl ?? '';
   }
 

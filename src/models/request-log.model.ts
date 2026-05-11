@@ -17,6 +17,12 @@ export interface CreateRequestLogInput {
   response_time?: number;
 }
 
+export interface RequestLogStats {
+  daily: Array<{ date: string; count: number }>;
+  statusCodes: Array<{ status_code: number; count: number }>;
+  topPaths: Array<{ path: string; count: number }>;
+}
+
 export class RequestLogModel {
   // 创建请求日志
   static async create(data: CreateRequestLogInput): Promise<RequestLog> {
@@ -107,7 +113,7 @@ export class RequestLogModel {
   }
 
   // 获取请求统计信息
-  static async getStats(days: number = 7): Promise<any> {
+  static async getStats(days: number = 7): Promise<RequestLogStats> {
     // 获取最近 n 天的请求数量
     const dailyStats = await db('request_logs')
       .select(db.raw('date(created_at) as date'))
@@ -132,9 +138,9 @@ export class RequestLogModel {
       .limit(10);
 
     return {
-      daily: dailyStats,
-      statusCodes: statusStats,
-      topPaths: pathStats,
+      daily: dailyStats as RequestLogStats['daily'],
+      statusCodes: statusStats as RequestLogStats['statusCodes'],
+      topPaths: pathStats as RequestLogStats['topPaths'],
     };
   }
 }

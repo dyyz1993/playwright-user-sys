@@ -13,6 +13,13 @@ import type {
   MachineMessage,
   ManagerMessage,
   BrowserOptions,
+  RegisterRequest,
+  RegisterResponse,
+  TransferFileRequest,
+  TransferFileResponse,
+  DownloadAndInjectFileRequest,
+  InjectFileRequest,
+  FileInjectResponse,
 } from '../../shared/types/grpc.js';
 import type { ServerUnaryCall, sendUnaryData, ServerDuplexStream } from '@grpc/grpc-js';
 
@@ -210,7 +217,10 @@ export const serviceImplementation = {
     }
   },
 
-  Register: async (call: ServerUnaryCall<any, any>, callback: sendUnaryData<any>) => {
+  Register: async (
+    call: ServerUnaryCall<RegisterRequest, RegisterResponse>,
+    callback: sendUnaryData<RegisterResponse>
+  ) => {
     try {
       const request = call.request;
       logger.info('收到机器注册请求:', request);
@@ -258,7 +268,10 @@ export const serviceImplementation = {
     }
   },
 
-  TransferFile: async (call: ServerUnaryCall<any, any>, callback: sendUnaryData<any>) => {
+  TransferFile: async (
+    call: ServerUnaryCall<TransferFileRequest, TransferFileResponse>,
+    callback: sendUnaryData<TransferFileResponse>
+  ) => {
     checkUploadConcurrency();
     activeUploads++;
     try {
@@ -281,7 +294,10 @@ export const serviceImplementation = {
     }
   },
 
-  DownloadAndInjectFile: async (call: ServerUnaryCall<any, any>, callback: sendUnaryData<any>) => {
+  DownloadAndInjectFile: async (
+    call: ServerUnaryCall<DownloadAndInjectFileRequest, FileInjectResponse>,
+    callback: sendUnaryData<FileInjectResponse>
+  ) => {
     checkUploadConcurrency();
     activeUploads++;
     try {
@@ -314,7 +330,10 @@ export const serviceImplementation = {
     }
   },
 
-  InjectFile: async (call: ServerUnaryCall<any, any>, callback: sendUnaryData<any>) => {
+  InjectFile: async (
+    call: ServerUnaryCall<InjectFileRequest, FileInjectResponse>,
+    callback: sendUnaryData<FileInjectResponse>
+  ) => {
     try {
       const { session_id, machine_file_path, selector, frame_selector } = call.request;
       const { browserInjectService } = await import('../services/browser-inject.service.js');

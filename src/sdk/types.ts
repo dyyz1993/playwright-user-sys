@@ -20,6 +20,28 @@ export interface UploadResult {
   error?: string;
 }
 
+export interface UploadResponse {
+  data?: {
+    machineFilePath?: string;
+  };
+}
+
+export interface UploadUrlResponse {
+  data?: {
+    success?: boolean;
+    filename?: string;
+    size?: number;
+    machineFilePath?: string;
+  };
+}
+
+export interface ScreenshotResponse {
+  data?: {
+    screenshot_url?: string;
+    screenshotUrl?: string;
+  };
+}
+
 export interface SessionInfo {
   id: string;
   status: string;

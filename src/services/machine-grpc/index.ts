@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { logger } from '@shared/utils/logger.js';
 import { MachineConnectionManager } from './connection-manager.js';
 import { serviceImplementation } from './service-handlers.js';
-import type { RegisterRequest, RegisterResponse, MachineStatusResponse } from '../../shared/types/grpc.js';
+import type { MachineProtoPackage } from '../../shared/types/grpc.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,30 +19,7 @@ const packageDefinition = protoLoader.loadSync(protoPath, {
   oneofs: true,
 });
 
-interface MachineServiceClient {
-  Register(
-    request: RegisterRequest,
-    metadata: grpc.Metadata,
-    callback: (err: unknown, response: RegisterResponse) => void
-  ): void;
-  LaunchBrowser(request: any, metadata: grpc.Metadata, callback: (err: unknown, response: any) => void): void;
-  CloseBrowser(request: any, metadata: grpc.Metadata, callback: (err: unknown, response: any) => void): void;
-  GetMachineStatus(
-    request: any,
-    metadata: grpc.Metadata,
-    callback: (err: unknown, response: MachineStatusResponse) => void
-  ): void;
-  TransferFile(request: any, metadata: grpc.Metadata, callback: (err: unknown, response: any) => void): void;
-  DownloadAndInjectFile(request: any, metadata: grpc.Metadata, callback: (err: unknown, response: any) => void): void;
-  InjectFile(request: any, metadata: grpc.Metadata, callback: (err: unknown, response: any) => void): void;
-}
-
-const proto = grpc.loadPackageDefinition(packageDefinition).machine as unknown as {
-  MachineService: {
-    service: grpc.ServiceDefinition;
-    new (address: string, credentials: grpc.ChannelCredentials, options?: object): MachineServiceClient;
-  };
-};
+const proto = grpc.loadPackageDefinition(packageDefinition).machine as unknown as MachineProtoPackage;
 
 export const connectionManager = new MachineConnectionManager();
 connectionManager.setProto(proto);

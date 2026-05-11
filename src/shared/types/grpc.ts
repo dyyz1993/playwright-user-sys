@@ -146,4 +146,91 @@ export interface ManagerMessage {
   error?: { message: string };
 }
 
+export interface TransferFileRequest {
+  session_id: string;
+  filename: string;
+  data: Buffer | Uint8Array;
+}
+
+export interface TransferFileResponse {
+  success: boolean;
+  error: string;
+  machine_file_path: string;
+  filename: string;
+  size: number;
+}
+
+export interface DownloadAndInjectFileRequest {
+  session_id: string;
+  url: string;
+  selector: string;
+  frame_selector: string;
+  filename: string;
+  download_timeout: number;
+}
+
+export interface InjectFileRequest {
+  session_id: string;
+  machine_file_path: string;
+  selector: string;
+  frame_selector: string;
+}
+
+export interface FileInjectResponse {
+  success: boolean;
+  error: string;
+  machine_file_path: string;
+  filename: string;
+  size: number;
+}
+
+export interface MachineServiceClient {
+  Register(
+    request: RegisterRequest,
+    metadata: import('@grpc/grpc-js').Metadata,
+    callback: (err: import('@grpc/grpc-js').ServiceError | null, response: RegisterResponse) => void
+  ): void;
+  LaunchBrowser(
+    request: LaunchBrowserRequest,
+    metadata: import('@grpc/grpc-js').Metadata,
+    callback: (err: import('@grpc/grpc-js').ServiceError | null, response: SessionResponse) => void
+  ): void;
+  CloseBrowser(
+    request: CloseBrowserRequest,
+    metadata: import('@grpc/grpc-js').Metadata,
+    callback: (err: import('@grpc/grpc-js').ServiceError | null, response: SessionStatusUpdate) => void
+  ): void;
+  GetMachineStatus(
+    request: MachineStatusRequest,
+    metadata: import('@grpc/grpc-js').Metadata,
+    callback: (err: import('@grpc/grpc-js').ServiceError | null, response: MachineStatusResponse) => void
+  ): void;
+  TransferFile(
+    request: TransferFileRequest,
+    metadata: import('@grpc/grpc-js').Metadata,
+    callback: (err: import('@grpc/grpc-js').ServiceError | null, response: TransferFileResponse) => void
+  ): void;
+  DownloadAndInjectFile(
+    request: DownloadAndInjectFileRequest,
+    metadata: import('@grpc/grpc-js').Metadata,
+    callback: (err: import('@grpc/grpc-js').ServiceError | null, response: FileInjectResponse) => void
+  ): void;
+  InjectFile(
+    request: InjectFileRequest,
+    metadata: import('@grpc/grpc-js').Metadata,
+    callback: (err: import('@grpc/grpc-js').ServiceError | null, response: FileInjectResponse) => void
+  ): void;
+}
+
+export interface MachineProtoPackage {
+  MachineService: {
+    service: import('@grpc/grpc-js').ServiceDefinition;
+    new (
+      address: string,
+      credentials: import('@grpc/grpc-js').ChannelCredentials,
+      options?: object
+    ): MachineServiceClient;
+  };
+}
+
 export type GrpcServiceError = { code: number; message: string };

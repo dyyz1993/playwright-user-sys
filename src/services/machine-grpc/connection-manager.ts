@@ -10,15 +10,19 @@ import type {
   SessionStatusUpdate,
   SessionResponse,
   MachineStatusResponse,
+  MachineServiceClient,
+  MachineProtoPackage,
+  TransferFileResponse,
+  FileInjectResponse,
 } from '../../shared/types/grpc.js';
 
 export class MachineConnectionManager extends EventEmitter {
   private connections: Map<string, grpc.ServerDuplexStream<MachineMessage, ManagerMessage>> = new Map();
   private pendingRequests: Map<string, { resolve: Function; reject: Function; timer: NodeJS.Timeout }> = new Map();
-  private clients: Map<string, any> = new Map();
-  private proto: any;
+  private clients: Map<string, MachineServiceClient> = new Map();
+  private proto: MachineProtoPackage | null = null;
 
-  setProto(proto: any): void {
+  setProto(proto: MachineProtoPackage): void {
     this.proto = proto;
   }
 
@@ -104,7 +108,7 @@ export class MachineConnectionManager extends EventEmitter {
     return this.connections.get(machineId);
   }
 
-  async getClient(machineId: string): Promise<any | null> {
+  async getClient(machineId: string): Promise<MachineServiceClient | null> {
     if (this.clients.has(machineId)) {
       return this.clients.get(machineId) ?? null;
     }
@@ -128,6 +132,9 @@ export class MachineConnectionManager extends EventEmitter {
         'grpc.max_reconnect_backoff_ms': 10000,
       };
 
+      if (!this.proto) {
+        throw new Error('gRPC proto 未初始化');
+      }
       const client = new this.proto.MachineService(address, grpc.credentials.createInsecure(), options);
       this.clients.set(machineId, client);
 
@@ -379,7 +386,7 @@ export class MachineConnectionManager extends EventEmitter {
     metadata.set('machine_id', machineId);
 
     return new Promise((resolve, reject) => {
-      client.CloseBrowser(request, metadata, (error: unknown, response: any) => {
+      client.CloseBrowser(request, metadata, (error: unknown, response: SessionStatusUpdate) => {
         if (error) {
           logger.error(`关闭浏览器失败 (${machineId}, ${sessionId}):`, error);
           reject(error);
@@ -453,16 +460,25 @@ export class MachineConnectionManager extends EventEmitter {
     });
   }
 
-  async transferFile(machineId: string, sessionId: string, filename: string, data: Buffer): Promise<any> {
+  async transferFile(
+    machineId: string,
+    sessionId: string,
+    filename: string,
+    data: Buffer
+  ): Promise<TransferFileResponse> {
     const client = await this.getClient(machineId);
     if (!client) throw new Error(`Machine ${machineId} 未连接`);
     const metadata = new grpc.Metadata();
     metadata.set('machine_id', machineId);
     return new Promise((resolve, reject) => {
-      client.TransferFile({ session_id: sessionId, filename, data }, metadata, (err: any, response: any) => {
-        if (err) return reject(err);
-        resolve(response);
-      });
+      client.TransferFile(
+        { session_id: sessionId, filename, data },
+        metadata,
+        (err: unknown, response: TransferFileResponse) => {
+          if (err) return reject(err);
+          resolve(response);
+        }
+      );
     });
   }
 
@@ -476,7 +492,7 @@ export class MachineConnectionManager extends EventEmitter {
       filename?: string;
       timeout?: number;
     }
-  ): Promise<any> {
+  ): Promise<FileInjectResponse> {
     const client = await this.getClient(machineId);
     if (!client) throw new Error(`Machine ${machineId} 未连接`);
     const metadata = new grpc.Metadata();
@@ -492,7 +508,7 @@ export class MachineConnectionManager extends EventEmitter {
           download_timeout: params.timeout || 60000,
         },
         metadata,
-        (err: any, response: any) => {
+        (err: unknown, response: FileInjectResponse) => {
           if (err) return reject(err);
           resolve(response);
         }
@@ -508,7 +524,7 @@ export class MachineConnectionManager extends EventEmitter {
       selector: string;
       frameSelector?: string;
     }
-  ): Promise<any> {
+  ): Promise<FileInjectResponse> {
     const client = await this.getClient(machineId);
     if (!client) throw new Error(`Machine ${machineId} 未连接`);
     const metadata = new grpc.Metadata();
@@ -522,7 +538,7 @@ export class MachineConnectionManager extends EventEmitter {
           frame_selector: params.frameSelector || '',
         },
         metadata,
-        (err: any, response: any) => {
+        (err: unknown, response: FileInjectResponse) => {
           if (err) return reject(err);
           resolve(response);
         }

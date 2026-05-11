@@ -86,6 +86,9 @@ COPY --chown=nodejs:nodejs src/shared/protos ./dist/src/shared/protos
 COPY --chown=nodejs:nodejs src/views ./dist/src/views
 COPY --chown=nodejs:nodejs src/public ./dist/src/public
 
+# Copy browser-viewer standalone component
+COPY --chown=nodejs:nodejs public/browser-viewer ./dist/public/browser-viewer
+
 # Set environment variables
 ENV NODE_ENV=production \
     PORT=3000 \

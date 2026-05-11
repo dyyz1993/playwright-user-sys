@@ -1,6 +1,6 @@
 /**
- * BrowserViewer — 远程浏览器实时查看器 SDK
- * 
+ * BrowserViewer — 极简版远程浏览器实时查看器 SDK
+ *
  * 使用方式：
  *   方式1: 自动挂载
  *     <div id="viewer-container"></div>
@@ -9,13 +9,12 @@
  *       const viewer = new BrowserViewer({
  *         containerId: 'viewer-container',
  *         sessionId: 'xxx',
- *         wsHost: 'ws://192.168.0.29:3011'
  *       });
  *       viewer.connect();
  *     </script>
- *   
+ *
  *   方式2: iframe 嵌入
- *     <iframe src="/browser-viewer/index.html?sessionId=xxx&wsHost=ws://192.168.0.29:3011" 
+ *     <iframe src="/browser-viewer/index.html?sessionId=xxx"
  *             style="width:100%;height:600px;border:none;">
  *     </iframe>
  */
@@ -23,260 +22,194 @@ class BrowserViewer {
   constructor(options) {
     this.containerId = options.containerId;
     this.sessionId = options.sessionId;
-    this.wsHost = options.wsHost || window.location.host;
-    this.wsProtocol = options.wsProtocol || (window.location.protocol === 'https:' ? 'wss:' : 'ws:');
-    
+    this.wsHost = options.wsHost || location.host;
+    this.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+
     this.streamWs = null;
     this.eventsWs = null;
-    this.connected = false;
-    this.onConnect = options.onConnect || (() => {});
-    this.onDisconnect = options.onDisconnect || (() => {});
-    this.onNavigate = options.onNavigate || (() => {});
-    this.onScreenshot = options.onScreenshot || (() => {});
-    this.onActivity = options.onActivity || (() => {});
-    
     this.container = null;
-    this.screenElement = null;
-    this.overlayElement = null;
-    this.addressBar = null;
-    this.activityLog = [];
-    
-    this._boundHandlers = {};
+    this.img = null;
+    this.connected = false;
+    this.frameCount = 0;
+    this.lastBlobUrl = null;
   }
 
   mount() {
     this.container = document.getElementById(this.containerId);
-    if (!this.container) throw new Error(`Container #${this.containerId} not found`);
-    
-    this.container.innerHTML = `
-      <div class="bv-wrapper">
-        <div class="bv-toolbar">
-          <div class="bv-address-bar">
-            <span class="bv-nav-btn" data-action="back">◀</span>
-            <span class="bv-nav-btn" data-action="forward">▶</span>
-            <span class="bv-nav-btn" data-action="refresh">⟳</span>
-            <input type="text" class="bv-url-input" placeholder="输入网址..." />
-            <button class="bv-go-btn">前往</button>
-          </div>
-          <div class="bv-status">
-            <span class="bv-status-dot"></span>
-            <span class="bv-status-text">未连接</span>
-          </div>
-        </div>
-        <div class="bv-screen-container">
-          <img class="bv-screen" alt="Browser Screen" />
-          <div class="bv-overlay">
-            <div class="bv-loading">
-              <div class="bv-spinner"></div>
-              <p>正在连接远程浏览器...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    this.screenElement = this.container.querySelector('.bv-screen');
-    this.overlayElement = this.container.querySelector('.bv-overlay');
-    this.addressBar = this.container.querySelector('.bv-url-input');
-    
-    this._bindEvents();
-    this._injectStyles();
-    
+    if (!this.container) throw new Error('#' + this.containerId + ' not found');
+
+    this.container.innerHTML =
+      '<div style="width:100%;height:100%;position:relative;background:#000;">' +
+        '<img id="bv-screen" style="width:100%;height:100%;object-fit:contain;" />' +
+        '<div id="bv-status" style="position:absolute;top:10px;left:10px;color:#fff;font-size:12px;z-index:10;font-family:system-ui,-apple-system,sans-serif;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:4px;">连接中...</div>' +
+      '</div>';
+    this.img = this.container.querySelector('#bv-screen');
     return this;
-  }
-
-  _injectStyles() {
-    if (document.getElementById('bv-styles')) return;
-    const link = document.createElement('link');
-    link.id = 'bv-styles';
-    link.rel = 'stylesheet';
-    link.href = '/browser-viewer/browser-viewer.css';
-    document.head.appendChild(link);
-  }
-
-  _bindEvents() {
-    this.addressBar.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') this._navigateToUrl();
-    });
-    
-    this.container.querySelector('.bv-go-btn').addEventListener('click', () => this._navigateToUrl());
-    
-    this.container.querySelectorAll('.bv-nav-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const action = btn.dataset.action;
-        if (action === 'back') this.sendEvent('goBack', {});
-        else if (action === 'forward') this.sendEvent('goForward', {});
-        else if (action === 'refresh') this.sendEvent('reload', {});
-      });
-    });
-    
-    const screen = this.screenElement;
-    
-    this._boundHandlers.mousemove = (e) => {
-      const coords = this._getCoordinates(e);
-      this.sendEvent('mousemove', coords);
-    };
-    this._boundHandlers.mousedown = (e) => {
-      const coords = this._getCoordinates(e);
-      this.sendEvent('mousedown', { ...coords, button: e.button });
-    };
-    this._boundHandlers.mouseup = (e) => {
-      const coords = this._getCoordinates(e);
-      this.sendEvent('mouseup', { ...coords, button: e.button });
-    };
-    this._boundHandlers.click = (e) => {
-      e.preventDefault();
-      const coords = this._getCoordinates(e);
-      this.sendEvent('click', { ...coords, button: e.button });
-    };
-    this._boundHandlers.wheel = (e) => {
-      e.preventDefault();
-      this.sendEvent('wheel', { deltaX: e.deltaX, deltaY: e.deltaY });
-    };
-    this._boundHandlers.contextmenu = (e) => e.preventDefault();
-    
-    screen.addEventListener('mousemove', this._boundHandlers.mousemove);
-    screen.addEventListener('mousedown', this._boundHandlers.mousedown);
-    screen.addEventListener('mouseup', this._boundHandlers.mouseup);
-    screen.addEventListener('click', this._boundHandlers.click);
-    screen.addEventListener('wheel', this._boundHandlers.wheel);
-    screen.addEventListener('contextmenu', this._boundHandlers.contextmenu);
-    
-    this._boundHandlers.keydown = (e) => {
-      if (document.activeElement === this.addressBar) return;
-      this.sendEvent('keydown', { key: e.key, code: e.code, modifiers: this._getModifiers(e) });
-      if (['Tab', 'Backspace', 'F5'].includes(e.key)) e.preventDefault();
-    };
-    this._boundHandlers.keyup = (e) => {
-      if (document.activeElement === this.addressBar) return;
-      this.sendEvent('keyup', { key: e.key, code: e.code, modifiers: this._getModifiers(e) });
-    };
-    
-    document.addEventListener('keydown', this._boundHandlers.keydown);
-    document.addEventListener('keyup', this._boundHandlers.keyup);
-  }
-
-  _getCoordinates(e) {
-    const rect = this.screenElement.getBoundingClientRect();
-    const scaleX = 1280 / rect.width;
-    const scaleY = 800 / rect.height;
-    return {
-      x: Math.round((e.clientX - rect.left) * scaleX),
-      y: Math.round((e.clientY - rect.top) * scaleY),
-    };
-  }
-
-  _getModifiers(e) {
-    return {
-      alt: e.altKey,
-      ctrl: e.ctrlKey,
-      meta: e.metaKey,
-      shift: e.shiftKey,
-    };
-  }
-
-  _navigateToUrl() {
-    let url = this.addressBar.value.trim();
-    if (!url) return;
-    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-    this.navigateTo(url);
   }
 
   connect() {
     if (!this.container) this.mount();
-    
-    const wsBase = `${this.wsProtocol}//${this.wsHost}`;
-    
-    this.streamWs = new WebSocket(`${wsBase}/ws/${this.sessionId}/stream`);
-    this.streamWs.binaryType = 'blob';
-    
-    this.streamWs.onmessage = (event) => {
-      if (event.data instanceof Blob) {
-        const url = URL.createObjectURL(event.data);
-        if (this.screenElement.src.startsWith('blob:')) {
-          URL.revokeObjectURL(this.screenElement.src);
+
+    var wsBase = this.protocol + '//' + this.wsHost;
+    var statusEl = this.container.querySelector('#bv-status');
+    var self = this;
+
+    // Stream WS — 接收画面帧（arraybuffer 更可靠）
+    this.streamWs = new WebSocket(wsBase + '/ws/' + this.sessionId + '/stream');
+    this.streamWs.binaryType = 'arraybuffer';
+
+    this.streamWs.onmessage = function (e) {
+      if (e.data instanceof ArrayBuffer) {
+        self.frameCount++;
+        var blob = new Blob([e.data], { type: 'image/webp' });
+        var url = URL.createObjectURL(blob);
+        if (self.lastBlobUrl) URL.revokeObjectURL(self.lastBlobUrl);
+        self.lastBlobUrl = url;
+        self.img.src = url;
+
+        if (self.frameCount <= 5 || self.frameCount % 100 === 0) {
+          statusEl.textContent = '已连接 · 帧 #' + self.frameCount;
         }
-        this.screenElement.src = url;
-        this.onScreenshot(url);
+      } else if (typeof e.data === 'string') {
+        try {
+          var msg = JSON.parse(e.data);
+          if (msg.type === 'session_ended') {
+            statusEl.textContent = '会话结束: ' + (msg.data?.reason || '未知');
+            statusEl.style.color = '#f87171';
+          } else {
+            statusEl.textContent = '文本: ' + String(e.data).substring(0, 50);
+          }
+        } catch {
+          statusEl.textContent = '文本: ' + String(e.data).substring(0, 50);
+        }
       }
     };
-    
-    this.streamWs.onerror = (err) => {
-      console.error('Stream WS error:', err);
+
+    this.streamWs.onopen = function () {
+      statusEl.textContent = 'Stream 已连接...';
     };
-    
-    this.eventsWs = new WebSocket(`${wsBase}/ws/${this.sessionId}/events`);
-    
-    this.eventsWs.onopen = () => {
-      this._setConnected(true);
-      this.sendEvent('init', {});
-      this.onConnect();
+    this.streamWs.onerror = function (e) {
+      statusEl.textContent = 'Stream 错误';
+      console.error('[BV] stream ws error', e);
     };
-    
-    this.eventsWs.onmessage = (event) => {
+    this.streamWs.onclose = function (e) {
+      statusEl.textContent = 'Stream 断开 (' + e.code + ')';
+      console.log('[BV] stream ws close', e.code, e.reason);
+    };
+
+    // Events WS — 发送鼠标/键盘事件
+    this.eventsWs = new WebSocket(wsBase + '/ws/' + this.sessionId + '/events');
+
+    this.eventsWs.onopen = function () {
+      self.connected = true;
+      statusEl.textContent = '✅ 已连接';
+      statusEl.style.color = '#4ade80';
+      self.send({ type: 'event', event: { type: 'init', data: {} } });
+    };
+
+    this.eventsWs.onmessage = function (e) {
       try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'configSync') {
-        } else if (msg.type === 'navigate') {
-          this.addressBar.value = msg.data.url || '';
-          this.onNavigate(msg.data.url);
-        } else if (msg.type === 'notification') {
-          this.logActivity(msg.data.message);
+        var msg = JSON.parse(e.data);
+        if (msg.type === 'navigate') {
+          console.log('[BV] navigate:', msg.data?.url);
+        } else if (msg.type === 'configSync') {
+          console.log('[V] configSync:', msg.data);
         }
       } catch {}
     };
-    
-    this.eventsWs.onclose = () => {
-      this._setConnected(false);
-      this.onDisconnect();
+
+    this.eventsWs.onclose = function () {
+      self.connected = false;
+      statusEl.textContent = '断开连接';
+      statusEl.style.color = '#f87171';
     };
+
+    this.eventsWs.onerror = function (e) {
+      console.error('[BV] events ws error', e);
+    };
+
+    // 绑定鼠标/键盘事件
+    this._bindMouseEvents();
+  }
+
+  _bindMouseEvents() {
+    var self = this;
+    var img = this.img;
+
+    function getCoords(e) {
+      var r = img.getBoundingClientRect();
+      return {
+        x: Math.round((e.clientX - r.left) * (1280 / r.width)),
+        y: Math.round((e.clientY - r.top) * (800 / r.height)),
+      };
+    }
+
+    img.addEventListener('mousemove', function (e) {
+      var c = getCoords(e);
+      self.send({ type: 'event', event: { type: 'mousemove', data: c } });
+    });
+
+    img.addEventListener('mousedown', function (e) {
+      var c = getCoords(e);
+      c.button = e.button;
+      self.send({ type: 'event', event: { type: 'mousedown', data: c } });
+    });
+
+    img.addEventListener('mouseup', function (e) {
+      var c = getCoords(e);
+      c.button = e.button;
+      self.send({ type: 'event', event: { type: 'mouseup', data: c } });
+    });
+
+    img.addEventListener('click', function (e) {
+      e.preventDefault();
+      var c = getCoords(e);
+      c.button = e.button;
+      self.send({ type: 'event', event: { type: 'click', data: c } });
+    });
+
+    img.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: e.deltaX, deltaY: e.deltaY } } });
+    }, { passive: false });
+
+    img.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      self.send({ type: 'event', event: { type: 'keydown', data: { key: e.key, code: e.code } } });
+      if (['Tab', 'Backspace', 'F5'].includes(e.key)) e.preventDefault();
+    });
+
+    document.addEventListener('keyup', function (e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      self.send({ type: 'event', event: { type: 'keyup', data: { key: e.key, code: e.code } } });
+    });
+  }
+
+  send(msg) {
+    if (this.eventsWs && this.eventsWs.readyState === WebSocket.OPEN) {
+      this.eventsWs.send(JSON.stringify(msg));
+    }
   }
 
   navigateTo(url) {
-    this.sendEvent('navigate', { url });
-    this.addressBar.value = url;
-  }
-
-  sendEvent(type, data) {
-    if (this.eventsWs && this.eventsWs.readyState === WebSocket.OPEN) {
-      this.eventsWs.send(JSON.stringify({ type, data }));
-    }
-  }
-
-  logActivity(message) {
-    const time = new Date().toLocaleTimeString();
-    this.activityLog.unshift({ time, message });
-    this.onActivity({ time, message });
-  }
-
-  _setConnected(connected) {
-    this.connected = connected;
-    const dot = this.container.querySelector('.bv-status-dot');
-    const text = this.container.querySelector('.bv-status-text');
-    
-    if (connected) {
-      dot.classList.add('bv-connected');
-      text.textContent = '已连接';
-      this.overlayElement.classList.add('bv-hidden');
-    } else {
-      dot.classList.remove('bv-connected');
-      text.textContent = '未连接';
-      this.overlayElement.classList.remove('bv-hidden');
-    }
+    this.send({ type: 'event', event: { type: 'navigate', data: { url: url } } });
   }
 
   disconnect() {
     if (this.streamWs) this.streamWs.close();
     if (this.eventsWs) this.eventsWs.close();
-    this._setConnected(false);
+    if (this.lastBlobUrl) {
+      URL.revokeObjectURL(this.lastBlobUrl);
+      this.lastBlobUrl = null;
+    }
   }
 
   destroy() {
     this.disconnect();
-    
-    document.removeEventListener('keydown', this._boundHandlers.keydown);
-    document.removeEventListener('keyup', this._boundHandlers.keyup);
-    
     if (this.container) this.container.innerHTML = '';
   }
 }

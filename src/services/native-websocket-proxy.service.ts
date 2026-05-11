@@ -324,7 +324,7 @@ export class NativeWebSocketProxyService {
 
       logger.info(`获取到机器真实IP: ${machineInfo.ip} (machineId: ${machineId})`);
 
-      const targetUrl = sessionResult.internalTargetUrl || sessionResult.directUrl;
+      const targetUrl = (sessionResult as any).internalTargetUrl || sessionResult.directUrl;
 
       logger.info(`原始WebSocket端点: ${originalWsEndpoint}`);
       logger.info(`修正后的WebSocket端点: ${targetUrl}`);

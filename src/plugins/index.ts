@@ -44,12 +44,18 @@ export default fp(async function (fastify: FastifyInstance) {
 
   // @ts-ignore — cors origin callback type mismatch with fastify-cors typings
   await fastify.register(cors, {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+      request?: { host?: string }
+    ) => {
       if (!origin) return callback(null, true);
-      // Always allow same-origin requests (demo page needs fetch API)
       try {
         const originUrl = new URL(origin);
         if (originUrl.origin === 'null' || originUrl.protocol === 'file:') {
+          return callback(null, true);
+        }
+        if (request?.host && originUrl.host === request.host) {
           return callback(null, true);
         }
       } catch {

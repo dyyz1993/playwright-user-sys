@@ -21,6 +21,7 @@ services:
       - manager-prod-files:/app/files
     environment:
       - NODE_ENV=production
+      - CORS_ORIGINS=http://192.168.0.29:3011
       - PORT=3000
       - HOST=0.0.0.0
       - DB_TYPE=mysql

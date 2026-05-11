@@ -126,7 +126,8 @@ const SESSION_COST = 1;
 export async function createBrowserSession(
   userId: number,
   options: SessionCreateOptions = {},
-  isWebSocketDirect = false
+  isWebSocketDirect = false,
+  isDemo = false
 ) {
   if (!options.viewport) {
     options.viewport = {
@@ -153,12 +154,14 @@ export async function createBrowserSession(
       throw new Error('用户不存在');
     }
 
-    if (user.credits <= 0) {
-      throw new Error('点数不足，请联系管理员充值');
-    }
+    if (!isDemo) {
+      if (user.credits <= 0) {
+        throw new Error('点数不足，请联系管理员充值');
+      }
 
-    if (user.credits < SESSION_COST) {
-      throw new Error('点数不足，无法创建会话');
+      if (user.credits < SESSION_COST) {
+        throw new Error('点数不足，无法创建会话');
+      }
     }
 
     const activeResult = await trx('sessions')
@@ -182,19 +185,21 @@ export async function createBrowserSession(
       throw new Error('Machine no longer available');
     }
 
-    await trx('users').where({ id: userId }).decrement('credits', SESSION_COST);
-
     const now = new Date();
-    await trx('credit_history').insert({
-      user_id: userId,
-      amount: SESSION_COST,
-      action: 'use',
-      balance_after: user.credits - SESSION_COST,
-      description: `Session pre-deduct: user ${userId}`,
-      metadata: JSON.stringify({ type: 'pre_deduct' }),
-      created_at: now,
-      updated_at: now,
-    });
+    if (!isDemo) {
+      await trx('users').where({ id: userId }).decrement('credits', SESSION_COST);
+
+      await trx('credit_history').insert({
+        user_id: userId,
+        amount: SESSION_COST,
+        action: 'use',
+        balance_after: user.credits - SESSION_COST,
+        description: `Session pre-deduct: user ${userId}`,
+        metadata: JSON.stringify({ type: 'pre_deduct' }),
+        created_at: now,
+        updated_at: now,
+      });
+    }
 
     const newSessionId = uuidv4();
     await trx('sessions').insert({
@@ -203,7 +208,7 @@ export async function createBrowserSession(
       machine_id: machineId,
       status: SessionStatus.CREATED,
       options: JSON.stringify(options),
-      credits_used: SESSION_COST,
+      credits_used: isDemo ? 0 : SESSION_COST,
       created_at: now,
       updated_at: now,
     });

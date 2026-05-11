@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>远程浏览器体验 - Playwright Browser Cloud</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #030712; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+    .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(148, 163, 184, 0.08); }
+    .glow { box-shadow: 0 0 40px rgba(14, 165, 233, 0.15); }
+    .pulse-dot { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    .gradient-text {
+      background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientShift 4s ease infinite;
+    }
+    .hero-glow {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    #browser-screen {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .touch-layer {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 10;
+      touch-action: none;
+      cursor: crosshair;
+    }
+    .preset-btn { transition: all 0.15s ease; }
+    .preset-btn:hover { transform: translateY(-1px); }
+    .status-pill { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col overflow-hidden">
+
+  <!-- ========== HERO 区域 ========== -->
+  <div id="hero-section" class="flex-1 flex items-center justify-center relative">
+    <div class="hero-glow" style="top: -100px; left: 50%; transform: translateX(-50%);"></div>
+    <div class="text-center max-w-2xl mx-auto px-6 fade-in relative z-10">
+      <div class="mb-6 flex justify-center">
+        <div class="w-16 h-16 rounded-2xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center">
+          <i class="fas fa-globe text-primary-400 text-2xl"></i>
+        </div>
+      </div>
+      <h1 class="text-4xl md:text-5xl font-bold mb-4 gradient-text leading-tight">远程浏览器体验</h1>
+      <p class="text-slate-400 text-lg mb-2">无需安装，即刻体验云端浏览器控制能力</p>
+      <p class="text-slate-500 text-sm mb-8">基于 Playwright 的远程浏览器方案，支持实时画面与交互操作</p>
+      <button id="start-btn" onclick="startDemo()"
+        class="px-8 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-base transition-all duration-200 shadow-lg shadow-primary-600/25 hover:shadow-primary-500/30 hover:scale-[1.02] active:scale-[0.98]">
+        <i class="fas fa-play mr-2"></i>开始体验
+      </button>
+      <div id="hero-error" class="mt-4 text-red-400 text-sm hidden"></div>
+      <div class="mt-8 flex items-center justify-center gap-6 text-xs text-slate-600">
+        <span><i class="fas fa-clock mr-1"></i>限时 5 分钟</span>
+        <span><i class="fas fa-shield-alt mr-1"></i>无需注册</span>
+        <span><i class="fas fa-bolt mr-1"></i>即开即用</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 浏览器画面区域（初始隐藏） ========== -->
+  <div id="browser-section" class="hidden flex-1 flex flex-col min-h-0">
+    <!-- 顶部导航栏 -->
+    <div class="glass border-b border-slate-800/50 px-4 py-2 flex items-center gap-3 shrink-0">
+      <div class="flex items-center gap-1.5">
+        <button onclick="goBack()" class="w-8 h-8 rounded-lg hover:bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white transition-colors" title="后退">
+          <i class="fas fa-arrow-left text-xs"></i>
+        </button>
+        <button onclick="goForward()" class="w-8 h-8 rounded-lg hover:bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white transition-colors" title="前进">
+          <i class="fas fa-arrow-right text-xs"></i>
+        </button>
+        <button onclick="doRefresh()" class="w-8 h-8 rounded-lg hover:bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white transition-colors" title="刷新">
+          <i class="fas fa-redo text-xs"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 flex items-center">
+        <div class="flex-1 flex items-center bg-slate-800/60 rounded-lg border border-slate-700/50 focus-within:border-primary-500/50 transition-colors">
+          <i class="fas fa-lock text-slate-500 text-xs ml-3 mr-2"></i>
+          <input id="url-input" type="text" placeholder="输入网址后回车..."
+            class="flex-1 bg-transparent py-2 pr-3 text-sm text-white placeholder-slate-500 outline-none"
+            onkeydown="if(event.key==='Enter') navigateTo(this.value)">
+          <button onclick="navigateTo(document.getElementById('url-input').value)"
+            class="px-3 py-2 text-primary-400 hover:text-primary-300 transition-colors">
+            <i class="fas fa-arrow-right text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <button onclick="navigateTo('https://www.baidu.com')" class="preset-btn px-2.5 py-1 rounded-md text-xs bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700/60 border border-slate-700/30">百度</button>
+        <button onclick="navigateTo('https://www.bing.com')" class="preset-btn px-2.5 py-1 rounded-md text-xs bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700/60 border border-slate-700/30">Bing</button>
+        <button onclick="navigateTo('https://example.com')" class="preset-btn px-2.5 py-1 rounded-md text-xs bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700/60 border border-slate-700/30">Example</button>
+      </div>
+
+      <button onclick="endDemo()" class="ml-2 px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors">
+        <i class="fas fa-times mr-1"></i>结束
+      </button>
+    </div>
+
+    <!-- 画面容器 -->
+    <div id="video-container" class="flex-1 relative bg-black min-h-0">
+      <img id="browser-screen" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="远程浏览器画面">
+      <div id="touch-layer" class="touch-layer"></div>
+      <!-- 连接中遮罩 -->
+      <div id="connecting-overlay" class="absolute inset-0 bg-black/80 flex items-center justify-center z-20">
+        <div class="text-center">
+          <i class="fas fa-spinner fa-spin text-primary-400 text-3xl mb-3"></i>
+          <p class="text-slate-300 text-sm">正在连接远程浏览器...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部状态栏 -->
+    <div class="glass border-t border-slate-800/50 px-4 py-2 flex items-center justify-between text-xs shrink-0">
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-1.5">
+          <span id="conn-dot" class="w-1.5 h-1.5 rounded-full bg-yellow-400 pulse-dot"></span>
+          <span id="conn-status" class="text-slate-400">连接中</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-slate-500">
+          <i class="fas fa-tachometer-alt"></i>
+          <span id="fps-display" class="status-pill">-- FPS</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-slate-500">
+          <i class="fas fa-signal"></i>
+          <span id="bandwidth-display" class="status-pill">-- KB/s</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <i class="fas fa-hourglass-half text-amber-400/70"></i>
+        <span id="countdown-display" class="text-amber-400 font-medium status-pill">05:00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 过期弹窗 ========== -->
+  <div id="expired-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="glass rounded-2xl p-8 max-w-md mx-4 text-center fade-in">
+      <div class="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+        <i class="fas fa-hourglass-end text-amber-400 text-2xl"></i>
+      </div>
+      <h2 class="text-xl font-bold text-white mb-2">体验时间已结束</h2>
+      <p class="text-slate-400 text-sm mb-6">感谢您的体验，会话已自动关闭</p>
+      <button onclick="location.reload()" class="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium transition-colors">
+        <i class="fas fa-redo mr-2"></i>重新体验
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let sessionId = null;
+    let streamWs = null;
+    let eventsWs = null;
+    let remainingSeconds = 0;
+    let countdownTimer = null;
+    let frameCount = 0;
+    let bandwidthTotal = 0;
+    let bandwidthCount = 0;
+
+    function $(id) { return document.getElementById(id); }
+
+    // ========== 创建会话 ==========
+    async function startDemo() {
+      const btn = $('start-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>正在创建会话...';
+
+      try {
+        const resp = await fetch('/api/demo/session', { method: 'POST' });
+        const data = await resp.json();
+
+        if (!data.success) {
+          showError(data.error || '创建失败');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-play mr-2"></i>开始体验';
+          return;
+        }
+
+        sessionId = data.data.sessionId;
+        remainingSeconds = data.data.maxDuration;
+        showBrowser();
+        connectWebSockets();
+        startCountdown();
+      } catch (e) {
+        showError('网络错误，请稍后重试');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-play mr-2"></i>开始体验';
+      }
+    }
+
+    function showError(msg) {
+      const el = $('hero-error');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    function showBrowser() {
+      $('hero-section').classList.add('hidden');
+      $('browser-section').classList.remove('hidden');
+      $('browser-section').classList.add('flex');
+    }
+
+    // ========== WebSocket 连接 ==========
+    function connectWebSockets() {
+      const wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsBase = `${wsProto}//${location.host}`;
+
+      // Stream: 接收画面帧
+      streamWs = new WebSocket(`${wsBase}/ws/${sessionId}/stream`);
+
+      streamWs.onopen = () => {
+        console.log('Stream WS connected');
+      };
+
+      streamWs.onmessage = (e) => {
+        if (e.data instanceof Blob) {
+          bandwidthTotal += e.data.size / 1024;
+          bandwidthCount++;
+          frameCount++;
+
+          const url = URL.createObjectURL(e.data);
+          const img = $('browser-screen');
+          const oldUrl = img.dataset.oldUrl;
+          img.src = url;
+          if (oldUrl) URL.revokeObjectURL(oldUrl);
+          img.dataset.oldUrl = url;
+        }
+      };
+
+      streamWs.onerror = (err) => console.error('Stream WS error:', err);
+      streamWs.onclose = () => console.log('Stream WS closed');
+
+      // Events: 发送鼠标/键盘事件
+      eventsWs = new WebSocket(`${wsBase}/ws/${sessionId}/events`);
+
+      eventsWs.onopen = () => {
+        console.log('Events WS connected');
+        setConnected(true);
+        sendEvent('init', {});
+        // 默认导航
+        navigateTo('https://www.baidu.com');
+      };
+
+      eventsWs.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'configSync') {
+            console.log('Config sync:', msg.config);
+          }
+        } catch {}
+      };
+
+      eventsWs.onerror = (err) => {
+        console.error('Events WS error:', err);
+        setConnected(false);
+      };
+
+      eventsWs.onclose = () => {
+        console.log('Events WS closed');
+        setConnected(false);
+      };
+    }
+
+    // ========== 事件发送（复用 remote-control.html 协议） ==========
+    function sendEvent(type, data) {
+      if (eventsWs && eventsWs.readyState === WebSocket.OPEN) {
+        eventsWs.send(JSON.stringify({
+          type: 'event',
+          event: {
+            type: type,
+            timestamp: Date.now(),
+            ...data
+          }
+        }));
+      }
+    }
+
+    // ========== 鼠标/触摸事件 ==========
+    function setupMouseEvents() {
+      const layer = $('touch-layer');
+
+      layer.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const rect = layer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        sendEvent('mouseDown', { x, y, button: mapButton(e.button) });
+      });
+
+      layer.addEventListener('mousemove', (e) => {
+        const rect = layer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        sendEvent('mouseMove', { x, y });
+      });
+
+      layer.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        const rect = layer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        sendEvent('mouseUp', { x, y, button: mapButton(e.button) });
+      });
+
+      layer.addEventListener('click', (e) => {
+        e.preventDefault();
+        const rect = layer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        sendEvent('mouseClick', { x, y, button: mapButton(e.button) });
+      });
+
+      layer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = layer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        sendEvent('wheel', { x, y, deltaX: e.deltaX, deltaY: e.deltaY });
+      }, { passive: false });
+
+      layer.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      // 键盘事件
+      document.addEventListener('keydown', (e) => {
+        if (document.activeElement === $('url-input')) return;
+        sendEvent('keyDown', { key: e.key, code: e.code, modifiers: getModifiers(e) });
+        if (['Tab', 'Backspace', 'Enter'].includes(e.key)) e.preventDefault();
+      });
+
+      document.addEventListener('keyup', (e) => {
+        if (document.activeElement === $('url-input')) return;
+        sendEvent('keyUp', { key: e.key, code: e.code, modifiers: getModifiers(e) });
+      });
+
+      // 触摸事件
+      let touchStartTime = 0, touchStartX = 0, touchStartY = 0;
+      let hasMoved = false, hasTriggeredMouseDown = false;
+
+      layer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = layer.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        touchStartX = x; touchStartY = y;
+        touchStartTime = Date.now();
+        hasMoved = false; hasTriggeredMouseDown = false;
+        sendEvent('mouseMove', { x, y });
+        setTimeout(() => {
+          if (!hasMoved && !hasTriggeredMouseDown) {
+            sendEvent('mouseDown', { x: touchStartX, y: touchStartY, button: 'left' });
+            hasTriggeredMouseDown = true;
+          }
+        }, 500);
+      }, { passive: false });
+
+      layer.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = layer.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const dist = Math.sqrt((x - touchStartX) ** 2 + (y - touchStartY) ** 2);
+        if (dist > 5) {
+          hasMoved = true;
+          sendEvent('mouseMove', { x, y });
+        }
+      }, { passive: false });
+
+      layer.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        const dt = Date.now() - touchStartTime;
+        if (!hasMoved) {
+          if (dt < 500) {
+            sendEvent('mouseClick', { x: touchStartX, y: touchStartY, button: 'left' });
+          } else if (hasTriggeredMouseDown) {
+            sendEvent('mouseUp', { x: touchStartX, y: touchStartY, button: 'left' });
+          }
+        } else if (hasTriggeredMouseDown) {
+          const t = e.changedTouches[0];
+          const rect = layer.getBoundingClientRect();
+          sendEvent('mouseUp', { x: t.clientX - rect.left, y: t.clientY - rect.top, button: 'left' });
+        }
+      }, { passive: false });
+    }
+
+    function mapButton(btn) {
+      return ['left', 'middle', 'right'][btn] || 'left';
+    }
+
+    function getModifiers(e) {
+      const m = [];
+      if (e.ctrlKey) m.push('ctrl');
+      if (e.shiftKey) m.push('shift');
+      if (e.altKey) m.push('alt');
+      if (e.metaKey) m.push('meta');
+      return m;
+    }
+
+    // ========== URL 导航 ==========
+    function navigateTo(url) {
+      if (!url) return;
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      $('url-input').value = url;
+      if (eventsWs && eventsWs.readyState === WebSocket.OPEN) {
+        eventsWs.send(JSON.stringify({
+          type: 'event',
+          event: {
+            type: 'navigate',
+            timestamp: Date.now(),
+            url: url
+          }
+        }));
+      }
+    }
+
+    function goBack() { sendEvent('goBack', {}); }
+    function goForward() { sendEvent('goForward', {}); }
+    function doRefresh() { sendEvent('refresh', {}); }
+
+    // ========== 倒计时 ==========
+    function startCountdown() {
+      updateCountdownDisplay();
+      countdownTimer = setInterval(() => {
+        remainingSeconds--;
+        updateCountdownDisplay();
+        if (remainingSeconds <= 0) {
+          clearInterval(countdownTimer);
+          showExpired();
+        }
+      }, 1000);
+    }
+
+    function updateCountdownDisplay() {
+      const m = Math.floor(Math.max(0, remainingSeconds) / 60);
+      const s = Math.max(0, remainingSeconds) % 60;
+      $('countdown-display').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      if (remainingSeconds <= 30) {
+        $('countdown-display').classList.add('text-red-400');
+        $('countdown-display').classList.remove('text-amber-400');
+      }
+    }
+
+    function showExpired() {
+      $('expired-modal').classList.remove('hidden');
+      cleanup();
+    }
+
+    // ========== 状态更新 ==========
+    function setConnected(ok) {
+      $('conn-dot').className = `w-1.5 h-1.5 rounded-full ${ok ? 'bg-green-400' : 'bg-red-400'} pulse-dot`;
+      $('conn-status').textContent = ok ? '已连接' : '已断开';
+      $('conn-status').className = ok ? 'text-green-400' : 'text-red-400';
+      if (ok) $('connecting-overlay').classList.add('hidden');
+    }
+
+    function setupStatsInterval() {
+      setInterval(() => {
+        $('fps-display').textContent = `${frameCount} FPS`;
+        frameCount = 0;
+        if (bandwidthCount > 0) {
+          $('bandwidth-display').textContent = `${(bandwidthTotal / bandwidthCount).toFixed(1)} KB/s`;
+          bandwidthTotal = 0;
+          bandwidthCount = 0;
+        }
+      }, 1000);
+    }
+
+    // ========== 结束/清理 ==========
+    async function endDemo() {
+      try {
+        if (sessionId) {
+          await fetch('/api/demo/session', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId })
+          });
+        }
+      } catch {}
+      cleanup();
+      location.reload();
+    }
+
+    function cleanup() {
+      if (countdownTimer) clearInterval(countdownTimer);
+      if (streamWs) { streamWs.close(); streamWs = null; }
+      if (eventsWs) { eventsWs.close(); eventsWs = null; }
+    }
+
+    window.addEventListener('beforeunload', () => {
+      if (sessionId) {
+        navigator.sendBeacon('/api/demo/session', JSON.stringify({ sessionId }));
+      }
+      cleanup();
+    });
+
+    // ========== 初始化 ==========
+    setupMouseEvents();
+    setupStatsInterval();
+  </script>
+</body>
+</html>

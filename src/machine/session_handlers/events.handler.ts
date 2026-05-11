@@ -413,21 +413,70 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
 
       // --- 其他指令 ---
       case 'page.goto':
+      case 'navigate':
         try {
-          logger.info(`Navigating page for session ${sessionId} to ${data.url}`);
-          await page.goto(data.url, {
-            waitUntil: 'networkidle0',
-            timeout: 60000,
-          }); // Add options
+          logger.info(`Navigating page for session ${sessionId} to ${data?.url}`);
+          await page.goto(data?.url, {
+            waitUntil: 'domcontentloaded',
+            timeout: 30000,
+          });
           sendResponse(ws, requestType, { success: true });
         } catch (gotoError) {
-          logger.error(`Failed page.goto for ${sessionId}:`, gotoError);
+          logger.error(`Failed navigate for ${sessionId}:`, gotoError);
           sendResponse(ws, requestType, {
             success: false,
             error: (gotoError as Error).message,
           });
         }
         break;
+
+      case 'goBack':
+        try {
+          await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 });
+          sendResponse(ws, requestType, { success: true });
+        } catch (backError) {
+          sendResponse(ws, requestType, { success: false, error: (backError as Error).message });
+        }
+        break;
+
+      case 'goForward':
+        try {
+          await page.goForward({ waitUntil: 'domcontentloaded', timeout: 15000 });
+          sendResponse(ws, requestType, { success: true });
+        } catch (fwdError) {
+          sendResponse(ws, requestType, { success: false, error: (fwdError as Error).message });
+        }
+        break;
+
+      case 'reload':
+        try {
+          await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
+          sendResponse(ws, requestType, { success: true });
+        } catch (reloadError) {
+          sendResponse(ws, requestType, { success: false, error: (reloadError as Error).message });
+        }
+        break;
+
+      case 'mousemove':
+      case 'mousedown':
+      case 'mouseup':
+      case 'click':
+      case 'wheel':
+      case 'keydown':
+      case 'keyup': {
+        const nameMap: Record<string, string> = {
+          mousemove: 'mouseMove',
+          mousedown: 'mouseDown',
+          mouseup: 'mouseUp',
+          click: 'mouseClick',
+          wheel: 'mouseWheel',
+          keydown: 'keyDown',
+          keyup: 'keyUp',
+        };
+        const mappedType = nameMap[eventType] || eventType;
+        handleMouseEvents(mappedType, data || {}, page, ws, sessionId, requestType);
+        break;
+      }
 
       default:
         logger.warn(`Unhandled event type received: ${eventType}`);

@@ -220,11 +220,13 @@ function startScreenshotLoop(streamInfo: StreamInfo): void {
 }
 
 // --- 等待页面就绪 ---
+const DEFAULT_START_URL = 'https://www.baidu.com';
+
 async function waitForPageReady(page: Page, _sessionId: string): Promise<void> {
   const currentUrl = page.url();
   if (currentUrl === 'about:blank' || currentUrl === '') {
     try {
-      await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 });
+      await page.goto(DEFAULT_START_URL, { waitUntil: 'domcontentloaded', timeout: 10000 });
     } catch {
       /* navigation timeout is acceptable */
     }

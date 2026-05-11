@@ -131,5 +131,12 @@
     "parentID": "ses_1ef3bb0b4ffeEo7Rzhlws3MF0J",
     "status": "running",
     "createdAt": 1778397882310
+  },
+  "fix-navigate-events": {
+    "id": "ses_1e880397effeWwD0gv8owK11Sp",
+    "name": "fix-navigate-events",
+    "parentID": "ses_1e881f09cffeHNNWngpA0d6uZZ",
+    "status": "running",
+    "createdAt": 1778510710404
   }
 }

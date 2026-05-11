@@ -3,7 +3,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { MachineModel, UpdateMachineInput } from '../models/machine.model.js';
 import { SessionModel } from '../models/session.model.js';
-import { sendSuccess, sendError, sendCreated, sendPaginated } from '../utils/response.js';
+import { sendSuccess, sendError, sendCreated, sendPaginated, getSafeErrorMessage } from '../utils/response.js';
 import { PaginationQuery } from '@shared/types/index.js';
 import {
   registerMachineRequestSchema,
@@ -12,6 +12,7 @@ import {
 } from '../schemas/index.js';
 import { toMachineMemoryDTO, toMachineInfoDTO } from '@shared/mappers/index.js';
 import { IdParamRoute, CleanupOldMachinesBodyRoute } from '@shared/types/routes.js';
+import { OperationLogModel } from '../models/operation-log.model.js';
 
 // 注册机器
 export async function registerMachine(request: FastifyRequest, reply: FastifyReply) {
@@ -80,8 +81,8 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
     if (memoryMachines.length > 0) {
       logger.info(`[DEBUG] 使用内存数据，机器数量: ${memoryMachines.length}`);
       // 处理分页
-      const page = parseInt(query.page || '1', 10);
-      const limit = parseInt(query.limit || '10', 10);
+      const page = Math.max(1, parseInt(query.page || '1', 10));
+      const limit = Math.min(100, Math.max(1, parseInt(query.limit || '10', 10)));
       const offset = (page - 1) * limit;
 
       // 排序
@@ -216,6 +217,12 @@ export async function markMachineOffline(request: FastifyRequest<IdParamRoute>, 
     // 标记机器离线
     await MachineModel.markOffline(machineId);
 
+    await OperationLogModel.create({
+      admin_id: request.user?.id || 0,
+      action: 'mark_machine_offline',
+      details: { machineId, previousStatus: machine.status },
+    }).catch((logErr) => request.log.error({ err: logErr }, '记录操作日志失败'));
+
     return sendSuccess(reply, { id: machineId, status: 'offline' });
   } catch (error) {
     request.log.error(error);
@@ -302,6 +309,12 @@ export async function restartMachine(request: FastifyRequest<IdParamRoute>, repl
       // 更新数据库中的机器状态
       await MachineModel.update(machineId, { status: 'offline' });
 
+      await OperationLogModel.create({
+        admin_id: request.user?.id || 0,
+        action: 'restart_machine',
+        details: { machineId, hostname: machine.hostname },
+      }).catch((logErr) => request.log.error({ err: logErr }, '记录操作日志失败'));
+
       return sendSuccess(reply, {
         success: true,
         message: '重启命令已发送',
@@ -309,7 +322,7 @@ export async function restartMachine(request: FastifyRequest<IdParamRoute>, repl
       });
     } catch (commandError) {
       request.log.error({ err: commandError }, '发送重启命令失败');
-      return sendError(reply, '发送重启命令失败: ' + (commandError as Error).message, 500);
+      return sendError(reply, '发送重启命令失败: ' + getSafeErrorMessage(commandError), 500);
     }
   } catch (error) {
     request.log.error({ err: error }, '重启机器失败');
@@ -365,6 +378,12 @@ export async function deleteMachine(request: FastifyRequest<IdParamRoute>, reply
         error: '删除机器失败',
       });
     }
+
+    await OperationLogModel.create({
+      admin_id: request.user?.id || 0,
+      action: 'delete_machine',
+      details: { machineId, hostname: machine.hostname, previousStatus: machine.status },
+    }).catch((logErr) => request.log.error({ err: logErr }, '记录操作日志失败'));
 
     // 从内存存储中移除机器
     try {

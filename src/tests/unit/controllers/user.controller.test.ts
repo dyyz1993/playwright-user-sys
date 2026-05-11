@@ -59,6 +59,7 @@ vi.mock('../../../utils/response.js', () => ({
 vi.mock('../../../models/session.model.js', () => ({
   SessionModel: {
     getUserSessionStats: vi.fn(),
+    findActiveSessions: vi.fn().mockResolvedValue([]),
   },
 }));
 

@@ -14,12 +14,12 @@ import { getSessionDetailPageData } from '../controllers/admin/session-detail-pa
 import { getCreditsHistoryPageData } from '../controllers/admin/credits-page.controller.js';
 import { getLogsPageData } from '../controllers/admin/logs-page.controller.js';
 import { getProfilePageData } from '../controllers/admin/profile-page.controller.js';
-import { sendError } from '../utils/response.js';
+import { sendError, getSafeErrorMessage } from '../utils/response.js';
 import { env } from '../config/env.js';
 import { SessionModel } from '../models/session/index.js';
 
 function getErrorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
+  return getSafeErrorMessage(e);
 }
 
 function requireAdmin(request: FastifyRequest, reply: FastifyReply): boolean {
@@ -105,6 +105,11 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   fastify.get('/admin', { onRequest: [fastify.verifyJWT] }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       if (!request.user) {
+        return reply.redirect('/admin/login');
+      }
+
+      if (!requireAdmin(request, reply)) {
+        request.flash('error', '需要管理员权限');
         return reply.redirect('/admin/login');
       }
 

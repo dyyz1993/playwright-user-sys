@@ -4,10 +4,11 @@ import { z } from 'zod';
 import { errorResponseSchema, idParamSchema } from '../../schemas/index.js';
 import { OperationLogQueryRoute, OperationLogStatsQueryRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
+import { getSafeErrorMessage } from '../../utils/response.js';
 import * as AdminOpLogService from '../../services/admin-operation-log.service.js';
 
 function getErrorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
+  return getSafeErrorMessage(e);
 }
 
 export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Promise<void> {
@@ -118,8 +119,8 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
     async (request: FastifyRequest<OperationLogQueryRoute>, reply: FastifyReply) => {
       try {
         const query = request.query;
-        const page = parseInt(query.page || '1') || 1;
-        const limit = parseInt(query.limit || '20') || 20;
+        const page = Math.max(1, parseInt(query.page || '1', 10) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(query.limit || '20', 10) || 20));
 
         const filters: Record<string, unknown> = {};
 

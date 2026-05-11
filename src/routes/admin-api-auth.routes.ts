@@ -10,7 +10,7 @@ import {
 } from '../schemas/index.js';
 import { authenticateUser } from '../services/auth.service.js';
 import * as UserService from '../services/user.service.js';
-import { sendSuccess, sendError } from '../utils/response.js';
+import { sendSuccess, sendError, getSafeErrorMessage } from '../utils/response.js';
 
 export default async function adminApiAuthRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
@@ -51,7 +51,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
         );
       } catch (error: unknown) {
         request.log.error({ err: error }, '登录失败');
-        const msg = error instanceof Error ? error.message : String(error);
+        const msg = getSafeErrorMessage(error);
         return sendError(reply, msg, 401);
       }
     }
@@ -136,7 +136,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '获取仪表盘统计数据失败');
-        const msg = error instanceof Error ? error.message : String(error);
+        const msg = getSafeErrorMessage(error);
         return sendError(reply, '获取仪表盘统计数据失败: ' + msg, 500);
       }
     }

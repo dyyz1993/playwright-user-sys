@@ -3,10 +3,11 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import { errorResponseSchema } from '../../schemas/index.js';
 import { createAuthenticate } from './authenticate.js';
+import { getSafeErrorMessage } from '../../utils/response.js';
 import * as AdminStorageService from '../../services/admin-storage.service.js';
 
 function getErrorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
+  return getSafeErrorMessage(e);
 }
 
 export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<void> {

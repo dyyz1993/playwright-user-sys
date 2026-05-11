@@ -18,10 +18,10 @@ import {
 import { BatchRechargeBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
 import * as UserService from '../../services/user.service.js';
-import { sendSuccess, sendError, sendCreated } from '../../utils/response.js';
+import { sendSuccess, sendError, sendCreated, getSafeErrorMessage } from '../../utils/response.js';
 
 function getErrorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
+  return getSafeErrorMessage(e);
 }
 
 export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void> {

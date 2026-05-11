@@ -1,13 +1,18 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { TestSessionBodyRoute, TestMachineBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
+import { getSafeErrorMessage } from '../../utils/response.js';
 import * as AdminTestService from '../../services/admin-test.service.js';
 
 function getErrorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
+  return getSafeErrorMessage(e);
 }
 
 export async function adminApiTestRoutes(fastify: FastifyInstance): Promise<void> {
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+
   const authenticate = createAuthenticate(fastify);
 
   fastify.post(

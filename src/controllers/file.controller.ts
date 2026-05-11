@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { sendSuccess, sendError } from '../utils/response.js';
+import { sendSuccess, sendError, getSafeErrorMessage } from '../utils/response.js';
 import { CleanupTempFilesQueryRoute } from '@shared/types/routes.js';
 import { SessionModel } from '../models/session.model.js';
 import { logger } from '@shared/utils/logger.js';
@@ -243,7 +243,7 @@ export async function uploadFileForSession(request: FastifyRequest, reply: Fasti
     );
   } catch (error: unknown) {
     logger.error('文件上传失败:', error);
-    return sendError(reply, error instanceof Error ? error.message : '文件上传失败', 500);
+    return sendError(reply, getSafeErrorMessage(error) || '文件上传失败', 500);
   }
 }
 

@@ -2,6 +2,7 @@ import { FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { UserModel, CreateUserInput, UpdateUserInput } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
+import { SessionModel } from '../models/session.model.js';
 import { sendSuccess, sendError, sendCreated, sendNoContent, sendPaginated } from '../utils/response.js';
 import {
   UserRole,
@@ -209,7 +210,12 @@ export async function deleteUser(request: AuthenticatedRequestWithParams<IdParam
       return sendError(reply, '不允许删除管理员账号', 403);
     }
 
-    // 删除用户
+    const activeSessions = await SessionModel.findActiveSessions();
+    const hasActive = activeSessions.some((s: { user_id: number }) => s.user_id === userId);
+    if (hasActive) {
+      return sendError(reply, '该用户有活跃会话，请先释放所有会话后再删除', 409);
+    }
+
     await UserModel.delete(userId);
 
     // 记录操作日志 - 异步处理

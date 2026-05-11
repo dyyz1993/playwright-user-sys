@@ -1,7 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { getSafeErrorMessage } from '../utils/response.js';
 
 function getErrorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
+  return getSafeErrorMessage(e);
 }
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';

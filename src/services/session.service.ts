@@ -1,6 +1,5 @@
 import { SessionModel } from '../models/session.model.js';
 import { MachineModel } from '../models/machine.model.js';
-import { UserModel } from '../models/user.model.js';
 import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/types/index.js';
 import { logger } from '@shared/utils/logger.js';
 import { createWebhookEvent } from '../utils/webhook.js';
@@ -53,7 +52,7 @@ export async function releaseSession(options: ReleaseSessionOptions): Promise<Re
 
     const creditsUsed = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
     const initialCreditsUsed = session.credits_used || 0;
-    const creditsToDeduct = Math.max(0, creditsUsed - initialCreditsUsed);
+    const creditsDiff = creditsUsed - initialCreditsUsed;
 
     const updateResult = await trx('sessions').where({ id: sessionId }).whereNotIn('status', TERMINAL_STATUSES).update({
       status: SessionStatus.DISCONNECTED,
@@ -73,19 +72,29 @@ export async function releaseSession(options: ReleaseSessionOptions): Promise<Re
       };
     }
 
-    if (creditsToDeduct > 0) {
+    if (creditsDiff !== 0) {
       const user = await trx('users').where({ id: userId }).first();
       if (user) {
-        const balanceAfter = user.credits - creditsToDeduct;
-        await trx('users').where({ id: userId }).decrement('credits', creditsToDeduct);
+        if (creditsDiff > 0) {
+          await trx('users').where({ id: userId }).decrement('credits', creditsDiff);
+        } else {
+          await trx('users').where({ id: userId }).increment('credits', -creditsDiff);
+        }
 
+        const balanceAfter = user.credits + -creditsDiff;
         await trx('credit_history').insert({
           user_id: userId,
-          amount: creditsToDeduct,
-          action: 'use',
+          amount: Math.abs(creditsDiff),
+          action: creditsDiff > 0 ? 'use' : 'refund',
           balance_after: balanceAfter,
-          description: `Session usage: ${sessionId.substring(0, 8)}... (${duration}s)`,
-          metadata: JSON.stringify({ session_id: sessionId, duration }),
+          description: `Session settlement: ${sessionId.substring(0, 8)}... (${duration}s, pre-deducted: ${initialCreditsUsed}, actual: ${creditsUsed})`,
+          metadata: JSON.stringify({
+            session_id: sessionId,
+            duration,
+            pre_deducted: initialCreditsUsed,
+            actual: creditsUsed,
+            diff: creditsDiff,
+          }),
           created_at: now,
           updated_at: now,
         });
@@ -105,6 +114,8 @@ export async function releaseSession(options: ReleaseSessionOptions): Promise<Re
   });
 }
 
+const SESSION_COST = 1;
+
 /**
  * 创建浏览器会话的核心服务
  * 从controller抽离出来，供API和WebSocket直连两种方式共同使用
@@ -117,15 +128,6 @@ export async function createBrowserSession(
   options: SessionCreateOptions = {},
   isWebSocketDirect = false
 ) {
-  const user = await UserModel.findById(userId);
-  if (!user) {
-    throw new Error('用户不存在');
-  }
-
-  if (user.credits <= 0) {
-    throw new Error('点数不足，请联系管理员充值');
-  }
-
   if (!options.viewport) {
     options.viewport = {
       width: 1280,
@@ -146,6 +148,19 @@ export async function createBrowserSession(
   logger.info(`找到可用的实例机器: ${machineId}`);
 
   const { sessionId, createdAt } = await db.transaction(async (trx) => {
+    const user = await trx('users').where({ id: userId }).first();
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+
+    if (user.credits <= 0) {
+      throw new Error('点数不足，请联系管理员充值');
+    }
+
+    if (user.credits < SESSION_COST) {
+      throw new Error('点数不足，无法创建会话');
+    }
+
     const activeResult = await trx('sessions')
       .where({ user_id: userId })
       .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED])
@@ -167,14 +182,28 @@ export async function createBrowserSession(
       throw new Error('Machine no longer available');
     }
 
-    const newSessionId = uuidv4();
+    await trx('users').where({ id: userId }).decrement('credits', SESSION_COST);
+
     const now = new Date();
+    await trx('credit_history').insert({
+      user_id: userId,
+      amount: SESSION_COST,
+      action: 'use',
+      balance_after: user.credits - SESSION_COST,
+      description: `Session pre-deduct: user ${userId}`,
+      metadata: JSON.stringify({ type: 'pre_deduct' }),
+      created_at: now,
+      updated_at: now,
+    });
+
+    const newSessionId = uuidv4();
     await trx('sessions').insert({
       id: newSessionId,
       user_id: userId,
       machine_id: machineId,
       status: SessionStatus.CREATED,
       options: JSON.stringify(options),
+      credits_used: SESSION_COST,
       created_at: now,
       updated_at: now,
     });

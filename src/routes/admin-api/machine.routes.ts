@@ -5,10 +5,11 @@ import { z } from 'zod';
 import { errorResponseSchema } from '../../schemas/index.js';
 import { AddMachineBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
+import { getSafeErrorMessage } from '../../utils/response.js';
 import * as AdminMachineService from '../../services/admin-machine.service.js';
 
 function getErrorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
+  return getSafeErrorMessage(e);
 }
 
 export async function adminApiMachineRoutes(fastify: FastifyInstance): Promise<void> {

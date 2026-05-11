@@ -103,6 +103,12 @@ export async function updateUser(userId: number, data: UpdateUserServiceInput, a
 }
 
 export async function deleteUser(userId: number, adminId?: number): Promise<boolean> {
+  const activeSessions = await SessionModel.findActiveSessions();
+  const userActiveSessions = activeSessions.filter((s: { user_id: number }) => s.user_id === userId);
+  if (userActiveSessions.length > 0) {
+    throw new Error('该用户有活跃会话，请先释放所有会话后再删除');
+  }
+
   return await db.transaction(async (trx) => {
     const existing = await trx('users').where({ id: userId }).first();
     if (!existing) throw new Error('用户不存在');
@@ -132,9 +138,17 @@ export async function batchDeleteUsers(
   const deleted: number[] = [];
   const failed: Array<{ userId: number; error: string }> = [];
 
+  const activeSessions = await SessionModel.findActiveSessions();
+  const activeUserIds = new Set(activeSessions.map((s: { user_id: number }) => s.user_id));
+
   await db.transaction(async (trx) => {
     for (const userId of userIds) {
       try {
+        if (activeUserIds.has(userId)) {
+          failed.push({ userId, error: '该用户有活跃会话，请先释放所有会话后再删除' });
+          continue;
+        }
+
         const existing = await trx('users').where({ id: userId }).first();
         if (!existing) {
           failed.push({ userId, error: '用户不存在' });

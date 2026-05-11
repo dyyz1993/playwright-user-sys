@@ -29,6 +29,7 @@ let wsProxyService: NativeWebSocketProxyService;
  */
 export async function buildManager(): Promise<FastifyInstance> {
   const app = Fastify({
+    bodyLimit: 1048576,
     logger:
       process.env.NODE_ENV !== 'test'
         ? {

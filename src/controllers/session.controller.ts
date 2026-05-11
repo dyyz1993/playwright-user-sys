@@ -3,7 +3,7 @@ import { z } from 'zod';
 import path from 'path';
 import { SessionModel } from '../models/session.model.js';
 import { UserModel } from '../models/user.model.js';
-import { sendSuccess, sendError, sendCreated } from '../utils/response.js';
+import { sendSuccess, sendError, sendCreated, getSafeErrorMessage } from '../utils/response.js';
 import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { createSessionRequestSchema } from '../schemas/index.js';
@@ -153,7 +153,7 @@ export async function getUserSessions(request: FastifyRequest<PaginationQueryRou
     }
 
     request.log.error({ err: error }, '获取用户会话失败');
-    return sendError(reply, '获取会话列表失败: ' + (error instanceof Error ? error.message : String(error)), 500);
+    return sendError(reply, '获取会话列表失败: ' + getSafeErrorMessage(error), 500);
   }
 }
 
@@ -367,7 +367,7 @@ export async function injectFileToSession(request: FastifyRequest, reply: Fastif
     return sendSuccess(reply, result, '文件注入成功');
   } catch (error: unknown) {
     logger.error('文件注入失败:', error);
-    return sendError(reply, error instanceof Error ? error.message : '文件注入失败', 500);
+    return sendError(reply, getSafeErrorMessage(error) || '文件注入失败', 500);
   }
 }
 
@@ -429,7 +429,7 @@ export async function uploadUrlToSession(request: FastifyRequest, reply: Fastify
     return sendSuccess(reply, result, 'URL 文件下载并注入成功');
   } catch (error: unknown) {
     logger.error('URL 文件注入失败:', error);
-    return sendError(reply, error instanceof Error ? error.message : 'URL 文件注入失败', 500);
+    return sendError(reply, getSafeErrorMessage(error) || 'URL 文件注入失败', 500);
   }
 }
 

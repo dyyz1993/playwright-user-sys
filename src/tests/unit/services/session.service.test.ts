@@ -15,7 +15,6 @@ vi.mock('uuid', () => ({
 
 vi.mock('../../../models/user.model.js', () => ({
   UserModel: {
-    findById: vi.fn(),
     deductCredits: vi.fn(),
   },
 }));
@@ -52,6 +51,7 @@ function createMockTrx(sessionData: Record<string, unknown> | null) {
     whereNotIn: vi.fn().mockReturnThis(),
     update: vi.fn().mockResolvedValue(1),
     decrement: vi.fn().mockResolvedValue(1),
+    increment: vi.fn().mockResolvedValue(1),
     insert: vi.fn().mockResolvedValue([1]),
     raw: vi.fn((sql: string) => sql),
   };
@@ -59,7 +59,7 @@ function createMockTrx(sessionData: Record<string, unknown> | null) {
   return Object.assign(trx, queryBuilder);
 }
 
-function createCreateSessionTrx() {
+function createCreateSessionTrx(userCredits = 100) {
   const sessionsChain = {
     where: vi.fn().mockReturnThis(),
     whereIn: vi.fn().mockReturnThis(),
@@ -73,12 +73,22 @@ function createCreateSessionTrx() {
     first: vi.fn().mockResolvedValue({ id: 'machine-001', instance_count: 0, max_instances: 10 }),
     increment: vi.fn().mockResolvedValue(1),
   };
+  const usersChain = {
+    where: vi.fn().mockReturnThis(),
+    first: vi.fn().mockResolvedValue({ id: 1, credits: userCredits }),
+    decrement: vi.fn().mockResolvedValue(1),
+  };
+  const creditHistoryChain = {
+    insert: vi.fn().mockResolvedValue([1]),
+  };
   const trx = vi.fn().mockImplementation((table: string) => {
     if (table === 'sessions') return sessionsChain;
     if (table === 'machines') return machinesChain;
+    if (table === 'users') return usersChain;
+    if (table === 'credit_history') return creditHistoryChain;
     return { where: vi.fn().mockReturnThis(), first: vi.fn().mockResolvedValue(null) };
   });
-  return Object.assign(trx, { sessionsChain, machinesChain });
+  return Object.assign(trx, { sessionsChain, machinesChain, usersChain });
 }
 
 vi.mock('../../../config/database.js', () => ({
@@ -148,18 +158,13 @@ describe('SessionService', () => {
   // SS-01: 创建会话 - 正常流程
   // ========================================
   it('应该成功创建浏览器会话', async () => {
-    vi.mocked(UserModel.findById).mockResolvedValue({
-      id: 1,
-      credits: 100,
-    });
-
     vi.mocked(MachineModel.findAvailable).mockResolvedValue({
       id: 'machine-001',
       ip: '192.168.1.1',
       proxyPort: 8082,
     });
 
-    const trx = createCreateSessionTrx();
+    const trx = createCreateSessionTrx(100);
     vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     vi.mocked(connectionManager.launchBrowser).mockResolvedValue({
@@ -184,9 +189,9 @@ describe('SessionService', () => {
     expect(result.browserWSEndpoint).toBe('ws://localhost:9222');
     expect(result.directUrl).toContain('sessionId=session-001');
 
-    expect(UserModel.findById).toHaveBeenCalledWith(1);
     expect(MachineModel.findAvailable).toHaveBeenCalled();
     expect(db.transaction).toHaveBeenCalled();
+    expect(trx.usersChain.decrement).toHaveBeenCalled();
     expect(connectionManager.launchBrowser).toHaveBeenCalledWith('machine-001', 'session-001', expect.any(Object));
     expect(SessionModel.update).toHaveBeenCalledWith(
       'session-001',
@@ -202,37 +207,45 @@ describe('SessionService', () => {
   // SS-02: 创建会话 - 用户不存在
   // ========================================
   it('用户不存在时应该抛出错误', async () => {
-    vi.mocked(UserModel.findById).mockResolvedValue(null);
+    vi.mocked(MachineModel.findAvailable).mockResolvedValue({
+      id: 'machine-001',
+      ip: '192.168.1.1',
+      proxyPort: 8082,
+    });
+
+    const usersChain = {
+      where: vi.fn().mockReturnThis(),
+      first: vi.fn().mockResolvedValue(null),
+    };
+    const trx = vi.fn().mockImplementation((table: string) => {
+      if (table === 'users') return usersChain;
+      return { where: vi.fn().mockReturnThis(), first: vi.fn().mockResolvedValue(null) };
+    });
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     await expect(createBrowserSession(999, {})).rejects.toThrow('用户不存在');
-
-    expect(UserModel.findById).toHaveBeenCalledWith(999);
-    expect(MachineModel.findAvailable).not.toHaveBeenCalled();
   });
 
   // ========================================
   // SS-03: 创建会话 - 点数不足
   // ========================================
   it('点数不足时应该抛出错误', async () => {
-    vi.mocked(UserModel.findById).mockResolvedValue({
-      id: 1,
-      credits: 0,
+    vi.mocked(MachineModel.findAvailable).mockResolvedValue({
+      id: 'machine-001',
+      ip: '192.168.1.1',
+      proxyPort: 8082,
     });
 
-    await expect(createBrowserSession(1, {})).rejects.toThrow('点数不足');
+    const trx = createCreateSessionTrx(0);
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
-    expect(MachineModel.findAvailable).not.toHaveBeenCalled();
+    await expect(createBrowserSession(1, {})).rejects.toThrow('点数不足');
   });
 
   // ========================================
   // SS-04: 创建会话 - 无可用机器
   // ========================================
   it('没有可用机器时应该抛出错误', async () => {
-    vi.mocked(UserModel.findById).mockResolvedValue({
-      id: 1,
-      credits: 100,
-    });
-
     vi.mocked(MachineModel.findAvailable).mockResolvedValue(null);
 
     await expect(createBrowserSession(1, {})).rejects.toThrow('当前没有可用的实例机器');
@@ -244,18 +257,13 @@ describe('SessionService', () => {
   // SS-05: 创建会话 - WebSocket 直连模式
   // ========================================
   it('WebSocket 直连模式应该设置 CONNECTED 状态', async () => {
-    vi.mocked(UserModel.findById).mockResolvedValue({
-      id: 1,
-      credits: 100,
-    });
-
     vi.mocked(MachineModel.findAvailable).mockResolvedValue({
       id: 'machine-001',
       ip: '192.168.1.1',
       proxyPort: 8082,
     });
 
-    const trx = createCreateSessionTrx();
+    const trx = createCreateSessionTrx(100);
     vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     vi.mocked(connectionManager.launchBrowser).mockResolvedValue({
@@ -288,18 +296,13 @@ describe('SessionService', () => {
       MAX_SESSIONS_PER_USER: 5,
     } as any);
 
-    vi.mocked(UserModel.findById).mockResolvedValue({
-      id: 1,
-      credits: 100,
-    });
-
     vi.mocked(MachineModel.findAvailable).mockResolvedValue({
       id: 'machine-001',
       ip: '192.168.1.1',
       proxyPort: 8082,
     });
 
-    const trx = createCreateSessionTrx();
+    const trx = createCreateSessionTrx(100);
     vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     vi.mocked(connectionManager.launchBrowser).mockResolvedValue({
@@ -320,17 +323,12 @@ describe('SessionService', () => {
   // SS-07: 创建会话 - 启动浏览器失败
   // ========================================
   it('启动浏览器失败时应该更新会话状态为 ERROR', async () => {
-    vi.mocked(UserModel.findById).mockResolvedValue({
-      id: 1,
-      credits: 100,
-    });
-
     vi.mocked(MachineModel.findAvailable).mockResolvedValue({
       id: 'machine-001',
       ip: '192.168.1.1',
     });
 
-    const trx = createCreateSessionTrx();
+    const trx = createCreateSessionTrx(100);
     vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     vi.mocked(connectionManager.launchBrowser).mockRejectedValue(new Error('启动失败'));
@@ -394,14 +392,14 @@ describe('SessionService', () => {
   // ========================================
   // SS-10: releaseSession - 正常释放
   // ========================================
-  it('releaseSession 应该在事务中完成所有操作', async () => {
+  it('releaseSession 应该在事务中完成所有操作（多退少补结算）', async () => {
     const trx = createMockTrx({
       id: 'session-001',
       status: SessionStatus.CONNECTED,
       start_time: new Date(Date.now() - 2 * 60 * 1000),
       created_at: new Date(),
       duration: 0,
-      credits_used: 0,
+      credits_used: 1,
       user_id: 1,
     });
 
@@ -456,6 +454,7 @@ describe('SessionService', () => {
       whereNotIn: vi.fn().mockReturnThis(),
       update: vi.fn().mockResolvedValue(1),
       decrement: vi.fn().mockResolvedValue(1),
+      increment: vi.fn().mockResolvedValue(1),
       insert: vi.fn().mockResolvedValue([1]),
       raw: vi.fn((sql: string) => sql),
     };
@@ -482,7 +481,7 @@ describe('SessionService', () => {
       start_time: new Date(),
       created_at: new Date(),
       duration: 0,
-      credits_used: 0,
+      credits_used: 1,
       user_id: 1,
     });
 

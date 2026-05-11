@@ -7,8 +7,8 @@ import { parseSessionOptions, parseSessionRowWithDates } from './types.js';
 export const queryMethods = {
   async findByUserId(userId: number, query: PaginationQuery = {}): Promise<PaginatedResponse<Session>> {
     try {
-      const page = Number(query.page) || 1;
-      const limit = Number(query.limit) || 10;
+      const page = Math.max(1, Number(query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(query.limit) || 10));
       const offset = (page - 1) * limit;
 
       const validSortFields = [
@@ -98,8 +98,8 @@ export const queryMethods = {
   async findAll(query: PaginationQuery = {}): Promise<PaginatedResponse<Session>> {
     try {
       logger.info('开始查询会话数据');
-      const page = Number(query.page) || 1;
-      const limit = Number(query.limit) || 10;
+      const page = Math.max(1, Number(query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(query.limit) || 10));
       const offset = (page - 1) * limit;
 
       const validSortFields = [
@@ -141,8 +141,8 @@ export const queryMethods = {
       return {
         items: [],
         total: 0,
-        page: Number(query.page) || 1,
-        limit: Number(query.limit) || 10,
+        page: Math.max(1, Number(query.page) || 1),
+        limit: Math.min(100, Math.max(1, Number(query.limit) || 10)),
         totalPages: 0,
       };
     }

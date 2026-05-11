@@ -1,5 +1,12 @@
 import { FastifyInstance } from 'fastify';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import ejs from 'ejs';
 import { DemoService } from '../services/demo.service.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const viewsDir = path.join(__dirname, '..', 'views');
 
 const demoService = new DemoService();
 let initialized = false;
@@ -13,11 +20,12 @@ async function ensureInit() {
 
 export default async function demoRoutes(fastify: FastifyInstance) {
   fastify.get('/demo', async (_request, reply) => {
-    return reply.view('pages/demo', {
+    const html = await ejs.renderFile(path.join(viewsDir, 'pages', 'demo.ejs'), {
       title: '远程浏览器体验',
       demoEnabled: process.env.DEMO_ENABLED !== 'false',
       idleTimeout: parseInt(process.env.DEMO_IDLE_TIMEOUT || '300', 10),
     });
+    reply.type('text/html').send(html);
   });
 
   fastify.post('/api/demo/session', async (request, reply) => {

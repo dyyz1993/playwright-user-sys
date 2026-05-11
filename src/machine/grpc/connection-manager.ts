@@ -276,6 +276,20 @@ export class ConnectionManager {
         return;
       }
 
+      if (message.request_screenshot) {
+        const { session_id } = message.request_screenshot;
+        logger.info(`收到截图请求 (sessionId: ${session_id})`);
+        browserService
+          .takeScreenshot(session_id)
+          .then((url) => {
+            logger.info(`截图完成 (sessionId: ${session_id}): ${url}`);
+          })
+          .catch((error) => {
+            logger.error(`截图失败 (sessionId: ${session_id}):`, error);
+          });
+        return;
+      }
+
       logger.warn(`收到未知类型的消息来自管理服务器: ${JSON.stringify(message)}`);
 
       for (const key in message) {

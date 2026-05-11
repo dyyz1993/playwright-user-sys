@@ -400,6 +400,20 @@ export class MachineConnectionManager extends EventEmitter {
     });
   }
 
+  async requestScreenshot(machineId: string, sessionId: string): Promise<void> {
+    const call = this.connections.get(machineId);
+    if (!call) {
+      throw new Error(`机器未连接: ${machineId}`);
+    }
+
+    const message: ManagerMessage = {
+      request_screenshot: { session_id: sessionId },
+    };
+
+    logger.info(`向机器 ${machineId} 发送截图请求 (sessionId: ${sessionId})`);
+    call.write(message);
+  }
+
   async getMachineStatus(machineId: string): Promise<{
     machine_id: string;
     online: boolean;

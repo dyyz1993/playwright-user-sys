@@ -1062,18 +1062,33 @@ export class BrowserService extends EventEmitter {
     try {
       const screenshotDir = path.join(CONFIG.dataDir, 'screenshots');
       await fs.mkdir(screenshotDir, { recursive: true });
-      const filename = `${sessionId}-${uuidv4()}.jpeg`; // 使用 jpeg
+      const filename = `${sessionId}-${uuidv4()}.jpeg`;
+      const filePath = path.join(screenshotDir, filename);
       const screenshotUrl = `/screenshots/${filename}`;
+
+      const page = await this.getSessionPage(sessionId);
+      if (page) {
+        const buffer = await page.screenshot({ type: 'jpeg', quality: 80 });
+        await fs.writeFile(filePath, buffer);
+        logger.info(`截图已保存 (sessionId: ${sessionId}): ${filePath} (${(buffer.length / 1024).toFixed(1)}KB)`);
+      } else {
+        const placeholder = Buffer.from([
+          0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x80, 0x00, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
+          0x00, 0x21, 0xf9, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
+          0x00, 0x02, 0x02, 0x44, 0x01, 0x00, 0x3b,
+        ]);
+        await fs.writeFile(filePath, placeholder);
+        logger.warn(`页面未就绪，写入占位图 (sessionId: ${sessionId})`);
+      }
+
       const session = this.sessions.get(sessionId);
       if (session) {
-        session.screenshotUrl = screenshotUrl; // 更新 URL
+        session.screenshotUrl = screenshotUrl;
       }
-      // 发送截图更新事件，让 grpc.service 通过流发送到管理端
       this.emit('sessionScreenshot', sessionId, screenshotUrl);
-      logger.info(`预分配截图 URL (sessionId: ${sessionId}): ${screenshotUrl}`);
       return screenshotUrl;
     } catch (error) {
-      logger.error(`创建截图 URL 失败 (sessionId: ${sessionId}):`, error);
+      logger.error(`截图失败 (sessionId: ${sessionId}):`, error);
       return undefined;
     }
   }

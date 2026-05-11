@@ -138,11 +138,16 @@ export interface MachineMessage {
   session_screenshot?: SessionScreenshot;
 }
 
+export interface RequestScreenshotCommand {
+  session_id: string;
+}
+
 export interface ManagerMessage {
   heartbeat_request?: HeartbeatRequest;
   close_browser?: CloseBrowserCommand;
   restart?: RestartCommand;
   shutdown?: ShutdownCommand;
+  request_screenshot?: RequestScreenshotCommand;
   error?: { message: string };
 }
 

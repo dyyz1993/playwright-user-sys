@@ -293,19 +293,16 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
   try {
     const sessionId = request.params.id;
 
-    // 查找会话
     const session = await SessionModel.findById(sessionId);
     if (!session) {
       return sendError(reply, '会话不存在', 404);
     }
 
-    // 检查是否有权限访问该会话
     const apiKey = request.headers['x-api-key'] as string;
     if (!apiKey) {
       return sendError(reply, 'API Key 不能为空', 401);
     }
 
-    // 获取用户 ID
     const user = await UserModel.findByApiKey(apiKey);
     if (!user) {
       return sendError(reply, '无效的 API Key', 401);
@@ -315,13 +312,23 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
       return sendError(reply, '无权访问该会话', 403);
     }
 
-    // 检查是否有截图 URL
-    if (!session.screenshot_url) {
+    if (session.machine_id) {
+      try {
+        const { connectionManager } = await import('../services/machine-grpc.service.js');
+        await connectionManager.requestScreenshot(session.machine_id, sessionId);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } catch (screenshotErr) {
+        logger.warn(`触发实时截图失败 (sessionId: ${sessionId}):`, screenshotErr);
+      }
+    }
+
+    const refreshedSession = await SessionModel.findById(sessionId);
+    if (!refreshedSession?.screenshot_url) {
       return sendError(reply, '会话没有截图', 404);
     }
 
     return sendSuccess(reply, {
-      screenshot_url: session.screenshot_url,
+      screenshot_url: refreshedSession.screenshot_url,
     });
   } catch (error) {
     request.log.error(error);

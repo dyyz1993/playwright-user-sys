@@ -312,6 +312,15 @@
         sessionId = data.data.sessionId;
         demoApiKey = data.data.demoApiKey;
         sessionStartTime = Date.now();
+
+        var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+          || window.innerWidth < 768;
+        if (isMobile) {
+          document.cookie = 'token=' + demoApiKey + '; path=/; max-age=3600';
+          window.location.href = '/browser-viewer/index.html?sessionId=' + sessionId + '&token=' + encodeURIComponent(demoApiKey);
+          return;
+        }
+
         showBrowser();
         startTimers();
         enableDemoButtons();

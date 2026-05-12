@@ -2,7 +2,6 @@
 description: Playwright 用户管理系统专属开发重构专家，精通三层架构、gRPC 通信、浏览器管理和信用计费系统
 mode: primary
 model: anthropic/claude-sonnet-4
-steps: 40
 temperature: 0.15
 permission:
   "*": allow

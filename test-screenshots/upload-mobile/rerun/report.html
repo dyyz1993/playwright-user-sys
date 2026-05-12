@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Test Report - Mobile Redirect & File Upload</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 24px; }
+  .header { background: #1a1a2e; color: white; padding: 24px 32px; border-radius: 12px; margin-bottom: 24px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header .meta { color: #a0a0b0; font-size: 14px; margin-top: 8px; }
+  .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+  .summary-card { background: white; padding: 20px 24px; border-radius: 8px; flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .summary-card .number { font-size: 32px; font-weight: 700; }
+  .summary-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+  .passed .number { color: #10b981; }
+  .failed .number { color: #ef4444; }
+  .partial .number { color: #f59e0b; }
+  .total .number { color: #3b82f6; }
+  .scenario { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .scenario h3 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+  .badge-partial { background: #fef3c7; color: #92400e; }
+  .screenshots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+  .screenshot-item { text-align: center; }
+  .screenshot-item img { width: 100%; border-radius: 6px; border: 1px solid #e5e5e5; }
+  .screenshot-item .viewport-label { font-size: 12px; color: #888; margin-top: 4px; }
+  .findings { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .findings h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .findings ul { padding-left: 20px; }
+  .findings li { margin-bottom: 4px; font-size: 14px; }
+  .knowledge-status { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .knowledge-status h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .detail { font-size: 14px; color: #555; margin-top: 6px; line-height: 1.6; }
+  .key-point { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 8px 12px; margin-top: 8px; font-size: 14px; }
+  .error-list { background: #fef2f2; border-radius: 8px; padding: 12px 16px; margin-top: 8px; }
+  .error-list code { font-size: 13px; color: #991b1b; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>UI Test Report - 移动端重定向 & 文件上传验收测试</h1>
+  <div class="meta">Date: 2026-05-13 | URL: http://192.168.0.29:3011/demo | Sessions: upload-mobile-rerun + upload-pc-rerun</div>
+</div>
+
+<div class="summary">
+  <div class="summary-card total"><div class="number">5</div><div class="label">Total Scenarios</div></div>
+  <div class="summary-card passed"><div class="number">3</div><div class="label">Passed</div></div>
+  <div class="summary-card partial"><div class="number">2</div><div class="label">Partial</div></div>
+  <div class="summary-card failed"><div class="number">0</div><div class="label">Failed</div></div>
+</div>
+
+<!-- Scenario A1: Mobile Redirect -->
+<div class="scenario">
+  <h3>A1: 移动端重定向验证 <span class="badge badge-pass">PASSED</span></h3>
+  <p class="detail">
+    在 375x812 移动端视口下访问 /demo，点击"开始体验"后页面成功重定向到
+    <code>/browser-viewer/index.html?sessionId=...&token=...</code>。
+    WebSocket 连接正常，帧流传输正常 (15 FPS, 684 KB/s)。
+  </p>
+  <div class="key-point">✅ 关键验证通过：URL 包含 /browser-viewer/index.html</div>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <img src="01_mobile_demo.png" alt="Mobile Demo">
+      <div class="viewport-label">01 - 移动端 Demo 页面</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="02_mobile_redirect.png" alt="Mobile Redirect">
+      <div class="viewport-label">02 - 重定向后页面</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="03_mobile_streaming.png" alt="Mobile Streaming">
+      <div class="viewport-label">03 - 移动端帧流传输</div>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario A2: Mobile Navigation -->
+<div class="scenario">
+  <h3>A2: 移动端滑块页面导航 <span class="badge badge-partial">PARTIAL</span></h3>
+  <p class="detail">
+    移动端 viewer 底部 URL 栏填入了 slider-test.html URL，但远程浏览器画面仍停留在百度首页。
+    navigateTo() 方法在 standalone viewer 模式下可能不生效，或需要额外等待时间。
+  </p>
+  <div class="key-point">⚠ URL 栏显示正确但远程浏览器未实际导航</div>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <img src="04_mobile_slider.png" alt="Mobile Slider">
+      <div class="viewport-label">04 - 移动端滑块页（未成功导航）</div>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario B: PC File Upload -->
+<div class="scenario">
+  <h3>B: PC 端文件上传 <span class="badge badge-partial">PARTIAL</span></h3>
+  <p class="detail">
+    PC 端 Demo (1280x800) 正常启动，远程浏览器帧流传输正常 (15 FPS, 639 KB/s)。<br>
+    <strong>upload-session API 问题</strong>：该接口要求 session.status === 'connected'，但 session 一直保持 'created' 状态。
+    机器服务未通过 gRPC 上报 connected 状态。<br>
+    <strong>替代方案</strong>：使用 upload-temp (JWT auth) + inject-file (path: data/temp/...) 成功注入文件。
+    inject-file API 返回 "文件注入成功"。
+  </p>
+  <div class="key-point">⚠ upload-session API 因 session 状态不是 'connected' 而失败，但 inject-file 直接调用成功</div>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <img src="05_pc_demo.png" alt="PC Demo">
+      <div class="viewport-label">05 - PC 端 Demo 帧流</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="06_pc_slider.png" alt="PC Slider">
+      <div class="viewport-label">06 - PC 端滑块测试页</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="07_pc_after_upload.png" alt="PC After Upload">
+      <div class="viewport-label">07 - 文件上传后画面</div>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario C: PC Slider Drag -->
+<div class="scenario">
+  <h3>C: PC 端滑块拖拽验证 <span class="badge badge-pass">PASSED</span></h3>
+  <p class="detail">
+    使用 BrowserViewer.instance.send() 发送 mousedown → mousemove(25步) → mouseup 事件序列，
+    远程浏览器滑块成功拖拽到最右侧，显示 "✓ 验证成功！" 绿色确认文字。
+  </p>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <img src="08_pc_slider_drag.png" alt="PC Slider Drag">
+      <div class="viewport-label">08 - 滑块验证成功</div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile Toolbar Check -->
+<div class="scenario">
+  <h3>A+: 移动端工具栏检查 <span class="badge badge-pass">PASSED</span></h3>
+  <p class="detail">
+    移动端 viewer 页面包含：<br>
+    - <strong>顶部状态栏</strong>：CPU/RAM 指标 + "返回 Demo" 链接<br>
+    - <strong>底部导航栏</strong>：← → 🏠 按钮 + URL 输入框（"输入网址..."）<br>
+    - <strong>连接状态</strong>：已连接 · 15 FPS · 684 KB/s<br>
+    - <strong>键盘按钮</strong>：右下角蓝色圆形 ⌨ 按钮
+  </p>
+</div>
+
+<div class="findings">
+  <h3>关键发现</h3>
+  <ul>
+    <li><strong>✅ 移动端重定向正确</strong>：点击"开始体验"后 URL 正确跳转到 /browser-viewer/index.html</li>
+    <li><strong>✅ 移动端帧流传输正常</strong>：WS 连接、帧流、FPS/KB 指标均正常显示</li>
+    <li><strong>⚠ 移动端导航不生效</strong>：navigateTo() 在 standalone viewer 模式下 URL 栏更新但远程浏览器不导航</li>
+    <li><strong>⚠ Session 状态问题</strong>：session 始终为 'created' 状态，machine service 未通过 gRPC 上报 'connected'</li>
+    <li><strong>✅ 文件上传替代方案有效</strong>：upload-temp + inject-file 可成功注入文件到远程浏览器</li>
+    <li><strong>✅ 滑块拖拽完美工作</strong>：通过 BrowserViewer.instance.send() 实现精确拖拽</li>
+    <li><strong>❌ CDN 资源加载失败</strong>：cdn.tailwindcss.com 和 cloudflare font-awesome 返回 status 0</li>
+  </ul>
+</div>
+
+<div class="findings">
+  <h3>Console 错误列表</h3>
+  <div class="error-list">
+    <ul>
+      <li><code>CDN 资源加载失败</code>: cdn.tailwindcss.com (status 0), cloudflare font-awesome (status 0)</li>
+      <li><code>upload-session API</code>: "会话不是活跃状态" (session.status = 'created', 需要 'connected')</li>
+    </ul>
+  </div>
+</div>
+
+<div class="knowledge-status">
+  <h3>知识库验证状态</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:14px;">
+    <tr style="background:#f9f9f9;">
+      <th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">模块</th>
+      <th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">状态</th>
+      <th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">最后验证</th>
+    </tr>
+    <tr>
+      <td style="padding:8px; border-bottom:1px solid #eee;">demo</td>
+      <td style="padding:8px; border-bottom:1px solid #eee;"><span class="badge badge-pass">verified</span></td>
+      <td style="padding:8px; border-bottom:1px solid #eee;">2026-05-13</td>
+    </tr>
+    <tr>
+      <td style="padding:8px; border-bottom:1px solid #eee;">viewer</td>
+      <td style="padding:8px; border-bottom:1px solid #eee;"><span class="badge badge-pass">verified</span></td>
+      <td style="padding:8px; border-bottom:1px solid #eee;">2026-05-13</td>
+    </tr>
+  </table>
+</div>
+
+<div class="findings">
+  <h3>下一步建议</h3>
+  <ul>
+    <li>排查 machine service 未上报 'connected' 状态的原因（gRPC sendSessionStatus 调用时机）</li>
+    <li>修复移动端 viewer 的 navigateTo() 功能，确认是否是 standalone 模式下的事件传递问题</li>
+    <li>解决 CDN 资源加载失败问题（考虑本地化 tailwindcss 和 font-awesome）</li>
+    <li>增加移动端 touch 事件的滑块拖拽测试</li>
+  </ul>
+</div>
+
+</body>
+</html>

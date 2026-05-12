@@ -117,14 +117,17 @@ class BrowserViewer {
       urlInput.type = 'url';
       urlInput.placeholder = '输入网址...';
       urlInput.style.cssText = 'flex:1;padding:8px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.1);color:white;font-size:14px;outline:none;';
-      urlInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          var url = urlInput.value.trim();
-          if (url && !url.startsWith('http')) url = 'http://' + url;
-          self.send({ type: 'navigate', data: { url: url } });
-          urlInput.blur();
-        }
+      var navigateForm = document.createElement('form');
+      navigateForm.style.cssText = 'flex:1;display:flex;margin:0;padding:0;';
+      navigateForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var url = urlInput.value.trim();
+        if (!url) return;
+        if (!url.startsWith('http')) url = 'http://' + url;
+        self.send({ type: 'navigate', data: { url: url } });
+        urlInput.blur();
       });
+      navigateForm.appendChild(urlInput);
 
       var backBtn = document.createElement('button');
       backBtn.textContent = '\u2190';
@@ -147,7 +150,7 @@ class BrowserViewer {
       mobileBar.appendChild(backBtn);
       mobileBar.appendChild(fwdBtn);
       mobileBar.appendChild(homeBtn);
-      mobileBar.appendChild(urlInput);
+      mobileBar.appendChild(navigateForm);
       document.body.appendChild(mobileBar);
 
       var topBar = document.createElement('div');

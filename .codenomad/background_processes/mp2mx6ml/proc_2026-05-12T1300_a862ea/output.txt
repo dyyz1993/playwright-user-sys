@@ -1,2 +1,0 @@
-remote: Internal Server Error
-fatal: unable to access 'https://github.com/dyyz1993/playwright-user-sys.git/': The requested URL returned error: 500

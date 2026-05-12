@@ -144,6 +144,22 @@ open_standalone_viewer:
       description: "Open browser viewer with session params"
   expected_result: "Shows remote browser screen with status '已连接', FPS counter"
 
+file_upload_workaround:
+  description: "Upload file to remote browser when upload-session API fails (session status 'created' not 'connected')"
+  steps:
+    - action: curl
+      command: 'curl -s -X POST "http://192.168.0.29:3011/api/files/upload-temp" -H "Authorization: Bearer {JWT}" -F "file=@{local_path}"'
+      description: "Upload temp file via admin JWT auth"
+    - action: curl
+      command: 'curl -s -X POST "http://192.168.0.29:3011/api/sessions/{sessionId}/inject-file" -H "x-api-key: {demoApiKey}" -H "content-type: application/json" -d ''{"machineFilePath":"data/temp/{savedFilename}","selector":"#fileInput"}'''
+      description: "Inject file into remote browser (path must start with data/temp/)"
+  expected_result: "File injected into remote browser's file input element"
+  notes:
+    - "upload-session API requires session.status === 'connected' but sessions stay 'created'"
+    - "inject-file path must start with 'data/temp/' (normalized, no '..' allowed)"
+    - "Admin JWT token obtained via POST /api/auth/login with {username:'admin', password:'admin123'}"
+    - "Upload response includes savedFilename to construct machineFilePath"
+
 tips:
   - "Demo page structure: demo.html → iframe#browser-viewer-frame (BrowserViewer) → remote browser screen"
   - "Remote browser display uses <img id='bv-screen'> with blob: URL (1280x800, updated via WS)"
@@ -155,7 +171,11 @@ tips:
   - "Features: screenshot, file upload, URL download buttons in sidebar"
   - "Rate limiting: 429 errors appear when creating too many sessions in short time"
   - "Remote browser receives 502 errors intermittently - may need to retry navigation"
-  - "Mobile viewer (375x812) shows dark/empty viewer area - WS connects but frames don't display"
+  - "Mobile viewer (375x812) streams frames OK but navigateTo() may not work in standalone viewer mode"
   - "File upload via remote browser is limited - file picker dialog is OS-level, not visible in viewer"
-  - "Console errors: 429 Too Many Requests from rate limiting, 404 from missing resources"
-  - "Performance display: 14-17 FPS, 269-289 KB/s during active streaming"
+  - "Console errors: 429 Too Many Requests from rate limiting, CDN resources fail (status 0)"
+  - "Performance display: 14-17 FPS, 269-689 KB/s during active streaming"
+  - "Mobile redirect: demo page → /browser-viewer/index.html?sessionId=...&token=... (375x812)"
+  - "Mobile viewer has top status bar (CPU/RAM + 返回 Demo) and bottom nav bar (URL input + ← → 🏠)"
+  - "Session status 'created' vs 'connected': machine service doesn't always report connected via gRPC"
+  - "CDN resources (cdn.tailwindcss.com, cloudflare font-awesome) may fail to load (status 0)"

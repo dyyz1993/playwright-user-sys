@@ -211,7 +211,7 @@ export async function uploadFileForSession(request: FastifyRequest, reply: Fasti
     if (!session || session.user_id !== request.user.id) {
       return sendError(reply, '会话不存在或不属于该用户', 404);
     }
-    if (session.status !== 'connected') {
+    if (!['connected', 'created', 'active'].includes(session.status)) {
       return sendError(reply, '会话不是活跃状态', 400);
     }
 

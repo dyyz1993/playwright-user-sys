@@ -367,7 +367,8 @@ export class NativeWebSocketProxyService {
       logger.info(`使用代理转发到目标WebSocket: ${targetUrl} (sessionId: ${sessionId})`);
 
       const cleanupHandler = () => {
-        if (sessionId) this.cleanupConnection(sessionId);
+        if (!sessionId) return;
+        this.cleanupConnection(sessionId);
       };
 
       socket.on('close', () => {

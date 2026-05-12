@@ -25,18 +25,12 @@ describe('Credit Deduction Fix Verification (session-status.model.ts:149)', () =
   it('proves re-throw causes transaction rollback (simulated)', async () => {
     let transactionRolledBack = false;
 
-    const transaction = async (fn: Function) => {
-      try {
-        await fn();
-      } catch {
-        transactionRolledBack = true;
-      }
-    };
-
-    await transaction(async () => {
+    try {
       const decrementCredits = vi.fn().mockRejectedValue(new Error('DB error'));
       await decrementCredits();
-    });
+    } catch {
+      transactionRolledBack = true;
+    }
 
     expect(transactionRolledBack).toBe(true);
   });

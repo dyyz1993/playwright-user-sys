@@ -20,10 +20,6 @@ import { createAuthenticate } from './authenticate.js';
 import * as UserService from '../../services/user.service.js';
 import { sendSuccess, sendError, sendCreated, getSafeErrorMessage } from '../../utils/response.js';
 
-function getErrorMessage(e: unknown): string {
-  return getSafeErrorMessage(e);
-}
-
 export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);
 
@@ -129,7 +125,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
           return sendError(reply, '无效的查询参数: ' + error.errors.map((e) => e.message).join(', '), 400);
         }
         request.log.error({ err: error }, '获取用户列表失败');
-        return sendError(reply, '获取用户列表失败: ' + getErrorMessage(error), 500);
+        return sendError(reply, '获取用户列表失败: ' + getSafeErrorMessage(error), 500);
       }
     }
   );
@@ -177,7 +173,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '获取用户信息失败');
-        return sendError(reply, '获取用户信息失败: ' + getErrorMessage(error), 500);
+        return sendError(reply, '获取用户信息失败: ' + getSafeErrorMessage(error), 500);
       }
     }
   );
@@ -241,7 +237,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         );
       } catch (error: unknown) {
         request.log.error({ err: error }, '更新用户失败');
-        return sendError(reply, '更新用户失败: ' + getErrorMessage(error), 500);
+        return sendError(reply, '更新用户失败: ' + getSafeErrorMessage(error), 500);
       }
     }
   );
@@ -338,7 +334,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         );
       } catch (error: unknown) {
         request.log.error({ err: error }, '添加点数失败');
-        return sendError(reply, '添加点数失败: ' + getErrorMessage(error), 500);
+        return sendError(reply, '添加点数失败: ' + getSafeErrorMessage(error), 500);
       }
     }
   );
@@ -424,7 +420,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
           .send(csvContent);
       } catch (error: unknown) {
         request.log.error({ err: error }, '导出用户列表失败');
-        return sendError(reply, '导出用户列表失败: ' + getErrorMessage(error), 500);
+        return sendError(reply, '导出用户列表失败: ' + getSafeErrorMessage(error), 500);
       }
     }
   );
@@ -472,7 +468,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         return sendSuccess(reply, stats);
       } catch (error: unknown) {
         request.log.error({ err: error }, '获取用户会话消耗统计失败');
-        return sendError(reply, '获取用户会话消耗统计失败: ' + getErrorMessage(error), 500);
+        return sendError(reply, '获取用户会话消耗统计失败: ' + getSafeErrorMessage(error), 500);
       }
     }
   );
@@ -530,7 +526,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         );
       } catch (error: unknown) {
         request.log.error({ err: error }, '批量删除用户失败');
-        return sendError(reply, '批量删除用户失败: ' + getErrorMessage(error), 500);
+        return sendError(reply, '批量删除用户失败: ' + getSafeErrorMessage(error), 500);
       }
     }
   );
@@ -595,7 +591,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         );
       } catch (error: unknown) {
         request.log.error({ err: error }, '批量充值失败');
-        return sendError(reply, '批量充值失败: ' + getErrorMessage(error), 500);
+        return sendError(reply, '批量充值失败: ' + getSafeErrorMessage(error), 500);
       }
     }
   );

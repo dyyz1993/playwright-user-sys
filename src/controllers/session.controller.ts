@@ -380,13 +380,13 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
   }
 }
 
-export async function injectFileToSession(request: FastifyRequest, reply: FastifyReply) {
+export async function injectFileToSession(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
     if (!request.user) {
       return sendError(reply, '用户未认证', 401);
     }
 
-    const { id } = request.params as { id: string };
+    const { id } = request.params;
     const { machineFilePath, selector, frameSelector } = injectFileRequestSchema.parse(request.body);
     const userId = request.user.id;
 
@@ -422,13 +422,13 @@ export async function injectFileToSession(request: FastifyRequest, reply: Fastif
   }
 }
 
-export async function uploadUrlToSession(request: FastifyRequest, reply: FastifyReply) {
+export async function uploadUrlToSession(request: FastifyRequest<IdParamRoute>, reply: FastifyReply) {
   try {
     if (!request.user) {
       return sendError(reply, '用户未认证', 401);
     }
 
-    const { id } = request.params as { id: string };
+    const { id } = request.params;
     const { url, selector, frameSelector, filename, downloadTimeout } = uploadUrlRequestSchema.parse(request.body);
     const userId = request.user.id;
 

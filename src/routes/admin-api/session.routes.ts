@@ -6,10 +6,6 @@ import { createAuthenticate } from './authenticate.js';
 import { getSafeErrorMessage } from '../../utils/response.js';
 import * as AdminSessionService from '../../services/admin-session.service.js';
 
-function getErrorMessage(e: unknown): string {
-  return getSafeErrorMessage(e);
-}
-
 export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);
 
@@ -215,7 +211,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '获取会话列表失败');
-        return reply.status(500).send({ success: false, error: '获取会话列表失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '获取会话列表失败: ' + getSafeErrorMessage(error) });
       }
     }
   );
@@ -279,7 +275,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '获取会话统计失败');
-        return reply.status(500).send({ success: false, error: '获取会话统计失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '获取会话统计失败: ' + getSafeErrorMessage(error) });
       }
     }
   );
@@ -340,7 +336,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '获取会话详情失败');
-        return reply.status(500).send({ success: false, error: '获取会话详情失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '获取会话详情失败: ' + getSafeErrorMessage(error) });
       }
     }
   );
@@ -393,7 +389,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '刷新会话状态失败');
-        return reply.status(500).send({ success: false, error: '刷新会话状态失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '刷新会话状态失败: ' + getSafeErrorMessage(error) });
       }
     }
   );

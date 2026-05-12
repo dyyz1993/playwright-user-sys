@@ -7,10 +7,6 @@ import { createAuthenticate } from './authenticate.js';
 import { getSafeErrorMessage } from '../../utils/response.js';
 import * as AdminOpLogService from '../../services/admin-operation-log.service.js';
 
-function getErrorMessage(e: unknown): string {
-  return getSafeErrorMessage(e);
-}
-
 export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);
 
@@ -75,7 +71,7 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
         if (error instanceof Error && error.message === '用户不存在') {
           return reply.status(404).send({ success: false, error: '用户不存在' });
         }
-        return reply.status(500).send({ success: false, error: '获取用户操作日志失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '获取用户操作日志失败: ' + getSafeErrorMessage(error) });
       }
     }
   );

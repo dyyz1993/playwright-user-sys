@@ -8,10 +8,6 @@ import { createAuthenticate } from './authenticate.js';
 import { getSafeErrorMessage } from '../../utils/response.js';
 import * as AdminMachineService from '../../services/admin-machine.service.js';
 
-function getErrorMessage(e: unknown): string {
-  return getSafeErrorMessage(e);
-}
-
 export async function adminApiMachineRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);
 

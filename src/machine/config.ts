@@ -2,76 +2,67 @@ import { v4 as uuidv4 } from 'uuid';
 import os from 'os';
 import path from 'path';
 import fs from 'fs';
+import { z } from 'zod';
 
-// 配置接口定义
+const machineEnvSchema = z.object({
+  MACHINE_GRPC_PORT: z.coerce.number().int().min(1).max(65535).default(50052),
+  PROXY_PORT: z.coerce.number().int().min(1).max(65535).default(8082),
+  HTTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  MAX_SESSIONS: z.coerce.number().int().positive().default(10),
+  SESSION_TIMEOUT: z.coerce.number().int().positive().default(300000),
+  HEARTBEAT_INTERVAL: z.coerce.number().int().positive().default(30000),
+  DISCONNECTION_TIMEOUT: z.coerce.number().int().positive().default(10000),
+  ACTIVITY_REPORT_INTERVAL: z.coerce.number().int().positive().default(3000),
+  SESSION_ACTIVITY_TIMEOUT: z.coerce.number().int().positive().default(10000),
+});
+
+const _validated = machineEnvSchema.safeParse(process.env);
+if (!_validated.success) {
+  console.error('Machine config validation failed:', _validated.error.format());
+  throw new Error('Machine config validation failed');
+}
+const validatedEnv = _validated.data;
+
 export interface MachineConfig {
-  // 机器标识
   machineId: string;
   machineName: string;
-
-  // 网络配置
-  managerHost: string; // 管理端的地址
-  grpcPort: number; // 机器端的 gRPC 端口
-  proxyPort: number; // 代理服务器端口
-
-  // 浏览器配置
+  managerHost: string;
+  grpcPort: number;
+  proxyPort: number;
   maxSessions: number;
-  sessionTimeout: number; // 5分钟
+  sessionTimeout: number;
   chromePath: string;
-
-  // 心跳配置
-  heartbeatInterval: number; // 30秒
-
-  // 断开连接超时（如果用户断开连接后多长时间内没有重连，则关闭浏览器实例）
-  disconnectionTimeout: number; // 10秒
-
-  // 活动报告间隔（多久向管理端报告一次会话活动）
-  activityReportInterval: number; // 3秒
-
-  // 会话活动超时（如果超过这个时间没有收到活动，则认为会话已断开）
-  sessionActivityTimeout: number; // 10秒
-
-  // 数据目录
+  heartbeatInterval: number;
+  disconnectionTimeout: number;
+  activityReportInterval: number;
+  sessionActivityTimeout: number;
   dataDir: string;
-
-  // 临时文件目录（用于文件上传）
   tempDir: string;
 }
 
-// 加载环境变量
 const env = process.env;
 
-// 确保数据目录存在
 const dataDir = env.DATA_DIR || path.join(process.cwd(), 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// 确保临时文件目录存在
 const tempDir = path.join(dataDir, 'temp');
 if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir, { recursive: true });
 }
 
-/**
- * 加载配置（从环境变量）
- * 这个函数在模块导入时不会被立即调用，允许在调用前设置环境变量
- */
 export function loadConfig(): MachineConfig {
   return {
-    // 机器标识
     machineId: env.MACHINE_ID || uuidv4(),
     machineName: env.MACHINE_NAME || os.hostname(),
 
-    // 网络配置
-    managerHost: env.MANAGER_HOST || 'localhost:50051', // 管理端的地址
-    grpcPort: parseInt(env.MACHINE_GRPC_PORT || '50052', 10), // 机器端的 gRPC 端口
-    proxyPort: parseInt(env.PROXY_PORT || env.HTTP_PORT || '8082', 10), // 代理服务器端口
+    managerHost: env.MANAGER_HOST || 'localhost:50051',
+    grpcPort: validatedEnv.MACHINE_GRPC_PORT,
+    proxyPort: validatedEnv.PROXY_PORT,
 
-    // 浏览器配置
-    maxSessions: parseInt(env.MAX_SESSIONS || '10', 10),
-    sessionTimeout: parseInt(env.SESSION_TIMEOUT || '300000', 10), // 5分钟
-    // 根据平台自动检测 Chrome 路径
+    maxSessions: validatedEnv.MAX_SESSIONS,
+    sessionTimeout: validatedEnv.SESSION_TIMEOUT,
     chromePath:
       env.CHROME_PATH ||
       (process.platform === 'darwin'
@@ -80,27 +71,20 @@ export function loadConfig(): MachineConfig {
           ? '/usr/bin/google-chrome-stable'
           : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
 
-    // 心跳配置
-    heartbeatInterval: parseInt(env.HEARTBEAT_INTERVAL || '30000', 10), // 30秒
+    heartbeatInterval: validatedEnv.HEARTBEAT_INTERVAL,
 
-    // 断开连接超时（如果用户断开连接后多长时间内没有重连，则关闭浏览器实例）
-    disconnectionTimeout: parseInt(env.DISCONNECTION_TIMEOUT || '10000', 10), // 10秒
+    disconnectionTimeout: validatedEnv.DISCONNECTION_TIMEOUT,
 
-    // 活动报告间隔（多久向管理端报告一次会话活动）
-    activityReportInterval: parseInt(env.ACTIVITY_REPORT_INTERVAL || '3000', 10), // 3秒
+    activityReportInterval: validatedEnv.ACTIVITY_REPORT_INTERVAL,
 
-    // 会话活动超时（如果超过这个时间没有收到活动，则认为会话已断开）
-    sessionActivityTimeout: parseInt(env.SESSION_ACTIVITY_TIMEOUT || '10000', 10), // 10秒
+    sessionActivityTimeout: validatedEnv.SESSION_ACTIVITY_TIMEOUT,
 
-    // 数据目录
     dataDir: dataDir,
 
-    // 临时文件目录（用于文件上传）
     tempDir: tempDir,
   };
 }
 
-// 默认配置（向后兼容）
 export const CONFIG = loadConfig();
 
 export default CONFIG;

@@ -4,10 +4,6 @@ import { createAuthenticate } from './authenticate.js';
 import { getSafeErrorMessage } from '../../utils/response.js';
 import * as AdminTestService from '../../services/admin-test.service.js';
 
-function getErrorMessage(e: unknown): string {
-  return getSafeErrorMessage(e);
-}
-
 export async function adminApiTestRoutes(fastify: FastifyInstance): Promise<void> {
   if (process.env.NODE_ENV === 'production') {
     return;
@@ -36,7 +32,7 @@ export async function adminApiTestRoutes(fastify: FastifyInstance): Promise<void
       } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
-          error: '创建测试会话失败: ' + getErrorMessage(error),
+          error: '创建测试会话失败: ' + getSafeErrorMessage(error),
         });
       }
     }
@@ -62,7 +58,7 @@ export async function adminApiTestRoutes(fastify: FastifyInstance): Promise<void
       } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
-          error: '创建测试机器失败: ' + getErrorMessage(error),
+          error: '创建测试机器失败: ' + getSafeErrorMessage(error),
         });
       }
     }

@@ -1,37 +1,15 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { getSafeErrorMessage } from '../utils/response.js';
-
-function getErrorMessage(e: unknown): string {
-  return getSafeErrorMessage(e);
-}
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import { errorResponseSchema, idParamSchema } from '../schemas/index.js';
 import { IdParamRoute, UpdateMachineBodyRoute, MachineIdArrayBodyRoute } from '@shared/types/routes.js';
+import { createAuthenticate } from './admin-api/authenticate.js';
 import * as AdminMachineService from '../services/admin-machine.service.js';
 import * as AdminOpLogService from '../services/admin-operation-log.service.js';
 
 export default async function adminMachineApiRoutes(fastify: FastifyInstance): Promise<void> {
-  const authenticate = async (request: FastifyRequest, reply: FastifyReply) => {
-    if (reply.sent) return;
-
-    try {
-      await fastify.verifyJWT(request, reply);
-      if (reply.sent) return;
-
-      if (!request.user) {
-        return reply.status(401).send({ success: false, error: '未授权' });
-      }
-
-      if (request.user.role !== 'admin') {
-        return reply.status(403).send({ success: false, error: '需要管理员权限' });
-      }
-    } catch (error) {
-      if (reply.sent) return;
-      request.log.error({ err: error }, '认证失败');
-      return reply.status(401).send({ success: false, error: '认证失败' });
-    }
-  };
+  const authenticate = createAuthenticate(fastify);
 
   fastify.get(
     '/api/admin/machines/:id',
@@ -83,7 +61,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         return reply.send({ success: true, data: machine });
       } catch (error: unknown) {
         request.log.error({ err: error }, '获取机器详情失败');
-        return reply.status(500).send({ success: false, error: '获取机器详情失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '获取机器详情失败: ' + getSafeErrorMessage(error) });
       }
     }
   );
@@ -213,7 +191,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         return reply.send({ success: true, data: result });
       } catch (error: unknown) {
         request.log.error({ err: error }, '健康检查失败');
-        return reply.status(500).send({ success: false, error: '健康检查失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '健康检查失败: ' + getSafeErrorMessage(error) });
       }
     }
   );
@@ -279,7 +257,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '批量健康检查失败');
-        return reply.status(500).send({ success: false, error: '批量健康检查失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '批量健康检查失败: ' + getSafeErrorMessage(error) });
       }
     }
   );

@@ -6,10 +6,6 @@ import { createAuthenticate } from './authenticate.js';
 import { getSafeErrorMessage } from '../../utils/response.js';
 import * as AdminStorageService from '../../services/admin-storage.service.js';
 
-function getErrorMessage(e: unknown): string {
-  return getSafeErrorMessage(e);
-}
-
 export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);
 
@@ -80,7 +76,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
         if (error instanceof Error && error.message === '用户不存在') {
           return reply.status(404).send({ success: false, error: '用户不存在' });
         }
-        return reply.status(500).send({ success: false, error: '获取存储统计失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '获取存储统计失败: ' + getSafeErrorMessage(error) });
       }
     }
   );
@@ -146,7 +142,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '清理用户数据失败');
-        return reply.status(500).send({ success: false, error: '清理用户数据失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '清理用户数据失败: ' + getSafeErrorMessage(error) });
       }
     }
   );
@@ -192,7 +188,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '清理旧数据失败');
-        return reply.status(500).send({ success: false, error: '清理旧数据失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '清理旧数据失败: ' + getSafeErrorMessage(error) });
       }
     }
   );
@@ -232,7 +228,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
         });
       } catch (error: unknown) {
         request.log.error({ err: error }, '获取系统存储统计失败');
-        return reply.status(500).send({ success: false, error: '获取系统存储统计失败: ' + getErrorMessage(error) });
+        return reply.status(500).send({ success: false, error: '获取系统存储统计失败: ' + getSafeErrorMessage(error) });
       }
     }
   );

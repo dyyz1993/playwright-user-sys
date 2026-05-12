@@ -89,8 +89,13 @@ export class OperationLogModel {
       const page = parseInt(query.page || '1', 10);
       const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
-      const sort = query.sort || 'created_at';
-      const order = query.order || 'desc';
+      const OPLOG_SORT_COLUMNS = ['id', 'action', 'created_at', 'updated_at'];
+      const ALLOWED_ORDER = ['asc', 'desc'];
+      const sort = query.sort && OPLOG_SORT_COLUMNS.includes(query.sort) ? query.sort : 'created_at';
+      const order =
+        query.order && ALLOWED_ORDER.includes(query.order.toLowerCase())
+          ? (query.order.toLowerCase() as 'asc' | 'desc')
+          : 'desc';
 
       const [logs, total] = await Promise.all([
         db('operation_logs').where({ admin_id: adminId }).orderBy(sort, order).limit(limit).offset(offset),
@@ -125,8 +130,13 @@ export class OperationLogModel {
       const page = parseInt(query.page || '1', 10);
       const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
-      const sort = query.sort || 'created_at';
-      const order = query.order || 'desc';
+      const OPLOG_SORT_COLUMNS = ['id', 'action', 'created_at', 'updated_at'];
+      const ALLOWED_ORDER = ['asc', 'desc'];
+      const sort = query.sort && OPLOG_SORT_COLUMNS.includes(query.sort) ? query.sort : 'created_at';
+      const order =
+        query.order && ALLOWED_ORDER.includes(query.order.toLowerCase())
+          ? (query.order.toLowerCase() as 'asc' | 'desc')
+          : 'desc';
 
       const [logs, total] = await Promise.all([
         db('operation_logs').where({ target_user_id: userId }).orderBy(sort, order).limit(limit).offset(offset),
@@ -158,8 +168,13 @@ export class OperationLogModel {
       const page = parseInt(query.page || '1', 10);
       const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
-      const sort = query.sort || 'created_at';
-      const order = query.order || 'desc';
+      const OPLOG_SORT_COLUMNS = ['id', 'action', 'created_at', 'updated_at'];
+      const ALLOWED_ORDER = ['asc', 'desc'];
+      const sort = query.sort && OPLOG_SORT_COLUMNS.includes(query.sort) ? query.sort : 'created_at';
+      const order =
+        query.order && ALLOWED_ORDER.includes(query.order.toLowerCase())
+          ? (query.order.toLowerCase() as 'asc' | 'desc')
+          : 'desc';
 
       const [logs, total] = await Promise.all([
         db('operation_logs').orderBy(sort, order).limit(limit).offset(offset),

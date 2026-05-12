@@ -205,20 +205,22 @@ export class UserModel {
       const page = parseInt(query.page || '1', 10);
       const limit = parseInt(query.limit || '10', 10);
       const offset = Math.max(0, (page - 1) * limit);
-      const sort = query.sort || 'created_at';
-      const order = query.order || 'desc';
+      const USER_SORT_COLUMNS = ['id', 'username', 'email', 'role', 'status', 'credits', 'created_at', 'updated_at'];
+      const ALLOWED_ORDER = ['asc', 'desc'];
+      const sort = query.sort && USER_SORT_COLUMNS.includes(query.sort) ? query.sort : 'created_at';
+      const order =
+        query.order && ALLOWED_ORDER.includes(query.order.toLowerCase())
+          ? (query.order.toLowerCase() as 'asc' | 'desc')
+          : 'desc';
 
-      // 构建查询
       let queryBuilder = db('users');
 
-      // 搜索条件（用户名或邮箱）
       if (query.search) {
         queryBuilder = queryBuilder.where(function () {
           this.where('username', 'like', `%${query.search}%`).orWhere('email', 'like', `%${query.search}%`);
         });
       }
 
-      // 角色筛选
       if (query.role) {
         queryBuilder = queryBuilder.where('role', query.role);
       }

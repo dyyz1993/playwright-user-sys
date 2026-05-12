@@ -5,6 +5,7 @@ import { logger } from '@shared/utils/logger.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { env } from '../config/env.js';
 import { db } from '../config/database.js';
+import { calculateCreditsUsed } from '@shared/utils/credits-calculator.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface ReleaseSessionOptions {
@@ -50,7 +51,7 @@ export async function releaseSession(options: ReleaseSessionOptions): Promise<Re
     const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
     const duration = Math.max(0, Math.floor((now.getTime() - startTime.getTime()) / 1000));
 
-    const creditsUsed = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+    const creditsUsed = calculateCreditsUsed(duration);
     const initialCreditsUsed = session.credits_used || 0;
     const creditsDiff = creditsUsed - initialCreditsUsed;
 
@@ -183,10 +184,12 @@ export async function createBrowserSession(
       );
     }
 
-    const machineInTx = await trx('machines')
+    const [machineInTx] = await trx('machines')
       .where({ id: machineId })
       .whereRaw('instance_count < max_instances')
-      .first();
+      .select('*')
+      .forUpdate()
+      .limit(1);
     if (!machineInTx) {
       throw new Error('Machine no longer available');
     }

@@ -19,6 +19,7 @@ export default async function machineRoutes(fastify: FastifyInstance): Promise<v
   fastify.post(
     '/register',
     {
+      onRequest: [fastify.verifyApiKey],
       schema: {
         body: zodToJsonSchema(registerMachineRequestSchema),
         response: {
@@ -35,6 +36,7 @@ export default async function machineRoutes(fastify: FastifyInstance): Promise<v
   fastify.put(
     '/:id/status',
     {
+      onRequest: [fastify.verifyApiKey],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         body: zodToJsonSchema(updateMachineStatusRequestSchema),

@@ -306,7 +306,7 @@ export async function getUserSessionStats(userId: number): Promise<{
 }
 
 export async function exportUsersCsv(filters: { search?: string; role?: string; status?: string }): Promise<string> {
-  const queryFilters: UserListQuery = { limit: '1000000' };
+  const queryFilters: UserListQuery = { limit: '10000' };
   if (filters.search) queryFilters.search = filters.search;
   if (filters.role) queryFilters.role = filters.role as UserRole;
   if (filters.status) queryFilters.status = filters.status as UserStatus;

@@ -137,8 +137,23 @@ export class MachineModel {
       const page = parseInt(query.page || '1', 10);
       const limit = parseInt(query.limit || '10', 10);
       const offset = (page - 1) * limit;
-      const sort = query.sort || 'last_seen';
-      const order = query.order || 'desc';
+      const MACHINE_SORT_COLUMNS = [
+        'id',
+        'hostname',
+        'ip',
+        'status',
+        'last_seen',
+        'instance_count',
+        'max_instances',
+        'created_at',
+        'updated_at',
+      ];
+      const ALLOWED_ORDER = ['asc', 'desc'];
+      const sort = query.sort && MACHINE_SORT_COLUMNS.includes(query.sort) ? query.sort : 'last_seen';
+      const order =
+        query.order && ALLOWED_ORDER.includes(query.order.toLowerCase())
+          ? (query.order.toLowerCase() as 'asc' | 'desc')
+          : 'desc';
 
       const [machines, total] = await Promise.all([
         db('machines').orderBy(sort, order).limit(limit).offset(offset),
@@ -382,13 +397,11 @@ export class MachineModel {
       if (!machine) return null;
 
       // 获取活跃会话数
-      const { SessionModel } = await import('./session.model.js');
-      const activeSessions = await SessionModel.paginate(1, 999, {
-        status: SessionStatus.CREATED,
-      });
-
-      // 过滤出该机器的活跃会话
-      const machineActiveSessions = activeSessions.items.filter((s) => s.machine_id === id).length;
+      const activeSessionsResult = await db('sessions')
+        .where({ machine_id: id, status: SessionStatus.CREATED })
+        .count('id as count')
+        .first();
+      const machineActiveSessions = activeSessionsResult ? Number(activeSessionsResult.count) : 0;
 
       // 计算健康状态
       let healthStatus = 'unknown';

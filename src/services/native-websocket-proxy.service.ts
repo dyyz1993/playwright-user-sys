@@ -1,12 +1,12 @@
 import * as stream from 'stream';
 import * as http from 'http';
 import * as net from 'net';
-import * as crypto from 'crypto';
+import type * as crypto from 'crypto';
 import * as url from 'url';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import httpProxy from 'http-proxy';
-import { WebSocket as WSClient } from 'ws';
+import type { WebSocket as WSClient } from 'ws';
 import { UserModel } from '../models/user.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { logger } from '@shared/utils/logger.js';
@@ -36,7 +36,10 @@ const existingSessionQuerySchema = z.object({
 export class NativeWebSocketProxyService {
   private proxy: httpProxy;
   private server: http.Server;
-  private activeConnections: Set<string> = new Set(); // 跟踪活动连接的会话ID
+  private activeConnections: Set<string> = new Set();
+  private maxConnections: number = 1000;
+  private connectionTimestamps: Map<string, number> = new Map();
+  private heartbeatInterval: NodeJS.Timeout | null = null;
 
   constructor(server: http.Server) {
     if (!server) {
@@ -132,6 +135,18 @@ export class NativeWebSocketProxyService {
         }
       }
     });
+
+    this.heartbeatInterval = setInterval(() => {
+      const now = Date.now();
+      const STALE_MS = 5 * 60 * 1000;
+      for (const [sid, ts] of this.connectionTimestamps.entries()) {
+        if (now - ts > STALE_MS) {
+          logger.warn(`清理超时的WebSocket连接 (sessionId: ${sid})`);
+          this.cleanupConnection(sid);
+          this.connectionTimestamps.delete(sid);
+        }
+      }
+    }, 60 * 1000);
 
     logger.info('原生WebSocket代理服务已成功初始化，正在监听upgrade事件');
   }
@@ -241,7 +256,16 @@ export class NativeWebSocketProxyService {
       logger.info(`已有会话代理: sessionId=${sessionId}, machineId=${machineId}, target=${targetUrl}`);
 
       (request as { sessionId?: string }).sessionId = sessionId;
+
+      if (this.activeConnections.size >= this.maxConnections) {
+        logger.error(`WebSocket连接数已达上限 (${this.activeConnections.size}/${this.maxConnections})`);
+        socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nMax connections reached');
+        socket.destroy();
+        return;
+      }
+
       this.activeConnections.add(sessionId);
+      this.connectionTimestamps.set(sessionId, Date.now());
 
       const cleanupHandler = () => {
         this.cleanupConnection(sessionId);
@@ -316,7 +340,16 @@ export class NativeWebSocketProxyService {
       logger.info(`会话创建成功: ${sessionId}`);
 
       (request as { sessionId?: string }).sessionId = sessionId;
+
+      if (this.activeConnections.size >= this.maxConnections) {
+        logger.error(`WebSocket连接数已达上限 (${this.activeConnections.size}/${this.maxConnections})`);
+        socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nMax connections reached');
+        socket.destroy();
+        return;
+      }
+
       this.activeConnections.add(sessionId);
+      this.connectionTimestamps.set(sessionId, Date.now());
 
       const originalWsEndpoint = sessionResult.browserWSEndpoint;
 
@@ -327,14 +360,14 @@ export class NativeWebSocketProxyService {
 
       logger.info(`获取到机器真实IP: ${machineInfo.ip} (machineId: ${machineId})`);
 
-      const targetUrl = (sessionResult as any).internalTargetUrl || sessionResult.directUrl;
+      const targetUrl = (sessionResult as { internalTargetUrl?: string }).internalTargetUrl || sessionResult.directUrl;
 
       logger.info(`原始WebSocket端点: ${originalWsEndpoint}`);
       logger.info(`修正后的WebSocket端点: ${targetUrl}`);
       logger.info(`使用代理转发到目标WebSocket: ${targetUrl} (sessionId: ${sessionId})`);
 
       const cleanupHandler = () => {
-        this.cleanupConnection(sessionId!);
+        if (sessionId) this.cleanupConnection(sessionId);
       };
 
       socket.on('close', () => {
@@ -378,6 +411,43 @@ export class NativeWebSocketProxyService {
     pathname: string
   ): Promise<void> {
     try {
+      const token =
+        (request.headers.authorization?.startsWith('Bearer ') ? request.headers.authorization.split(' ')[1] : null) ||
+        (request.headers.cookie
+          ? (request.headers.cookie
+              .split(';')
+              .map((c) => c.trim())
+              .find((c) => c.startsWith('token='))
+              ?.split('=')[1] ?? null)
+          : null);
+
+      if (!token) {
+        logger.error(`Viewer WebSocket代理缺少认证信息 (sessionId: ${sessionId})`);
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nMissing authentication');
+        socket.destroy();
+        return;
+      }
+
+      const jwtSecret =
+        process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
+
+      let decoded: { id: number; role: string };
+      try {
+        decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
+      } catch {
+        logger.error(`Viewer WebSocket代理JWT验证失败 (sessionId: ${sessionId})`);
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nInvalid token');
+        socket.destroy();
+        return;
+      }
+
+      const user = await UserModel.findById(decoded.id);
+      if (!user) {
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nUser not found');
+        socket.destroy();
+        return;
+      }
+
       const session = await SessionModel.findById(sessionId);
       if (!session) {
         logger.error(`Viewer WebSocket代理：会话不存在 (sessionId: ${sessionId})`);
@@ -389,6 +459,13 @@ export class NativeWebSocketProxyService {
       if (session.status !== SessionStatus.CREATED && session.status !== SessionStatus.CONNECTED) {
         logger.error(`Viewer WebSocket代理：会话状态无效 (sessionId: ${sessionId}, status: ${session.status})`);
         socket.write('HTTP/1.1 410 Gone\r\n\r\nSession is not active');
+        socket.destroy();
+        return;
+      }
+
+      if (session.user_id !== decoded.id && decoded.role !== 'admin') {
+        logger.error(`Viewer WebSocket代理：无权访问会话 (sessionId: ${sessionId}, userId: ${decoded.id})`);
+        socket.write('HTTP/1.1 403 Forbidden\r\n\r\nAccess denied');
         socket.destroy();
         return;
       }
@@ -543,6 +620,7 @@ export class NativeWebSocketProxyService {
 
     logger.info(`清理WebSocket连接 (sessionId: ${sessionId})`);
     this.activeConnections.delete(sessionId);
+    this.connectionTimestamps.delete(sessionId);
 
     // 查找与这个会话关联的用户和机器信息
     Promise.resolve().then(async () => {
@@ -563,6 +641,13 @@ export class NativeWebSocketProxyService {
   }
 
   // 关闭服务，释放所有资源
+  shutdown(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
   public close(): void {
     logger.info('关闭WebSocket代理服务...');
 

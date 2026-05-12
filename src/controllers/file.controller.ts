@@ -116,20 +116,15 @@ export async function getFileList(request: FastifyRequest, reply: FastifyReply) 
     }
 
     // 读取上传目录中的文件
-    const files = fs.readdirSync(uploadDir);
+    const files = await fs.promises.readdir(uploadDir);
 
-    // 获取文件详细信息
-    const fileList = files.map((filename) => {
-      const filePath = path.join(uploadDir, filename);
-      const stat = fs.statSync(filePath);
-
-      return {
-        filename,
-        url: `/uploads/${filename}`,
-        size: stat.size,
-        uploadedAt: stat.mtime,
-      };
-    });
+    const fileList = await Promise.all(
+      files.map(async (filename) => {
+        const filePath = path.join(uploadDir, filename);
+        const stat = await fs.promises.stat(filePath);
+        return { filename, url: `/uploads/${filename}`, size: stat.size, uploadedAt: stat.mtime };
+      })
+    );
 
     return sendSuccess(reply, fileList);
   } catch (error) {
@@ -154,15 +149,12 @@ export async function cleanupTempFiles(request: FastifyRequest<CleanupTempFilesQ
 
     // 读取临时目录中的文件
     if (fs.existsSync(tempDir)) {
-      const files = fs.readdirSync(tempDir);
-
+      const files = await fs.promises.readdir(tempDir);
       for (const filename of files) {
         const filePath = path.join(tempDir, filename);
-        const stat = fs.statSync(filePath);
-
-        // 如果文件创建时间早于截止时间，则删除
+        const stat = await fs.promises.stat(filePath);
         if (stat.ctime.getTime() < cutoffTime) {
-          fs.unlinkSync(filePath);
+          await fs.promises.unlink(filePath);
           deletedCount++;
         }
       }

@@ -442,22 +442,39 @@ export async function uploadUrlToSession(request: FastifyRequest, reply: Fastify
         return sendError(reply, '只支持 http/https 协议', 400);
       }
       const hostname = parsedUrl.hostname.toLowerCase();
-      const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '169.254.169.254'];
-      if (
-        blockedHosts.includes(hostname) ||
-        hostname.startsWith('10.') ||
-        hostname.startsWith('192.168.') ||
-        hostname.startsWith('172.16.') ||
-        hostname.startsWith('172.17.') ||
-        hostname.startsWith('172.18.') ||
-        hostname.startsWith('172.19.') ||
-        hostname.startsWith('172.2') ||
-        hostname.startsWith('172.30.') ||
-        hostname.startsWith('172.31.') ||
-        hostname.endsWith('.internal') ||
-        hostname.endsWith('.local')
-      ) {
+      const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '169.254.169.254', '[::]', '::'];
+      if (blockedHosts.includes(hostname)) {
         return sendError(reply, '不允许下载内网地址', 400);
+      }
+      if (hostname.endsWith('.internal') || hostname.endsWith('.local')) {
+        return sendError(reply, '不允许下载内网地址', 400);
+      }
+      const ipv4Parts = hostname.split('.');
+      if (ipv4Parts.length === 4) {
+        const octets = ipv4Parts.map(Number);
+        if (octets.every((n) => !isNaN(n) && n >= 0 && n <= 255)) {
+          const isPrivate =
+            octets[0] === 10 ||
+            (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+            (octets[0] === 192 && octets[1] === 168) ||
+            (octets[0] === 169 && octets[1] === 254) ||
+            octets[0] === 127 ||
+            octets[0] === 0;
+          if (isPrivate) {
+            return sendError(reply, '不允许下载内网地址', 400);
+          }
+        }
+      }
+      if (hostname.includes(':')) {
+        const isPrivateV6 =
+          hostname.startsWith('fc') ||
+          hostname.startsWith('fd') ||
+          hostname.startsWith('fe80') ||
+          hostname.startsWith('::ffff:') ||
+          hostname.startsWith('[::ffff:');
+        if (isPrivateV6) {
+          return sendError(reply, '不允许下载内网地址', 400);
+        }
       }
     } catch {
       return sendError(reply, '无效的 URL', 400);

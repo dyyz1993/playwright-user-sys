@@ -61,7 +61,17 @@ class BrowserViewer {
     this.streamWs.onmessage = function (e) {
       if (e.data instanceof ArrayBuffer) {
         self.frameCount++;
-        var blob = new Blob([e.data], { type: 'image/webp' });
+        var mime = 'image/webp'; // default for CDP screencast
+        if (e.data instanceof ArrayBuffer && e.data.byteLength >= 4) {
+          var arr = new Uint8Array(e.data, 0, 4);
+          // JPEG magic: FF D8 FF
+          if (arr[0] === 0xFF && arr[1] === 0xD8 && arr[2] === 0xFF) mime = 'image/jpeg';
+          // PNG magic: 89 50 4E 47
+          else if (arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4E && arr[3] === 0x47) mime = 'image/png';
+          // WebP magic: RIFF....WEBP
+          else if (arr[0] === 0x52 && arr[1] === 0x49 && arr[2] === 0x46 && arr[3] === 0x46) mime = 'image/webp';
+        }
+        var blob = new Blob([e.data], { type: mime });
         var url = URL.createObjectURL(blob);
         if (self.lastBlobUrl) URL.revokeObjectURL(self.lastBlobUrl);
         self.lastBlobUrl = url;
@@ -196,7 +206,7 @@ class BrowserViewer {
   }
 
   navigateTo(url) {
-    this.send({ type: 'event', event: { type: 'navigate', data: { url: url } } });
+    this.send({ type: 'navigate', data: { url: url } });
   }
 
   disconnect() {

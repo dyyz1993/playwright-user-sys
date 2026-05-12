@@ -6,6 +6,7 @@ import { createWebhookEvent } from '../utils/webhook.js';
 import { logger } from '@shared/utils/logger.js';
 import { connectionManager } from './machine-grpc.service.js';
 import { db } from '../config/database.js';
+import { calculateCreditsUsed } from '@shared/utils/credits-calculator.js';
 
 /**
  * 检查所有活跃会话的点数情况
@@ -103,7 +104,7 @@ export async function checkSessionCredits(): Promise<void> {
 
           // 计算已使用的点数（每分钟1点）
           // 即使会话只运行了几秒钟，也至少消耗 1 点
-          const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+          const minutes = calculateCreditsUsed(duration);
 
           // 获取会话已记录的已使用点数
           const recordedCreditsUsed = session.credits_used || 0;

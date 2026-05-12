@@ -3,6 +3,7 @@ import { SessionStatus, WebhookEventType } from '@shared/types/index.js';
 import { logger } from '@shared/utils/logger.js';
 import type { Session } from './types.js';
 import { crudMethods } from './session-crud.model.js';
+import { calculateCreditsUsed } from '../../shared/utils/credits-calculator.js';
 
 export const statusMethods = {
   async markMachineSessionsAsDisconnected(machineId: string): Promise<number> {
@@ -69,7 +70,7 @@ export const statusMethods = {
         logger.warn(`持续时间为负数，重置为0 (${id})`);
       }
 
-      const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
+      const creditsUsed = calculateCreditsUsed(finalDuration);
 
       logger.info(
         `标记会话已断开 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${initialCreditsUsed}点`
@@ -146,12 +147,14 @@ export const statusMethods = {
             logger.info(`✅ 创建积分历史记录: 用户 ${userId}, 扣除 ${creditsToDeduct} 点, 剩余 ${balanceAfter} 点`);
           } catch (error) {
             logger.error(`扣除用户 ${userId} 的点数失败:`, error);
+            throw error;
           }
         } else {
           logger.info(`无需额外扣费 (${id}), credits_used 未增加`);
         }
       } catch (error) {
         logger.error(`标记会话已断开失败 (${id}):`, error);
+        throw error;
       }
     });
 
@@ -187,7 +190,7 @@ export const statusMethods = {
       finalDuration = 0;
     }
 
-    const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
+    const creditsUsed = calculateCreditsUsed(finalDuration);
 
     logger.info(
       `标记会话已过期 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${previousCreditsUsed}点`
@@ -245,7 +248,7 @@ export const statusMethods = {
       finalDuration = 0;
     }
 
-    const creditsUsed = finalDuration >= 0 ? Math.max(1, Math.ceil(finalDuration / 60)) : 0;
+    const creditsUsed = calculateCreditsUsed(finalDuration);
 
     logger.info(
       `标记会话错误 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${previousCreditsUsed}点`

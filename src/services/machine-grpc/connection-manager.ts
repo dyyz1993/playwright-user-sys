@@ -15,6 +15,17 @@ import type {
   TransferFileResponse,
   FileInjectResponse,
 } from '../../shared/types/grpc.js';
+import { calculateCreditsUsed } from '@shared/utils/credits-calculator.js';
+
+function withDeadline<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout;
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`gRPC call timeout: ${label} (${ms}ms)`)), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
 
 export class MachineConnectionManager extends EventEmitter {
   private connections: Map<string, grpc.ServerDuplexStream<MachineMessage, ManagerMessage>> = new Map();
@@ -352,18 +363,22 @@ export class MachineConnectionManager extends EventEmitter {
     const metadata = new grpc.Metadata();
     metadata.set('machine_id', machineId);
 
-    return new Promise((resolve, reject) => {
-      client.LaunchBrowser(request, metadata, (error: unknown, response: SessionResponse) => {
-        if (error) {
-          logger.error(`启动浏览器失败 (${machineId}, ${sessionId}):`, error);
-          reject(error);
-          return;
-        }
+    return withDeadline(
+      new Promise((resolve, reject) => {
+        client.LaunchBrowser(request, metadata, (error: unknown, response: SessionResponse) => {
+          if (error) {
+            logger.error(`启动浏览器失败 (${machineId}, ${sessionId}):`, error);
+            reject(error);
+            return;
+          }
 
-        logger.info(`浏览器启动成功 (${machineId}, ${sessionId}, port: ${response.port})`);
-        resolve(response);
-      });
-    });
+          logger.info(`浏览器启动成功 (${machineId}, ${sessionId}, port: ${response.port})`);
+          resolve(response);
+        });
+      }),
+      30000,
+      `LaunchBrowser ${machineId}`
+    );
   }
 
   async closeBrowser(machineId: string, sessionId: string): Promise<boolean> {
@@ -385,19 +400,23 @@ export class MachineConnectionManager extends EventEmitter {
     const metadata = new grpc.Metadata();
     metadata.set('machine_id', machineId);
 
-    return new Promise((resolve, reject) => {
-      client.CloseBrowser(request, metadata, (error: unknown, response: SessionStatusUpdate) => {
-        if (error) {
-          logger.error(`关闭浏览器失败 (${machineId}, ${sessionId}):`, error);
-          reject(error);
-          return;
-        }
+    return withDeadline(
+      new Promise((resolve, reject) => {
+        client.CloseBrowser(request, metadata, (error: unknown, response: SessionStatusUpdate) => {
+          if (error) {
+            logger.error(`关闭浏览器失败 (${machineId}, ${sessionId}):`, error);
+            reject(error);
+            return;
+          }
 
-        const success = response.status === 'closed';
-        logger.info(`浏览器关闭${success ? '成功' : '失败'} (${machineId}, ${sessionId})`);
-        resolve(success);
-      });
-    });
+          const success = response.status === 'closed';
+          logger.info(`浏览器关闭${success ? '成功' : '失败'} (${machineId}, ${sessionId})`);
+          resolve(success);
+        });
+      }),
+      30000,
+      `CloseBrowser ${machineId}`
+    );
   }
 
   async requestScreenshot(machineId: string, sessionId: string): Promise<void> {
@@ -451,27 +470,31 @@ export class MachineConnectionManager extends EventEmitter {
     const metadata = new grpc.Metadata();
     metadata.set('machine_id', machineId);
 
-    return new Promise((resolve, reject) => {
-      client.GetMachineStatus(request, metadata, (error: unknown, response: MachineStatusResponse) => {
-        if (error) {
-          logger.error(`获取机器状态失败 (${machineId}):`, error);
-          reject(error);
-          return;
-        }
+    return withDeadline(
+      new Promise((resolve, reject) => {
+        client.GetMachineStatus(request, metadata, (error: unknown, response: MachineStatusResponse) => {
+          if (error) {
+            logger.error(`获取机器状态失败 (${machineId}):`, error);
+            reject(error);
+            return;
+          }
 
-        logger.info(`成功获取机器状态 (${machineId})`);
-        resolve({
-          machine_id: response.machine_id,
-          online: response.online,
-          cpu_usage: response.cpu_usage,
-          memory_usage: response.memory_usage,
-          disk_space: response.disk_space ?? 0,
-          active_sessions: response.active_sessions,
-          max_sessions: response.max_sessions,
-          timestamp: response.timestamp,
+          logger.info(`成功获取机器状态 (${machineId})`);
+          resolve({
+            machine_id: response.machine_id,
+            online: response.online,
+            cpu_usage: response.cpu_usage,
+            memory_usage: response.memory_usage,
+            disk_space: response.disk_space ?? 0,
+            active_sessions: response.active_sessions,
+            max_sessions: response.max_sessions,
+            timestamp: response.timestamp,
+          });
         });
-      });
-    });
+      }),
+      30000,
+      `GetMachineStatus ${machineId}`
+    );
   }
 
   async transferFile(
@@ -484,16 +507,20 @@ export class MachineConnectionManager extends EventEmitter {
     if (!client) throw new Error(`Machine ${machineId} 未连接`);
     const metadata = new grpc.Metadata();
     metadata.set('machine_id', machineId);
-    return new Promise((resolve, reject) => {
-      client.TransferFile(
-        { session_id: sessionId, filename, data },
-        metadata,
-        (err: unknown, response: TransferFileResponse) => {
-          if (err) return reject(err);
-          resolve(response);
-        }
-      );
-    });
+    return withDeadline(
+      new Promise((resolve, reject) => {
+        client.TransferFile(
+          { session_id: sessionId, filename, data },
+          metadata,
+          (err: unknown, response: TransferFileResponse) => {
+            if (err) return reject(err);
+            resolve(response);
+          }
+        );
+      }),
+      30000,
+      `TransferFile ${machineId}`
+    );
   }
 
   async downloadAndInjectFile(
@@ -511,23 +538,27 @@ export class MachineConnectionManager extends EventEmitter {
     if (!client) throw new Error(`Machine ${machineId} 未连接`);
     const metadata = new grpc.Metadata();
     metadata.set('machine_id', machineId);
-    return new Promise((resolve, reject) => {
-      client.DownloadAndInjectFile(
-        {
-          session_id: params.sessionId,
-          url: params.url,
-          selector: params.selector,
-          frame_selector: params.frameSelector || '',
-          filename: params.filename || '',
-          download_timeout: params.timeout || 60000,
-        },
-        metadata,
-        (err: unknown, response: FileInjectResponse) => {
-          if (err) return reject(err);
-          resolve(response);
-        }
-      );
-    });
+    return withDeadline(
+      new Promise((resolve, reject) => {
+        client.DownloadAndInjectFile(
+          {
+            session_id: params.sessionId,
+            url: params.url,
+            selector: params.selector,
+            frame_selector: params.frameSelector || '',
+            filename: params.filename || '',
+            download_timeout: params.timeout || 60000,
+          },
+          metadata,
+          (err: unknown, response: FileInjectResponse) => {
+            if (err) return reject(err);
+            resolve(response);
+          }
+        );
+      }),
+      60000,
+      `DownloadAndInjectFile ${machineId}`
+    );
   }
 
   async injectFile(
@@ -543,21 +574,25 @@ export class MachineConnectionManager extends EventEmitter {
     if (!client) throw new Error(`Machine ${machineId} 未连接`);
     const metadata = new grpc.Metadata();
     metadata.set('machine_id', machineId);
-    return new Promise((resolve, reject) => {
-      client.InjectFile(
-        {
-          session_id: params.sessionId,
-          machine_file_path: params.machineFilePath,
-          selector: params.selector,
-          frame_selector: params.frameSelector || '',
-        },
-        metadata,
-        (err: unknown, response: FileInjectResponse) => {
-          if (err) return reject(err);
-          resolve(response);
-        }
-      );
-    });
+    return withDeadline(
+      new Promise((resolve, reject) => {
+        client.InjectFile(
+          {
+            session_id: params.sessionId,
+            machine_file_path: params.machineFilePath,
+            selector: params.selector,
+            frame_selector: params.frameSelector || '',
+          },
+          metadata,
+          (err: unknown, response: FileInjectResponse) => {
+            if (err) return reject(err);
+            resolve(response);
+          }
+        );
+      }),
+      30000,
+      `InjectFile ${machineId}`
+    );
   }
 
   private async handleMachineMessage(machineId: string, message: MachineMessage): Promise<void> {
@@ -707,7 +742,7 @@ export class MachineConnectionManager extends EventEmitter {
           break;
 
         case 'active':
-          const minutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+          const minutes = calculateCreditsUsed(duration);
 
           if (session.duration > 0 || session.credits_used > 0) {
             const newDuration = Math.max(session.duration, duration);
@@ -773,7 +808,7 @@ export class MachineConnectionManager extends EventEmitter {
           break;
 
         case 'error':
-          const errorMinutes = duration > 0 ? Math.max(1, Math.ceil(duration / 60)) : 0;
+          const errorMinutes = calculateCreditsUsed(duration);
 
           if (session.duration > 0 || session.credits_used > 0) {
             await SessionModel.update(session_id, {

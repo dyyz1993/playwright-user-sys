@@ -53,7 +53,7 @@ export default fp(async function (fastify: FastifyInstance) {
       try {
         const originUrl = new URL(origin);
         if (originUrl.origin === 'null' || originUrl.protocol === 'file:') {
-          return callback(null, true);
+          return callback(new Error('Origin not allowed'), false);
         }
         if (request?.host && originUrl.host === request.host) {
           return callback(null, true);

@@ -37,7 +37,7 @@ const envSchema = z.object({
 
   // 管理员初始账号
   ADMIN_USERNAME: z.string().default('admin'),
-  ADMIN_PASSWORD: z.string().default('REDACTED_ADMIN_PASS'),
+  ADMIN_PASSWORD: z.string().min(8, 'ADMIN_PASSWORD must be set and at least 8 characters'),
 
   // 实例配置
   INSTANCE_TIMEOUT: z.string().default('60000'),

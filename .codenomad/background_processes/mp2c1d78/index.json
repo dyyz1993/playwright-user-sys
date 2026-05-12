@@ -1,0 +1,59 @@
+[
+  {
+    "id": "proc_2026-05-12T0806_42e1f5",
+    "workspaceId": "mp2c1d78",
+    "title": "E2E smoke tests",
+    "command": "cd /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys && npx vitest run src/tests/unit/security/ --config vitest.security.config.ts 2>&1 | tail -15",
+    "cwd": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys",
+    "status": "stopped",
+    "pid": 79353,
+    "startedAt": "2026-05-12T08:06:59.619Z",
+    "outputSizeBytes": 847,
+    "notify": {
+      "sessionID": "ses_1e6d7e2caffencK8NiW4jjW0Jd",
+      "directory": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys",
+      "sentAt": "2026-05-12T08:07:36.916Z"
+    },
+    "terminalReason": "finished",
+    "exitCode": 0,
+    "stoppedAt": "2026-05-12T08:07:36.896Z"
+  },
+  {
+    "id": "proc_2026-05-12T0813_d6a782",
+    "workspaceId": "mp2c1d78",
+    "title": "Full unit tests",
+    "command": "cd /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys && pnpm test:unit 2>&1 | tail -10",
+    "cwd": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys",
+    "status": "stopped",
+    "pid": 89222,
+    "startedAt": "2026-05-12T08:13:32.158Z",
+    "outputSizeBytes": 470,
+    "notify": {
+      "sessionID": "ses_1e6d7e2caffencK8NiW4jjW0Jd",
+      "directory": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys",
+      "sentAt": "2026-05-12T08:14:01.891Z"
+    },
+    "terminalReason": "finished",
+    "exitCode": 0,
+    "stoppedAt": "2026-05-12T08:14:01.869Z"
+  },
+  {
+    "id": "proc_2026-05-12T0847_b0267f",
+    "workspaceId": "mp2c1d78",
+    "title": "Security tests",
+    "command": "cd /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys && npx vitest run src/tests/unit/security/ --config vitest.security.config.ts 2>&1 | tail -10",
+    "cwd": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys",
+    "status": "stopped",
+    "pid": 53015,
+    "startedAt": "2026-05-12T08:47:21.882Z",
+    "outputSizeBytes": 314,
+    "notify": {
+      "sessionID": "ses_1e6d7e2caffencK8NiW4jjW0Jd",
+      "directory": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys",
+      "sentAt": "2026-05-12T08:47:45.439Z"
+    },
+    "terminalReason": "finished",
+    "exitCode": 0,
+    "stoppedAt": "2026-05-12T08:47:45.411Z"
+  }
+]

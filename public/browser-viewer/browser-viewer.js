@@ -35,6 +35,44 @@ class BrowserViewer {
     this.lastBlobUrl = null;
     this.cursor = document.createElement('div');
     this.cursor.style.cssText = 'position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
+
+    this.hiddenInput = document.createElement('textarea');
+    this.hiddenInput.style.cssText = 'position:fixed;top:-100px;left:-100px;width:1px;height:1px;opacity:0.01;font-size:16px;border:none;outline:none;resize:none;';
+    this.hiddenInput.setAttribute('autocomplete', 'off');
+    this.hiddenInput.setAttribute('autocorrect', 'off');
+    this.hiddenInput.setAttribute('autocapitalize', 'off');
+    this.hiddenInput.setAttribute('spellcheck', 'false');
+    document.body.appendChild(this.hiddenInput);
+
+    var self = this;
+    var lastInputValue = '';
+    this.hiddenInput.addEventListener('input', function(e) {
+      var newValue = self.hiddenInput.value;
+      if (newValue.length > lastInputValue.length) {
+        var addedText = newValue.substring(lastInputValue.length);
+        for (var i = 0; i < addedText.length; i++) {
+          self.send({ type: 'event', event: { type: 'keydown', data: { key: addedText[i], code: 'Key' + addedText[i].toUpperCase() } } });
+          self.send({ type: 'event', event: { type: 'keyup', data: { key: addedText[i], code: 'Key' + addedText[i].toUpperCase() } } });
+        }
+      } else if (newValue.length < lastInputValue.length) {
+        var deletedCount = lastInputValue.length - newValue.length;
+        for (var j = 0; j < deletedCount; j++) {
+          self.send({ type: 'event', event: { type: 'keydown', data: { key: 'Backspace', code: 'Backspace' } } });
+          self.send({ type: 'event', event: { type: 'keyup', data: { key: 'Backspace', code: 'Backspace' } } });
+        }
+      }
+      lastInputValue = newValue;
+    });
+
+    this.hiddenInput.addEventListener('compositionend', function(e) {
+      var composedText = e.data || '';
+      if (composedText) {
+        for (var k = 0; k < composedText.length; k++) {
+          self.send({ type: 'event', event: { type: 'keydown', data: { key: composedText[k], code: 'Key' + composedText[k].toUpperCase() } } });
+          self.send({ type: 'event', event: { type: 'keyup', data: { key: composedText[k], code: 'Key' + composedText[k].toUpperCase() } } });
+        }
+      }
+    });
   }
 
   mount() {
@@ -51,6 +89,19 @@ class BrowserViewer {
       this.container.style.position = 'relative';
       this.container.appendChild(this.cursor);
     }
+
+    this.kbBtn = document.createElement('div');
+    this.kbBtn.style.cssText = 'position:absolute;bottom:10px;right:10px;width:44px;height:44px;border-radius:22px;background:rgba(0,122,255,0.8);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;z-index:9999;user-select:none;';
+    this.kbBtn.textContent = '\u2328';
+    var self = this;
+    this.kbBtn.addEventListener('click', function() {
+      self.hiddenInput.focus();
+      setTimeout(function() { self.hiddenInput.focus(); }, 100);
+    });
+    if (this.container) {
+      this.container.appendChild(this.kbBtn);
+    }
+
     return this;
   }
 
@@ -223,13 +274,11 @@ class BrowserViewer {
     });
 
     document.addEventListener('keydown', function (e) {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       self.send({ type: 'event', event: { type: 'keydown', data: { key: e.key, code: e.code } } });
       if (['Tab', 'Backspace', 'F5'].includes(e.key)) e.preventDefault();
     });
 
     document.addEventListener('keyup', function (e) {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       self.send({ type: 'event', event: { type: 'keyup', data: { key: e.key, code: e.code } } });
     });
 

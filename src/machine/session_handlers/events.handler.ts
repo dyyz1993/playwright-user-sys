@@ -642,9 +642,13 @@ async function handleMouseEvents(
               break;
 
             case 'keyDown':
+              if (data.key) await page.keyboard.down(data.key as any);
+              break;
             case 'keyUp':
+              if (data.key) await page.keyboard.up(data.key as any);
+              break;
             case 'keyPress':
-              await (page.keyboard[eventType.split('.')[1] as 'down' | 'up' | 'press'] as Function)(data.key);
+              if (data.key) await page.keyboard.press(data.key as any);
               break;
             // Ignore touch events in touchpad mode?
             default:

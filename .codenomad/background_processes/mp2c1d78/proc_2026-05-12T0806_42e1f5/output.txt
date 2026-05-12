@@ -1,0 +1,15 @@
+ ✓ src/tests/unit/security/websocket-viewer-no-auth.test.ts (8 tests) 22ms
+ ✓ src/tests/unit/security/grpc-no-timeout.test.ts (9 tests) 10ms
+ ✓ src/tests/unit/security/ssrf-check-bypass.test.ts (51 tests) 2ms
+ ✓ src/tests/unit/security/default-admin-password.test.ts (5 tests) 4ms
+ ✓ src/tests/unit/security/duplicate-credits-logic.test.ts (14 tests) 8ms
+ ✓ src/tests/unit/security/credit-deduction-silent-failure.test.ts (3 tests) 14ms
+ ✓ src/tests/unit/security/n-plus-one-query.test.ts (4 tests) 2ms
+ ✓ src/tests/unit/security/csv-export-oom.test.ts (5 tests) 1ms
+ ✓ src/tests/unit/security/sync-file-operations.test.ts (4 tests) 3ms
+
+ Test Files  14 passed (14)
+      Tests  141 passed (141)
+   Start at  16:07:06
+   Duration  29.97s (transform 2.26s, setup 0ms, collect 7.06s, tests 21.34s, environment 0ms, prepare 257ms)
+

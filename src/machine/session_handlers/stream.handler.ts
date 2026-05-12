@@ -60,6 +60,10 @@ async function startCdpScreencast(streamInfo: StreamInfo): Promise<void> {
   try {
     await waitForPageReady(page, sessionId);
 
+    if (page.url() !== 'about:blank') {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
     const cdpSession = await page.createCDPSession();
     streamInfo.cdpSession = cdpSession;
 
@@ -207,6 +211,8 @@ async function captureAndSend(ws: WebSocket, page: Page, sessionId: string): Pro
       sendSessionEndedMessage(ws, 'browser_closed');
     } else if (msg.includes('WebSocket is not open')) {
       logger.warn(`WebSocket closed for ${sessionId}.`);
+    } else if (msg.includes('Not attached') || msg.includes('Target closed')) {
+      logger.warn(`Page not attached for ${sessionId}, attempting recovery`);
     } else {
       logger.error(`Screenshot error for ${sessionId}:`, error);
     }
@@ -228,9 +234,22 @@ function startScreenshotLoop(streamInfo: StreamInfo): void {
   const scheduleNextCapture = async () => {
     if (!activeStreams.has(ws)) return;
 
-    const success = await captureAndSend(ws, page, sessionId);
+    const success = await captureAndSend(ws, streamInfo.page, sessionId);
 
-    if (success && activeStreams.has(ws)) {
+    if (!success && streamInfo.page) {
+      try {
+        const pages = await streamInfo.page.browser().pages();
+        const activePage = pages.find((p: any) => !p.isClosed()) || pages[0];
+        if (activePage && activePage !== streamInfo.page) {
+          streamInfo.page = activePage;
+          logger.info(`Recovered page reference for ${sessionId}, switching to new page`);
+        }
+      } catch (recoveryErr) {
+        logger.error(`Failed to recover page for ${sessionId}: ${recoveryErr}`);
+      }
+    }
+
+    if (activeStreams.has(ws)) {
       streamInfo.lastFrameTime = Date.now();
       streamInfo.timerId = setTimeout(scheduleNextCapture, intervalMs);
     } else {

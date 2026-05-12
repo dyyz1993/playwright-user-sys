@@ -138,5 +138,19 @@
     "parentID": "ses_1e881f09cffeHNNWngpA0d6uZZ",
     "status": "running",
     "createdAt": 1778510710404
+  },
+  "fix-ws-binary-proxy": {
+    "id": "ses_1e78ace58ffeA5yYajjl9JJryW",
+    "name": "fix-ws-binary-proxy",
+    "parentID": "ses_1e794d578ffeYzzauE8jQ460Ad",
+    "status": "running",
+    "createdAt": 1778526794161
+  },
+  "server-deploy-verify": {
+    "id": "ses_1e6d7e2caffencK8NiW4jjW0Jd",
+    "name": "server-deploy-verify",
+    "parentID": "ses_1e6d894acffeRjCdZQyVhj4uDL",
+    "status": "idle",
+    "createdAt": 1778538519864
   }
 }

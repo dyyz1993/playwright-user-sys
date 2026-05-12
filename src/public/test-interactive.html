@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交互测试页面</title>
+<style>
+  * { box-sizing: border-box; margin: 8px; }
+  body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 24px; color: #333; }
+  h2 { font-size: 18px; color: #666; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+  .section { margin: 16px 0; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+  .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin: 4px; }
+  .btn-primary { background: #007AFF; color: white; }
+  .btn-danger { background: #FF3B30; color: white; }
+  .btn-success { background: #34C759; color: white; }
+  .btn-warning { background: #FF9500; color: white; }
+  input[type="text"], input[type="email"], input[type="number"], textarea, select {
+    width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px;
+  }
+  .coords { font-family: monospace; font-size: 14px; color: #666; background: #f5f5f5; padding: 8px; border-radius: 4px; }
+  .drag-box { width: 80px; height: 80px; background: #007AFF; border-radius: 8px; position: absolute; cursor: grab; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; user-select: none; }
+  .drag-container { height: 200px; border: 2px dashed #ccc; border-radius: 8px; position: relative; }
+  #drawCanvas { border: 1px solid #ccc; border-radius: 6px; touch-action: none; }
+  .log { max-height: 120px; overflow-y: auto; background: #1e1e1e; color: #0f0; font-family: monospace; font-size: 12px; padding: 8px; border-radius: 6px; }
+  .log div { padding: 2px 0; }
+  .color-result { width: 40px; height: 40px; border-radius: 8px; display: inline-block; vertical-align: middle; }
+  input[type="range"] { width: 100%; }
+</style>
+</head>
+<body>
+<h1>交互测试页面</h1>
+<p class="coords" id="coords">鼠标坐标: (0, 0)</p>
+
+<div class="section">
+  <h2>按钮</h2>
+  <button class="btn btn-primary" onclick="logEvent('按钮点击: 蓝色 Primary')">Primary</button>
+  <button class="btn btn-danger" onclick="logEvent('按钮点击: 红色 Danger')">Danger</button>
+  <button class="btn btn-success" onclick="logEvent('按钮点击: 绿色 Success')">Success</button>
+  <button class="btn btn-warning" onclick="logEvent('按钮点击: 橙色 Warning')">Warning</button>
+  <p>点击次数: <span id="clickCount">0</span></p>
+</div>
+
+<div class="section">
+  <h2>输入框</h2>
+  <input type="text" placeholder="请输入文字..." oninput="logEvent('输入: ' + this.value)">
+  <br>
+  <textarea rows="3" placeholder="多行文本..." oninput="logEvent('文本框: ' + this.value)"></textarea>
+</div>
+
+<div class="section">
+  <h2>选择</h2>
+  <select onchange="logEvent('选择: ' + this.value)">
+    <option value="">请选择...</option>
+    <option value="apple">苹果</option>
+    <option value="banana">香蕉</option>
+    <option value="cherry">樱桃</option>
+  </select>
+  <br>
+  <input type="checkbox" id="cb1" onchange="logEvent('复选框1: ' + this.checked)"><label for="cb1">选项 A</label>
+  <input type="checkbox" id="cb2" onchange="logEvent('复选框2: ' + this.checked)"><label for="cb2">选项 B</label>
+  <br>
+  <input type="radio" name="r" value="1" onchange="logEvent('单选: 1')" id="r1"><label for="r1">单选 1</label>
+  <input type="radio" name="r" value="2" onchange="logEvent('单选: 2')" id="r2"><label for="r2">单选 2</label>
+</div>
+
+<div class="section">
+  <h2>颜色选择器</h2>
+  <input type="color" value="#007AFF" onchange="logEvent('颜色: ' + this.value); document.getElementById('colorResult').style.background = this.value">
+  <span class="color-result" id="colorResult" style="background: #007AFF"></span>
+</div>
+
+<div class="section">
+  <h2>滑动条</h2>
+  <input type="range" min="0" max="100" value="50" oninput="logEvent('滑动条: ' + this.value); document.getElementById('rangeVal').textContent = this.value">
+  <span id="rangeVal">50</span>
+</div>
+
+<div class="section">
+  <h2>拖拽</h2>
+  <div class="drag-container" id="dragContainer">
+    <div class="drag-box" id="dragBox" draggable="false">拖我</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>画板</h2>
+  <canvas id="drawCanvas" width="400" height="200"></canvas>
+</div>
+
+<div class="section">
+  <h2>文件上传</h2>
+  <input type="file" onchange="logEvent('文件: ' + this.files[0]?.name + ' (' + this.files[0]?.size + ' bytes)')">
+</div>
+
+<div class="section">
+  <h2>事件日志</h2>
+  <div class="log" id="log"></div>
+  <button class="btn btn-warning" onclick="document.getElementById('log').innerHTML=''">清除日志</button>
+</div>
+
+<script>
+var clickCount = 0;
+document.addEventListener('click', function() {
+  clickCount++;
+  document.getElementById('clickCount').textContent = clickCount;
+});
+
+document.addEventListener('mousemove', function(e) {
+  document.getElementById('coords').textContent = '鼠标坐标: (' + e.clientX + ', ' + e.clientY + ')';
+});
+
+document.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+  logEvent('右键菜单 @ (' + e.clientX + ', ' + e.clientY + ')');
+});
+
+var dragBox = document.getElementById('dragBox');
+var dragContainer = document.getElementById('dragContainer');
+var isDragging = false;
+var dragOffsetX = 0, dragOffsetY = 0;
+
+dragBox.addEventListener('mousedown', function(e) {
+  isDragging = true;
+  dragOffsetX = e.clientX - dragBox.offsetLeft;
+  dragOffsetY = e.clientY - dragBox.offsetTop;
+  dragBox.style.cursor = 'grabbing';
+  logEvent('拖拽开始');
+});
+document.addEventListener('mousemove', function(e) {
+  if (!isDragging) return;
+  var containerRect = dragContainer.getBoundingClientRect();
+  var x = Math.max(0, Math.min(e.clientX - dragOffsetX, containerRect.width - 80));
+  var y = Math.max(0, Math.min(e.clientY - dragOffsetY, containerRect.height - 80));
+  dragBox.style.left = x + 'px';
+  dragBox.style.top = y + 'px';
+});
+document.addEventListener('mouseup', function() {
+  if (isDragging) {
+    isDragging = false;
+    dragBox.style.cursor = 'grab';
+    logEvent('拖拽结束 @ (' + dragBox.offsetLeft + ', ' + dragBox.offsetTop + ')');
+  }
+});
+
+var canvas = document.getElementById('drawCanvas');
+var ctx = canvas.getContext('2d');
+var drawing = false;
+ctx.strokeStyle = '#007AFF';
+ctx.lineWidth = 3;
+ctx.lineCap = 'round';
+
+canvas.addEventListener('mousedown', function(e) {
+  drawing = true;
+  var r = canvas.getBoundingClientRect();
+  ctx.beginPath();
+  ctx.moveTo(e.clientX - r.left, e.clientY - r.top);
+});
+canvas.addEventListener('mousemove', function(e) {
+  if (!drawing) return;
+  var r = canvas.getBoundingClientRect();
+  ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
+  ctx.stroke();
+});
+canvas.addEventListener('mouseup', function() { drawing = false; });
+
+function logEvent(msg) {
+  var log = document.getElementById('log');
+  var div = document.createElement('div');
+  div.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+logEvent('页面加载完成');
+</script>
+</body>
+</html>

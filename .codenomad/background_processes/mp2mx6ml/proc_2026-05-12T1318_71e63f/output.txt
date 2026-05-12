@@ -1,0 +1,14 @@
+NAME/NODE DRIVER/ENDPOINT STATUS  BUILDKIT PLATFORMS
+default * docker                           
+  default default         running v0.13.2  linux/amd64, linux/amd64/v2, linux/amd64/v3, linux/386
+---
+ghcr.io/dyyz1993/docker-container-shanbox:latest 147MB 2026-05-12 19:51:21 +0800 CST
+<none>:<none> 2.05GB 2026-05-12 19:32:23 +0800 CST
+playwright-machine:latest 2.05GB 2026-05-12 19:32:23 +0800 CST
+playwright-manager:latest 1.79GB 2026-05-12 19:13:09 +0800 CST
+ghcr.io/dyyz1993/docker-container-shanbox:<none> 146MB 2026-05-12 19:09:54 +0800 CST
+<none>:<none> 1.79GB 2026-05-12 19:07:28 +0800 CST
+<none>:<none> 2.05GB 2026-05-12 18:24:35 +0800 CST
+<none>:<none> 2.05GB 2026-05-12 18:24:35 +0800 CST
+<none>:<none> 1.78GB 2026-05-12 17:57:53 +0800 CST
+ghcr.io/dyyz1993/docker-container-shanbox:<none> 146MB 2026-05-12 17:51:41 +0800 CST

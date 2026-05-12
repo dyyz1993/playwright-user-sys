@@ -139,6 +139,7 @@
         <button onclick="navigateTo('https://www.baidu.com')" class="preset-btn px-2.5 py-1 rounded-md text-xs bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700/60 border border-slate-700/30">百度</button>
         <button onclick="navigateTo('https://www.bing.com')" class="preset-btn px-2.5 py-1 rounded-md text-xs bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700/60 border border-slate-700/30">Bing</button>
         <button onclick="navigateTo('https://example.com')" class="preset-btn px-2.5 py-1 rounded-md text-xs bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700/60 border border-slate-700/30">Example</button>
+        <button onclick="navigateToSliderTest()" class="preset-btn px-2.5 py-1 rounded-md text-xs bg-amber-500/20 text-amber-300 hover:text-white hover:bg-amber-500/30 border border-amber-500/30">滑块验证</button>
       </div>
 
       <div class="flex items-center gap-1.5 ml-2">
@@ -407,6 +408,11 @@
       navigateTo(base + '/public/test-interactive.html');
     }
 
+    function navigateToSliderTest() {
+      var base = baseUrl || (location.protocol + '//' + location.host);
+      navigateTo(base + '/public/slider-test.html');
+    }
+
     // ========== 导航（通过 iframe） ==========
     function navigateTo(url) {
       if (!url) return;
@@ -539,10 +545,10 @@ dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('d
         logActivity(`已选择文件: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
 
         try {
-          const testPageUrl = buildFileTestPageUrl();
-          navigateTo(testPageUrl);
-          logActivity('正在打开测试页面...');
-          await new Promise(r => setTimeout(r, 2500));
+          var base = baseUrl || (location.protocol + '//' + location.host);
+          navigateTo(base + '/public/slider-test.html');
+          logActivity('正在打开滑块测试页面...');
+          await new Promise(r => setTimeout(r, 3000));
 
           logActivity('正在上传文件到远程服务器...');
           const formData = new FormData();
@@ -598,10 +604,10 @@ dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('d
       logActivity('正在下载远程文件...');
 
       try {
-        const testPageUrl = buildFileTestPageUrl();
-        navigateTo(testPageUrl);
-        logActivity('正在打开测试页面...');
-        await new Promise(r => setTimeout(r, 2500));
+        var base = baseUrl || (location.protocol + '//' + location.host);
+        navigateTo(base + '/public/slider-test.html');
+        logActivity('正在打开滑块测试页面...');
+        await new Promise(r => setTimeout(r, 3000));
 
         logActivity('正在下载远程图片并注入...');
         const injectResp = await fetch(`/api/sessions/${sessionId}/upload-url`, {

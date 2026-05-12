@@ -89,6 +89,7 @@ COPY --chown=nodejs:nodejs src/public ./dist/src/public
 # Copy browser-viewer standalone component
 COPY --chown=nodejs:nodejs public/browser-viewer ./dist/public/browser-viewer
 COPY --chown=nodejs:nodejs public/test-interactive.html ./dist/src/public/test-interactive.html
+COPY --chown=nodejs:nodejs public/slider-test.html ./dist/src/public/slider-test.html
 
 # Set environment variables
 ENV NODE_ENV=production \

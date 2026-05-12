@@ -1,0 +1,4 @@
+playwright-machine-2-prod Up 2 hours (healthy)
+playwright-machine-1-prod Up 2 hours (healthy)
+playwright-manager-prod Up 2 hours (healthy)
+test-manager Created

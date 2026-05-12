@@ -33,6 +33,12 @@ class BrowserViewer {
     this.connected = false;
     this.frameCount = 0;
     this.lastBlobUrl = null;
+    this.fpsFrameCount = 0;
+    this.lastFpsTime = Date.now();
+    this.currentFps = 0;
+    this.bandwidthBytes = 0;
+    this.lastBandwidthTime = Date.now();
+    this.currentBandwidth = 0;
     this.cursor = document.createElement('div');
     this.cursor.style.cssText = 'position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
 
@@ -120,6 +126,22 @@ class BrowserViewer {
     this.streamWs.onmessage = function (e) {
       if (e.data instanceof ArrayBuffer) {
         self.frameCount++;
+        self.fpsFrameCount++;
+        self.bandwidthBytes += e.data.byteLength;
+        var now = Date.now();
+        if (now - self.lastFpsTime >= 1000) {
+          self.currentFps = Math.round(self.fpsFrameCount * 1000 / (now - self.lastFpsTime));
+          self.fpsFrameCount = 0;
+          self.lastFpsTime = now;
+        }
+        if (now - self.lastBandwidthTime >= 1000) {
+          self.currentBandwidth = Math.round(self.bandwidthBytes / 1024);
+          self.bandwidthBytes = 0;
+          self.lastBandwidthTime = now;
+        }
+        if (self.fpsFrameCount === 0 || self.frameCount <= 5 || self.frameCount % 30 === 0) {
+          self._updateStatus(statusEl);
+        }
         var mime = 'image/webp'; // default for CDP screencast
         if (e.data instanceof ArrayBuffer && e.data.byteLength >= 4) {
           var arr = new Uint8Array(e.data, 0, 4);
@@ -135,10 +157,6 @@ class BrowserViewer {
         if (self.lastBlobUrl) URL.revokeObjectURL(self.lastBlobUrl);
         self.lastBlobUrl = url;
         self.img.src = url;
-
-        if (self.frameCount <= 5 || self.frameCount % 100 === 0) {
-          statusEl.textContent = '已连接 · 帧 #' + self.frameCount;
-        }
       } else if (typeof e.data === 'string') {
         try {
           var msg = JSON.parse(e.data);
@@ -349,6 +367,17 @@ class BrowserViewer {
 
       self.cursor.style.display = 'none';
     }, { passive: false });
+  }
+
+  _updateStatus(statusEl) {
+    if (!statusEl) return;
+    var parts = ['已连接'];
+    if (this.currentFps > 0) parts.push(this.currentFps + ' FPS');
+    if (this.currentBandwidth > 0) parts.push(this.currentBandwidth + ' KB/s');
+    statusEl.textContent = parts.join(' · ');
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'bv-stats', fps: this.currentFps, bandwidth: this.currentBandwidth }, '*');
+    }
   }
 
   send(msg) {

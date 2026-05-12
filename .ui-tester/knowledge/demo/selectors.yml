@@ -1,0 +1,36 @@
+# Module: demo
+# Site: http://192.168.0.29:3011
+# Version: 1
+# Status: verified
+# Last verified: 2026-05-12
+# Verified in round: r1
+
+demo_page:
+  url: "http://192.168.0.29:3011/demo"
+  start_button: "#start-btn"
+  title: "远程浏览器体验 - Playwright Browser Cloud"
+
+session_ui:
+  url_bar: "#url-input"
+  quick_link_test: "button:nth-child(1)"  # 测试页面
+  quick_link_baidu: "button:nth-child(2)"  # 百度
+  quick_link_bing: "button:nth-child(3)"   # Bing
+  quick_link_example: "button:nth-child(4)" # Example
+  end_button: "#btn-end"
+  screenshot_button: "#btn-screenshot"
+  upload_button: "#btn-upload"
+  url_download_button: "#btn-url-download"
+
+viewer_iframe:
+  selector: "iframe[name='browser-viewer-frame']"
+  # The demo page embeds browser-viewer via iframe at the same URL
+  # Frame index: 0
+  frame_name: "browser-viewer-frame"
+  frame_url_pattern: "/browser-viewer/index.html?sessionId={sessionId}&token={token}"
+
+  # Inside the viewer iframe (frame 0):
+  video_container: "#video-container"
+  nested_viewer_frame: "#browser-viewer-frame"  # nested iframe for actual remote browser
+  connecting_overlay: "#connecting-overlay"
+  bv_screen: "#bv-screen"  # img element showing remote browser frames (blob URL)
+  bv_status: "#bv-status"  # Status text like "已连接 · 帧 #1200"

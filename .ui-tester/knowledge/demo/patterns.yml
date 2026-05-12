@@ -1,0 +1,79 @@
+# Module: demo
+# Reusable operation sequences
+
+start_demo_session:
+  description: "Open demo page, click start, wait for session creation and WS stream"
+  steps:
+    - action: open
+      url: "http://192.168.0.29:3011/demo"
+      description: "Open demo page"
+    - action: click
+      selector: "#start-btn"
+      description: "Click 开始体验 button"
+    - action: wait
+      duration: 5000
+      description: "Wait for session creation and iframe load"
+    - action: wait
+      duration: 15000
+      description: "Wait for WS connection and frame streaming to start"
+  expected_result: "Demo shows remote browser viewer with connected status, frames streaming"
+
+navigate_remote_browser:
+  description: "Navigate the remote browser to a URL"
+  steps:
+    - action: fill
+      selector: "#url-input"
+      description: "Fill URL in address bar"
+    - action: eval
+      selector: "javascript"
+      value: "document.querySelector('#url-input').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true}))"
+      description: "Press Enter to navigate"
+    - action: wait
+      duration: 10000
+      description: "Wait for remote browser to load the page"
+  expected_result: "Remote browser navigates to the URL, usage log shows navigation entry"
+
+click_remote_browser:
+  description: "Click on the remote browser display area"
+  steps:
+    - action: eval
+      selector: "javascript"
+      value: "document.getElementById('browser-viewer-frame').contentDocument.body.dispatchEvent(new MouseEvent('click', {clientX: X, clientY: Y, bubbles: true}))"
+      description: "Dispatch click event inside nested iframe"
+  notes:
+    - "Must dispatch events to the nested iframe contentDocument, not the video-container"
+    - "Coordinates are relative to the remote browser viewport (1280x800)"
+
+create_demo_session_api:
+  description: "Create a demo session via API"
+  steps:
+    - action: curl
+      command: 'curl -s -X POST "http://192.168.0.29:3011/api/demo/session"'
+      description: "POST to create demo session"
+  expected_result: "Returns JSON with sessionId, demoApiKey, expiresAt, maxDuration"
+  output_fields:
+    - "data.sessionId"
+    - "data.demoApiKey"  # used as token param
+    - "data.expiresAt"
+    - "data.maxDuration"  # 300 seconds
+
+open_standalone_viewer:
+  description: "Open standalone browser-viewer page with session credentials"
+  steps:
+    - action: open
+      url: "http://192.168.0.29:3011/browser-viewer/index.html?sessionId={sessionId}&token={token}"
+      description: "Open browser viewer with session params"
+  expected_result: "Shows remote browser screen with status '已连接', frame counter incrementing"
+
+tips:
+  - "Demo page structure: demo.html → iframe (browser-viewer) → nested iframe (browser-viewer) → remote browser screen"
+  - "Nested iframe chain: demo page has 1 iframe (frame index 0), that iframe has another iframe (#browser-viewer-frame)"
+  - "Remote browser display uses <img id='bv-screen'> with blob: URL (updated via WS binary frames)"
+  - "Two WS connections: /ws/{sessionId}/stream (binary frames) and /ws/{sessionId}/events (JSON control messages)"
+  - "Stream WS alternates between ~48KB and ~30KB binary frames at ~26 FPS"
+  - "Frame counter visible in #bv-status element: '已连接 · 帧 #N'"
+  - "Console errors: none observed during testing"
+  - "Session has 5-minute idle timeout (300 seconds), countdown visible in UI"
+  - "Quick navigation buttons (测试页面, 百度, Bing, Example) available alongside URL bar"
+  - "Features: screenshot, file upload, URL download buttons available"
+  - "Performance display shows FPS and bandwidth (-- when not measuring)"

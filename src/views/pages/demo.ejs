@@ -330,8 +330,11 @@
       $('hero-section').classList.add('hidden');
       $('browser-section').classList.remove('hidden');
       $('browser-section').classList.add('flex');
+
+      document.cookie = 'token=' + demoApiKey + '; path=/; max-age=3600';
+
       var viewerFrame = $('browser-viewer-frame');
-      viewerFrame.src = '/browser-viewer/index.html?sessionId=' + sessionId;
+      viewerFrame.src = '/browser-viewer/index.html?sessionId=' + sessionId + '&token=' + encodeURIComponent(demoApiKey);
       viewerFrame.onload = function() {
         $('connecting-overlay').classList.add('hidden');
       };

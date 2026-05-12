@@ -23,6 +23,7 @@ class BrowserViewer {
     this.containerId = options.containerId;
     this.sessionId = options.sessionId;
     this.wsHost = options.wsHost || location.host;
+    this.token = options.token || '';
     this.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
 
     this.streamWs = null;
@@ -55,7 +56,8 @@ class BrowserViewer {
     var self = this;
 
     // Stream WS — 接收画面帧（arraybuffer 更可靠）
-    this.streamWs = new WebSocket(wsBase + '/ws/' + this.sessionId + '/stream');
+    var tokenQuery = this.token ? '?token=' + encodeURIComponent(this.token) : '';
+    this.streamWs = new WebSocket(wsBase + '/ws/' + this.sessionId + '/stream' + tokenQuery);
     this.streamWs.binaryType = 'arraybuffer';
 
     this.streamWs.onmessage = function (e) {
@@ -108,7 +110,8 @@ class BrowserViewer {
     };
 
     // Events WS — 发送鼠标/键盘事件
-    this.eventsWs = new WebSocket(wsBase + '/ws/' + this.sessionId + '/events');
+    var tokenQuery = this.token ? '?token=' + encodeURIComponent(this.token) : '';
+    this.eventsWs = new WebSocket(wsBase + '/ws/' + this.sessionId + '/events' + tokenQuery);
 
     this.eventsWs.onopen = function () {
       self.connected = true;

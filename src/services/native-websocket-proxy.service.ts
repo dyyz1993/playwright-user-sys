@@ -412,7 +412,11 @@ export class NativeWebSocketProxyService {
     pathname: string
   ): Promise<void> {
     try {
+      const parsedUrl = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
+      const queryToken = parsedUrl.searchParams.get('token');
+
       const token =
+        queryToken ||
         (request.headers.authorization?.startsWith('Bearer ') ? request.headers.authorization.split(' ')[1] : null) ||
         (request.headers.cookie
           ? (request.headers.cookie
@@ -436,10 +440,14 @@ export class NativeWebSocketProxyService {
       try {
         decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
       } catch {
-        logger.error(`Viewer WebSocket代理JWT验证失败 (sessionId: ${sessionId})`);
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nInvalid token');
-        socket.destroy();
-        return;
+        const userByKey = await UserModel.findByApiKey(token);
+        if (!userByKey) {
+          logger.error(`Viewer WebSocket代理认证失败 (sessionId: ${sessionId})`);
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nInvalid token');
+          socket.destroy();
+          return;
+        }
+        decoded = { id: userByKey.id, role: userByKey.role };
       }
 
       const user = await UserModel.findById(decoded.id);

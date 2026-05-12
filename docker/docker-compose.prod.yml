@@ -66,6 +66,7 @@ services:
       - /data/docker/cache/chromium:/opt/google/chrome:ro
     environment:
       - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
       - MACHINE_ID=machine-1
       - MACHINE_NAME="Production Machine 1"
       - MANAGER_HOST=manager:50051
@@ -111,6 +112,7 @@ services:
       - /data/docker/cache/chromium:/opt/google/chrome:ro
     environment:
       - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
       - MACHINE_ID=machine-2
       - MACHINE_NAME="Production Machine 2"
       - MANAGER_HOST=manager:50051

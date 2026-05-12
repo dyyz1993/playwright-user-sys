@@ -35,7 +35,10 @@ export default fp(async function (fastify: FastifyInstance) {
 
     // 处理其他错误
     const statusCode = error.statusCode || 500;
-    const message = error.message || '服务器内部错误';
+    const message =
+      statusCode >= 500 && process.env.NODE_ENV === 'production'
+        ? 'Internal Server Error'
+        : error.message || '服务器内部错误';
 
     return reply.status(statusCode).send({
       success: false,

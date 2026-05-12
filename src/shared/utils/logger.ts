@@ -15,7 +15,7 @@ const getLogFileName = () => {
 };
 
 // 创建文件输出流
-const fileStream = fs.createWriteStream(getLogFileName(), { flags: 'a' });
+let fileStream = fs.createWriteStream(getLogFileName(), { flags: 'a' });
 
 // 日志级别
 const logLevel = config.logging?.level || 'info';
@@ -92,6 +92,8 @@ export const logger = {
     try {
       // 关闭当前日志流
       fileStream.end();
+
+      fileStream = fs.createWriteStream(getLogFileName(), { flags: 'a' });
 
       // 创建新的日志流
       const newLogFile = getLogFileName();

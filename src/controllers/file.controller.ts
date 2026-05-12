@@ -186,13 +186,28 @@ export async function uploadFileForSession(request: FastifyRequest, reply: Fasti
     }
 
     const sessionIdField = data.fields?.sessionId;
-    const sessionId = (sessionIdField as any)?.value || sessionIdField;
+    let sessionId: string | undefined;
+    if (Array.isArray(sessionIdField)) {
+      sessionId = (sessionIdField[0] as any)?.value;
+    } else if (sessionIdField && typeof sessionIdField === 'object') {
+      sessionId = (sessionIdField as any).value;
+    } else if (typeof sessionIdField === 'string') {
+      sessionId = sessionIdField;
+    }
+    if (!sessionId) {
+      try {
+        const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+        sessionId = url.searchParams.get('sessionId') || undefined;
+      } catch {
+        // URL parsing failed, ignore
+      }
+    }
 
     if (!sessionId) {
       return sendError(reply, '缺少 sessionId', 400);
     }
 
-    const session = await SessionModel.findById(sessionId as string);
+    const session = await SessionModel.findById(sessionId);
     if (!session || session.user_id !== request.user.id) {
       return sendError(reply, '会话不存在或不属于该用户', 404);
     }
@@ -214,7 +229,7 @@ export async function uploadFileForSession(request: FastifyRequest, reply: Fasti
     const result = await fileTransferService.transferToMachine(
       fileBuffer,
       data.filename,
-      sessionId as string,
+      sessionId,
       session.machine_id!
     );
 

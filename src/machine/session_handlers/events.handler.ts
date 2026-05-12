@@ -401,9 +401,35 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
       case 'updateClip':
       // falls through to event handler
       // --- 程序化接口 ---
-      case 'event':
-        handleMouseEvents(eventData.event.type, eventData.event, page, ws, sessionId, requestType);
+      case 'event': {
+        const innerEvent = eventData.event || eventData;
+        const innerType = innerEvent.type || '';
+        const innerData = innerEvent.data || {};
+
+        const nameMap: Record<string, string> = {
+          click: 'mouseClick',
+          mousedown: 'mouseDown',
+          mouseup: 'mouseUp',
+          mousemove: 'mouseMove',
+          wheel: 'mouseWheel',
+          keydown: 'keyDown',
+          keyup: 'keyUp',
+          touchstart: 'touchStart',
+          touchmove: 'touchMove',
+          touchend: 'touchEnd',
+          contextmenu: 'contextMenu',
+        };
+
+        const mappedType = nameMap[innerType] || innerType;
+
+        const normalizedData = {
+          ...innerData,
+          type: mappedType,
+        };
+
+        handleMouseEvents(mappedType, normalizedData, page, ws, sessionId, requestType);
         break;
+      }
 
       case 'fileInjectInBrowser':
         await handleFileInjectInBrowser(ws, sessionId, data);
@@ -561,6 +587,15 @@ async function handleMouseEvents(
           deltaY: data.deltaY,
         });
         break;
+
+      case 'contextMenu': {
+        const { x = 0, y = 0 } = data;
+        const coords = browserService.getTransformedCoordinates(sessionId, x, y);
+        if (coords) {
+          await page.mouse.click(coords.tx, coords.ty, { button: 'right' });
+        }
+        break;
+      }
 
       // --- 基础交互事件 ---
       case 'mouseClick':

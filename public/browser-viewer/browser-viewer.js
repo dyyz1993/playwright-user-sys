@@ -33,6 +33,8 @@ class BrowserViewer {
     this.connected = false;
     this.frameCount = 0;
     this.lastBlobUrl = null;
+    this.cursor = document.createElement('div');
+    this.cursor.style.cssText = 'position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
   }
 
   mount() {
@@ -45,6 +47,10 @@ class BrowserViewer {
         '<div id="bv-status" style="position:absolute;top:10px;left:10px;color:#fff;font-size:12px;z-index:10;font-family:system-ui,-apple-system,sans-serif;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:4px;">连接中...</div>' +
       '</div>';
     this.img = this.container.querySelector('#bv-screen');
+    if (this.container) {
+      this.container.style.position = 'relative';
+      this.container.appendChild(this.cursor);
+    }
     return this;
   }
 
@@ -151,15 +157,38 @@ class BrowserViewer {
 
     function getCoords(e) {
       var r = img.getBoundingClientRect();
+      var imgRatio = 1280 / 800;
+      var containerRatio = r.width / r.height;
+      var renderWidth, renderHeight, offsetX, offsetY;
+
+      if (containerRatio > imgRatio) {
+        renderHeight = r.height;
+        renderWidth = r.height * imgRatio;
+        offsetX = r.left + (r.width - renderWidth) / 2;
+        offsetY = r.top;
+      } else {
+        renderWidth = r.width;
+        renderHeight = r.width / imgRatio;
+        offsetX = r.left;
+        offsetY = r.top + (r.height - renderHeight) / 2;
+      }
+
       return {
-        x: Math.round((e.clientX - r.left) * (1280 / r.width)),
-        y: Math.round((e.clientY - r.top) * (800 / r.height)),
+        x: Math.round((e.clientX - offsetX) * (1280 / renderWidth)),
+        y: Math.round((e.clientY - offsetY) * (800 / renderHeight)),
       };
     }
 
     img.addEventListener('mousemove', function (e) {
       var c = getCoords(e);
       self.send({ type: 'event', event: { type: 'mousemove', data: c } });
+      self.cursor.style.display = 'block';
+      self.cursor.style.left = (e.clientX - img.getBoundingClientRect().left) + 'px';
+      self.cursor.style.top = (e.clientY - img.getBoundingClientRect().top) + 'px';
+    });
+
+    img.addEventListener('mouseleave', function () {
+      self.cursor.style.display = 'none';
     });
 
     img.addEventListener('mousedown', function (e) {
@@ -188,6 +217,9 @@ class BrowserViewer {
 
     img.addEventListener('contextmenu', function (e) {
       e.preventDefault();
+      var c = getCoords(e);
+      c.button = 2;
+      self.send({ type: 'event', event: { type: 'contextmenu', data: c } });
     });
 
     document.addEventListener('keydown', function (e) {
@@ -200,6 +232,74 @@ class BrowserViewer {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       self.send({ type: 'event', event: { type: 'keyup', data: { key: e.key, code: e.code } } });
     });
+
+    // === Touch events ===
+    var touchStartTime = 0;
+    var touchStartCoords = null;
+    var longPressTimer = null;
+    var isLongPress = false;
+
+    img.addEventListener('touchstart', function (e) {
+      e.preventDefault();
+      var touch = e.touches[0];
+      var c = getCoords(touch);
+      touchStartTime = Date.now();
+      touchStartCoords = c;
+      isLongPress = false;
+
+      self.cursor.style.display = 'block';
+      var r = img.getBoundingClientRect();
+      self.cursor.style.left = (touch.clientX - r.left) + 'px';
+      self.cursor.style.top = (touch.clientY - r.top) + 'px';
+
+      longPressTimer = setTimeout(function () {
+        isLongPress = true;
+        self.cursor.style.background = 'rgba(0,0,255,0.5)';
+        self.cursor.style.borderColor = 'rgba(0,0,255,0.8)';
+        var rc = getCoords(touchStartCoords || touch);
+        rc.button = 2;
+        self.send({ type: 'event', event: { type: 'mousedown', data: rc } });
+        self.send({ type: 'event', event: { type: 'mouseup', data: rc } });
+        self.send({ type: 'event', event: { type: 'contextmenu', data: rc } });
+        setTimeout(function () {
+          self.cursor.style.background = 'rgba(255,0,0,0.5)';
+          self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
+        }, 200);
+      }, 500);
+
+      c.button = 0;
+      self.send({ type: 'event', event: { type: 'mousedown', data: c } });
+    }, { passive: false });
+
+    img.addEventListener('touchmove', function (e) {
+      e.preventDefault();
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+
+      var touch = e.touches[0];
+      var c = getCoords(touch);
+
+      var r = img.getBoundingClientRect();
+      self.cursor.style.left = (touch.clientX - r.left) + 'px';
+      self.cursor.style.top = (touch.clientY - r.top) + 'px';
+
+      self.send({ type: 'event', event: { type: 'mousemove', data: c } });
+    }, { passive: false });
+
+    img.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+
+      var touch = e.changedTouches[0];
+      var c = getCoords(touch);
+
+      if (!isLongPress) {
+        c.button = 0;
+        self.send({ type: 'event', event: { type: 'mouseup', data: c } });
+        self.send({ type: 'event', event: { type: 'click', data: c } });
+      }
+
+      self.cursor.style.display = 'none';
+    }, { passive: false });
   }
 
   send(msg) {

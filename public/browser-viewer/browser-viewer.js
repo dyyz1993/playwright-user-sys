@@ -41,6 +41,7 @@ class BrowserViewer {
     this.currentBandwidth = 0;
     this.cursor = document.createElement('div');
     this.cursor.style.cssText = 'position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
+    this.cursorOffset = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 40 : 0;
 
     this.hiddenInput = document.createElement('textarea');
     this.hiddenInput.style.cssText = 'position:fixed;top:-100px;left:-100px;width:1px;height:1px;opacity:0.01;font-size:16px;border:none;outline:none;resize:none;';
@@ -51,14 +52,31 @@ class BrowserViewer {
     document.body.appendChild(this.hiddenInput);
 
     var self = this;
+    var isComposing = false;
     var lastInputValue = '';
+
+    this.hiddenInput.addEventListener('compositionstart', function() {
+      isComposing = true;
+    });
+
+    this.hiddenInput.addEventListener('compositionend', function(e) {
+      isComposing = false;
+      var composedText = e.data || '';
+      if (composedText) {
+        self.send({ type: 'event', event: { type: 'input', data: { value: composedText } } });
+      }
+      setTimeout(function() { self.hiddenInput.value = ''; lastInputValue = ''; }, 50);
+    });
+
     this.hiddenInput.addEventListener('input', function(e) {
+      if (isComposing) return;
       var newValue = self.hiddenInput.value;
       if (newValue.length > lastInputValue.length) {
         var addedText = newValue.substring(lastInputValue.length);
         for (var i = 0; i < addedText.length; i++) {
-          self.send({ type: 'event', event: { type: 'keydown', data: { key: addedText[i], code: 'Key' + addedText[i].toUpperCase() } } });
-          self.send({ type: 'event', event: { type: 'keyup', data: { key: addedText[i], code: 'Key' + addedText[i].toUpperCase() } } });
+          var ch = addedText[i];
+          self.send({ type: 'event', event: { type: 'keydown', data: { key: ch, code: 'Key' + ch.toUpperCase() } } });
+          self.send({ type: 'event', event: { type: 'keyup', data: { key: ch, code: 'Key' + ch.toUpperCase() } } });
         }
       } else if (newValue.length < lastInputValue.length) {
         var deletedCount = lastInputValue.length - newValue.length;
@@ -68,16 +86,6 @@ class BrowserViewer {
         }
       }
       lastInputValue = newValue;
-    });
-
-    this.hiddenInput.addEventListener('compositionend', function(e) {
-      var composedText = e.data || '';
-      if (composedText) {
-        for (var k = 0; k < composedText.length; k++) {
-          self.send({ type: 'event', event: { type: 'keydown', data: { key: composedText[k], code: 'Key' + composedText[k].toUpperCase() } } });
-          self.send({ type: 'event', event: { type: 'keyup', data: { key: composedText[k], code: 'Key' + composedText[k].toUpperCase() } } });
-        }
-      }
     });
   }
 
@@ -91,6 +99,15 @@ class BrowserViewer {
         '<div id="bv-status" style="position:absolute;top:10px;left:10px;color:#fff;font-size:12px;z-index:10;font-family:system-ui,-apple-system,sans-serif;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:4px;">连接中...</div>' +
       '</div>';
     this.img = this.container.querySelector('#bv-screen');
+    this.img.draggable = false;
+    this.img.style.userSelect = 'none';
+    this.img.style.webkitUserSelect = 'none';
+    this.img.style.webkitTouchCallout = 'none';
+    this.img.style.touchAction = 'none';
+    var imgEl = this.img;
+    imgEl.addEventListener('dragstart', function(e) { e.preventDefault(); });
+    imgEl.addEventListener('selectstart', function(e) { e.preventDefault(); });
+    imgEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
     if (this.container) {
       this.container.style.position = 'relative';
       this.container.appendChild(this.cursor);
@@ -325,7 +342,7 @@ class BrowserViewer {
       self.send({ type: 'event', event: { type: 'mousemove', data: c } });
       self.cursor.style.display = 'block';
       self.cursor.style.left = (e.clientX - img.getBoundingClientRect().left) + 'px';
-      self.cursor.style.top = (e.clientY - img.getBoundingClientRect().top) + 'px';
+      self.cursor.style.top = (e.clientY - img.getBoundingClientRect().top - self.cursorOffset) + 'px';
     });
 
     img.addEventListener('mouseleave', function () {
@@ -389,7 +406,7 @@ class BrowserViewer {
       self.cursor.style.display = 'block';
       var r = img.getBoundingClientRect();
       self.cursor.style.left = (touch.clientX - r.left) + 'px';
-      self.cursor.style.top = (touch.clientY - r.top) + 'px';
+      self.cursor.style.top = (touch.clientY - r.top - self.cursorOffset) + 'px';
 
       longPressTimer = setTimeout(function () {
         isLongPress = true;
@@ -419,7 +436,7 @@ class BrowserViewer {
 
       var r = img.getBoundingClientRect();
       self.cursor.style.left = (touch.clientX - r.left) + 'px';
-      self.cursor.style.top = (touch.clientY - r.top) + 'px';
+      self.cursor.style.top = (touch.clientY - r.top - self.cursorOffset) + 'px';
 
       self.send({ type: 'event', event: { type: 'mousemove', data: c } });
     }, { passive: false });

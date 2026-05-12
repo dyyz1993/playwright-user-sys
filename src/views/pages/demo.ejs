@@ -566,48 +566,53 @@ dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('d
       return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
     }
 
-    async function demoFileUpload() {
-      if (!sessionId) { showToast('请先开始体验'); return; }
-      const btn = $('btn-upload');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>上传中...';
+    var pendingUploadFiles = null;
 
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.txt,.jpg,.jpeg,.png,.pdf,.csv,.json';
-      input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-upload mr-2"></i>文件上传体验'; return; }
+    function handleUploadFiles(files) {
+      if (!files || !files.length) return;
+      pendingUploadFiles = files;
+      var preview = document.getElementById('upload-file-preview');
+      preview.style.display = 'block';
+      preview.innerHTML = '';
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        var ext = f.name.split('.').pop().toLowerCase();
+        var icon = ['jpg','jpeg','png','gif','webp'].includes(ext) ? '🖼️' : ext === 'pdf' ? '📕' : ext === 'txt' ? '📝' : '📄';
+        var size = f.size < 1024 ? f.size + ' B' : f.size < 1048576 ? (f.size/1024).toFixed(1) + ' KB' : (f.size/1048576).toFixed(1) + ' MB';
+        var item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f5f5f5;border-radius:8px;margin-bottom:6px;font-size:14px;';
+        item.innerHTML = '<span style="font-size:20px;">' + icon + '</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + f.name + '</span><span style="color:#999;font-size:12px;">' + size + '</span>';
+        preview.appendChild(item);
+      }
+      document.getElementById('upload-submit-btn').style.display = 'block';
+    }
 
-        logActivity(`已选择文件: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+    async function doUploadFile() {
+      if (!pendingUploadFiles || !pendingUploadFiles.length) return;
+      if (!sessionId) { alert('请先创建会话'); return; }
+      var statusEl = document.getElementById('upload-status');
+      statusEl.style.display = 'block';
+      statusEl.style.color = '#007AFF';
+      statusEl.textContent = '⏳ 正在上传...';
 
-        try {
-          var base = baseUrl || (location.protocol + '//' + location.host);
-          navigateTo(base + '/public/slider-test.html');
-          logActivity('正在打开滑块测试页面...');
-          await new Promise(r => setTimeout(r, 2000));
-
-          logActivity('正在上传文件到远程服务器...');
-          const formData = new FormData();
+      try {
+        for (var i = 0; i < pendingUploadFiles.length; i++) {
+          var file = pendingUploadFiles[i];
+          statusEl.textContent = '⏳ 正在上传: ' + file.name + ' (' + (i+1) + '/' + pendingUploadFiles.length + ')';
+          var formData = new FormData();
           formData.append('file', file, file.name);
           formData.append('sessionId', sessionId);
-
-          const uploadResp = await fetch('/api/files/upload-session', {
+          var uploadResp = await fetch('/api/files/upload-session', {
             method: 'POST',
             headers: { 'x-api-key': demoApiKey },
             body: formData
           });
-          const uploadData = await uploadResp.json();
-
-          if (!uploadData.success || !uploadData.data) {
-            logActivity('上传失败: ' + (uploadData.error || '未知错误'));
-            return;
+          var uploadData = await uploadResp.json();
+          if (!uploadResp.ok || !uploadData.success) {
+            throw new Error(uploadData.message || '上传失败');
           }
-
-          logActivity(`文件已传输到远程服务器`);
-
-          logActivity('正在注入到远程浏览器...');
-          const injectResp = await fetch(`/api/sessions/${sessionId}/inject-file`, {
+          statusEl.textContent = '⏳ 正在注入到远程浏览器: ' + file.name;
+          var injectResp = await fetch('/api/sessions/' + sessionId + '/inject-file', {
             method: 'POST',
             headers: { 'x-api-key': demoApiKey, 'content-type': 'application/json' },
             body: JSON.stringify({
@@ -615,22 +620,75 @@ dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('d
               selector: '#fileInput'
             })
           });
-          const injectData = await injectResp.json();
-
-          if (injectData.success) {
-            logActivity(`✅ 上传成功！${file.name} 已注入远程浏览器`);
-          } else {
-            logActivity('注入结果: ' + (injectData.message || '完成'));
+          var injectData = await injectResp.json();
+          if (!injectResp.ok || !injectData.success) {
+            statusEl.textContent = '⏳ 正在导航到上传测试页...';
+            navigateTo(baseUrl + '/public/slider-test.html');
+            await new Promise(r => setTimeout(r, 3000));
+            injectResp = await fetch('/api/sessions/' + sessionId + '/inject-file', {
+              method: 'POST',
+              headers: { 'x-api-key': demoApiKey, 'content-type': 'application/json' },
+              body: JSON.stringify({
+                machineFilePath: uploadData.data.machineFilePath,
+                selector: '#fileInput'
+              })
+            });
+            injectData = await injectResp.json();
           }
-        } catch (err) {
-          logActivity('上传失败: ' + err.message);
-        } finally {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fas fa-upload mr-2"></i>文件上传体验';
+          if (injectData.success) {
+            statusEl.style.color = '#34C759';
+            statusEl.textContent = '✅ ' + file.name + ' 上传成功！';
+          } else {
+            throw new Error(injectData.message || '注入失败');
+          }
         }
-      };
+        logActivity('📁 文件上传完成: ' + pendingUploadFiles.length + ' 个文件');
+        pendingUploadFiles = null;
+        document.getElementById('upload-submit-btn').style.display = 'none';
+        setTimeout(function() {
+          document.getElementById('upload-modal').style.display = 'none';
+        }, 2000);
+      } catch (err) {
+        statusEl.style.color = '#FF3B30';
+        statusEl.textContent = '❌ 上传失败: ' + err.message;
+        console.error('Upload error:', err);
+      }
+    }
 
-      input.click();
+    async function demoFileUpload() {
+      if (!sessionId) { alert('请先开始体验'); return; }
+      var modal = document.getElementById('upload-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'upload-modal';
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:none;justify-content:center;align-items:center;';
+        modal.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;width:400px;max-width:90vw;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+          '<h3 style="font-size:18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">📁 上传文件到远程浏览器' +
+          '<button onclick="document.getElementById(\'upload-modal\').style.display=\'none\'" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">&times;</button></h3>' +
+          '<div id="upload-drop-zone" style="border:2px dashed #ddd;border-radius:12px;padding:30px;text-align:center;cursor:pointer;transition:border-color 0.2s;margin-bottom:16px;">' +
+          '<div style="font-size:40px;margin-bottom:8px;">📄</div>' +
+          '<div style="color:#666;font-size:14px;">点击选择文件或拖拽到此处</div>' +
+          '<input type="file" id="upload-file-input" style="display:none;" multiple>' +
+          '</div>' +
+          '<div id="upload-file-preview" style="display:none;margin-bottom:16px;"></div>' +
+          '<button id="upload-submit-btn" onclick="doUploadFile()" style="width:100%;padding:12px;background:#007AFF;color:white;border:none;border-radius:10px;font-size:16px;cursor:pointer;display:none;">上传到远程浏览器</button>' +
+          '<div id="upload-status" style="margin-top:12px;font-size:14px;display:none;"></div>' +
+          '</div>';
+        document.body.appendChild(modal);
+        var dropZone = document.getElementById('upload-drop-zone');
+        var fileInput = document.getElementById('upload-file-input');
+        dropZone.addEventListener('click', function() { fileInput.click(); });
+        dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.style.borderColor = '#007AFF'; });
+        dropZone.addEventListener('dragleave', function() { dropZone.style.borderColor = '#ddd'; });
+        dropZone.addEventListener('drop', function(e) { e.preventDefault(); dropZone.style.borderColor = '#ddd'; handleUploadFiles(e.dataTransfer.files); });
+        fileInput.addEventListener('change', function() { handleUploadFiles(this.files); });
+      }
+      document.getElementById('upload-file-preview').style.display = 'none';
+      document.getElementById('upload-file-preview').innerHTML = '';
+      document.getElementById('upload-submit-btn').style.display = 'none';
+      document.getElementById('upload-status').style.display = 'none';
+      pendingUploadFiles = null;
+      modal.style.display = 'flex';
     }
 
     async function demoUrlDownload() {

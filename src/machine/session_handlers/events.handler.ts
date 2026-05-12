@@ -553,6 +553,11 @@ async function handleMouseEvents(
       case 'input': {
         let targetContext: Page | Frame = page;
         const { selector, frameSelector, value } = data;
+        if (!selector && value) {
+          await page.keyboard.type(value, { delay: 50 });
+          sendResponse(ws, requestType, { success: true });
+          return;
+        }
         if (!selector) {
           return;
         }

@@ -844,4 +844,12 @@ export class MachineConnectionManager extends EventEmitter {
       logger.error(`处理会话状态更新时出错 (${machineId}, ${status.session_id}):`, error);
     }
   }
+
+  shutdown(): void {
+    for (const [, call] of this.connections) {
+      call.end();
+    }
+    this.connections.clear();
+    this.clients.clear();
+  }
 }

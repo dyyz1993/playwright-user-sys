@@ -342,10 +342,7 @@ export async function deleteMachine(request: FastifyRequest<IdParamRoute>, reply
     const machine = await MachineModel.findById(machineId);
     if (!machine) {
       request.log.warn(`机器不存在: ${machineId}`);
-      return reply.status(404).send({
-        success: false,
-        error: '机器不存在',
-      });
+      return sendError(reply, '机器不存在', 404);
     }
 
     // 如果机器在线，先发送关闭命令并断开连接
@@ -375,10 +372,7 @@ export async function deleteMachine(request: FastifyRequest<IdParamRoute>, reply
     const success = await MachineModel.delete(machineId);
     if (!success) {
       request.log.error(`从数据库删除机器失败: ${machineId}`);
-      return reply.status(500).send({
-        success: false,
-        error: '删除机器失败',
-      });
+      return sendError(reply, '删除机器失败', 500);
     }
 
     await OperationLogModel.create({
@@ -398,17 +392,10 @@ export async function deleteMachine(request: FastifyRequest<IdParamRoute>, reply
     }
 
     request.log.info(`机器删除成功: ${machineId}`);
-    return reply.status(200).send({
-      success: true,
-      message: '机器删除成功',
-      id: machineId,
-    });
+    return sendSuccess(reply, { id: machineId }, '机器删除成功');
   } catch (error) {
     request.log.error({ err: error }, '删除机器失败');
-    return reply.status(500).send({
-      success: false,
-      error: '删除机器失败',
-    });
+    return sendError(reply, '删除机器失败', 500);
   }
 }
 

@@ -71,6 +71,9 @@ function createCreateSessionTrx(userCredits = 100) {
     where: vi.fn().mockReturnThis(),
     whereRaw: vi.fn().mockReturnThis(),
     first: vi.fn().mockResolvedValue({ id: 'machine-001', instance_count: 0, max_instances: 10 }),
+    select: vi.fn().mockReturnThis(),
+    forUpdate: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue([{ id: 'machine-001', instance_count: 0, max_instances: 10 }]),
     increment: vi.fn().mockResolvedValue(1),
   };
   const usersChain = {

@@ -2,18 +2,20 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const mockExistsSync = vi.fn().mockReturnValue(true);
 const mockMkdirSync = vi.fn();
-const mockReaddirSync = vi.fn().mockReturnValue([]);
-const mockStatSync = vi.fn();
-const mockUnlinkSync = vi.fn();
+const mockReaddir = vi.fn().mockResolvedValue([]);
+const mockStat = vi.fn().mockResolvedValue({ size: 1024, mtime: new Date(), ctime: new Date() });
+const mockUnlink = vi.fn().mockResolvedValue(undefined);
 const mockCreateWriteStream = vi.fn().mockReturnValue({ on: vi.fn(), pipe: vi.fn() });
 
 const fsOverrides = {
   existsSync: mockExistsSync,
   mkdirSync: mockMkdirSync,
-  readdirSync: mockReaddirSync,
-  statSync: mockStatSync,
-  unlinkSync: mockUnlinkSync,
   createWriteStream: mockCreateWriteStream,
+  promises: {
+    readdir: mockReaddir,
+    stat: mockStat,
+    unlink: mockUnlink,
+  },
 };
 
 vi.mock('fs', async () => {
@@ -46,8 +48,9 @@ describe('FileController', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockExistsSync.mockReturnValue(true);
-    mockReaddirSync.mockReturnValue([]);
-    mockStatSync.mockReturnValue({ size: 1024, mtime: new Date(), ctime: new Date() });
+    mockReaddir.mockResolvedValue([]);
+    mockStat.mockResolvedValue({ size: 1024, mtime: new Date(), ctime: new Date() });
+    mockUnlink.mockResolvedValue(undefined);
     mockCreateWriteStream.mockReturnValue({ on: vi.fn(), pipe: vi.fn() });
 
     const responseModule = await import('../../../utils/response.js');
@@ -267,8 +270,8 @@ describe('FileController', () => {
     it('成功获取文件列表', async () => {
       const { getFileList } = await import('../../../controllers/file.controller.js');
 
-      mockReaddirSync.mockReturnValue(['file1.txt', 'file2.png']);
-      mockStatSync.mockReturnValue({ size: 1024, mtime: new Date('2024-01-01') });
+      mockReaddir.mockResolvedValue(['file1.txt', 'file2.png']);
+      mockStat.mockResolvedValue({ size: 1024, mtime: new Date('2024-01-01') });
 
       const request = {
         user: { role: 'admin', id: 1 },
@@ -299,9 +302,7 @@ describe('FileController', () => {
     it('读取目录异常应该返回500错误', async () => {
       const { getFileList } = await import('../../../controllers/file.controller.js');
 
-      mockReaddirSync.mockImplementation(() => {
-        throw new Error('read dir error');
-      });
+      mockReaddir.mockRejectedValue(new Error('read dir error'));
 
       const request = {
         user: { role: 'admin', id: 1 },
@@ -338,8 +339,8 @@ describe('FileController', () => {
 
       const oldDate = new Date(Date.now() - 48 * 60 * 60 * 1000);
       mockExistsSync.mockReturnValue(true);
-      mockReaddirSync.mockReturnValue(['old-file.tmp']);
-      mockStatSync.mockReturnValue({ ctime: oldDate });
+      mockReaddir.mockResolvedValue(['old-file.tmp']);
+      mockStat.mockResolvedValue({ ctime: oldDate });
 
       const request = {
         user: { id: 1, role: 'user' },
@@ -351,7 +352,7 @@ describe('FileController', () => {
 
       await cleanupTempFiles(request, reply as any);
 
-      expect(mockUnlinkSync).toHaveBeenCalled();
+      expect(mockUnlink).toHaveBeenCalled();
       expect(sendSuccess).toHaveBeenCalledWith(
         reply,
         expect.objectContaining({
@@ -365,8 +366,8 @@ describe('FileController', () => {
       const { cleanupTempFiles } = await import('../../../controllers/file.controller.js');
 
       mockExistsSync.mockReturnValue(true);
-      mockReaddirSync.mockReturnValue(['recent-file.tmp']);
-      mockStatSync.mockReturnValue({ ctime: new Date() });
+      mockReaddir.mockResolvedValue(['recent-file.tmp']);
+      mockStat.mockResolvedValue({ ctime: new Date() });
 
       const request = {
         user: { id: 1, role: 'user' },
@@ -378,7 +379,7 @@ describe('FileController', () => {
 
       await cleanupTempFiles(request, reply as any);
 
-      expect(mockUnlinkSync).not.toHaveBeenCalled();
+      expect(mockUnlink).not.toHaveBeenCalled();
       expect(sendSuccess).toHaveBeenCalledWith(
         reply,
         expect.objectContaining({
@@ -416,9 +417,7 @@ describe('FileController', () => {
       const { cleanupTempFiles } = await import('../../../controllers/file.controller.js');
 
       mockExistsSync.mockReturnValue(true);
-      mockReaddirSync.mockImplementation(() => {
-        throw new Error('cleanup error');
-      });
+      mockReaddir.mockRejectedValue(new Error('cleanup error'));
 
       const request = {
         user: { id: 1, role: 'user' },

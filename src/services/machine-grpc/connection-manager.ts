@@ -29,7 +29,6 @@ function withDeadline<T>(promise: Promise<T>, ms: number, label: string): Promis
 
 export class MachineConnectionManager extends EventEmitter {
   private connections: Map<string, grpc.ServerDuplexStream<MachineMessage, ManagerMessage>> = new Map();
-  private pendingRequests: Map<string, { resolve: Function; reject: Function; timer: NodeJS.Timeout }> = new Map();
   private clients: Map<string, MachineServiceClient> = new Map();
   private proto: MachineProtoPackage | null = null;
 

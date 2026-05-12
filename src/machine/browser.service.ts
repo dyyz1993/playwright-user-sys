@@ -803,7 +803,6 @@ export class BrowserService extends EventEmitter {
         '--force-webrtc-ip-handling-policy',
         '--remote-debugging-address=0.0.0.0',
       ],
-      // headless: options.headless !== undefined ? options.headless : false,
       // headless: false,
       headless: true,
       executablePath: CONFIG.chromePath,
@@ -932,7 +931,6 @@ export class BrowserService extends EventEmitter {
           // 创建新的mousemove事件监听器
 
           // 保存监听器引用
-          // window._mouseTrackingListener = newListener;
           document.addEventListener('click', function (e: MouseEvent) {
             console.log('click', e.clientX, e.clientY);
           });

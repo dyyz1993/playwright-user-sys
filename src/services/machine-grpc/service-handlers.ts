@@ -324,7 +324,7 @@ export const serviceImplementation = {
 
         callback(null, {
           machine_id,
-          online: true,
+          online: false,
           cpu_usage: 0,
           memory_usage: 0,
           active_sessions: 0,

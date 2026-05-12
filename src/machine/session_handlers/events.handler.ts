@@ -103,8 +103,6 @@ export async function handleEventsConnection(
     sessionFocusEmitter.off(`rawFocusEvent:${sessionId}`, handleRawFocusEvent.bind(null, page, ws, sessionId));
     sessionFocusEmitter.on(`rawFocusEvent:${sessionId}`, handleRawFocusEvent.bind(null, page, ws, sessionId));
     logger.info(`Subscribed to raw focus events for session ${sessionId}`);
-    // connectionInfo.listeners.focusListenerAttached = true; // 标记由 attachFocusListener 内部管理
-
     // --- 添加 browserService 事件监听 ---
     connectionInfo.listeners.configUpdateListener = (updatedSessionId: string, newConfig: SessionConfig) => {
       if (updatedSessionId === sessionId) {
@@ -764,5 +762,3 @@ function handlePageCloseOrCrash(ws: WebSocket, sessionId: string, reason: string
   sendSessionEndedMessage(ws, reason);
   cleanupEventConnection(ws); // 清理时会关闭 socket
 }
-
-// 可选： function sendErrorMessage(ws: WebSocket, message: string): void { ... }

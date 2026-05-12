@@ -631,11 +631,11 @@ describe('MachineController', () => {
 
       await deleteMachine(request, reply);
 
-      expect(reply.status).toHaveBeenCalledWith(404);
+      expect(sendError).toHaveBeenCalledWith(reply, '机器不存在', 404);
     });
 
     it('离线机器应该直接删除', async () => {
-      vi.mocked(MachineModel.findById).mockResolvedValue({ id: 'm1', status: 'offline' });
+      vi.mocked(MachineModel.findById).mockResolvedValue({ id: 'm1', status: 'offline' as const });
       vi.mocked(MachineModel.delete).mockResolvedValue(true);
 
       const { deleteMachine } = await import('../../../controllers/machine.controller.js');
@@ -655,11 +655,11 @@ describe('MachineController', () => {
 
       expect(MachineModel.delete).toHaveBeenCalledWith('m1');
       expect(memoryStore.removeMachine).toHaveBeenCalledWith('m1');
-      expect(reply.status).toHaveBeenCalledWith(200);
+      expect(sendSuccess).toHaveBeenCalled();
     });
 
     it('数据库删除失败应该返回500错误', async () => {
-      vi.mocked(MachineModel.findById).mockResolvedValue({ id: 'm1', status: 'offline' });
+      vi.mocked(MachineModel.findById).mockResolvedValue({ id: 'm1', status: 'offline' as const });
       vi.mocked(MachineModel.delete).mockResolvedValue(false);
 
       const { deleteMachine } = await import('../../../controllers/machine.controller.js');
@@ -677,7 +677,7 @@ describe('MachineController', () => {
 
       await deleteMachine(request, reply);
 
-      expect(reply.status).toHaveBeenCalledWith(500);
+      expect(sendError).toHaveBeenCalled();
     });
   });
 

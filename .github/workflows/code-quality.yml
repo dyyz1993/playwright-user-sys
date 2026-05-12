@@ -112,6 +112,7 @@ jobs:
           DB_PASSWORD: test_password
           JWT_SECRET: test_secret_key_for_testing_only_do_not_use_in_production
           JWT_EXPIRES_IN: 24h
+          ADMIN_PASSWORD: test-admin-password-for-github-ci
         run: |
           node -e "
           import('knex').then(async ({ default: knex }) => {
@@ -134,6 +135,7 @@ jobs:
           DB_PASSWORD: test_password
           JWT_SECRET: test_secret_key_for_testing_only_do_not_use_in_production
           JWT_EXPIRES_IN: 24h
+          ADMIN_PASSWORD: test-admin-password-for-github-ci
         run: |
           echo "═══════════════════════════════════════"
           echo "  单元测试"

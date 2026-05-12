@@ -15,5 +15,13 @@ export default defineConfig({
     environment: 'node',
     include: ['src/tests/unit/security/**/*.test.ts'],
     exclude: ['node_modules', 'dist'],
+    fileParallelism: false,
+    maxConcurrency: 1,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
   },
 });

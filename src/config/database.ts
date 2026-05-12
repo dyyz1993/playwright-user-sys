@@ -75,6 +75,7 @@ export async function initDatabase(dbName?: string) {
         logger.info('旧数据库连接已销毁');
       } catch (e) {
         logger.error('销毁旧连接时出错:', e);
+        throw e;
       }
     }
 

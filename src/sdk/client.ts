@@ -94,8 +94,8 @@ export class Client {
         if (errorData.error) {
           errorMessage = errorData.error;
         }
-      } catch (error) {
-        // 忽略响应体解析错误，使用默认错误信息
+      } catch {
+        // Intentionally empty — use default errorMessage if response body is not JSON
       }
 
       throw new Error(errorMessage);

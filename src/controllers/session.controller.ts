@@ -321,6 +321,7 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
         await new Promise((resolve) => setTimeout(resolve, 3000));
       } catch (screenshotErr) {
         logger.warn(`触发实时截图失败 (sessionId: ${sessionId}):`, screenshotErr);
+        // 非关键优化：实时截图失败不影响已有截图的返回
       }
     }
 
@@ -367,6 +368,7 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
           logger.info(`截图已从 machine 缓存到 manager (${buffer.length} bytes): ${localPath}`);
         } catch (cacheErr) {
           logger.warn(`从 machine 下载截图失败: ${cacheErr}`);
+          // 非关键回退：下载失败后外层会返回 404
         }
       }
     }

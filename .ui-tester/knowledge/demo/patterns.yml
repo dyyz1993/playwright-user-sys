@@ -1,5 +1,6 @@
 # Module: demo
 # Reusable operation sequences
+# Updated: 2026-05-12
 
 start_demo_session:
   description: "Open demo page, click start, wait for session creation and WS stream"
@@ -24,25 +25,103 @@ navigate_remote_browser:
     - action: fill
       selector: "#url-input"
       description: "Fill URL in address bar"
-    - action: eval
-      selector: "javascript"
-      value: "document.querySelector('#url-input').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true}))"
+    - action: press
+      key: "Enter"
       description: "Press Enter to navigate"
     - action: wait
       duration: 10000
       description: "Wait for remote browser to load the page"
   expected_result: "Remote browser navigates to the URL, usage log shows navigation entry"
 
-click_remote_browser:
-  description: "Click on the remote browser display area"
+send_remote_mouse_event:
+  description: "Send mouse events to the remote browser via BrowserViewer.instance.send()"
   steps:
     - action: eval
       selector: "javascript"
-      value: "document.getElementById('browser-viewer-frame').contentDocument.body.dispatchEvent(new MouseEvent('click', {clientX: X, clientY: Y, bubbles: true}))"
-      description: "Dispatch click event inside nested iframe"
+      value: |
+        const iframe = document.getElementById('browser-viewer-frame');
+        const inst = iframe.contentWindow.BrowserViewer.instance;
+        inst.send({ type: 'event', event: { type: 'mousedown', data: { x: X, y: Y, button: 0 } } });
+      description: "Send mousedown event (replace X, Y with remote browser coordinates)"
+    - action: eval
+      selector: "javascript"
+      value: |
+        const iframe = document.getElementById('browser-viewer-frame');
+        const inst = iframe.contentWindow.BrowserViewer.instance;
+        inst.send({ type: 'event', event: { type: 'mousemove', data: { x: X, y: Y } } });
+      description: "Send mousemove event (replace X, Y)"
+    - action: eval
+      selector: "javascript"
+      value: |
+        const iframe = document.getElementById('browser-viewer-frame');
+        const inst = iframe.contentWindow.BrowserViewer.instance;
+        inst.send({ type: 'event', event: { type: 'mouseup', data: { x: X, y: Y, button: 0 } } });
+      description: "Send mouseup event"
   notes:
-    - "Must dispatch events to the nested iframe contentDocument, not the video-container"
-    - "Coordinates are relative to the remote browser viewport (1280x800)"
+    - "Coordinates are relative to remote browser viewport (1280x800)"
+    - "Use BrowserViewer.instance.send() method - DO NOT dispatch events on DOM elements"
+    - "The send() method forwards events through the events WS to the remote browser"
+    - "Mouse events: mousedown, mousemove, mouseup, click, wheel"
+    - "Touch events: touchstart, touchmove, touchend (forwarded through same send method)"
+
+slider_drag_flow:
+  description: "Drag the slider on the slider test page to verify"
+  steps:
+    - action: eval
+      selector: "javascript"
+      value: |
+        const inst = document.getElementById('browser-viewer-frame').contentWindow.BrowserViewer.instance;
+        // Mousedown on thumb
+        inst.send({ type: 'event', event: { type: 'mousedown', data: { x: 389, y: 188, button: 0 } } });
+        // Progressive drag (use setTimeout for smooth animation)
+        const steps = 25;
+        for (let i = 1; i <= steps; i++) {
+          setTimeout(() => {
+            const x = Math.round(389 + (880 - 389) * (i / steps));
+            inst.send({ type: 'event', event: { type: 'mousemove', data: { x: x, y: 188 } } });
+          }, i * 50);
+        }
+        setTimeout(() => {
+          inst.send({ type: 'event', event: { type: 'mouseup', data: { x: 880, y: 188, button: 0 } } });
+        }, steps * 50 + 100);
+      description: "Drag slider from left to right (x:389→880, y:188)"
+    - action: wait
+      duration: 3000
+      description: "Wait for animation and result"
+  expected_result: "Slider shows ✓ with 验证成功 text"
+  notes:
+    - "Slider thumb starts at x≈389 (page content left + container padding + thumb radius)"
+    - "Track ends at x≈916 (content right - container padding)"
+    - "Must drag past 90% of track width for verification success"
+    - "Thumb center y ≈ 188 (page title height + slider section padding + track center)"
+
+sort_drag_flow:
+  description: "Drag sort items on the slider test page"
+  steps:
+    - action: eval
+      selector: "javascript"
+      value: |
+        const inst = document.getElementById('browser-viewer-frame').contentWindow.BrowserViewer.instance;
+        // First scroll down to see sort items
+        inst.send({ type: 'event', event: { type: 'wheel', data: { x: 640, y: 400, deltaX: 0, deltaY: 200 } } });
+      description: "Scroll down to show sort items"
+    - action: wait
+      duration: 1000
+    - action: eval
+      selector: "javascript"
+      value: |
+        const inst = document.getElementById('browser-viewer-frame').contentWindow.BrowserViewer.instance;
+        // Mousedown on sort item, then drag down with dy > 40px between swaps
+        inst.send({ type: 'event', event: { type: 'mousedown', data: { x: 500, y: START_Y, button: 0 } } });
+        // Send progressive mousemoves with 40px+ gaps
+      description: "Start sort drag (replace START_Y with item position)"
+    - action: wait
+      duration: 2000
+  expected_result: "Sort items reorder in the list"
+  notes:
+    - "Sort items use mousedown on .sort-item elements"
+    - "Each swap requires dy > 40px from last swap point"
+    - "After scrolling 200px, items are at y≈620, 660, 700, 740, 780"
 
 create_demo_session_api:
   description: "Create a demo session via API"
@@ -63,17 +142,20 @@ open_standalone_viewer:
     - action: open
       url: "http://192.168.0.29:3011/browser-viewer/index.html?sessionId={sessionId}&token={token}"
       description: "Open browser viewer with session params"
-  expected_result: "Shows remote browser screen with status '已连接', frame counter incrementing"
+  expected_result: "Shows remote browser screen with status '已连接', FPS counter"
 
 tips:
-  - "Demo page structure: demo.html → iframe (browser-viewer) → nested iframe (browser-viewer) → remote browser screen"
-  - "Nested iframe chain: demo page has 1 iframe (frame index 0), that iframe has another iframe (#browser-viewer-frame)"
-  - "Remote browser display uses <img id='bv-screen'> with blob: URL (updated via WS binary frames)"
-  - "Two WS connections: /ws/{sessionId}/stream (binary frames) and /ws/{sessionId}/events (JSON control messages)"
-  - "Stream WS alternates between ~48KB and ~30KB binary frames at ~26 FPS"
-  - "Frame counter visible in #bv-status element: '已连接 · 帧 #N'"
-  - "Console errors: none observed during testing"
+  - "Demo page structure: demo.html → iframe#browser-viewer-frame (BrowserViewer) → remote browser screen"
+  - "Remote browser display uses <img id='bv-screen'> with blob: URL (1280x800, updated via WS)"
+  - "Two WS connections: /ws/{sessionId}/stream (binary frames) and /ws/{sessionId}/events (JSON events)"
+  - "Use BrowserViewer.instance.send() for ALL remote browser interactions - not DOM dispatching"
+  - "BrowserViewer.instance.navigateTo(url) can also navigate the remote browser directly"
   - "Session has 5-minute idle timeout (300 seconds), countdown visible in UI"
-  - "Quick navigation buttons (测试页面, 百度, Bing, Example) available alongside URL bar"
-  - "Features: screenshot, file upload, URL download buttons available"
-  - "Performance display shows FPS and bandwidth (-- when not measuring)"
+  - "Quick navigation buttons include: 测试页面, 百度, Bing, Example, 滑块验证"
+  - "Features: screenshot, file upload, URL download buttons in sidebar"
+  - "Rate limiting: 429 errors appear when creating too many sessions in short time"
+  - "Remote browser receives 502 errors intermittently - may need to retry navigation"
+  - "Mobile viewer (375x812) shows dark/empty viewer area - WS connects but frames don't display"
+  - "File upload via remote browser is limited - file picker dialog is OS-level, not visible in viewer"
+  - "Console errors: 429 Too Many Requests from rate limiting, 404 from missing resources"
+  - "Performance display: 14-17 FPS, 269-289 KB/s during active streaming"

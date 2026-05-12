@@ -331,6 +331,14 @@
     }
 
     function showBrowser() {
+      var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+        || window.innerWidth < 768;
+      
+      if (isMobile && sessionId && demoApiKey) {
+        window.location.href = '/browser-viewer/index.html?sessionId=' + sessionId + '&token=' + encodeURIComponent(demoApiKey);
+        return;
+      }
+
       $('hero-section').classList.add('hidden');
       $('browser-section').classList.remove('hidden');
       $('browser-section').classList.add('flex');
@@ -425,9 +433,29 @@
       logActivity(`导航到 ${url}`);
     }
 
-    function goBack() { logActivity('后退'); }
-    function goForward() { logActivity('前进'); }
-    function doRefresh() { logActivity('刷新页面'); }
+    function goBack() {
+      var viewerFrame = $('browser-viewer-frame');
+      if (viewerFrame && viewerFrame.contentWindow && viewerFrame.contentWindow.BrowserViewer && viewerFrame.contentWindow.BrowserViewer.instance) {
+        viewerFrame.contentWindow.BrowserViewer.instance.send({ type: 'navigate', data: { action: 'goBack' } });
+      }
+      logActivity('⬅️ 后退');
+    }
+
+    function goForward() {
+      var viewerFrame = $('browser-viewer-frame');
+      if (viewerFrame && viewerFrame.contentWindow && viewerFrame.contentWindow.BrowserViewer && viewerFrame.contentWindow.BrowserViewer.instance) {
+        viewerFrame.contentWindow.BrowserViewer.instance.send({ type: 'navigate', data: { action: 'goForward' } });
+      }
+      logActivity('➡️ 前进');
+    }
+
+    function doRefresh() {
+      var viewerFrame = $('browser-viewer-frame');
+      if (viewerFrame && viewerFrame.contentWindow && viewerFrame.contentWindow.BrowserViewer && viewerFrame.contentWindow.BrowserViewer.instance) {
+        viewerFrame.contentWindow.BrowserViewer.instance.send({ type: 'navigate', data: { action: 'reload' } });
+      }
+      logActivity('🔄 刷新');
+    }
 
     // ========== 使用记录 ==========
     function logActivity(action) {
@@ -548,7 +576,7 @@ dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('d
           var base = baseUrl || (location.protocol + '//' + location.host);
           navigateTo(base + '/public/slider-test.html');
           logActivity('正在打开滑块测试页面...');
-          await new Promise(r => setTimeout(r, 3000));
+          await new Promise(r => setTimeout(r, 2000));
 
           logActivity('正在上传文件到远程服务器...');
           const formData = new FormData();

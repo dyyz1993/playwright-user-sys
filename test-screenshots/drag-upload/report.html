@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Test Report - Drag, Upload & Mobile</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 24px; }
+  .header { background: #1a1a2e; color: white; padding: 24px 32px; border-radius: 12px; margin-bottom: 24px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header .meta { color: #a0a0b0; font-size: 14px; margin-top: 8px; }
+  .summary { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .summary-card { background: white; padding: 20px 24px; border-radius: 8px; flex: 1; min-width: 120px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .summary-card .number { font-size: 32px; font-weight: 700; }
+  .summary-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+  .passed .number { color: #10b981; }
+  .failed .number { color: #ef4444; }
+  .partial .number { color: #f59e0b; }
+  .total .number { color: #3b82f6; }
+  .scenario { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .scenario h3 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+  .badge-partial { background: #fef3c7; color: #92400e; }
+  .badge-limited { background: #e0e7ff; color: #3730a3; }
+  .screenshots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+  .screenshot-item { text-align: center; }
+  .screenshot-item img { width: 100%; border-radius: 6px; border: 1px solid #e5e5e5; }
+  .screenshot-item .viewport-label { font-size: 12px; color: #888; margin-top: 4px; }
+  .findings { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .findings h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .findings ul { padding-left: 20px; }
+  .findings li { margin-bottom: 4px; font-size: 14px; }
+  .knowledge-status { background: white; border-radius: 8px; padding: 20px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .knowledge-status h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .detail { font-size: 14px; color: #666; margin-top: 8px; }
+  .error-list { background: #1e1e1e; color: #ccc; border-radius: 8px; padding: 16px; margin-top: 12px; font-family: monospace; font-size: 12px; }
+  .error-list div { padding: 2px 0; }
+  .error-list .err { color: #ef4444; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>UI Test Report: Drag, Upload & Mobile Testing</h1>
+  <div class="meta">
+    Date: 2026-05-12 | URL: http://192.168.0.29:3011/demo | Session: drag-upload-test-1778597697<br>
+    Slider Test Page: http://192.168.0.29:3011/public/slider-test.html
+  </div>
+</div>
+
+<div class="summary">
+  <div class="summary-card total"><div class="number">5</div><div class="label">Total Scenarios</div></div>
+  <div class="summary-card passed"><div class="number">3</div><div class="label">Passed</div></div>
+  <div class="summary-card partial"><div class="number">1</div><div class="label">Partial</div></div>
+  <div class="summary-card failed"><div class="number">1</div><div class="label">Limited</div></div>
+</div>
+
+<!-- Scenario 1: PC Slider Drag -->
+<div class="scenario">
+  <h3>Scenario 1: PC Slider Drag Verification <span class="badge badge-pass">PASSED</span></h3>
+  <p class="detail">Opened Demo page → Started session → Navigated to slider test page → Sent mousedown/mousemove/mouseup events via BrowserViewer.instance.send() → Slider dragged to right side → Verification succeeded with "验证成功!" message.</p>
+  <p class="detail"><strong>Key finding:</strong> Used BrowserViewer.instance.send() to forward mouse events through WS to remote browser. Coordinates (x:389→880, y:188) successfully dragged the slider past 90% threshold.</p>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <img src="01b_new_session_ready.png" alt="Demo ready">
+      <div class="viewport-label">Session Connected</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="02_slider_page_loaded.png" alt="Slider page loaded">
+      <div class="viewport-label">Slider Page Loaded</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="03_slider_pc_drag.png" alt="Slider drag result">
+      <div class="viewport-label">Slider Verification ✓</div>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario 2: PC Sort Drag -->
+<div class="scenario">
+  <h3>Scenario 2: PC Drag-to-Sort <span class="badge badge-pass">PASSED</span></h3>
+  <p class="detail">Scrolled down to sort section → Sent mousedown on sort item → Progressively dragged down with mousemove events → Sort order changed from (苹果,香蕉,樱桃,葡萄,橙子) to (苹果,香蕉,葡萄,橙子,樱桃).</p>
+  <p class="detail"><strong>Key finding:</strong> Sort items use custom mousedown handler with dy>40px threshold per swap. Required scrolling down 200px to bring items into remote browser viewport.</p>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <img src="04c_sort_after_scroll.png" alt="Sort items visible">
+      <div class="viewport-label">Sort Items Visible</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="04_sort_pc_drag.png" alt="Sort result">
+      <div class="viewport-label">Sort Order Changed</div>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario 3: Mobile Touch -->
+<div class="scenario">
+  <h3>Scenario 3: Mobile Touch Drag <span class="badge badge-partial">PARTIAL</span></h3>
+  <p class="detail">Created new session with iPhone UA (375x812) → Clicked start → WS connected at 15 FPS, 80 KB/s → Sent touchstart/touchmove/touchend events → <strong>Viewer area showed dark/empty screen</strong> despite WS connection being active.</p>
+  <p class="detail"><strong>Key finding:</strong> Mobile viewport (375x812) causes the browser viewer iframe to render with a dark/empty content area. WS connects and streams frames (15 FPS confirmed), but the visual rendering fails. Touch events were sent but result could not be visually verified.</p>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <img src="05_mobile_demo.png" alt="Mobile demo">
+      <div class="viewport-label">Mobile Demo (375×812)</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="07_mobile_slider_drag.png" alt="Mobile touch drag">
+      <div class="viewport-label">Mobile Touch Drag (Dark)</div>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario 4: File Upload -->
+<div class="scenario">
+  <h3>Scenario 4: File Upload <span class="badge badge-limited">LIMITED</span></h3>
+  <p class="detail">Navigated to upload area on slider test page → Clicked upload area in remote browser → <strong>File picker dialog cannot be displayed through remote viewer</strong> (OS-level dialog). The "文件上传体验" button in demo sidebar was also tested but operates on the remote browser.</p>
+  <p class="detail"><strong>Limitation:</strong> File upload dialogs are OS-level UI elements that cannot be captured or interacted with through the remote browser viewer. This is a fundamental limitation of the screen-streaming approach.</p>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <img src="08_upload_area.png" alt="Upload area">
+      <div class="viewport-label">Upload Area Visible</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="08b_upload_clicked.png" alt="After click">
+      <div class="viewport-label">After Clicking Upload</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="08c_demo_upload.png" alt="Demo upload button">
+      <div class="viewport-label">Demo Upload Button</div>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario 5: Standalone Viewer -->
+<div class="scenario">
+  <h3>Scenario 5: Standalone Browser Viewer <span class="badge badge-pass">PASSED</span></h3>
+  <p class="detail">Created demo session via API → Opened standalone browser-viewer URL with sessionId and token → Remote browser content displayed correctly showing slider test page with all sections (slider ✓, upload, sort, event log). Performance: 66 KB/s bandwidth.</p>
+  <p class="detail"><strong>Key finding:</strong> Standalone viewer works independently from the demo page, using the same WS connections. Displays remote browser content with proper FPS and bandwidth metrics.</p>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <img src="09_browser_viewer.png" alt="Standalone viewer">
+      <div class="viewport-label">Standalone Browser Viewer</div>
+    </div>
+  </div>
+</div>
+
+<!-- Multi-size Screenshots -->
+<div class="scenario">
+  <h3>Responsive Viewport Screenshots <span class="badge badge-pass">CAPTURED</span></h3>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <img src="mobile-demo-final.png" alt="Mobile final">
+      <div class="viewport-label">Mobile (375×812)</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="tablet-demo-final.png" alt="Tablet final">
+      <div class="viewport-label">Tablet (768×1024)</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="desktop-demo-final.png" alt="Desktop final">
+      <div class="viewport-label">Desktop (1440×900)</div>
+    </div>
+  </div>
+</div>
+
+<!-- Console Errors -->
+<div class="findings">
+  <h3>Console Errors</h3>
+  <div class="error-list">
+    <div class="err">✗ 1x 404 Not Found - missing resource</div>
+    <div class="err">✗ 60+x 429 Too Many Requests - rate limiting from multiple session creations</div>
+  </div>
+  <p class="detail" style="margin-top:8px;">Note: 429 errors are expected when creating multiple demo sessions in rapid succession. Rate limit resets after cooldown period.</p>
+</div>
+
+<!-- Key Findings -->
+<div class="findings">
+  <h3>Key Findings</h3>
+  <ul>
+    <li><strong>Slider drag works via WS events:</strong> BrowserViewer.instance.send() successfully forwards mouse events (mousedown→mousemove→mouseup) to the remote browser. The slider verification completed successfully.</li>
+    <li><strong>Sort drag works with proper coordinates:</strong> Required scrolling the remote browser to make sort items visible, then mousedown on sort item + progressive mousemove with dy>40px between swaps.</li>
+    <li><strong>Mobile viewer has rendering issue:</strong> At 375×812 viewport, the browser viewer shows a dark/empty content area despite WS being connected (15 FPS). Touch events were sent but visual verification was not possible.</li>
+    <li><strong>File upload is a known limitation:</strong> The remote browser viewer cannot capture OS-level file picker dialogs. Clicking the upload area triggers the dialog on the remote machine, but it's not visible in the viewer.</li>
+    <li><strong>Standalone viewer works well:</strong> The browser-viewer page at /browser-viewer/index.html works independently and displays remote browser content correctly.</li>
+    <li><strong>Remote browser viewport is 1280×800:</strong> All coordinate calculations must map to this resolution. Content is centered in a 600px max-width container (x≈340 to x≈940).</li>
+    <li><strong>502 errors on first navigation attempt:</strong> The first session got 502 errors when navigating to slider test page. Creating a new session resolved the issue.</li>
+  </ul>
+</div>
+
+<!-- Knowledge Verification -->
+<div class="knowledge-status">
+  <h3>Knowledge Verification Status</h3>
+  <table style="width:100%; border-collapse:collapse; margin-top:12px;">
+    <tr style="border-bottom:1px solid #e5e5e5;">
+      <th style="text-align:left; padding:8px; font-size:14px;">Module</th>
+      <th style="text-align:left; padding:8px; font-size:14px;">Status</th>
+      <th style="text-align:left; padding:8px; font-size:14px;">Last Verified</th>
+      <th style="text-align:left; padding:8px; font-size:14px;">Notes</th>
+    </tr>
+    <tr>
+      <td style="padding:8px; font-size:14px;">demo</td>
+      <td style="padding:8px; font-size:14px; color:#10b981; font-weight:600;">verified</td>
+      <td style="padding:8px; font-size:14px;">2026-05-12</td>
+      <td style="padding:8px; font-size:14px;">Version 2 - added slider/sort/upload coords, BrowserViewer API patterns</td>
+    </tr>
+  </table>
+</div>
+
+<!-- Next Steps -->
+<div class="findings" style="margin-top:16px;">
+  <h3>Next Steps & Recommendations</h3>
+  <ul>
+    <li>Investigate mobile viewer dark screen issue - may need CSS/layout fixes for narrow viewports</li>
+    <li>Test file upload via drag-and-drop (drop files on the remote browser area) instead of click-to-upload</li>
+    <li>Add touch event forwarding test with proper mobile device emulation (Playwright device descriptors)</li>
+    <li>Test slider reset and re-verification to verify bidirectional drag</li>
+    <li>Consider adding a programmatic file upload API endpoint to bypass the OS dialog limitation</li>
+  </ul>
+</div>
+
+</body>
+</html>

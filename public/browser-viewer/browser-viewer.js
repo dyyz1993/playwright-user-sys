@@ -108,6 +108,71 @@ class BrowserViewer {
       this.container.appendChild(this.kbBtn);
     }
 
+    var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (isMobile && this.container) {
+      var mobileBar = document.createElement('div');
+      mobileBar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.92);padding:8px 12px;display:flex;gap:6px;align-items:center;z-index:10000;backdrop-filter:blur(10px);';
+
+      var urlInput = document.createElement('input');
+      urlInput.type = 'url';
+      urlInput.placeholder = '输入网址...';
+      urlInput.style.cssText = 'flex:1;padding:8px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.1);color:white;font-size:14px;outline:none;';
+      urlInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          var url = urlInput.value.trim();
+          if (url && !url.startsWith('http')) url = 'http://' + url;
+          self.send({ type: 'navigate', data: { url: url } });
+          urlInput.blur();
+        }
+      });
+
+      var backBtn = document.createElement('button');
+      backBtn.textContent = '\u2190';
+      backBtn.style.cssText = 'width:36px;height:36px;border:none;border-radius:8px;background:rgba(255,255,255,0.15);color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+      backBtn.onclick = function() { self.send({ type: 'navigate', data: { action: 'goBack' } }); };
+
+      var fwdBtn = document.createElement('button');
+      fwdBtn.textContent = '\u2192';
+      fwdBtn.style.cssText = backBtn.style.cssText;
+      fwdBtn.onclick = function() { self.send({ type: 'navigate', data: { action: 'goForward' } }); };
+
+      var homeBtn = document.createElement('button');
+      homeBtn.textContent = '\uD83C\uDFE0';
+      homeBtn.style.cssText = backBtn.style.cssText;
+      homeBtn.onclick = function() {
+        urlInput.value = '';
+        self.send({ type: 'navigate', data: { url: 'https://www.baidu.com' } });
+      };
+
+      mobileBar.appendChild(backBtn);
+      mobileBar.appendChild(fwdBtn);
+      mobileBar.appendChild(homeBtn);
+      mobileBar.appendChild(urlInput);
+      document.body.appendChild(mobileBar);
+
+      var topBar = document.createElement('div');
+      topBar.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.7);padding:6px 12px;display:flex;justify-content:space-between;align-items:center;z-index:10000;font-size:12px;color:white;backdrop-filter:blur(10px);';
+
+      var statusText = document.createElement('span');
+      statusText.textContent = '连接中...';
+      statusText.style.color = '#fbbf24';
+
+      var backToDemo = document.createElement('a');
+      backToDemo.href = '/demo';
+      backToDemo.textContent = '返回 Demo';
+      backToDemo.style.cssText = 'color:#60a5fa;text-decoration:none;font-weight:600;';
+
+      topBar.appendChild(statusText);
+      topBar.appendChild(backToDemo);
+      document.body.appendChild(topBar);
+
+      this._mobileStatus = statusText;
+
+      this.container.style.marginTop = '30px';
+      this.container.style.marginBottom = '52px';
+      this.container.style.height = (window.innerHeight - 82) + 'px';
+    }
+
     return this;
   }
 
@@ -174,6 +239,10 @@ class BrowserViewer {
 
     this.streamWs.onopen = function () {
       statusEl.textContent = 'Stream 已连接...';
+      if (self._mobileStatus) {
+        self._mobileStatus.textContent = '已连接';
+        self._mobileStatus.style.color = '#4ade80';
+      }
     };
     this.streamWs.onerror = function (e) {
       statusEl.textContent = 'Stream 错误';
@@ -375,6 +444,9 @@ class BrowserViewer {
     if (this.currentFps > 0) parts.push(this.currentFps + ' FPS');
     if (this.currentBandwidth > 0) parts.push(this.currentBandwidth + ' KB/s');
     statusEl.textContent = parts.join(' · ');
+    if (this._mobileStatus) {
+      this._mobileStatus.textContent = '已连接 · ' + this.currentFps + ' FPS';
+    }
     if (window.parent !== window) {
       window.parent.postMessage({ type: 'bv-stats', fps: this.currentFps, bandwidth: this.currentBandwidth }, '*');
     }

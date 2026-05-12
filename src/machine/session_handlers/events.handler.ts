@@ -439,11 +439,26 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
       case 'page.goto':
       case 'navigate':
         try {
-          logger.info(`Navigating page for session ${sessionId} to ${data?.url}`);
-          await page.goto(data?.url, {
-            waitUntil: 'domcontentloaded',
-            timeout: 30000,
-          });
+          if (data?.action) {
+            switch (data.action) {
+              case 'goBack':
+                await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 });
+                break;
+              case 'goForward':
+                await page.goForward({ waitUntil: 'domcontentloaded', timeout: 15000 });
+                break;
+              case 'reload':
+                await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
+                break;
+            }
+            logger.info(`Navigate action ${data.action} for session ${sessionId}`);
+          } else {
+            logger.info(`Navigating page for session ${sessionId} to ${data?.url}`);
+            await page.goto(data?.url, {
+              waitUntil: 'domcontentloaded',
+              timeout: 30000,
+            });
+          }
           sendResponse(ws, requestType, { success: true });
         } catch (gotoError) {
           logger.error(`Failed navigate for ${sessionId}:`, gotoError);

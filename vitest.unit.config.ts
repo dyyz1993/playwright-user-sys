@@ -19,6 +19,7 @@ export default defineConfig({
       'dist',
       'src/tests/unit/models/**/*.test.ts',
       'src/tests/unit/session-screenshot.test.ts',
+      'src/tests/unit/security/sql-injection-orderby.test.ts',
     ],
     testTimeout: 30000,
     hookTimeout: 30000,

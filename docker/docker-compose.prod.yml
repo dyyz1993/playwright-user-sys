@@ -78,6 +78,7 @@ services:
       - CHROME_BIN=/opt/google/chrome/chromium
       - CHROME_PATH=/opt/google/chrome/chromium
       - PUPPETEER_EXECUTABLE_PATH=/opt/google/chrome/chromium
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - no_proxy=localhost,127.0.0.1,manager,machine-1,machine-2
       - NO_PROXY=localhost,127.0.0.1,manager,machine-1,machine-2
     depends_on:
@@ -124,6 +125,7 @@ services:
       - CHROME_BIN=/opt/google/chrome/chromium
       - CHROME_PATH=/opt/google/chrome/chromium
       - PUPPETEER_EXECUTABLE_PATH=/opt/google/chrome/chromium
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - no_proxy=localhost,127.0.0.1,manager,machine-1,machine-2
       - NO_PROXY=localhost,127.0.0.1,manager,machine-1,machine-2
       - HTTP_PROXY=${HTTP_PROXY:-}

@@ -604,6 +604,16 @@ export class BrowserService extends EventEmitter {
             }
             return origExecCommand(command, ui as any, value);
           };
+          document.addEventListener(
+            'copy',
+            function () {
+              const selection = window.getSelection ? (window.getSelection()?.toString() ?? '') : '';
+              if (selection) {
+                (window as any).__clipboardContent = selection;
+              }
+            },
+            true
+          );
         });
       } catch (primaryClipErr) {
         logger.warn(`Failed to inject clipboard on primary page (session: ${sessionId}):`, primaryClipErr);
@@ -1021,6 +1031,7 @@ export class BrowserService extends EventEmitter {
           logger.warn(`Failed to grant clipboard permissions for session ${sessionId}:`, permErr);
         }
 
+        // --- BEGIN: Clipboard interception (evaluateOnNewDocument) ---
         await page.evaluateOnNewDocument(() => {
           (window as any).__clipboardContent = '';
           const origWriteText = (navigator.clipboard as any)?.writeText?.bind(navigator.clipboard);
@@ -1038,6 +1049,16 @@ export class BrowserService extends EventEmitter {
             }
             return origExecCommand(command, ui as any, value);
           };
+          document.addEventListener(
+            'copy',
+            function () {
+              const selection = window.getSelection ? (window.getSelection()?.toString() ?? '') : '';
+              if (selection) {
+                (window as any).__clipboardContent = selection;
+              }
+            },
+            true
+          );
         });
 
         try {
@@ -1058,6 +1079,16 @@ export class BrowserService extends EventEmitter {
               }
               return origExecCommand(command, ui as any, value);
             };
+            document.addEventListener(
+              'copy',
+              function () {
+                const selection = window.getSelection ? (window.getSelection()?.toString() ?? '') : '';
+                if (selection) {
+                  (window as any).__clipboardContent = selection;
+                }
+              },
+              true
+            );
           });
         } catch (clipEvalErr) {
           logger.warn(`Failed to inject clipboard on current page for session ${sessionId}:`, clipEvalErr);

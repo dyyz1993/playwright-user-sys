@@ -46,6 +46,7 @@ class BrowserViewer {
     this._reconnectAttempts = 0;
     this._maxReconnectAttempts = 3;
     this._pendingLocalCopy = false;
+    this._pendingLocalCopyIsMobile = false;
 
     this.loadingIndicator = document.createElement('div');
     this.loadingIndicator.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;font-size:14px;z-index:10;pointer-events:none;';
@@ -339,6 +340,9 @@ class BrowserViewer {
         self.send({ type: 'keydown', key: 'c', ctrlKey: true });
         self.send({ type: 'keyup', key: 'c', ctrlKey: true });
         self._pendingLocalCopy = true;
+        self._pendingLocalCopyIsMobile = true;
+        copyMbBtn.style.background = '#4caf50';
+        setTimeout(function() { copyMbBtn.style.background = ''; }, 1000);
       };
 
       var pasteMbBtn = document.createElement('button');
@@ -346,9 +350,10 @@ class BrowserViewer {
       pasteMbBtn.title = '粘贴到远程';
       pasteMbBtn.style.cssText = 'width:36px;height:36px;border:none;border-radius:8px;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
       pasteMbBtn.onclick = async function() {
+        pasteMbBtn.style.background = '#4caf50';
         try {
           var t = await navigator.clipboard.readText();
-          if (t) { self.send({ type: 'paste', text: t }); return; }
+          if (t) { self.send({ type: 'paste', text: t }); setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000); return; }
         } catch(e) { console.warn('[BV] paste clipboard API:', e.message); }
         try {
           var ta = document.createElement('textarea');
@@ -360,8 +365,10 @@ class BrowserViewer {
           document.execCommand('paste');
           var t = ta.value || ta.textContent || '';
           document.body.removeChild(ta);
-          if (t) self.send({ type: 'paste', text: t });
+          if (t) { self.send({ type: 'paste', text: t }); setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000); return; }
         } catch(e2) { console.warn('[BV] paste execCommand:', e2.message); }
+        pasteMbBtn.style.background = '#ff3b30';
+        setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000);
       };
 
       mobileBar.appendChild(backBtn);
@@ -394,6 +401,12 @@ class BrowserViewer {
       this.container.style.marginTop = '30px';
       this.container.style.marginBottom = '52px';
       this.container.style.height = (window.innerHeight - 82) + 'px';
+    }
+
+    if (isMobile) {
+      ['kbBtn', 'uploadBtn', 'copyBtn', 'pasteBtn'].forEach(function(k) {
+        if (self[k]) self[k].style.display = 'none';
+      });
     }
 
     return this;
@@ -874,8 +887,19 @@ class BrowserViewer {
             self._addNotification('\uD83D\uDCCB \u590D\u5236: ' + clipText.substring(0, 100));
             if (self._pendingLocalCopy) {
               self._pendingLocalCopy = false;
+              var isMobilePaste = self._pendingLocalCopyIsMobile || false;
+              self._pendingLocalCopyIsMobile = false;
               navigator.clipboard.writeText(clipText).then(function() {
-                if (self.copyBtn) {
+                if (isMobilePaste && self.copyMbBtn) {
+                  self.copyMbBtn.style.background = '#4caf50';
+                  self.copyMbBtn.textContent = '\u2705';
+                  setTimeout(function() {
+                    if (self.copyMbBtn) {
+                      self.copyMbBtn.style.background = '';
+                      self.copyMbBtn.textContent = '\uD83D\uDCCB';
+                    }
+                  }, 1500);
+                } else if (self.copyBtn) {
                   self.copyBtn.style.background = 'rgba(76,175,80,0.8)';
                   self.copyBtn.textContent = '\u2705';
                   setTimeout(function() {
@@ -954,18 +978,21 @@ class BrowserViewer {
     });
 
     img.addEventListener('mousedown', function (e) {
+      if (self._touchActive && Date.now() - (self._touchLastTime || 0) < 500) return;
       var c = getCoords(e);
       c.button = e.button;
       self.send({ type: 'event', event: { type: 'mousedown', data: c } });
     });
 
     img.addEventListener('mouseup', function (e) {
+      if (self._touchActive && Date.now() - (self._touchLastTime || 0) < 500) return;
       var c = getCoords(e);
       c.button = e.button;
       self.send({ type: 'event', event: { type: 'mouseup', data: c } });
     });
 
     img.addEventListener('click', function (e) {
+      if (self._touchActive && Date.now() - (self._touchLastTime || 0) < 500) return;
       e.preventDefault();
       var c = getCoords(e);
       c.button = e.button;
@@ -1015,6 +1042,8 @@ class BrowserViewer {
 
     img.addEventListener('touchstart', function (e) {
       e.preventDefault();
+      self._touchActive = true;
+      self._touchLastTime = Date.now();
       var touch = e.touches[0];
       var c = getCoords(touch);
       touchStartTime = Date.now();
@@ -1052,6 +1081,8 @@ class BrowserViewer {
 
     img.addEventListener('touchmove', function (e) {
       e.preventDefault();
+      self._touchActive = true;
+      self._touchLastTime = Date.now();
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 
       if (e.touches.length === 2 && lastTouch1 && lastTouch2) {
@@ -1083,6 +1114,8 @@ class BrowserViewer {
 
     img.addEventListener('touchend', function (e) {
       e.preventDefault();
+      self._touchActive = true;
+      self._touchLastTime = Date.now();
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 
       var touch = e.changedTouches[0];

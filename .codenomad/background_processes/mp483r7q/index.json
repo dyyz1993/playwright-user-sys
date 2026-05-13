@@ -12,5 +12,19 @@
     "terminalReason": "finished",
     "exitCode": 0,
     "stoppedAt": "2026-05-13T15:58:03.203Z"
+  },
+  {
+    "id": "proc_2026-05-13T1746_f3b551",
+    "workspaceId": "mp483r7q",
+    "title": "watch-ci",
+    "command": "cd /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys && gh run watch 25816338945 2>&1",
+    "cwd": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys",
+    "status": "stopped",
+    "pid": 65033,
+    "startedAt": "2026-05-13T17:46:39.187Z",
+    "outputSizeBytes": 13673,
+    "terminalReason": "finished",
+    "exitCode": 0,
+    "stoppedAt": "2026-05-13T17:48:17.892Z"
   }
 ]

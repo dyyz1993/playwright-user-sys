@@ -160,16 +160,35 @@ class BrowserViewer {
     this.pasteBtn.addEventListener('click', async function() {
       try {
         var text = await navigator.clipboard.readText();
+        if (!text) throw new Error('Empty clipboard');
+        self.send({ type: 'paste', text: text });
+        self.pasteBtn.style.background = 'rgba(76,175,80,0.8)';
+        setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
+        return;
+      } catch(e) {
+        console.warn('[BV] Clipboard API failed:', e.message);
+      }
+      try {
+        var ta = document.createElement('textarea');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        ta.contentEditable = 'true';
+        document.body.appendChild(ta);
+        ta.focus();
+        document.execCommand('paste');
+        var text = ta.value || ta.textContent || '';
+        document.body.removeChild(ta);
         if (text) {
           self.send({ type: 'paste', text: text });
           self.pasteBtn.style.background = 'rgba(76,175,80,0.8)';
           setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
+          return;
         }
-      } catch(e) {
-        console.warn('[BV] Paste failed:', e);
-        self.pasteBtn.style.background = 'rgba(255,59,48,0.8)';
-        setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
+      } catch(e2) {
+        console.warn('[BV] execCommand paste failed:', e2.message);
       }
+      self.pasteBtn.style.background = 'rgba(255,59,48,0.8)';
+      setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
     });
     if (this.container) {
       this.container.appendChild(this.pasteBtn);
@@ -329,8 +348,20 @@ class BrowserViewer {
       pasteMbBtn.onclick = async function() {
         try {
           var t = await navigator.clipboard.readText();
+          if (t) { self.send({ type: 'paste', text: t }); return; }
+        } catch(e) { console.warn('[BV] paste clipboard API:', e.message); }
+        try {
+          var ta = document.createElement('textarea');
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          ta.contentEditable = 'true';
+          document.body.appendChild(ta);
+          ta.focus();
+          document.execCommand('paste');
+          var t = ta.value || ta.textContent || '';
+          document.body.removeChild(ta);
           if (t) self.send({ type: 'paste', text: t });
-        } catch(e) { console.warn('[BV] paste:', e); }
+        } catch(e2) { console.warn('[BV] paste execCommand:', e2.message); }
       };
 
       mobileBar.appendChild(backBtn);
@@ -555,6 +586,11 @@ class BrowserViewer {
     injectBtn.addEventListener('click', async function() {
       var filePath = self._fmSelected;
       if (!filePath) return;
+      // Normalize absolute path to relative path expected by inject API
+      // API requires "data/temp/..." but machine may return "/app/data/temp/..." or "/data/temp/..."
+      if (filePath.indexOf('/data/temp/') !== -1) {
+        filePath = filePath.substring(filePath.indexOf('/data/temp/') + 1);
+      }
       injectBtn.textContent = '注入中...';
       injectBtn.style.opacity = '0.6';
       injectBtn.style.pointerEvents = 'none';
@@ -671,15 +707,16 @@ class BrowserViewer {
     for (var i = 0; i < files.length; i++) {
       (function(file) {
         var fd = new FormData();
-        fd.append('file', file);
         fd.append('sessionId', self.sessionId);
+        fd.append('file', file);
+        var url = '/api/files/upload-session?sessionId=' + encodeURIComponent(self.sessionId);
         pending.push(
-          fetch('/api/files/upload-session', {
+          fetch(url, {
             method: 'POST',
             headers: { 'x-api-key': self.token },
             body: fd
           }).then(function(r) {
-            if (!r.ok) throw new Error('Upload failed');
+            if (!r.ok) return r.text().then(function(t) { throw new Error(t || 'Upload failed'); });
             return r.json();
           })
         );

@@ -592,8 +592,8 @@ dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('d
       if (!sessionId) { alert('请先开始体验'); return; }
       var viewerFrame = $('browser-viewer-frame');
       if (viewerFrame && viewerFrame.contentWindow && viewerFrame.contentWindow.BrowserViewer && viewerFrame.contentWindow.BrowserViewer.instance) {
-        viewerFrame.contentWindow.BrowserViewer.instance.showUploadModal();
-        logActivity('打开文件上传弹窗');
+        viewerFrame.contentWindow.BrowserViewer.instance._showFileManager();
+        logActivity('打开文件管理器');
       } else {
         logActivity('查看器未就绪，请在远程浏览器中使用右下角 \uD83D\uDCC1 按钮上传');
       }

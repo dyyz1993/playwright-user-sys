@@ -666,12 +666,24 @@ class BrowserViewer {
     });
 
     document.addEventListener('keydown', function (e) {
-      self.send({ type: 'event', event: { type: 'keydown', data: { key: e.key, code: e.code } } });
+      self.send({ type: 'event', event: { type: 'keydown', data: { 
+        key: e.key, 
+        code: e.code,
+        ctrlKey: e.ctrlKey || e.metaKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey
+      } } });
       if (['Tab', 'Backspace', 'F5'].includes(e.key)) e.preventDefault();
     });
 
     document.addEventListener('keyup', function (e) {
-      self.send({ type: 'event', event: { type: 'keyup', data: { key: e.key, code: e.code } } });
+      self.send({ type: 'event', event: { type: 'keyup', data: { 
+        key: e.key, 
+        code: e.code,
+        ctrlKey: e.ctrlKey || e.metaKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey
+      } } });
     });
 
     // === Touch events ===

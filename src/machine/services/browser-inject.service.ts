@@ -80,6 +80,9 @@ export class BrowserInjectService {
         if (input) {
           input.dispatchEvent(new Event('input', { bubbles: true }));
           input.dispatchEvent(new Event('change', { bubbles: true }));
+          if (typeof (window as any).handleFiles === 'function') {
+            (window as any).handleFiles(input.files);
+          }
         }
       }, selector);
 

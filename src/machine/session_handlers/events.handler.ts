@@ -117,7 +117,7 @@ export async function handleEventsConnection(
     page.once('close', connectionInfo.listeners.pageCloseHandler);
     page.once('crash', connectionInfo.listeners.pageCrashHandler);
     page.on('framenavigated', connectionInfo.listeners.frameNavigatedHandler);
-    logger.debug(`Attached page listeners for ${sessionId}`);
+    logger.info(`Attached page listeners for ${sessionId}`);
 
     // 添加 focusin 监听 (确保幂等性)
     sessionFocusEmitter.off(`rawFocusEvent:${sessionId}`, handleRawFocusEvent.bind(null, page, ws, sessionId));
@@ -135,7 +135,7 @@ export async function handleEventsConnection(
       }
     };
     browserService.on('configUpdated', connectionInfo.listeners.configUpdateListener);
-    logger.debug(`Attached browserService 'configUpdated' listener for ${sessionId}`);
+    logger.info(`Attached browserService 'configUpdated' listener for ${sessionId}`);
 
     // --- 设置 WebSocket 监听器 ---
     ws.on('message', (message: RawData) => {
@@ -194,6 +194,10 @@ interface MouseEventData {
   code?: string;
   type?: string;
   clickCount?: number;
+  ctrlKey?: boolean;
+  shiftKey?: boolean;
+  altKey?: boolean;
+  metaKey?: boolean;
 }
 
 // --- 文件上传处理函数 ---
@@ -368,11 +372,11 @@ async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string)
 
     // Send notification if data was collected and WS is open
     if (focusedElementInfo && ws.readyState === WebSocket.OPEN) {
-      logger.debug(`Sending form.field notification for ${sessionId}`);
+      logger.info(`Sending form.field notification for ${sessionId}`);
       // Assuming sendNotification exists and works correctly
       sendNotification(ws, 'form.field', focusedElementInfo);
     } else if (ws.readyState === WebSocket.OPEN) {
-      logger.debug(`No suitable element focused when evaluating for ${sessionId}.`);
+      logger.info(`No suitable element focused when evaluating for ${sessionId}.`);
     }
   } catch (evalError) {
     if (!page!.isClosed() && ws.readyState === WebSocket.OPEN) {
@@ -405,7 +409,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
     requestType = eventType; // Use eventType for response tracking
     const data = eventData.data;
 
-    logger.debug(`Received event from session ${sessionId}:`, eventType, data);
+    logger.info(`Received event from session ${sessionId}:`, eventType, data);
 
     switch (eventType) {
       // --- 文件上传 ---
@@ -718,7 +722,7 @@ async function handleMouseEvents(
           // Determine coordinates if needed
           let coords: { tx: number; ty: number } | null = null;
           if (['mouseClick', 'mouseMove', 'mouseDown', 'mouseUp'].includes(eventType)) {
-            logger.debug(`data: ${JSON.stringify(data)}`);
+            logger.info(`data: ${JSON.stringify(data)}`);
             coords = browserService.getTransformedCoordinates(sessionId, data.x ?? 0, data.y ?? 0);
             if (!coords) throw new Error('Cannot get transformed coordinates');
           }
@@ -751,10 +755,20 @@ async function handleMouseEvents(
               break;
 
             case 'keyDown':
-              if (data.key) await page.keyboard.down(data.key as any);
+              if (data.key) {
+                if (data.ctrlKey) await page.keyboard.down('Control');
+                if (data.shiftKey) await page.keyboard.down('Shift');
+                if (data.altKey) await page.keyboard.down('Alt');
+                await page.keyboard.down(data.key as any);
+              }
               break;
             case 'keyUp':
-              if (data.key) await page.keyboard.up(data.key as any);
+              if (data.key) {
+                await page.keyboard.up(data.key as any);
+                if (data.ctrlKey) await page.keyboard.up('Control');
+                if (data.shiftKey) await page.keyboard.up('Shift');
+                if (data.altKey) await page.keyboard.up('Alt');
+              }
               break;
             case 'keyPress':
               if (data.key) await page.keyboard.press(data.key as any);
@@ -811,7 +825,7 @@ function cleanupEventConnection(ws: WebSocket): void {
               document.removeEventListener('focusin', win[fnName] as EventListener);
             }
             win[flagName] = false; // Reset the flag
-            logger.debug('Focus listener removed from page context.');
+            logger.info('Focus listener removed from page context.');
           }
         }, functionName)
         .catch(() => {
@@ -824,7 +838,7 @@ function cleanupEventConnection(ws: WebSocket): void {
     // 移除 browserService 监听器
     if (listeners.configUpdateListener) {
       browserService.off('configUpdated', listeners.configUpdateListener);
-      logger.debug(`Removed browserService 'configUpdated' listener for ${sessionId}`);
+      logger.info(`Removed browserService 'configUpdated' listener for ${sessionId}`);
     }
 
     activeEventConnections.delete(ws);
@@ -856,7 +870,7 @@ function sendConfigSync(ws: WebSocket, config: SessionConfig): void {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'configSync', config }), (err) => {
       if (err) logger.error('Failed to send configSync:', err);
-      else logger.debug('Sent configSync:', config);
+      else logger.info('Sent configSync:', config);
     });
   }
 }

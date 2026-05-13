@@ -140,6 +140,18 @@ class BrowserViewer {
       this.container.appendChild(this.kbBtn);
     }
 
+    this.uploadBtn = document.createElement('div');
+    this.uploadBtn.textContent = '\uD83D\uDCC1';
+    this.uploadBtn.title = '上传文件到远程浏览器';
+    this.uploadBtn.style.cssText = 'position:absolute;bottom:60px;right:10px;width:40px;height:40px;border-radius:50%;background:#FF9500;color:white;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.3);user-select:none;';
+    this.uploadBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      self.showUploadModal();
+    });
+    if (this.container) {
+      this.container.appendChild(this.uploadBtn);
+    }
+
     var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
     if (isMobile && this.container) {
       var mobileBar = document.createElement('div');
@@ -179,9 +191,19 @@ class BrowserViewer {
         self.send({ type: 'navigate', data: { url: 'https://www.baidu.com' } });
       };
 
+      var uploadMbBtn = document.createElement('button');
+      uploadMbBtn.textContent = '\uD83D\uDCC1';
+      uploadMbBtn.title = '上传文件';
+      uploadMbBtn.style.cssText = 'width:36px;height:36px;border:none;border-radius:8px;background:rgba(255,149,0,0.7);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+      uploadMbBtn.onclick = function(e) {
+        e.stopPropagation();
+        self.showUploadModal();
+      };
+
       mobileBar.appendChild(backBtn);
       mobileBar.appendChild(fwdBtn);
       mobileBar.appendChild(homeBtn);
+      mobileBar.appendChild(uploadMbBtn);
       mobileBar.appendChild(navigateForm);
       document.body.appendChild(mobileBar);
 
@@ -209,6 +231,137 @@ class BrowserViewer {
     }
 
     return this;
+  }
+
+  showUploadModal() {
+    if (this._uploadModal) { this._uploadModal.style.display = 'flex'; return; }
+    var self = this;
+    var modal = document.createElement('div');
+    modal.id = 'bv-upload-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;justify-content:center;align-items:center;padding:16px;';
+
+    modal.innerHTML =
+      '<div style="background:white;border-radius:16px;padding:24px;width:380px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+          '<h3 style="font-size:18px;margin:0;color:#1e293b;">\uD83D\uDCC1 上传文件到远程浏览器</h3>' +
+          '<button id="bv-upload-close" style="background:none;border:none;font-size:24px;color:#999;cursor:pointer;line-height:1;padding:4px;">&times;</button>' +
+        '</div>' +
+        '<div id="bv-upload-dropzone" style="border:2px dashed #cbd5e1;border-radius:12px;padding:30px;text-align:center;cursor:pointer;transition:border-color 0.2s;">' +
+          '<div style="font-size:36px;margin-bottom:8px;">\uD83D\uDCC4</div>' +
+          '<div style="color:#64748b;font-size:14px;">点击选择或拖拽文件到这里</div>' +
+          '<div style="color:#94a3b8;font-size:12px;margin-top:4px;">支持图片、文档、视频等常见格式</div>' +
+          '<input type="file" id="bv-upload-input" multiple accept=".txt,.jpg,.jpeg,.png,.gif,.webp,.pdf,.csv,.json,.doc,.docx,.xls,.xlsx,.mp4,.mp3,.zip,.html,.css,.js" style="display:none;">' +
+        '</div>' +
+        '<div id="bv-upload-preview" style="max-height:150px;overflow-y:auto;margin-top:12px;"></div>' +
+        '<div id="bv-upload-status" style="margin-top:12px;font-size:13px;display:none;padding:8px 10px;border-radius:8px;"></div>' +
+        '<div style="display:flex;gap:10px;margin-top:16px;">' +
+          '<button id="bv-upload-confirm" style="flex:1;padding:12px;background:#007AFF;color:white;border:none;border-radius:10px;font-size:15px;cursor:pointer;font-weight:600;display:none;">\u2705 确认上传</button>' +
+          '<button id="bv-upload-cancel" style="padding:12px;background:#f1f5f9;color:#475569;border:none;border-radius:10px;font-size:15px;cursor:pointer;">取消</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+    this._uploadModal = modal;
+
+    var dropzone = modal.querySelector('#bv-upload-dropzone');
+    var input = modal.querySelector('#bv-upload-input');
+    var preview = modal.querySelector('#bv-upload-preview');
+    var confirmBtn = modal.querySelector('#bv-upload-confirm');
+    var cancelBtn = modal.querySelector('#bv-upload-cancel');
+    var statusEl = modal.querySelector('#bv-upload-status');
+    var closeBtn = modal.querySelector('#bv-upload-close');
+    var pendingFiles = null;
+
+    closeBtn.addEventListener('click', function() { modal.style.display = 'none'; });
+    cancelBtn.addEventListener('click', function() { modal.style.display = 'none'; });
+
+    dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.style.borderColor = '#007AFF'; });
+    dropzone.addEventListener('dragleave', function() { dropzone.style.borderColor = '#cbd5e1'; });
+    dropzone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dropzone.style.borderColor = '#cbd5e1';
+      handleFiles(e.dataTransfer.files);
+    });
+    input.addEventListener('change', function() { handleFiles(this.files); });
+
+    function handleFiles(files) {
+      if (!files || !files.length) return;
+      pendingFiles = files;
+      preview.innerHTML = '';
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        var ext = f.name.split('.').pop().toLowerCase();
+        var icon = ['jpg','jpeg','png','gif','webp'].includes(ext) ? '\uD83D\uDCF7' : ext === 'pdf' ? '\uD83D\uDCD5' : ext === 'mp4' || ext === 'mp3' ? '\uD83C\uDFA5' : ext === 'zip' ? '\uD83D\uDC86' : '\uD83D\uDCC4';
+        var size = f.size < 1024 ? f.size+'B' : f.size<1048576 ? (f.size/1024).toFixed(1)+'KB' : (f.size/1048576).toFixed(1)+'MB';
+        preview.innerHTML += '<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:6px;font-size:13px;"><span style="font-size:18px;">'+icon+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1e293b;">'+f.name+'</span><span style="color:#94a3b8;font-size:11px;shrink:0;">'+size+'</span></div>';
+      }
+      confirmBtn.style.display = 'block';
+    }
+
+    window.__bvUploadConfirm = async function() {
+      if (!pendingFiles || !pendingFiles.length) return;
+
+      statusEl.style.display = 'block';
+      statusEl.style.background = '#eff6ff';
+      statusEl.style.color = '#007AFF';
+      statusEl.textContent = '\u23F3 正在上传...';
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '上传中...';
+      confirmBtn.style.opacity = '0.6';
+
+      try {
+        for (var i = 0; i < pendingFiles.length; i++) {
+          var f = pendingFiles[i];
+          statusEl.textContent = '\u23F3 ('+(i+1)+'/'+pendingFiles.length+') '+f.name;
+
+          var formData = new FormData();
+          formData.append('file', f, f.name);
+          formData.append('sessionId', self.sessionId);
+
+          var resp = await fetch('/api/files/upload-session', {
+            method: 'POST',
+            headers: { 'x-api-key': self.token },
+            body: formData
+          });
+          var data = await resp.json();
+          if (!resp.ok || !data.success) throw new Error(data.message || data.error || '上传失败');
+
+          statusEl.textContent = '\u23F3 注入文件到远程浏览器...';
+          var injResp = await fetch('/api/sessions/' + self.sessionId + '/inject-file', {
+            method: 'POST',
+            headers: { 'x-api-key': self.token, 'content-type': 'application/json' },
+            body: JSON.stringify({ machineFilePath: data.data.machineFilePath })
+          });
+          var injData = await injResp.json();
+          if (!injResp.ok || !injData.success) throw new Error(injData.message || injData.error || '注入失败');
+        }
+
+        statusEl.style.background = '#f0fdf4';
+        statusEl.style.color = '#16a34a';
+        statusEl.textContent = '\u2705 全部上传并注入成功！';
+
+        setTimeout(function() {
+          modal.style.display = 'none';
+          pendingFiles = null;
+          preview.innerHTML = '';
+          confirmBtn.style.display = 'none';
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = '\u2705 确认上传';
+          confirmBtn.style.opacity = '1';
+          statusEl.style.display = 'none';
+        }, 2000);
+
+      } catch(err) {
+        statusEl.style.background = '#fef2f2';
+        statusEl.style.color = '#dc2626';
+        statusEl.textContent = '\u274C ' + err.message;
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '\u2705 确认上传';
+        confirmBtn.style.opacity = '1';
+      }
+    };
+
+    confirmBtn.addEventListener('click', window.__bvUploadConfirm);
   }
 
   _connectStream() {

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo 交互体验指南</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f7; color: #1d1d1f; line-height: 1.6; padding: 20px; max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 28px; text-align: center; margin-bottom: 8px; color: #007AFF; }
+  .subtitle { text-align: center; color: #86868b; margin-bottom: 32px; font-size: 15px; }
+
+  .card { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 20px; color: #333; border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .step { display: flex; gap: 16px; margin-bottom: 14px; align-items: flex-start; }
+  .step-num { width: 36px; height: 36px; background: linear-gradient(135deg, #007AFF, #5856D6); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 16px; }
+  .step-content { flex: 1; }
+  .step-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+  .step-desc { font-size: 13px; color: #666; }
+  .tip { background: #FFF4E5; border-left: 3px solid #FF9500; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; margin-top: 12px; }
+  .tip-title { font-weight: 600; color: #CC7700; margin-bottom: 4px; }
+  .flow { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 20px 0; flex-wrap: wrap; }
+  .flow-item { background: #E8F8EE; color: #34C759; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+  .flow-arrow { color: #ccc; font-size: 20px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-new { background: #E8F8EE; color: #34C759; }
+  .badge-fix { background: #FFEDED; color: #FF3B30; }
+  .badge-mobile { background: #E5EDFF; color: #007AFF; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  th { background: #f5f5f7; padding: 10px; text-align: left; font-weight: 600; }
+  td { padding: 10px; border-bottom: 1px solid #f0f0f0; }
+  .key-combo { display: inline-flex; gap: 4px; }
+  .key { background: #e0e0e0; border-radius: 4px; padding: 2px 8px; font-family: monospace; font-size: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+</style>
+</head>
+<body>
+
+<h1>🎮 Demo 远程浏览器 — 交互体验指南</h1>
+<p class="subtitle">http://192.168.0.29:3011/demo · 更新于 2026-05-13</p>
+
+<!-- ==================== 一、PC 端体验流程 ==================== -->
+<div class="card">
+  <h2>🖥️ 一、PC 端体验流程</h2>
+
+  <p style="margin-bottom:12px;font-size:14px;"><strong>入口：</strong>打开 <code>http://192.168.0.29:3011/demo</code></p>
+
+  <div class="flow">
+    <span class="flow-item">Demo 落地页</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-item">点击"开始体验"</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-item">Session 创建</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-item">左侧控制面板 + 右侧远程画面</span>
+  </div>
+
+  <h3 style="font-size:16px;margin:16px 0 10px;">页面布局</h3>
+  <ul style="font-size:14px;padding-left:20px;color:#555;">
+    <li><strong>左侧面板 (w-72)</strong>: 导航栏 + 控制按钮 + 状态信息</li>
+    <li><strong>右侧区域 (flex-1)</strong>: browser-viewer iframe 嵌入</li>
+  </ul>
+
+  <h3 style="font-size:16px;margin:18px 0 12px;">核心交互操作</h3>
+  <table>
+    <thead><tr><th>操作</th><th>方式</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>点击</td><td>鼠标左键</td><td>直接点击远程画面上的元素</td></tr>
+      <tr><td>拖拽</td><td>按住左键移动</td><td>支持滑块验证码、拖拽排序</td></tr>
+      <tr><td>右键</td><td>鼠标右键 / 长按500ms</td><td>触发右键菜单</td></tr>
+      <tr><td>输入</td><td>键盘直接输入</td><td>keydown → keyup 事件转发</td></tr>
+      <tr><td>中文输入</td><td>IME 输入后自动发送</td><td>compositionend 监听</td></tr>
+      <tr><td>滚轮</td><td>鼠标滚轮</td><td>wheel 事件转发</td></tr>
+      <tr><td>导航</td><td>地址栏输入 URL + Enter / 回车</td><td>navigate 事件</td></tr>
+      <tr><td>后退/前进</td><td>对应按钮</td><td>goBack / goForward</td></tr>
+      <tr><td>刷新</td><td>刷新按钮</td><td>reload</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:16px;margin:18px 0 12px;">文件上传流程</h3>
+  <div class="flow" style="flex-direction:column;align-items:flex-start;gap:6px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="flow-item">点击"文件上传体验"按钮</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:18px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:24px;">
+      <span class="flow-item">弹出上传弹窗（居中模态框）</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:42px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:48px;">
+      <span class="flow-item">拖拽或点击选择文件</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:66px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:72px;">
+      <span class="flow-item">显示文件预览（图标+名称+大小）</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:90px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:96px;">
+      <span class="flow-item">点击"上传到远程浏览器"</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:114px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:120px;">
+      <span class="flow-item">文件上传到服务器 → gRPC传到Machine → Puppeteer注入 &lt;input type="file"&gt;</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:138px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:144px;">
+      <span class="flow-item" style="background:#E8F8EE;color:#34C759;">✅ 上传成功</span>
+    </div>
+  </div>
+
+  <div class="tip">
+    <div class="tip-title">💡 PC 端提示</div>
+    远程画面通过 WebSocket 接收实时帧数据，所有鼠标/键盘事件通过 WS 双向通信实时转发至远程浏览器实例。
+  </div>
+</div>
+
+<!-- ==================== 二、移动端体验流程 ==================== -->
+<div class="card">
+  <h2>📱 二、移动端体验流程 <span class="badge badge-mobile">Mobile</span></h2>
+
+  <p style="margin-bottom:12px;font-size:14px;"><strong>关键区别：</strong>移动端访问时<strong>不会显示 iframe 嵌套模式</strong>，而是<strong>自动跳转到独立全屏 Browser Viewer 页面</strong></p>
+
+  <div class="flow" style="flex-direction:column;align-items:flex-start;gap:6px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="flow-item" style="background:#E5EDFF;color:#007AFF;">手机打开 /demo</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:18px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:24px;">
+      <span class="flow-item" style="background:#E5EDFF;color:#007AFF;">点击"开始体验"</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:42px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:48px;">
+      <span class="flow-item" style="background:#E5EDFF;color:#007AFF;">自动跳转至 /browser-viewer/index.html?sessionId=xxx&amp;token=xxx （全屏）</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:66px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:72px;">
+      <span class="flow-item" style="background:#E5EDFF;color:#007AFF;">顶部状态栏: 连接状态 + "返回 Demo"</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:90px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:96px;">
+      <span class="flow-item" style="background:#E5EDFF;color:#007AFF;">中间: 远程浏览器画面（全屏）</span>
+    </div>
+    <span class="flow-arrow" style="transform:rotate(90deg);margin-left:114px;">↓</span>
+    <div style="display:flex;align-items:center;gap:8px;padding-left:120px;">
+      <span class="flow-item" style="background:#E5EDFF;color:#007AFF;">底部工具栏: ← → 🏠 + URL输入框</span>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;margin:18px 0 12px;">底部工具栏功能</h3>
+  <table>
+    <thead><tr><th>按钮</th><th>功能</th></tr></thead>
+    <tbody>
+      <tr><td>←</td><td>后退</td></tr>
+      <tr><td>→</td><td>前进</td></tr>
+      <tr><td>🏠</td><td>回首页（百度）</td></tr>
+      <tr><td>URL 输入框</td><td>输入网址按 Enter 导航</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:16px;margin:18px 0 12px;">触摸交互</h3>
+  <table>
+    <thead><tr><th>手势</th><th>效果</th><th>备注</th></tr></thead>
+    <tbody>
+      <tr><td>短按（tap）</td><td>左键点击</td><td>相当于鼠标单击</td></tr>
+      <tr><td>长按（500ms）</td><td>右键点击</td><td>光标变蓝提示</td></tr>
+      <tr><td>滑动（drag）</td><td>鼠标拖拽</td><td>可拖动滑块等</td></tr>
+      <tr><td>⌨ 按钮</td><td>弹出虚拟键盘</td><td>底部工具栏右侧</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:16px;margin:18px 0 12px;">光标指示器</h3>
+  <ul style="font-size:14px;padding-left:20px;color:#555;">
+    <li>🔴 红色圆圈跟随手指位置</li>
+    <li><strong>偏移 40px 在手指上方</strong>（避免遮挡）</li>
+    <li>松手后自动隐藏</li>
+  </ul>
+
+  <h3 style="font-size:16px;margin:18px 0 12px;">中文输入</h3>
+  <div class="step" style="margin-bottom:6px;">
+    <div class="step-num">1</div>
+    <div class="step-content"><div class="step-title">点击 ⌨ 按钮</div><div class="step-desc">弹出虚拟键盘</div></div>
+  </div>
+  <div class="step" style="margin-bottom:6px;">
+    <div class="step-num">2</div>
+    <div class="step-content"><div class="step-title">正常输入英文</div><div class="step-desc">逐字符发送</div></div>
+  </div>
+  <div class="step" style="margin-bottom:6px;">
+    <div class="step-num">3</div>
+    <div class="step-content"><div class="step-title">切换中文输入法 → 打字</div><div class="step-desc"><code>compositionend</code> → 整段文字一次性发送到远程浏览器</div></div>
+  </div>
+
+  <div class="tip">
+    <div class="tip-title">📱 移动端提示</div>
+    移动端使用 Touch 事件映射为 Mouse 事件，长按模拟右键，光标指示器偏移显示避免遮挡操作区域。全屏模式提供沉浸式体验。
+  </div>
+</div>
+
+<!-- ==================== 三、预设快捷导航 ==================== -->
+<div class="card">
+  <h2>🧭 三、预设快捷导航</h2>
+  <p style="margin-bottom:12px;font-size:14px;">Demo 页面提供以下预设按钮快速导航到测试页面：</p>
+  <table>
+    <thead><tr><th>按钮</th><th>目标页面</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr><td>百度</td><td>https://m.baidu.com</td><td>搜索测试</td></tr>
+      <tr><td>必应</td><td>https://cn.bing.com</td><td>搜索测试</td></tr>
+      <tr><td>测试页面</td><td>/public/test-interactive.html</td><td>按钮/输入框/下拉/颜色/画板</td></tr>
+      <tr><td>滑块验证</td><td>/public/slider-test.html</td><td>滑块验证码+文件上传+拖拽排序</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <div class="tip-title">💡 使用建议</div>
+    首次体验建议先访问「测试页面」和「滑块验证」页面，可完整测试点击、输入、拖拽、文件上传等核心交互能力。
+  </div>
+</div>
+
+<!-- ==================== 四、已知限制与后续优化 ==================== -->
+<div class="card">
+  <h2>⚠️ 四、已知限制与后续优化</h2>
+  <table>
+    <thead><tr><th>项目</th><th>当前状态</th><th>计划</th></tr></thead>
+    <tbody>
+      <tr><td>文件上传</td><td>API 注入成功，需远程页面有 <code>&lt;input type="file"&gt;</code></td><td>优化视觉反馈</td></tr>
+      <tr><td>移动端窄视口</td><td>工具栏正常，画面自适应</td><td>继续优化小屏设备</td></tr>
+      <tr><td>多指缩放</td><td>未实现</td><td>后续支持 pinch-to-zoom</td></tr>
+      <tr><td>复制粘贴</td><td>未实现</td><td>后续支持 clipboard API</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 页脚 -->
+<p style="text-align:center;color:#aaa;font-size:12px;margin-top:32px;padding-bottom:16px;">
+  Playwright User System · Demo Interaction Guide · Generated 2026-05-13
+</p>
+
+</body>
+</html>

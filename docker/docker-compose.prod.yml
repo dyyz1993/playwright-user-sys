@@ -7,11 +7,7 @@ services:
   # Management Server
   manager:
     restart: always
-    build:
-      context: ..
-      dockerfile: docker/manager/Dockerfile.prod
-      target: production
-    image: playwright-manager:${IMAGE_TAG:-latest}
+    image: ghcr.io/dyyz1993/playwright-user-sys-manager:${IMAGE_TAG:-latest}
     container_name: playwright-manager-prod
     ports:
       - "3011:3000"
@@ -51,11 +47,7 @@ services:
 
   # Machine Service 1
   machine-1:
-    build:
-      context: ..
-      dockerfile: docker/machine/Dockerfile.prod
-      target: production
-    image: playwright-machine:${IMAGE_TAG:-latest}
+    image: ghcr.io/dyyz1993/playwright-user-sys-machine:${IMAGE_TAG:-latest}
     container_name: playwright-machine-1-prod
     restart: always
     ports:
@@ -98,11 +90,7 @@ services:
 
   # Machine Service 2
   machine-2:
-    build:
-      context: ..
-      dockerfile: docker/machine/Dockerfile.prod
-      target: production
-    image: playwright-machine:${IMAGE_TAG:-latest}
+    image: ghcr.io/dyyz1993/playwright-user-sys-machine:${IMAGE_TAG:-latest}
     container_name: playwright-machine-2-prod
     restart: always
     ports:

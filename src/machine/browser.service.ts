@@ -632,6 +632,17 @@ export class BrowserService extends EventEmitter {
             },
             true
           );
+          const origFileInputClick = HTMLInputElement.prototype.click;
+          HTMLInputElement.prototype.click = function () {
+            if (this.type === 'file') {
+              (window as any).__fileInputClickEvent = {
+                accept: this.accept || '',
+                multiple: this.multiple || false,
+                timestamp: Date.now(),
+              };
+            }
+            return origFileInputClick.apply(this, arguments as any);
+          };
         });
         // 2. Also inject immediately for current page
         await primaryPage.evaluate(() => {
@@ -678,6 +689,17 @@ export class BrowserService extends EventEmitter {
             },
             true
           );
+          const origFileInputClick = HTMLInputElement.prototype.click;
+          HTMLInputElement.prototype.click = function () {
+            if (this.type === 'file') {
+              (window as any).__fileInputClickEvent = {
+                accept: this.accept || '',
+                multiple: this.multiple || false,
+                timestamp: Date.now(),
+              };
+            }
+            return origFileInputClick.apply(this, arguments as any);
+          };
         });
       } catch (primaryClipErr) {
         logger.warn(`Failed to inject clipboard on primary page (session: ${sessionId}):`, primaryClipErr);
@@ -1162,6 +1184,17 @@ export class BrowserService extends EventEmitter {
             },
             true
           );
+          const origFileInputClick = HTMLInputElement.prototype.click;
+          HTMLInputElement.prototype.click = function () {
+            if (this.type === 'file') {
+              (window as any).__fileInputClickEvent = {
+                accept: this.accept || '',
+                multiple: this.multiple || false,
+                timestamp: Date.now(),
+              };
+            }
+            return origFileInputClick.apply(this, arguments as any);
+          };
         });
 
         try {
@@ -1209,6 +1242,17 @@ export class BrowserService extends EventEmitter {
               },
               true
             );
+            const origFileInputClick = HTMLInputElement.prototype.click;
+            HTMLInputElement.prototype.click = function () {
+              if (this.type === 'file') {
+                (window as any).__fileInputClickEvent = {
+                  accept: this.accept || '',
+                  multiple: this.multiple || false,
+                  timestamp: Date.now(),
+                };
+              }
+              return origFileInputClick.apply(this, arguments as any);
+            };
           });
         } catch (clipEvalErr) {
           logger.warn(`Failed to inject clipboard on current page for session ${sessionId}:`, clipEvalErr);

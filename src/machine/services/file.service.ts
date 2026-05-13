@@ -124,7 +124,11 @@ export class FileService {
     }
   }
 
-  async storeFile(sessionId: string, filename: string, data: Buffer): Promise<string> {
+  async storeFile(
+    sessionId: string,
+    filename: string,
+    data: Buffer
+  ): Promise<{ filePath: string; originalName: string }> {
     await this.checkDiskSpace(500 * 1024 * 1024);
 
     if (data.length > this.maxFileSize) {
@@ -137,7 +141,7 @@ export class FileService {
     const safeName = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}-${path.basename(filename)}`;
     const filePath = path.join(finalDir, safeName);
     await fs.writeFile(filePath, data);
-    return filePath;
+    return { filePath, originalName: path.basename(filename) };
   }
 
   async cleanupSessionFiles(sessionId: string): Promise<void> {

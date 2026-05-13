@@ -277,12 +277,16 @@ export const serviceImplementation = {
     try {
       const { session_id, filename, data } = call.request;
       const { fileService } = await import('../services/file.service.js');
-      const machineFilePath = await fileService.storeFile(session_id, filename, Buffer.from(data));
+      const { filePath: machineFilePath, originalName } = await fileService.storeFile(
+        session_id,
+        filename,
+        Buffer.from(data)
+      );
       callback(null, {
         success: true,
         error: '',
         machine_file_path: machineFilePath,
-        filename,
+        filename: originalName,
         size: Buffer.from(data).length,
       });
     } catch (error: unknown) {

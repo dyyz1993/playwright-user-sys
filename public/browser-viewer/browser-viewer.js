@@ -40,7 +40,10 @@ class BrowserViewer {
     this.lastBandwidthTime = Date.now();
     this.currentBandwidth = 0;
     this.cursor = document.createElement('div');
-    this.cursor.style.cssText = 'position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
+    this.cursor.style.cssText = 'position:absolute;width:20px;height:26px;pointer-events:none;z-index:9999;display:none;';
+    this.cursor.innerHTML = '<svg width="20" height="26" viewBox="0 0 20 26" style="display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));"><path d="M0,0 L0,21 L5.5,15.5 L10,24 L13,22.5 L8.5,13.5 L16,13.5 Z" fill="#00D4FF" stroke="#0099CC" stroke-width="1.5" stroke-linejoin="round" /></svg>';
+    this._cursorPath = this.cursor.querySelector('path');
+    this._cursorColor = 'normal';
     this.cursorOffset = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 40 : 0;
     this._frameCount = 0;
     this._reconnectAttempts = 0;
@@ -968,13 +971,15 @@ class BrowserViewer {
     img.addEventListener('mousemove', function (e) {
       var c = getCoords(e);
       self.send({ type: 'event', event: { type: 'mousemove', data: c } });
-      self.cursor.style.display = 'block';
-      self.cursor.style.left = (e.clientX - img.getBoundingClientRect().left) + 'px';
-      self.cursor.style.top = (e.clientY - img.getBoundingClientRect().top - self.cursorOffset) + 'px';
+      if (self.cursorOffset > 0) {
+        self.cursor.style.display = 'block';
+        self.cursor.style.left = (e.clientX - img.getBoundingClientRect().left) + 'px';
+        self.cursor.style.top = (e.clientY - img.getBoundingClientRect().top - self.cursorOffset) + 'px';
+      }
     });
 
     img.addEventListener('mouseleave', function () {
-      self.cursor.style.display = 'none';
+      if (self.cursorOffset > 0) self.cursor.style.display = 'none';
     });
 
     img.addEventListener('mousedown', function (e) {
@@ -1055,25 +1060,29 @@ class BrowserViewer {
         lastTouch2 = e.touches[1];
       }
 
-      self.cursor.style.display = 'block';
-      var r = img.getBoundingClientRect();
-      self.cursor.style.left = (touch.clientX - r.left) + 'px';
-      self.cursor.style.top = (touch.clientY - r.top - self.cursorOffset) + 'px';
+      if (self.cursorOffset > 0) {
+        self.cursor.style.display = 'block';
+        self._cursorColor = 'normal';
+        self._cursorPath.setAttribute('fill', '#00D4FF');
+        self._cursorPath.setAttribute('stroke', '#0099CC');
+        var r = img.getBoundingClientRect();
+        self.cursor.style.left = (touch.clientX - r.left) + 'px';
+        self.cursor.style.top = (touch.clientY - r.top - self.cursorOffset) + 'px';
+      }
 
       longPressTimer = setTimeout(function () {
         isLongPress = true;
-        self.cursor.style.background = 'rgba(0,0,255,0.5)';
-        self.cursor.style.borderColor = 'rgba(0,0,255,0.8)';
+        self._cursorColor = 'longpress';
+        if (self.cursorOffset > 0) {
+          self._cursorPath.setAttribute('fill', '#FF6B35');
+          self._cursorPath.setAttribute('stroke', '#CC4400');
+        }
         var rc = getCoords(touchStartCoords || touch);
         rc.button = 2;
         self.send({ type: 'event', event: { type: 'mousedown', data: rc } });
         self.send({ type: 'event', event: { type: 'mouseup', data: rc } });
         self.send({ type: 'event', event: { type: 'contextmenu', data: rc } });
-        setTimeout(function () {
-          self.cursor.style.background = 'rgba(255,0,0,0.5)';
-          self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
-        }, 200);
-      }, 500);
+      }, 800);
 
       c.button = 0;
       self.send({ type: 'event', event: { type: 'mousedown', data: c } });
@@ -1084,6 +1093,13 @@ class BrowserViewer {
       self._touchActive = true;
       self._touchLastTime = Date.now();
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+      if (!isLongPress) {
+        self._cursorColor = 'normal';
+        if (self.cursorOffset > 0) {
+          self._cursorPath.setAttribute('fill', '#00D4FF');
+          self._cursorPath.setAttribute('stroke', '#0099CC');
+        }
+      }
 
       if (e.touches.length === 2 && lastTouch1 && lastTouch2) {
         var t1 = e.touches[0];
@@ -1140,7 +1156,9 @@ class BrowserViewer {
         self.send({ type: 'event', event: { type: 'click', data: c } });
       }
 
-      self.cursor.style.display = 'none';
+      setTimeout(function() {
+        self.cursor.style.display = 'none';
+      }, 100);
       lastTouch1 = null;
       lastTouch2 = null;
     }, { passive: false });

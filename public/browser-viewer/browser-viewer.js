@@ -1156,9 +1156,11 @@ class BrowserViewer {
         self.send({ type: 'event', event: { type: 'click', data: c } });
       }
 
-      setTimeout(function() {
-        self.cursor.style.display = 'none';
-      }, 100);
+      self._cursorColor = 'normal';
+      if (self.cursorOffset > 0) {
+        self._cursorPath.setAttribute('fill', '#00D4FF');
+        self._cursorPath.setAttribute('stroke', '#0099CC');
+      }
       lastTouch1 = null;
       lastTouch2 = null;
     }, { passive: false });

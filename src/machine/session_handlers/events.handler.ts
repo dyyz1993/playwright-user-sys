@@ -75,7 +75,7 @@ export async function handleEventsConnection(
     };
     activeEventConnections.set(ws, connectionInfo);
 
-    // --- Clipboard polling ---
+    // --- Clipboard + Filechooser polling ---
     let lastClipboardContent = '';
     const clipboardPollInterval = setInterval(async () => {
       const conn = activeEventConnections.get(ws);
@@ -84,10 +84,28 @@ export async function handleEventsConnection(
         return;
       }
       try {
-        const content = await conn.page.evaluate(() => (window as any).__clipboardContent || '').catch(() => '');
-        if (content && content !== lastClipboardContent) {
-          lastClipboardContent = content;
-          sendNotification(ws, 'clipboard', { text: content });
+        const result = await conn.page
+          .evaluate(() => {
+            const fileEvent = (window as any).__fileInputClickEvent;
+            if (fileEvent && Date.now() - fileEvent.timestamp < 3000) {
+              (window as any).__fileInputClickEvent = null;
+              return { filechooser: true, accept: fileEvent.accept, multiple: fileEvent.multiple };
+            }
+            const clip = (window as any).__clipboardContent || '';
+            return { filechooser: false, clipboard: clip };
+          })
+          .catch(() => ({ filechooser: false, clipboard: '' }));
+
+        if (result.filechooser) {
+          const r = result as { filechooser: true; accept: string | null; multiple: boolean };
+          sendNotification(ws, 'filechooser', {
+            message: 'Remote browser requests file selection',
+            accept: r.accept || null,
+            multiple: r.multiple || false,
+          });
+        } else if (result.clipboard && result.clipboard !== lastClipboardContent) {
+          lastClipboardContent = result.clipboard;
+          sendNotification(ws, 'clipboard', { text: result.clipboard });
         }
       } catch {
         try {

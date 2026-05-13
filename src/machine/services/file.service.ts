@@ -149,7 +149,7 @@ export class FileService {
       } catch {
         /* ignore */
       }
-      await fs.symlink(filePath, originalPath);
+      await fs.symlink(path.resolve(filePath), originalPath);
       return {
         filePath: originalPath,
         originalName: path.basename(filename),

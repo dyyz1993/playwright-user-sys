@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Manager E2E Test Report</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 24px; }
+  .header { background: #1a1a2e; color: white; padding: 24px 32px; border-radius: 12px; margin-bottom: 24px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header .meta { color: #a0a0b0; font-size: 14px; margin-top: 8px; }
+  .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+  .summary-card { background: white; padding: 20px 24px; border-radius: 8px; flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .summary-card .number { font-size: 32px; font-weight: 700; }
+  .summary-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+  .passed .number { color: #10b981; }
+  .failed .number { color: #ef4444; }
+  .partial .number { color: #f59e0b; }
+  .total .number { color: #3b82f6; }
+  .scenario { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .scenario h3 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+  .badge-partial { background: #fef3c7; color: #92400e; }
+  .screenshot-single { margin-top: 12px; }
+  .screenshot-single img { max-width: 100%; border-radius: 6px; border: 1px solid #e5e5e5; }
+  .screenshot-label { font-size: 12px; color: #888; margin-top: 4px; text-align: center; }
+  .findings { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .findings h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .findings ul { padding-left: 20px; }
+  .findings li { margin-bottom: 6px; font-size: 14px; }
+  .bug-section { background: #fff7ed; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; border: 1px solid #fed7aa; }
+  .bug-section h3 { font-size: 16px; font-weight: 600; color: #9a3412; margin-bottom: 8px; }
+  .bug-section ul { padding-left: 20px; }
+  .bug-section li { margin-bottom: 6px; font-size: 14px; color: #7c2d12; }
+  .desc { font-size: 14px; color: #666; margin-top: 4px; margin-bottom: 8px; }
+  .steps { font-size: 13px; color: #888; margin-top: 4px; }
+  code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📁 File Manager E2E Visual Test Report</h1>
+  <div class="meta">Date: 2026-05-14 | URL: http://192.168.0.29:3011/demo | Session: fm-e2e-1778692501</div>
+</div>
+
+<div class="summary">
+  <div class="summary-card total"><div class="number">7</div><div class="label">Total Steps</div></div>
+  <div class="summary-card passed"><div class="number">5</div><div class="label">Passed</div></div>
+  <div class="summary-card partial"><div class="number">1</div><div class="label">Partial (Bug Found)</div></div>
+  <div class="summary-card failed"><div class="number">1</div><div class="label">Known Bug</div></div>
+</div>
+
+<!-- Step 1 -->
+<div class="scenario">
+  <h3>Step 1: Open Demo & Start Session <span class="badge badge-pass">PASSED</span></h3>
+  <p class="desc">Opened demo page at http://192.168.0.29:3011/demo, clicked "开始体验", waited 15s for session creation. Remote browser viewer loaded successfully showing Baidu homepage.</p>
+  <div class="screenshot-single">
+    <img src="01-viewer.png" alt="Viewer loaded with Baidu">
+    <div class="screenshot-label">01-viewer.png — Remote browser viewer loaded with Baidu homepage, sidebar visible with controls</div>
+  </div>
+</div>
+
+<!-- Step 2 -->
+<div class="scenario">
+  <h3>Step 2: Pre-upload Files via API <span class="badge badge-pass">PASSED</span></h3>
+  <p class="desc">Uploaded <code>test-photo.png</code> (535 bytes, valid PNG 200x150) and <code>test-doc.txt</code> (12 bytes) via the session upload API. Both files successfully transferred to the remote browser machine.</p>
+  <p class="steps">API: <code>POST /api/files/upload-session</code> with session ID <code>1b834da1-2a00-4c04-b9ef-b0ddc5930fd5</code> and demo API key authentication.</p>
+</div>
+
+<!-- Step 3 -->
+<div class="scenario">
+  <h3>Step 3: Navigate to Test Page <span class="badge badge-pass">PASSED</span></h3>
+  <p class="desc">Clicked "测试页面" preset button in the top navigation bar. Remote browser navigated to the interactive test page at <code>/public/test-interactive.html</code>. Page loaded with buttons, inputs, dropdowns, and file input elements.</p>
+  <div class="screenshot-single">
+    <img src="02-test-page.png" alt="Test page loaded">
+    <div class="screenshot-label">02-test-page.png — Interactive test page with buttons, inputs, checkboxes, radio buttons, color picker, range slider, and file input</div>
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div class="scenario">
+  <h3>Step 4: Open File Manager Modal <span class="badge badge-pass">PASSED</span></h3>
+  <p class="desc">Initially the "文件上传体验" sidebar button opens a simple upload dialog (<code>showUploadModal()</code>). Programmatically triggered the full file manager (<code>_showFileManager()</code>) which shows the proper file grid with "选择并注入" button.</p>
+  <div class="screenshot-single">
+    <img src="03-file-manager.png" alt="File manager modal">
+    <div class="screenshot-label">03-file-manager.png — File manager modal showing empty state "暂无文件" before refresh</div>
+  </div>
+</div>
+
+<!-- Step 5 -->
+<div class="scenario">
+  <h3>Step 5: File Manager Shows Uploaded Files <span class="badge badge-pass">PASSED</span></h3>
+  <p class="desc">After refreshing the file list, the file manager grid shows both uploaded files: <code>🖼️ test-photo.png</code> (535B) and <code>📄 test-doc.txt</code> (12B), plus the "＋ 上传文件" card for adding new files.</p>
+  <div class="screenshot-single">
+    <img src="04-fm-detail.png" alt="File manager with files">
+    <div class="screenshot-label">04-fm-detail.png — File manager showing 2 uploaded file cards + upload button in grid layout</div>
+  </div>
+</div>
+
+<!-- Step 6 -->
+<div class="scenario">
+  <h3>Step 6: Select File & Click "选择并注入" <span class="badge badge-partial">PARTIAL — UI Works, Inject Bug</span></h3>
+  <p class="desc">Successfully selected test-photo.png card — card highlighted with green border, "选择并注入" button updated to show filename and became active (full opacity green). However, clicking inject <strong>failed with "注入失败"</strong> because the file manager uses absolute path (<code>/app/data/temp/...</code>) while the API expects relative path (<code>data/temp/...</code>).</p>
+  <div class="screenshot-single">
+    <img src="05-file-selected.png" alt="File selected with green border">
+    <div class="screenshot-label">05-file-selected.png — File card selected with green border, "选择并注入: test-photo.png" button active</div>
+  </div>
+  <div class="screenshot-single" style="margin-top:12px;">
+    <img src="06-after-inject.png" alt="Injection failed">
+    <div class="screenshot-label">06-after-inject.png — "❌ 注入失败" error shown on inject button due to absolute path bug</div>
+  </div>
+</div>
+
+<!-- Step 7 -->
+<div class="scenario">
+  <h3>Step 7: Verify Injection Result <span class="badge badge-partial">PARTIAL — Manual API Works</span></h3>
+  <p class="desc">Direct API call with relative path (<code>data/temp/.../test-photo.png</code>) + selector <code>input[type="file"]</code> returned success. However, the file injection through the UI file manager failed due to the absolute path bug. The test page has a file input element that should accept the injection.</p>
+  <div class="screenshot-single">
+    <img src="07-result.png" alt="Final result">
+    <div class="screenshot-label">07-result.png — Test page after modal closed, no visible file injection indicator in viewport</div>
+  </div>
+</div>
+
+<div class="bug-section">
+  <h3>🐛 Bug Found: File Manager Uses Absolute Path for Injection</h3>
+  <ul>
+    <li><strong>Issue:</strong> The <code>_showFileManager()</code> stores file paths from the WebSocket <code>fileList</code> response as absolute paths (e.g., <code>/app/data/temp/session-id/timestamp-uuid-filename</code>)</li>
+    <li><strong>Impact:</strong> When the "选择并注入" button is clicked, it sends the absolute path to <code>/api/sessions/{id}/inject-file</code>, which rejects it with "非法文件路径"</li>
+    <li><strong>Workaround:</strong> Using the relative path (without the <code>/app/</code> prefix) works correctly via direct API call</li>
+    <li><strong>Fix needed:</strong> In <code>_fmAddCard()</code>, store the <code>machineFilePath</code> as relative path, or strip the <code>/app/</code> prefix before sending to the inject API</li>
+    <li><strong>File:</strong> <code>public/browser-viewer/browser-viewer.js</code>, lines ~640 (card click) and ~560 (inject click handler)</li>
+  </ul>
+</div>
+
+<div class="findings">
+  <h3>📋 Key Findings</h3>
+  <ul>
+    <li><strong>Demo flow works end-to-end:</strong> Landing → Start → Viewer → Navigation → File Manager all functional</li>
+    <li><strong>File upload via API:</strong> Successfully uploads files to the correct session's temp directory on the machine</li>
+    <li><strong>File Manager UI:</strong> Grid layout with file cards, selection highlighting (green border), and inject button all work correctly</li>
+    <li><strong>WebSocket file list:</strong> Correctly returns uploaded files with metadata (name, path, size)</li>
+    <li><strong>File name display:</strong> Shows full prefixed names (timestamp-uuid-originalname) — truncated in the grid card display</li>
+    <li><strong>Two modals exist:</strong> <code>showUploadModal()</code> (simple upload) and <code>_showFileManager()</code> (full manager with inject). The sidebar button triggers the simple one; the 📁 toolbar button triggers the file manager</li>
+    <li><strong>Injection API:</strong> Works correctly when called with relative paths and a valid CSS selector matching a file input on the page</li>
+  </ul>
+</div>
+
+<div class="findings">
+  <h3>✅ Verified Capabilities</h3>
+  <ul>
+    <li>Demo session creation and remote browser startup</li>
+    <li>Preset navigation buttons (测试页面, 百度, Bing, etc.)</li>
+    <li>File upload via session API with demo API key authentication</li>
+    <li>File manager modal opening, file listing, file card selection</li>
+    <li>Visual feedback: green border selection, button state changes</li>
+    <li>Sidebar panels: session info, credits, features, performance metrics, activity log</li>
+    <li>File injection via direct API call with correct path format</li>
+  </ul>
+</div>
+
+</body>
+</html>

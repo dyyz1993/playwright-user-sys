@@ -1,10 +1,10 @@
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push less than a minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   * Initialize containers
   * Checkout repository
@@ -17,15 +17,15 @@ JOBS
   * Wait for MySQL
   * Setup test database
   * Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push less than a minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   * Initialize containers
   * Checkout repository
@@ -38,15 +38,15 @@ JOBS
   * Wait for MySQL
   * Setup test database
   * Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push less than a minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   * Initialize containers
   * Checkout repository
@@ -59,17 +59,17 @@ JOBS
   * Wait for MySQL
   * Setup test database
   * Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push less than a minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
-  * Initialize containers
+  ✓ Initialize containers
   * Checkout repository
   * Setup Node.js
   * Install pnpm
@@ -80,19 +80,20 @@ JOBS
   * Wait for MySQL
   * Setup test database
   * Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
+  * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push less than a minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
-  * Initialize containers
-  * Checkout repository
-  * Setup Node.js
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
   * Install pnpm
   * Get pnpm store directory
   * Setup pnpm cache
@@ -101,62 +102,17 @@ JOBS
   * Wait for MySQL
   * Setup test database
   * Build project
-  * Run Security Vulnerability Tests
-  * Stop containers
-Refreshing run status every 3 seconds. Press Ctrl+C to quit.
-
-* main Security Tests · 25797939589
-Triggered via push less than a minute ago
-
-JOBS
-* test-security (ID 75779916137)
-  ✓ Set up job
-  ✓ Initialize containers
-  ✓ Checkout repository
-  * Setup Node.js
-  * Install pnpm
-  * Get pnpm store directory
-  * Setup pnpm cache
-  * Install dependencies
-  * Install Chrome
-  * Wait for MySQL
-  * Setup test database
-  * Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Post Setup Node.js
   * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push less than a minute ago
 
 JOBS
-* test-security (ID 75779916137)
-  ✓ Set up job
-  ✓ Initialize containers
-  ✓ Checkout repository
-  ✓ Setup Node.js
-  ✓ Install pnpm
-  ✓ Get pnpm store directory
-  * Setup pnpm cache
-  * Install dependencies
-  * Install Chrome
-  * Wait for MySQL
-  * Setup test database
-  * Build project
-  * Run Security Vulnerability Tests
-  * Post Setup pnpm cache
-  * Post Setup Node.js
-  * Post Checkout repository
-  * Stop containers
-Refreshing run status every 3 seconds. Press Ctrl+C to quit.
-
-* main Security Tests · 25797939589
-Triggered via push less than a minute ago
-
-JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -169,18 +125,18 @@ JOBS
   * Wait for MySQL
   * Setup test database
   * Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Post Setup pnpm cache
   * Post Setup Node.js
   * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push less than a minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -193,18 +149,18 @@ JOBS
   ✓ Wait for MySQL
   ✓ Setup test database
   * Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Post Setup pnpm cache
   * Post Setup Node.js
   * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push about 1 minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -217,18 +173,18 @@ JOBS
   ✓ Wait for MySQL
   ✓ Setup test database
   * Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Post Setup pnpm cache
   * Post Setup Node.js
   * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push about 1 minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -241,18 +197,18 @@ JOBS
   ✓ Wait for MySQL
   ✓ Setup test database
   ✓ Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Post Setup pnpm cache
   * Post Setup Node.js
   * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push about 1 minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -265,18 +221,18 @@ JOBS
   ✓ Wait for MySQL
   ✓ Setup test database
   ✓ Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Post Setup pnpm cache
   * Post Setup Node.js
   * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push about 1 minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -289,18 +245,18 @@ JOBS
   ✓ Wait for MySQL
   ✓ Setup test database
   ✓ Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Post Setup pnpm cache
   * Post Setup Node.js
   * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push about 1 minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -313,18 +269,18 @@ JOBS
   ✓ Wait for MySQL
   ✓ Setup test database
   ✓ Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Post Setup pnpm cache
   * Post Setup Node.js
   * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push about 1 minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -337,18 +293,18 @@ JOBS
   ✓ Wait for MySQL
   ✓ Setup test database
   ✓ Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Post Setup pnpm cache
   * Post Setup Node.js
   * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push about 1 minute ago
 
 JOBS
-* test-security (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -361,18 +317,18 @@ JOBS
   ✓ Wait for MySQL
   ✓ Setup test database
   ✓ Build project
-  * Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
   * Post Setup pnpm cache
   * Post Setup Node.js
   * Post Checkout repository
   * Stop containers
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
+* main Fingerprint Isolation Tests · 25810492039
 Triggered via push about 1 minute ago
 
 JOBS
-✓ test-security in 1m33s (ID 75779916137)
+* test-fingerprint (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -385,25 +341,287 @@ JOBS
   ✓ Wait for MySQL
   ✓ Setup test database
   ✓ Build project
-  ✓ Run Security Vulnerability Tests
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 1 minute ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 1 minute ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 1 minute ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 2 minutes ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 2 minutes ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 2 minutes ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 2 minutes ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 2 minutes ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 2 minutes ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 2 minutes ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  * Run Fingerprint Isolation Tests
+  * Post Setup pnpm cache
+  * Post Setup Node.js
+  * Post Checkout repository
+  * Stop containers
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 2 minutes ago
+
+JOBS
+* test-fingerprint (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  ✓ Run Fingerprint Isolation Tests
   ✓ Post Setup pnpm cache
   ✓ Post Setup Node.js
   ✓ Post Checkout repository
-  ✓ Stop containers
-  ✓ Complete job
-* Feishu Notification / Send Feishu Notification (ID 75780173788)
+  * Stop containers
 
 ANNOTATIONS
 ! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/cache@v4, actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-test-security: .github#2
+test-fingerprint: .github#2
 
 Refreshing run status every 3 seconds. Press Ctrl+C to quit.
 
-* main Security Tests · 25797939589
-Triggered via push about 1 minute ago
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 2 minutes ago
 
 JOBS
-✓ test-security in 1m33s (ID 75779916137)
+✓ test-fingerprint in 2m36s (ID 75825125238)
   ✓ Set up job
   ✓ Initialize containers
   ✓ Checkout repository
@@ -416,50 +634,92 @@ JOBS
   ✓ Wait for MySQL
   ✓ Setup test database
   ✓ Build project
-  ✓ Run Security Vulnerability Tests
+  ✓ Run Fingerprint Isolation Tests
   ✓ Post Setup pnpm cache
   ✓ Post Setup Node.js
   ✓ Post Checkout repository
   ✓ Stop containers
   ✓ Complete job
-* Feishu Notification / Send Feishu Notification (ID 75780173788)
+* test-summary (ID 75825672949)
+  ✓ Set up job
+  ✓ Check test results
+  ✓ Complete job
+* Feishu Notification / Send Feishu Notification (ID 75825691144)
+
+ANNOTATIONS
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/cache@v4, actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test-fingerprint: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ test-fingerprint in 2m36s (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  ✓ Run Fingerprint Isolation Tests
+  ✓ Post Setup pnpm cache
+  ✓ Post Setup Node.js
+  ✓ Post Checkout repository
+  ✓ Stop containers
+  ✓ Complete job
+✓ test-summary in 3s (ID 75825672949)
+  ✓ Set up job
+  ✓ Check test results
+  ✓ Complete job
+* Feishu Notification / Send Feishu Notification (ID 75825691144)
+  ✓ Set up job
+  * Send notification
+
+ANNOTATIONS
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/cache@v4, actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+test-fingerprint: .github#2
+
+✓ main Fingerprint Isolation Tests · 25810492039
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ test-fingerprint in 2m36s (ID 75825125238)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout repository
+  ✓ Setup Node.js
+  ✓ Install pnpm
+  ✓ Get pnpm store directory
+  ✓ Setup pnpm cache
+  ✓ Install dependencies
+  ✓ Install Chrome
+  ✓ Wait for MySQL
+  ✓ Setup test database
+  ✓ Build project
+  ✓ Run Fingerprint Isolation Tests
+  ✓ Post Setup pnpm cache
+  ✓ Post Setup Node.js
+  ✓ Post Checkout repository
+  ✓ Stop containers
+  ✓ Complete job
+✓ test-summary in 3s (ID 75825672949)
+  ✓ Set up job
+  ✓ Check test results
+  ✓ Complete job
+✓ Feishu Notification / Send Feishu Notification in 4s (ID 75825691144)
   ✓ Set up job
   ✓ Send notification
   ✓ Complete job
 
 ANNOTATIONS
 ! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/cache@v4, actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-test-security: .github#2
-
-✓ main Security Tests · 25797939589
-Triggered via push about 1 minute ago
-
-JOBS
-✓ test-security in 1m33s (ID 75779916137)
-  ✓ Set up job
-  ✓ Initialize containers
-  ✓ Checkout repository
-  ✓ Setup Node.js
-  ✓ Install pnpm
-  ✓ Get pnpm store directory
-  ✓ Setup pnpm cache
-  ✓ Install dependencies
-  ✓ Install Chrome
-  ✓ Wait for MySQL
-  ✓ Setup test database
-  ✓ Build project
-  ✓ Run Security Vulnerability Tests
-  ✓ Post Setup pnpm cache
-  ✓ Post Setup Node.js
-  ✓ Post Checkout repository
-  ✓ Stop containers
-  ✓ Complete job
-✓ Feishu Notification / Send Feishu Notification in 4s (ID 75780173788)
-  ✓ Set up job
-  ✓ Send notification
-  ✓ Complete job
-
-ANNOTATIONS
-! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/cache@v4, actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-test-security: .github#2
+test-fingerprint: .github#2
 

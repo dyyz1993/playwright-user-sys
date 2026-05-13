@@ -57,7 +57,13 @@ export class FileTransferService {
       frameSelector,
     });
     logger.info(`文件注入: ${machineFilePath} → session ${sessionId}`);
-    return result;
+    return {
+      success: result.success,
+      error: result.error || '',
+      machine_file_path: result.machine_file_path || '',
+      filename: result.filename || '',
+      size: result.size || 0,
+    };
   }
 }
 

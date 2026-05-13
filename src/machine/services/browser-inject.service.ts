@@ -68,7 +68,7 @@ export class BrowserInjectService {
         } catch {
           /* ignore */
         }
-        await fs.symlink(filePath, linkPath);
+        await fs.symlink(path.resolve(filePath), linkPath);
         uploadPath = linkPath;
       }
 

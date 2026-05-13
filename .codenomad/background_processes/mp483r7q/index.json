@@ -1,0 +1,16 @@
+[
+  {
+    "id": "proc_2026-05-13T1555_6995de",
+    "workspaceId": "mp483r7q",
+    "title": "CI Watch",
+    "command": "cd /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys && gh run watch 25810492039 --exit-status 2>&1",
+    "cwd": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys",
+    "status": "stopped",
+    "pid": 43497,
+    "startedAt": "2026-05-13T15:55:16.829Z",
+    "outputSizeBytes": 21163,
+    "terminalReason": "finished",
+    "exitCode": 0,
+    "stoppedAt": "2026-05-13T15:58:03.203Z"
+  }
+]

@@ -472,7 +472,7 @@ class BrowserViewer {
               body: JSON.stringify({ machineFilePath: data.data.machineFilePath, selector: selectors[si] })
             });
             var injData = await injResp.json();
-            if (injResp.ok && injData.success) {
+            if (injResp.ok && injData.data && injData.data.success) {
               injSuccess = true;
               break;
             }
@@ -568,7 +568,7 @@ class BrowserViewer {
             body: JSON.stringify({ machineFilePath: filePath, selector: selectors[si] })
           });
           var d = await r.json();
-          if (r.ok && d.success) { success = true; break; }
+          if (r.ok && d.data && d.data.success) { success = true; break; }
         } catch(e) {}
       }
       if (success) {

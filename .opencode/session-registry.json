@@ -152,5 +152,12 @@
     "parentID": "ses_1e6d894acffeRjCdZQyVhj4uDL",
     "status": "idle",
     "createdAt": 1778538519864
+  },
+  "mobile-viewer-test": {
+    "id": "ses_1e11e85aeffev5jInV03C22eBP",
+    "name": "mobile-viewer-test",
+    "parentID": "ses_1e120155bffeDNY0Qp1l2Qc9tO",
+    "status": "running",
+    "createdAt": 1778634553943
   }
 }

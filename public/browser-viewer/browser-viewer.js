@@ -42,6 +42,17 @@ class BrowserViewer {
     this.cursor = document.createElement('div');
     this.cursor.style.cssText = 'position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
     this.cursorOffset = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 40 : 0;
+    this._frameCount = 0;
+    this._reconnectAttempts = 0;
+    this._maxReconnectAttempts = 3;
+
+    this.loadingIndicator = document.createElement('div');
+    this.loadingIndicator.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;font-size:14px;z-index:10;pointer-events:none;';
+    this.loadingIndicator.innerHTML = '<div style="font-size:32px;margin-bottom:8px;">⏳</div><div>正在连接远程浏览器...</div>';
+
+    this.errorIndicator = document.createElement('div');
+    this.errorIndicator.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;padding:24px;background:white;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:20;display:none;width:80%;max-width:320px;';
+    this.errorIndicator.innerHTML = '<div style="font-size:40px;margin-bottom:8px;">😵</div><div id="error-text" style="font-size:15px;color:#333;margin-bottom:12px;">连接失败</div><button onclick="location.reload()" style="padding:10px 24px;background:#007AFF;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;">重新连接</button>';
 
     this.hiddenInput = document.createElement('textarea');
     this.hiddenInput.style.cssText = 'position:fixed;top:-100px;left:-100px;width:1px;height:1px;opacity:0.01;font-size:16px;border:none;outline:none;resize:none;';
@@ -95,11 +106,15 @@ class BrowserViewer {
 
     this.container.innerHTML =
       '<div style="width:100%;height:100%;position:relative;background:#000;">' +
-        '<img id="bv-screen" style="width:100%;height:100%;object-fit:contain;" />' +
+        '<img id="bv-screen" alt="远程浏览器画面" crossOrigin="anonymous" draggable="false" style="width:100%;height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;pointer-events:auto;" />' +
         '<div id="bv-status" style="position:absolute;top:10px;left:10px;color:#fff;font-size:12px;z-index:10;font-family:system-ui,-apple-system,sans-serif;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:4px;">连接中...</div>' +
       '</div>';
     this.img = this.container.querySelector('#bv-screen');
     this.img.draggable = false;
+    if (this.container) {
+      this.container.appendChild(this.loadingIndicator);
+      this.container.appendChild(this.errorIndicator);
+    }
     this.img.style.userSelect = 'none';
     this.img.style.webkitUserSelect = 'none';
     this.img.style.webkitTouchCallout = 'none';
@@ -196,14 +211,11 @@ class BrowserViewer {
     return this;
   }
 
-  connect() {
-    if (!this.container) this.mount();
-
+  _connectStream() {
     var wsBase = this.protocol + '//' + this.wsHost;
     var statusEl = this.container.querySelector('#bv-status');
     var self = this;
 
-    // Stream WS — 接收画面帧（arraybuffer 更可靠）
     var tokenQuery = this.token ? '?token=' + encodeURIComponent(this.token) : '';
     this.streamWs = new WebSocket(wsBase + '/ws/' + this.sessionId + '/stream' + tokenQuery);
     this.streamWs.binaryType = 'arraybuffer';
@@ -211,6 +223,7 @@ class BrowserViewer {
     this.streamWs.onmessage = function (e) {
       if (e.data instanceof ArrayBuffer) {
         self.frameCount++;
+        self._frameCount++;
         self.fpsFrameCount++;
         self.bandwidthBytes += e.data.byteLength;
         var now = Date.now();
@@ -259,6 +272,9 @@ class BrowserViewer {
 
     this.streamWs.onopen = function () {
       statusEl.textContent = 'Stream 已连接...';
+      if (self.loadingIndicator) {
+        self.loadingIndicator.style.display = 'none';
+      }
       if (self._mobileStatus) {
         self._mobileStatus.textContent = '已连接';
         self._mobileStatus.style.color = '#4ade80';
@@ -267,11 +283,44 @@ class BrowserViewer {
     this.streamWs.onerror = function (e) {
       statusEl.textContent = 'Stream 错误';
       console.error('[BV] stream ws error', e);
+      if (self.errorIndicator && self._frameCount === 0) {
+        self.errorIndicator.style.display = 'block';
+        var errorText = self.errorIndicator.querySelector('#error-text');
+        if (errorText) errorText.textContent = '连接失败，请检查网络';
+      }
+      if (self.loadingIndicator) { self.loadingIndicator.style.display = 'none'; }
     };
     this.streamWs.onclose = function (e) {
       statusEl.textContent = 'Stream 断开 (' + e.code + ')';
       console.log('[BV] stream ws close', e.code, e.reason);
+      if (self.loadingIndicator) { self.loadingIndicator.style.display = 'none'; }
+
+      if (!self._frameCount && self._reconnectAttempts < self._maxReconnectAttempts) {
+        self._reconnectAttempts++;
+        if (self.errorIndicator) {
+          self.errorIndicator.style.display = 'block';
+          var et = self.errorIndicator.querySelector('#error-text');
+          if (et) et.textContent = '连接失败，' + (self._maxReconnectAttempts - self._reconnectAttempts + 1) + ' 秒后自动重试... (' + (e.code || '?') + ')';
+        }
+        setTimeout(function() {
+          self._connectStream();
+        }, 2000 * self._reconnectAttempts);
+      } else if (self.errorIndicator && self._frameCount === 0) {
+        self.errorIndicator.style.display = 'block';
+        var errText = self.errorIndicator.querySelector('#error-text');
+        if (errText) errText.textContent = e.code === 1006 ? '网络断开，请检查连接' : e.code === 1005 ? '协议版本不支持' : '连接失败 (' + (e.code || '?') + ')';
+      }
     };
+  }
+
+  connect() {
+    if (!this.container) this.mount();
+
+    this._connectStream();
+
+    var wsBase = this.protocol + '//' + this.wsHost;
+    var statusEl = this.container.querySelector('#bv-status');
+    var self = this;
 
     // Events WS — 发送鼠标/键盘事件
     var tokenQuery = this.token ? '?token=' + encodeURIComponent(this.token) : '';

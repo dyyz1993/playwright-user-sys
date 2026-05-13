@@ -78,6 +78,7 @@ export class BrowserInjectService {
       await target.evaluate((sel: string) => {
         const input = document.querySelector(sel) as HTMLInputElement;
         if (input) {
+          input.dispatchEvent(new Event('input', { bubbles: true }));
           input.dispatchEvent(new Event('change', { bubbles: true }));
         }
       }, selector);

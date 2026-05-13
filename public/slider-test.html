@@ -206,8 +206,12 @@ uploadArea.addEventListener('drop', function(e) {
 fileInput.addEventListener('change', function() { handleFiles(this.files); });
 
 function handleFiles(files) {
+  var existingNames = new Set();
+  fileList.querySelectorAll('.file-item .name').forEach(function(el) { existingNames.add(el.textContent); });
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
+    if (existingNames.has(file.name)) continue;
+    existingNames.add(file.name);
     addLog('上传: ' + file.name + ' (' + formatSize(file.size) + ')', 'success');
     var item = document.createElement('div');
     item.className = 'file-item';

@@ -74,6 +74,26 @@ export async function handleEventsConnection(
       listeners: {},
     };
     activeEventConnections.set(ws, connectionInfo);
+
+    // --- Clipboard polling ---
+    let lastClipboardContent = '';
+    const clipboardPollInterval = setInterval(async () => {
+      const conn = activeEventConnections.get(ws);
+      if (!conn || conn.page.isClosed() || ws.readyState !== WebSocket.OPEN) {
+        clearInterval(clipboardPollInterval);
+        return;
+      }
+      try {
+        const content = await conn.page.evaluate(() => (window as any).__clipboardContent || '').catch(() => '');
+        if (content && content !== lastClipboardContent) {
+          lastClipboardContent = content;
+          sendNotification(ws, 'clipboard', { text: content });
+        }
+      } catch {
+        // page may have navigated or closed
+      }
+    }, 2000);
+    (connectionInfo as any)._clipboardPollInterval = clipboardPollInterval;
     logger.info(
       `Stored '/events' connection for session ${sessionId} with initial config: ${JSON.stringify(currentConfig)}`
     );
@@ -769,6 +789,10 @@ function cleanupEventConnection(ws: WebSocket): void {
   if (connectionInfo) {
     const { page, sessionId, listeners } = connectionInfo;
     logger.info(`Cleaning up '/events' connection for session ${sessionId}`);
+
+    if ((connectionInfo as any)._clipboardPollInterval) {
+      clearInterval((connectionInfo as any)._clipboardPollInterval);
+    }
     const functionName = '_emitFocusEvent_' + sessionId.replace(/\W/g, '_');
 
     // 移除 Page 监听器

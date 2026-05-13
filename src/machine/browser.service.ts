@@ -993,7 +993,37 @@ export class BrowserService extends EventEmitter {
 
         await this.injectMouseTrackingScript(page);
         await this.injectFocusinScript(sessionId, page);
-        // 禁止修改客户端 console.debug 行为
+
+        try {
+          const cdp = await page.createCDPSession();
+          await cdp.send('Browser.grantPermissions', {
+            origin: page.url() || 'https://www.baidu.com',
+            permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'],
+          });
+          logger.info(`Clipboard permissions granted for session ${sessionId}`);
+        } catch (permErr) {
+          logger.warn(`Failed to grant clipboard permissions for session ${sessionId}:`, permErr);
+        }
+
+        await page.evaluateOnNewDocument(() => {
+          (window as any).__clipboardContent = '';
+          const origWriteText = (navigator.clipboard as any)?.writeText?.bind(navigator.clipboard);
+          if (origWriteText) {
+            (navigator.clipboard as any).writeText = async function (text: string) {
+              (window as any).__clipboardContent = text;
+              return origWriteText(text);
+            };
+          }
+          const origExecCommand = document.execCommand.bind(document);
+          document.execCommand = function (command: string, ui?: boolean, value?: any) {
+            if (command === 'copy') {
+              const sel = window.getSelection()?.toString();
+              if (sel) (window as any).__clipboardContent = sel;
+            }
+            return origExecCommand(command, ui as any, value);
+          };
+        });
+
         await page.evaluateOnNewDocument(() => {
           console.debug = () => {};
         });

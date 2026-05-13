@@ -161,6 +161,65 @@ class BrowserViewer {
     }
     this._updateTabs([{ id: 'default', title: '当前页面', active: true }]);
 
+    var self = this;
+
+    // --- Notification bell & panel ---
+    this._notifBtn = document.createElement('div');
+    this._notifBtn.style.cssText = 'position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.6);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;z-index:9999;user-select:none;';
+    this._notifBtn.textContent = '\uD83D\uDD14';
+    this._notifBtn.title = '剪贴板 & 通知';
+
+    this._notifBadge = document.createElement('span');
+    this._notifBadge.style.cssText = 'position:absolute;top:-2px;right:-2px;background:#FF3B30;color:white;font-size:10px;min-width:14px;height:14px;border-radius:7px;display:none;align-items:center;justify-content:center;padding:0 3px;line-height:14px;';
+    this._notifBtn.appendChild(this._notifBadge);
+    if (this.container) this.container.appendChild(this._notifBtn);
+
+    this._notifPanel = document.createElement('div');
+    this._notifPanel.style.cssText = 'position:absolute;top:36px;right:4px;width:320px;max-height:300px;background:white;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:10000;display:none;overflow-y:auto;';
+    this._notifPanel.innerHTML = '<div style="padding:12px 16px;border-bottom:1px solid #eee;font-size:14px;font-weight:600;">\uD83D\uDCCB 剪贴板 & 通知</div><div id="bv-notif-list" style="padding:8px;"></div>';
+    if (this.container) this.container.appendChild(this._notifPanel);
+
+    this._notifCount = 0;
+    this._notifications = [];
+
+    this._notifBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var panel = self._notifPanel;
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      self._notifCount = 0;
+      self._notifBadge.style.display = 'none';
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!self._notifPanel.contains(e.target) && e.target !== self._notifBtn && !self._notifBtn.contains(e.target)) {
+        self._notifPanel.style.display = 'none';
+      }
+    });
+
+    this._addNotification = function(text) {
+      self._notifications.unshift({ text: text, time: new Date().toLocaleTimeString() });
+      if (self._notifications.length > 20) self._notifications.pop();
+      self._notifCount++;
+      self._notifBadge.textContent = self._notifCount;
+      self._notifBadge.style.display = 'flex';
+
+      var list = self._notifPanel.querySelector('#bv-notif-list');
+      if (list) {
+        var item = document.createElement('div');
+        item.style.cssText = 'padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;cursor:pointer;';
+        item.innerHTML = '<div style="color:#333;word-break:break-all;">' + text.replace(/</g, '&lt;') + '</div><div style="color:#999;font-size:11px;margin-top:2px;">' + new Date().toLocaleTimeString() + ' \u00B7 \u70B9\u51FB\u590D\u5236\u5230\u672C\u5730</div>';
+        item.addEventListener('click', function() {
+          var pureText = text.replace(/^\uD83D\uDCCB \u590D\u5236: /, '');
+          navigator.clipboard.writeText(pureText).then(function() {
+            item.style.background = '#e8f8ee';
+            var lastDiv = item.querySelector('div:last-child');
+            if (lastDiv) lastDiv.textContent = '\u2705 \u5DF2\u590D\u5236\u5230\u672C\u5730';
+          });
+        });
+        list.insertBefore(item, list.firstChild);
+      }
+    };
+
     this._tabPollInterval = setInterval(function() {
       if (self.eventsWs && self.eventsWs.readyState === 1) {
         self.send({ type: 'tab', action: 'list' });
@@ -512,6 +571,11 @@ class BrowserViewer {
           if (msg.tabs && msg.tabs.length > 0) {
             self._updateTabs(msg.tabs);
           }
+        } else if (msg.type === 'clipboard') {
+          var clipText = (msg.event && msg.event.text) || (msg.data && msg.data.text) || '';
+          if (clipText) {
+            self._addNotification('\uD83D\uDCCB \u590D\u5236: ' + clipText.substring(0, 100));
+          }
         }
       } catch {}
     };
@@ -779,6 +843,9 @@ class BrowserViewer {
     if (this._tabPollInterval) {
       clearInterval(this._tabPollInterval);
       this._tabPollInterval = null;
+    }
+    if (this._notifPanel) {
+      this._notifPanel.style.display = 'none';
     }
   }
 

@@ -159,5 +159,12 @@
     "parentID": "ses_1e120155bffeDNY0Qp1l2Qc9tO",
     "status": "running",
     "createdAt": 1778634553943
+  },
+  "fix-file-upload-clipboard": {
+    "id": "ses_1defcd531ffeexmKznx8tk4QcR",
+    "name": "fix-file-upload-clipboard",
+    "parentID": "ses_1deff24d8ffeNimtJEe0Q5oP8O",
+    "status": "running",
+    "createdAt": 1778670316239
   }
 }

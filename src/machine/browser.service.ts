@@ -585,13 +585,29 @@ export class BrowserService extends EventEmitter {
         }
       });
       logger.info('primaryPage', primaryPage);
-      // if (primaryPage) {
-      //   await this.createTargetHandler(
-      //     sessionId,
-      //     fingerprint
-      //   )(primaryPage.target());
-      //   await this.handleTargetChangeHandler(sessionId)(primaryPage.target());
-      // }
+
+      try {
+        await primaryPage.evaluate(() => {
+          (window as any).__clipboardContent = '';
+          const origWriteText = (navigator.clipboard as any)?.writeText?.bind(navigator.clipboard);
+          if (origWriteText) {
+            (navigator.clipboard as any).writeText = async function (text: string) {
+              (window as any).__clipboardContent = text;
+              return origWriteText(text);
+            };
+          }
+          const origExecCommand = document.execCommand.bind(document);
+          document.execCommand = function (command: string, ui?: boolean, value?: any) {
+            if (command === 'copy') {
+              const sel = window.getSelection()?.toString();
+              if (sel) (window as any).__clipboardContent = sel;
+            }
+            return origExecCommand(command, ui as any, value);
+          };
+        });
+      } catch (primaryClipErr) {
+        logger.warn(`Failed to inject clipboard on primary page (session: ${sessionId}):`, primaryClipErr);
+      }
 
       const browserWSEndpoint = browser.wsEndpoint();
       const wsUrl = new URL(browserWSEndpoint);
@@ -1023,6 +1039,29 @@ export class BrowserService extends EventEmitter {
             return origExecCommand(command, ui as any, value);
           };
         });
+
+        try {
+          await page.evaluate(() => {
+            (window as any).__clipboardContent = '';
+            const origWriteText = (navigator.clipboard as any)?.writeText?.bind(navigator.clipboard);
+            if (origWriteText) {
+              (navigator.clipboard as any).writeText = async function (text: string) {
+                (window as any).__clipboardContent = text;
+                return origWriteText(text);
+              };
+            }
+            const origExecCommand = document.execCommand.bind(document);
+            document.execCommand = function (command: string, ui?: boolean, value?: any) {
+              if (command === 'copy') {
+                const sel = window.getSelection()?.toString();
+                if (sel) (window as any).__clipboardContent = sel;
+              }
+              return origExecCommand(command, ui as any, value);
+            };
+          });
+        } catch (clipEvalErr) {
+          logger.warn(`Failed to inject clipboard on current page for session ${sessionId}:`, clipEvalErr);
+        }
 
         await page.evaluateOnNewDocument(() => {
           console.debug = () => {};

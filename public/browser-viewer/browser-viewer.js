@@ -401,13 +401,23 @@ class BrowserViewer {
           if (!resp.ok || !data.success) throw new Error(data.message || data.error || '上传失败');
 
           statusEl.textContent = '\u23F3 注入文件到远程浏览器...';
-          var injResp = await fetch('/api/sessions/' + self.sessionId + '/inject-file', {
-            method: 'POST',
-            headers: { 'x-api-key': self.token, 'content-type': 'application/json' },
-            body: JSON.stringify({ machineFilePath: data.data.machineFilePath })
-          });
-          var injData = await injResp.json();
-          if (!injResp.ok || !injData.success) throw new Error(injData.message || injData.error || '注入失败');
+          var selectors = ['input[type="file"]', '#fileInput', 'input[accept]'];
+          var injSuccess = false;
+          var lastError = '';
+          for (var si = 0; si < selectors.length; si++) {
+            var injResp = await fetch('/api/sessions/' + self.sessionId + '/inject-file', {
+              method: 'POST',
+              headers: { 'x-api-key': self.token, 'content-type': 'application/json' },
+              body: JSON.stringify({ machineFilePath: data.data.machineFilePath, selector: selectors[si] })
+            });
+            var injData = await injResp.json();
+            if (injResp.ok && injData.success) {
+              injSuccess = true;
+              break;
+            }
+            lastError = injData.message || injData.error || '注入失败';
+          }
+          if (!injSuccess) throw new Error(lastError);
         }
 
         statusEl.style.background = '#f0fdf4';

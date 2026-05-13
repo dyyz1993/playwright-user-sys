@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>文件上传验证截图</title>
+<style>
+body { font-family: -apple-system, sans-serif; background: #1a1a2e; color: #fff; padding: 20px; }
+h1 { color: #00d2ff; }
+h2 { color: #7b68ee; margin-top: 40px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+.img-grid { display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 1400px; }
+.img-card { background: #16213e; border-radius: 12px; padding: 16px; }
+.img-card img { width: 100%; border-radius: 8px; border: 1px solid #333; }
+.img-card .label { font-size: 14px; color: #aaa; margin-bottom: 8px; }
+.img-card .desc { font-size: 13px; color: #7ee8fa; margin-top: 8px; }
+.success { color: #4caf50; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>📸 文件上传验证截图详情</h1>
+
+<h2>🧪 场景1：自定义测试页（slider-test.html）</h2>
+<div class="img-grid">
+  <div class="img-card">
+    <div class="label">remote-02-slider-page.png — 测试页初始状态（上传区域为空）</div>
+    <img src="remote-02-slider-page.png" />
+    <div class="desc">slider-test 页面加载完成，文件上传区域显示为空</div>
+  </div>
+  <div class="img-card">
+    <div class="label">remote-03-after-txt-upload.png — 上传 test-file.txt 后</div>
+    <img src="remote-03-after-txt-upload.png" />
+    <div class="desc success">✅ 文件列表显示 test-file.txt (73 B)，事件日志记录上传成功</div>
+  </div>
+  <div class="img-card">
+    <div class="label">remote-04-after-img-upload.png — 上传 test-image.png 后</div>
+    <img src="remote-04-after-img-upload.png" />
+    <div class="desc success">✅ 两个文件都显示在列表中：test-file.txt + test-image.png</div>
+  </div>
+</div>
+
+<h2>🔍 场景2：百度图片搜索</h2>
+<div class="img-grid">
+  <div class="img-card">
+    <div class="label">baidu-imgs.png — 百度图片搜索首页</div>
+    <img src="baidu-imgs.png" />
+    <div class="desc">百度图片搜索首页，搜索栏和功能按钮</div>
+  </div>
+  <div class="img-card">
+    <div class="label">baidu-fc-after.png — 上传图片后</div>
+    <img src="baidu-fc-after.png" />
+    <div class="desc success">✅ 搜索栏显示 "test-image.png"，提示"点击图标重新上传"，出现图片处理选项</div>
+  </div>
+</div>
+
+<h2>🖥️ Demo页面和Viewer截图</h2>
+<div class="img-grid">
+  <div class="img-card">
+    <div class="label">desktop-landing-page.png — Demo首页</div>
+    <img src="desktop-landing-page.png" />
+  </div>
+  <div class="img-card">
+    <div class="label">02-browser-viewer-loaded.png — 浏览器查看器加载</div>
+    <img src="02-browser-viewer-loaded.png" />
+  </div>
+  <div class="img-card">
+    <div class="label">04-bing-loaded.png — Bing首页</div>
+    <img src="04-bing-loaded.png" />
+  </div>
+  <div class="img-card">
+    <div class="label">09-slider-test-page.png — 滑块验证测试页</div>
+    <img src="09-slider-test-page.png" />
+  </div>
+</div>
+</body>
+</html>

@@ -601,15 +601,15 @@ class BrowserViewer {
     self._fmInjectBtn.style.pointerEvents = 'none';
     self._fmInjectBtn.textContent = '选择并注入';
 
-    fetch('/api/files/session/' + self.sessionId, {
-      headers: { 'x-api-key': self.token }
-    })
-    .then(function(r) {
-      if (!r.ok) throw new Error('API unavailable');
-      return r.json();
-    })
-    .then(function(data) {
-      var files = data.data || data.files || [];
+    if (!self.eventsWs || self.eventsWs.readyState !== WebSocket.OPEN) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:40px 16px;color:rgba(255,255,255,0.4);font-size:13px;';
+      empty.textContent = '暂无文件，点击"＋"上传';
+      grid.appendChild(empty);
+      return;
+    }
+
+    self._fmListCallback = function(files) {
       if (files.length === 0) {
         var empty = document.createElement('div');
         empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:40px 16px;color:rgba(255,255,255,0.4);font-size:13px;';
@@ -618,13 +618,9 @@ class BrowserViewer {
       } else {
         files.forEach(function(f) { self._fmAddCard(f); });
       }
-    })
-    .catch(function() {
-      var empty = document.createElement('div');
-      empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:40px 16px;color:rgba(255,255,255,0.4);font-size:13px;';
-      empty.textContent = '暂无文件，点击"＋"上传';
-      grid.appendChild(empty);
-    });
+    };
+
+    self.send({ type: 'fileList' });
   }
 
   _fmAddCard(file) {
@@ -857,6 +853,11 @@ class BrowserViewer {
           }
         } else if (msg.type === 'filechooser') {
           self._showFileManager();
+        } else if (msg.type === 'response' && msg.requestType === 'fileList') {
+          if (self._fmListCallback) {
+            self._fmListCallback(msg.data && msg.data.files ? msg.data.files : []);
+            self._fmListCallback = null;
+          }
         }
       } catch {}
     };

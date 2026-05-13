@@ -429,6 +429,49 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         await handleFileUploadChunk(ws, sessionId, data);
         break;
 
+      // --- 文件列表查询 ---
+      case 'fileList': {
+        try {
+          const tempDir = path.join(CONFIG.tempDir, sessionId);
+          const files: Array<{
+            name: string;
+            size: number;
+            type: string;
+            lastModified: string;
+            machineFilePath: string;
+          }> = [];
+          try {
+            const entries = await fs.promises.readdir(tempDir, { withFileTypes: true });
+            for (const entry of entries) {
+              if (entry.isDirectory()) continue;
+              const filePath = path.join(tempDir, entry.name);
+              try {
+                const stat = await fs.promises.stat(filePath);
+                const ext = path.extname(entry.name).toLowerCase();
+                const isImage = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'].includes(ext);
+                files.push({
+                  name: entry.name,
+                  size: stat.size,
+                  type: isImage ? 'image' : 'file',
+                  lastModified: stat.mtime.toISOString(),
+                  machineFilePath: filePath,
+                });
+              } catch (_) {
+                void _;
+              }
+            }
+          } catch (_) {
+            void _;
+          }
+          files.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+          sendResponse(ws, 'fileList', { success: true, files });
+        } catch (err) {
+          logger.error('Failed to list files:', err);
+          sendResponse(ws, 'fileList', { success: false, files: [], error: String(err) });
+        }
+        break;
+      }
+
       // --- 配置更新 ---
       case 'updateClip':
       // falls through to event handler

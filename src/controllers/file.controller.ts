@@ -277,7 +277,8 @@ export async function getSessionFiles(request: FastifyRequest, reply: FastifyRep
     }
 
     const entries = await fs.promises.readdir(sessionTempDir, { withFileTypes: true });
-    const files = [];
+    const files: Array<{ name: string; size: number; type: string; lastModified: string; machineFilePath: string }> =
+      [];
 
     for (const entry of entries) {
       if (entry.isDirectory()) continue;

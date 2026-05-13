@@ -683,6 +683,57 @@ export class BrowserService extends EventEmitter {
         logger.warn(`Failed to inject clipboard on primary page (session: ${sessionId}):`, primaryClipErr);
       }
 
+      // Listen for file chooser events - notify client via event connection
+      await primaryPage
+        .evaluateOnNewDocument(() => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.id = '__remote_file_input';
+          input.style.display = 'none';
+          document.addEventListener(
+            'click',
+            (e) => {
+              const target = e.target as HTMLElement;
+              if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'file') {
+                e.preventDefault();
+                e.stopPropagation();
+                (window as any).__fileInputClickEvent = {
+                  timestamp: Date.now(),
+                  selector: target.id
+                    ? `#${CSS.escape(target.id)}`
+                    : target.getAttribute('name')
+                      ? `[name="${CSS.escape(target.getAttribute('name')!)}"]`
+                      : null,
+                };
+              }
+            },
+            true
+          );
+        })
+        .catch((_: any) => void _);
+      primaryPage.on('filechooser', async (filechooser) => {
+        try {
+          const { activeEventConnections } = await import('./session_handlers/events.handler.js');
+          const connections = activeEventConnections;
+          if (connections) {
+            for (const [ws, conn] of connections) {
+              if (conn.sessionId === sessionId && ws.readyState === 1) {
+                ws.send(
+                  JSON.stringify({
+                    type: 'filechooser',
+                    info: {
+                      message: 'Remote browser requests file selection',
+                    },
+                  })
+                );
+              }
+            }
+          }
+        } catch (_) {
+          void _;
+        }
+      });
+
       const browserWSEndpoint = browser.wsEndpoint();
       const wsUrl = new URL(browserWSEndpoint);
       const port = parseInt(wsUrl.port, 10);
@@ -1236,6 +1287,29 @@ export class BrowserService extends EventEmitter {
               ? { angle: 0, type: 'portraitPrimary' }
               : { angle: 90, type: 'landscapePrimary' },
           deviceScaleFactor: fingerprint.fingerprint.screen.devicePixelRatio,
+        });
+
+        page.on('filechooser', async (filechooser) => {
+          try {
+            const { activeEventConnections } = await import('./session_handlers/events.handler.js');
+            const connections = activeEventConnections;
+            if (connections) {
+              for (const [ws, conn] of connections) {
+                if (conn.sessionId === sessionId && ws.readyState === 1) {
+                  ws.send(
+                    JSON.stringify({
+                      type: 'filechooser',
+                      info: {
+                        message: 'Remote browser requests file selection',
+                      },
+                    })
+                  );
+                }
+              }
+            }
+          } catch (_) {
+            void _;
+          }
         });
       } catch (error) {
         logger.error(`处理新页面目标失败 (sessionId: ${sessionId}):`, error);

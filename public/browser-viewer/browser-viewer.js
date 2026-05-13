@@ -45,6 +45,7 @@ class BrowserViewer {
     this._frameCount = 0;
     this._reconnectAttempts = 0;
     this._maxReconnectAttempts = 3;
+    this._pendingLocalCopy = false;
 
     this.loadingIndicator = document.createElement('div');
     this.loadingIndicator.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;font-size:14px;z-index:10;pointer-events:none;';
@@ -146,10 +147,47 @@ class BrowserViewer {
     this.uploadBtn.style.cssText = 'position:absolute;bottom:60px;right:10px;width:40px;height:40px;border-radius:50%;background:#FF9500;color:white;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.3);user-select:none;';
     this.uploadBtn.addEventListener('click', function(e) {
       e.stopPropagation();
-      self.showUploadModal();
+      self._showFileManager();
     });
     if (this.container) {
       this.container.appendChild(this.uploadBtn);
+    }
+
+    this.pasteBtn = document.createElement('div');
+    this.pasteBtn.style.cssText = 'position:absolute;bottom:108px;right:10px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.6);color:white;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:9999;user-select:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+    this.pasteBtn.textContent = '\uD83D\uDCCE';
+    this.pasteBtn.title = '粘贴 (Ctrl+V) - 粘贴本地剪贴板内容到远程浏览器';
+    this.pasteBtn.addEventListener('click', async function() {
+      try {
+        var text = await navigator.clipboard.readText();
+        if (text) {
+          self.send({ type: 'paste', text: text });
+          self.pasteBtn.style.background = 'rgba(76,175,80,0.8)';
+          setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
+        }
+      } catch(e) {
+        console.warn('[BV] Paste failed:', e);
+        self.pasteBtn.style.background = 'rgba(255,59,48,0.8)';
+        setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
+      }
+    });
+    if (this.container) {
+      this.container.appendChild(this.pasteBtn);
+    }
+
+    this.copyBtn = document.createElement('div');
+    this.copyBtn.style.cssText = 'position:absolute;bottom:156px;right:10px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.6);color:white;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:9999;user-select:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+    this.copyBtn.textContent = '\uD83D\uDCCB';
+    this.copyBtn.title = '复制 (Ctrl+C) - 复制远程浏览器选中内容到本地';
+    this.copyBtn.addEventListener('click', function() {
+      self.send({ type: 'keydown', key: 'c', ctrlKey: true });
+      self.send({ type: 'keyup', key: 'c', ctrlKey: true });
+      self.copyBtn.style.background = 'rgba(76,175,80,0.8)';
+      setTimeout(function() { self.copyBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
+      self._pendingLocalCopy = true;
+    });
+    if (this.container) {
+      this.container.appendChild(this.copyBtn);
     }
 
     this.tabBar = document.createElement('div');
@@ -271,13 +309,36 @@ class BrowserViewer {
       uploadMbBtn.style.cssText = 'width:36px;height:36px;border:none;border-radius:8px;background:rgba(255,149,0,0.7);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
       uploadMbBtn.onclick = function(e) {
         e.stopPropagation();
-        self.showUploadModal();
+        self._showFileManager();
+      };
+
+      var copyMbBtn = document.createElement('button');
+      copyMbBtn.textContent = '\uD83D\uDCCB';
+      copyMbBtn.title = '复制到本地';
+      copyMbBtn.style.cssText = 'width:36px;height:36px;border:none;border-radius:8px;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+      copyMbBtn.onclick = function() {
+        self.send({ type: 'keydown', key: 'c', ctrlKey: true });
+        self.send({ type: 'keyup', key: 'c', ctrlKey: true });
+        self._pendingLocalCopy = true;
+      };
+
+      var pasteMbBtn = document.createElement('button');
+      pasteMbBtn.textContent = '\uD83D\uDCCE';
+      pasteMbBtn.title = '粘贴到远程';
+      pasteMbBtn.style.cssText = 'width:36px;height:36px;border:none;border-radius:8px;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+      pasteMbBtn.onclick = async function() {
+        try {
+          var t = await navigator.clipboard.readText();
+          if (t) self.send({ type: 'paste', text: t });
+        } catch(e) { console.warn('[BV] paste:', e); }
       };
 
       mobileBar.appendChild(backBtn);
       mobileBar.appendChild(fwdBtn);
       mobileBar.appendChild(homeBtn);
       mobileBar.appendChild(uploadMbBtn);
+      mobileBar.appendChild(copyMbBtn);
+      mobileBar.appendChild(pasteMbBtn);
       mobileBar.appendChild(navigateForm);
       document.body.appendChild(mobileBar);
 
@@ -448,6 +509,199 @@ class BrowserViewer {
     confirmBtn.addEventListener('click', window.__bvUploadConfirm);
   }
 
+  _showFileManager() {
+    if (this._fmModal) { this._fmModal.style.display = 'flex'; this._fmRefreshList(); return; }
+    var self = this;
+
+    var modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML =
+      '<div style="background:#1e1e2e;border-radius:16px;width:90%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.5);color:#fff;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.1);flex-shrink:0;">' +
+          '<span style="font-size:16px;font-weight:600;">\uD83D\uDCC1 文件管理器</span>' +
+          '<span id="bv-fm-close" style="font-size:22px;cursor:pointer;color:rgba(255,255,255,0.6);line-height:1;">&times;</span>' +
+        '</div>' +
+        '<div style="flex:1;overflow-y:auto;padding:16px;">' +
+          '<div id="bv-fm-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px;"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:flex-end;gap:10px;padding:12px 20px;border-top:1px solid rgba(255,255,255,0.1);flex-shrink:0;">' +
+          '<button id="bv-fm-cancel" style="padding:8px 20px;border:none;border-radius:8px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);font-size:13px;cursor:pointer;">取消</button>' +
+          '<button id="bv-fm-inject" style="padding:8px 20px;border:none;border-radius:8px;background:#4caf50;color:white;font-size:13px;cursor:pointer;font-weight:600;opacity:0.4;pointer-events:none;">选择并注入</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    this._fmModal = modal;
+
+    var grid = modal.querySelector('#bv-fm-grid');
+    var injectBtn = modal.querySelector('#bv-fm-inject');
+    var closeBtn = modal.querySelector('#bv-fm-close');
+    var cancelBtn = modal.querySelector('#bv-fm-cancel');
+
+    closeBtn.addEventListener('click', function() { modal.style.display = 'none'; });
+    cancelBtn.addEventListener('click', function() { modal.style.display = 'none'; });
+
+    this._fmGrid = grid;
+    this._fmInjectBtn = injectBtn;
+    this._fmSelected = null;
+
+    var fmInput = document.createElement('input');
+    fmInput.type = 'file';
+    fmInput.multiple = true;
+    fmInput.style.display = 'none';
+    fmInput.addEventListener('change', function() { self._fmUploadHandler(this.files); });
+    document.body.appendChild(fmInput);
+    this._fmInput = fmInput;
+
+    injectBtn.addEventListener('click', async function() {
+      var filePath = self._fmSelected;
+      if (!filePath) return;
+      injectBtn.textContent = '注入中...';
+      injectBtn.style.opacity = '0.6';
+      injectBtn.style.pointerEvents = 'none';
+      var selectors = ['input[type="file"]', '#fileInput', 'input[accept]'];
+      var success = false;
+      for (var si = 0; si < selectors.length; si++) {
+        try {
+          var r = await fetch('/api/sessions/' + self.sessionId + '/inject-file', {
+            method: 'POST',
+            headers: { 'x-api-key': self.token, 'content-type': 'application/json' },
+            body: JSON.stringify({ machineFilePath: filePath, selector: selectors[si] })
+          });
+          var d = await r.json();
+          if (r.ok && d.success) { success = true; break; }
+        } catch(e) {}
+      }
+      if (success) {
+        injectBtn.textContent = '\u2705 注入成功';
+        setTimeout(function() { modal.style.display = 'none'; }, 800);
+      } else {
+        injectBtn.textContent = '\u274C 注入失败';
+        injectBtn.style.opacity = '1';
+        injectBtn.style.pointerEvents = 'auto';
+      }
+    });
+
+    var uploadCard = document.createElement('div');
+    uploadCard.style.cssText = 'background:#2a2a3e;border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s;border:2px dashed rgba(255,255,255,0.2);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;';
+    uploadCard.innerHTML = '<div style="font-size:24px;margin-bottom:6px;">＋</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">上传文件</div>';
+    uploadCard.addEventListener('click', function() { self._fmUploadNew(); });
+    grid.appendChild(uploadCard);
+
+    this._fmRefreshList();
+  }
+
+  _fmRefreshList() {
+    var self = this;
+    var grid = this._fmGrid;
+    while (grid.children.length > 1) {
+      grid.removeChild(grid.lastChild);
+    }
+    self._fmSelected = null;
+    self._fmInjectBtn.style.opacity = '0.4';
+    self._fmInjectBtn.style.pointerEvents = 'none';
+    self._fmInjectBtn.textContent = '选择并注入';
+
+    fetch('/api/files/session/' + self.sessionId, {
+      headers: { 'x-api-key': self.token }
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('API unavailable');
+      return r.json();
+    })
+    .then(function(data) {
+      var files = data.data || data.files || [];
+      if (files.length === 0) {
+        var empty = document.createElement('div');
+        empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:40px 16px;color:rgba(255,255,255,0.4);font-size:13px;';
+        empty.textContent = '暂无文件，点击"＋"上传';
+        grid.appendChild(empty);
+      } else {
+        files.forEach(function(f) { self._fmAddCard(f); });
+      }
+    })
+    .catch(function() {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:40px 16px;color:rgba(255,255,255,0.4);font-size:13px;';
+      empty.textContent = '暂无文件，点击"＋"上传';
+      grid.appendChild(empty);
+    });
+  }
+
+  _fmAddCard(file) {
+    var self = this;
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#2a2a3e;border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;';
+    var fileName = file.fileName || file.name || '未知';
+    var filePath = file.machineFilePath || file.path || file.url || '';
+    var ext = fileName.split('.').pop().toLowerCase();
+    var icon = ['jpg','jpeg','png','gif','webp','svg'].includes(ext) ? '\uD83D\uDDBC\uFE0F' : ['mp4','webm','mov'].includes(ext) ? '\uD83C\uDFA5' : ['pdf'].includes(ext) ? '\uD83D\uDCD5' : '\uD83D\uDCC4';
+    var size = file.size || file.fileSize || 0;
+    var sizeStr = size < 1024 ? size+'B' : size < 1048576 ? (size/1024).toFixed(1)+'KB' : (size/1048576).toFixed(1)+'MB';
+    card.innerHTML = '<div style="font-size:28px;margin-bottom:4px;line-height:1.2;">'+icon+'</div><div style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,0.8);max-width:76px;">'+fileName+'</div><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">'+sizeStr+'</div>';
+    card.dataset.fmPath = filePath;
+    card.addEventListener('click', function() {
+      var cards = self._fmGrid.querySelectorAll('[data-fm-path]');
+      cards.forEach(function(c) { c.style.borderColor = 'transparent'; c.style.background = '#2a2a3e'; });
+      card.style.borderColor = '#4caf50';
+      card.style.background = '#1a3a2e';
+      self._fmSelected = filePath;
+      self._fmInjectBtn.style.opacity = '1';
+      self._fmInjectBtn.style.pointerEvents = 'auto';
+      self._fmInjectBtn.textContent = '选择并注入: ' + fileName;
+    });
+    card.addEventListener('mouseenter', function() {
+      if (card.style.borderColor !== '#4caf50') card.style.borderColor = '#7b68ee';
+    });
+    card.addEventListener('mouseleave', function() {
+      if (card.style.borderColor !== '#4caf50') card.style.borderColor = 'transparent';
+    });
+    this._fmGrid.appendChild(card);
+  }
+
+  _fmUploadNew() {
+    if (this._fmInput) { this._fmInput.value = ''; this._fmInput.click(); }
+  }
+
+  _fmUploadHandler(files) {
+    if (!files || !files.length) return;
+    var self = this;
+    var grid = this._fmGrid;
+    var statusEl = document.createElement('div');
+    statusEl.style.cssText = 'grid-column:1/-1;text-align:center;padding:20px;color:rgba(255,255,255,0.6);font-size:13px;';
+    statusEl.textContent = '\u23F3 上传中...';
+    grid.appendChild(statusEl);
+
+    var pending = [];
+    for (var i = 0; i < files.length; i++) {
+      (function(file) {
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('sessionId', self.sessionId);
+        pending.push(
+          fetch('/api/files/upload-session', {
+            method: 'POST',
+            headers: { 'x-api-key': self.token },
+            body: fd
+          }).then(function(r) {
+            if (!r.ok) throw new Error('Upload failed');
+            return r.json();
+          })
+        );
+      })(files[i]);
+    }
+
+    Promise.all(pending)
+    .then(function() {
+      statusEl.textContent = '\u2705 上传完成';
+      self._fmRefreshList();
+    })
+    .catch(function(err) {
+      statusEl.textContent = '\u274C ' + (err.message || '上传失败');
+      statusEl.style.color = '#ef4444';
+      setTimeout(function() { if (statusEl.parentNode) statusEl.parentNode.removeChild(statusEl); }, 3000);
+    });
+  }
+
   _connectStream() {
     var wsBase = this.protocol + '//' + this.wsHost;
     var statusEl = this.container.querySelector('#bv-status');
@@ -585,7 +839,24 @@ class BrowserViewer {
           var clipText = (msg.event && msg.event.text) || (msg.data && msg.data.text) || '';
           if (clipText) {
             self._addNotification('\uD83D\uDCCB \u590D\u5236: ' + clipText.substring(0, 100));
+            if (self._pendingLocalCopy) {
+              self._pendingLocalCopy = false;
+              navigator.clipboard.writeText(clipText).then(function() {
+                if (self.copyBtn) {
+                  self.copyBtn.style.background = 'rgba(76,175,80,0.8)';
+                  self.copyBtn.textContent = '\u2705';
+                  setTimeout(function() {
+                    if (self.copyBtn) {
+                      self.copyBtn.style.background = 'rgba(0,0,0,0.6)';
+                      self.copyBtn.textContent = '\uD83D\uDCCB';
+                    }
+                  }, 1500);
+                }
+              });
+            }
           }
+        } else if (msg.type === 'filechooser') {
+          self._showFileManager();
         }
       } catch {}
     };

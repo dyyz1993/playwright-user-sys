@@ -32,7 +32,7 @@ interface EventConnectionInfo {
     focusListenerAttached?: boolean;
   };
 }
-const activeEventConnections = new Map<WebSocket, EventConnectionInfo>();
+export const activeEventConnections = new Map<WebSocket, EventConnectionInfo>();
 
 // == 定义鼠标追踪脚本 ==
 
@@ -462,6 +462,20 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         handleMouseEvents(mappedType, normalizedData, page, ws, sessionId, requestType);
         break;
       }
+
+      case 'paste':
+        if (data && data.text) {
+          try {
+            const page = await browserService.getSessionPage(sessionId);
+            if (page && !page.isClosed()) {
+              await page.keyboard.type(String(data.text), { delay: 10 });
+            }
+          } catch (err) {
+            logger.error('Paste failed:', err);
+          }
+        }
+        sendResponse(ws, requestType, { success: true });
+        break;
 
       case 'fileInjectInBrowser':
         await handleFileInjectInBrowser(ws, sessionId, data);

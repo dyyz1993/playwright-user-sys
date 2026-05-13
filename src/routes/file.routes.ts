@@ -145,6 +145,47 @@ export default async function fileRoutes(fastify: FastifyInstance): Promise<void
     fileController.cleanupTempFiles
   );
 
+  // 获取会话已上传的文件列表
+  fastify.get(
+    '/api/files/session/:sessionId',
+    {
+      onRequest: [fastify.verifyJWT],
+      schema: {
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  files: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        name: { type: 'string' },
+                        size: { type: 'number' },
+                        type: { type: 'string' },
+                        lastModified: { type: 'string', format: 'date-time' },
+                        machineFilePath: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: zodToJsonSchema(errorResponseSchema),
+          404: zodToJsonSchema(errorResponseSchema),
+          500: zodToJsonSchema(errorResponseSchema),
+        },
+        tags: ['files'],
+      },
+    },
+    fileController.getSessionFiles
+  );
+
   // SDK 文件上传到会话（转发到 Machine）
   fastify.post(
     '/api/files/upload-session',

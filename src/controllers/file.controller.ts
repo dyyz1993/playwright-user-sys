@@ -254,6 +254,63 @@ export async function uploadFileForSession(request: FastifyRequest, reply: Fasti
   }
 }
 
+/**
+ * 获取会话已上传的文件列表
+ */
+export async function getSessionFiles(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    if (!request.user) {
+      return sendError(reply, '需要认证', 401);
+    }
+
+    const { sessionId } = request.params as { sessionId: string };
+
+    const session = await SessionModel.findById(sessionId);
+    if (!session || session.user_id !== request.user.id) {
+      return sendError(reply, '会话不存在或不属于该用户', 404);
+    }
+
+    const sessionTempDir = path.join(tempDir, sessionId);
+
+    if (!fs.existsSync(sessionTempDir)) {
+      return sendSuccess(reply, { files: [] });
+    }
+
+    const entries = await fs.promises.readdir(sessionTempDir, { withFileTypes: true });
+    const files = [];
+
+    for (const entry of entries) {
+      if (entry.isDirectory()) continue;
+
+      const filePath = path.join(sessionTempDir, entry.name);
+      try {
+        const stat = await fs.promises.stat(filePath);
+        if (!stat.isFile()) continue;
+
+        const ext = path.extname(entry.name).toLowerCase();
+        const isImage = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'].includes(ext);
+
+        files.push({
+          name: entry.name,
+          size: stat.size,
+          type: isImage ? 'image' : 'file',
+          lastModified: stat.mtime.toISOString(),
+          machineFilePath: filePath,
+        });
+      } catch (_) {
+        void _;
+      }
+    }
+
+    files.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+
+    return sendSuccess(reply, { files });
+  } catch (error) {
+    request.log.error({ err: error }, '获取会话文件列表失败');
+    return sendError(reply, '获取会话文件列表失败', 500);
+  }
+}
+
 export async function cleanupExpiredUploads(): Promise<void> {
   const maxAge = 7 * 24 * 60 * 60 * 1000;
   const cutoff = Date.now() - maxAge;
@@ -280,4 +337,5 @@ export default {
   getFileList,
   cleanupTempFiles,
   uploadFileForSession,
+  getSessionFiles,
 };

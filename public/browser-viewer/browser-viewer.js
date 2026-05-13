@@ -152,6 +152,21 @@ class BrowserViewer {
       this.container.appendChild(this.uploadBtn);
     }
 
+    this.tabBar = document.createElement('div');
+    this.tabBar.style.cssText = 'position:absolute;top:0;left:0;right:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;overflow-x:auto;z-index:9998;padding:0 4px;height:32px;gap:2px;backdrop-filter:blur(4px);';
+    this.tabBar.id = 'bv-tab-bar';
+    if (this.container) {
+      this.container.style.paddingTop = '32px';
+      this.container.appendChild(this.tabBar);
+    }
+    this._updateTabs([{ id: 'default', title: '当前页面', active: true }]);
+
+    this._tabPollInterval = setInterval(function() {
+      if (self.eventsWs && self.eventsWs.readyState === 1) {
+        self.send({ type: 'tab', action: 'list' });
+      }
+    }, 5000);
+
     var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
     if (isMobile && this.container) {
       var mobileBar = document.createElement('div');
@@ -493,6 +508,10 @@ class BrowserViewer {
           console.log('[BV] navigate:', msg.data?.url);
         } else if (msg.type === 'configSync') {
           console.log('[V] configSync:', msg.data);
+        } else if (msg.type === 'tabList') {
+          if (msg.tabs && msg.tabs.length > 0) {
+            self._updateTabs(msg.tabs);
+          }
         }
       } catch {}
     };
@@ -596,6 +615,8 @@ class BrowserViewer {
     var touchStartCoords = null;
     var longPressTimer = null;
     var isLongPress = false;
+    var lastTouch1 = null;
+    var lastTouch2 = null;
 
     img.addEventListener('touchstart', function (e) {
       e.preventDefault();
@@ -604,6 +625,11 @@ class BrowserViewer {
       touchStartTime = Date.now();
       touchStartCoords = c;
       isLongPress = false;
+
+      if (e.touches.length >= 2) {
+        lastTouch1 = e.touches[0];
+        lastTouch2 = e.touches[1];
+      }
 
       self.cursor.style.display = 'block';
       var r = img.getBoundingClientRect();
@@ -633,6 +659,23 @@ class BrowserViewer {
       e.preventDefault();
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 
+      if (e.touches.length === 2 && lastTouch1 && lastTouch2) {
+        var t1 = e.touches[0];
+        var t2 = e.touches[1];
+        var prevDist = Math.hypot(lastTouch1.clientX - lastTouch2.clientX, lastTouch1.clientY - lastTouch2.clientY);
+        var currDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        var deltaY = (prevDist - currDist) * 2;
+        var prevMidX = (lastTouch1.clientX + lastTouch2.clientX) / 2;
+        var prevMidY = (lastTouch1.clientY + lastTouch2.clientY) / 2;
+        var currMidX = (t1.clientX + t2.clientX) / 2;
+        var currMidY = (t1.clientY + t2.clientY) / 2;
+        var deltaX = (currMidX - prevMidX) * 2;
+        self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: Math.round(deltaX), deltaY: Math.round(deltaY) } } });
+        lastTouch1 = t1;
+        lastTouch2 = t2;
+        return;
+      }
+
       var touch = e.touches[0];
       var c = getCoords(touch);
 
@@ -650,13 +693,28 @@ class BrowserViewer {
       var touch = e.changedTouches[0];
       var c = getCoords(touch);
 
-      if (!isLongPress) {
+      if (!isLongPress && touchStartCoords) {
+        var dx = c.x - touchStartCoords.x;
+        var dy = c.y - touchStartCoords.y;
+        var dt = Date.now() - touchStartTime;
+        var velocity = Math.sqrt(dx * dx + dy * dy) / (dt || 1);
+
+        if (velocity > 0.5 && Math.abs(dy) > 30) {
+          self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: Math.round(dx * 3), deltaY: Math.round(dy * 3) } } });
+        } else {
+          c.button = 0;
+          self.send({ type: 'event', event: { type: 'mouseup', data: c } });
+          self.send({ type: 'event', event: { type: 'click', data: c } });
+        }
+      } else if (!isLongPress) {
         c.button = 0;
         self.send({ type: 'event', event: { type: 'mouseup', data: c } });
         self.send({ type: 'event', event: { type: 'click', data: c } });
       }
 
       self.cursor.style.display = 'none';
+      lastTouch1 = null;
+      lastTouch2 = null;
     }, { passive: false });
   }
 
@@ -680,6 +738,33 @@ class BrowserViewer {
     }
   }
 
+  _updateTabs(tabs) {
+    if (!this.tabBar) return;
+    var self = this;
+    this.tabBar.innerHTML = '';
+    tabs.forEach(function(tab) {
+      var el = document.createElement('div');
+      el.style.cssText = 'padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;' +
+        (tab.active ? 'background:rgba(255,255,255,0.2);color:white;' : 'color:rgba(255,255,255,0.6);');
+      el.textContent = tab.title || tab.url || '新标签';
+      el.title = tab.url || '';
+      el.addEventListener('click', function() {
+        self.send({ type: 'tab', action: 'switch', tabId: tab.id });
+      });
+      if (tabs.length > 1) {
+        var closeBtn = document.createElement('span');
+        closeBtn.textContent = ' ×';
+        closeBtn.style.cssText = 'margin-left:4px;color:rgba(255,255,255,0.4);cursor:pointer;';
+        closeBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          self.send({ type: 'tab', action: 'close', tabId: tab.id });
+        });
+        el.appendChild(closeBtn);
+      }
+      self.tabBar.appendChild(el);
+    });
+  }
+
   navigateTo(url) {
     this.send({ type: 'navigate', data: { url: url } });
   }
@@ -690,6 +775,10 @@ class BrowserViewer {
     if (this.lastBlobUrl) {
       URL.revokeObjectURL(this.lastBlobUrl);
       this.lastBlobUrl = null;
+    }
+    if (this._tabPollInterval) {
+      clearInterval(this._tabPollInterval);
+      this._tabPollInterval = null;
     }
   }
 

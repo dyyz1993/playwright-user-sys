@@ -435,6 +435,75 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         await handleFileInjectInBrowser(ws, sessionId, data);
         break;
 
+      case 'tab': {
+        const tabAction = eventData.action || eventData.data?.action;
+
+        if (tabAction === 'list') {
+          try {
+            const session = (browserService as any).sessions.get(sessionId);
+            if (session?.browser) {
+              const pages = await session.browser.pages();
+              const currentPage = await browserService.getSessionPage(sessionId);
+              const tabs = await Promise.all(
+                pages
+                  .filter((p: Page) => !p.isClosed() && !p.url().startsWith('devtools://'))
+                  .map(async (p: Page) => ({
+                    id: p.url(),
+                    url: p.url(),
+                    title: await p.title().catch(() => ''),
+                    active: p === currentPage,
+                  }))
+              );
+              ws.send(JSON.stringify({ type: 'tabList', tabs }));
+            }
+          } catch (tabError) {
+            logger.error(`Failed to list tabs for session ${sessionId}:`, tabError);
+          }
+        } else if (tabAction === 'switch') {
+          const targetUrl = eventData.tabId || eventData.data?.tabId;
+          try {
+            const session = (browserService as any).sessions.get(sessionId);
+            if (session?.browser) {
+              const pages = await session.browser.pages();
+              const target = pages.find(
+                (p: Page) => !p.isClosed() && (p.url() === targetUrl || p.target().url() === targetUrl)
+              );
+              if (target) {
+                await target.bringToFront();
+                browserService.emit('tabSwitched', sessionId, target);
+                sendResponse(ws, 'tab', { success: true });
+              } else {
+                sendResponse(ws, 'tab', { success: false, error: 'Target tab not found' });
+              }
+            }
+          } catch (switchError) {
+            logger.error(`Failed to switch tab for session ${sessionId}:`, switchError);
+            sendResponse(ws, 'tab', { success: false, error: (switchError as Error).message });
+          }
+        } else if (tabAction === 'close') {
+          const targetUrl = eventData.tabId || eventData.data?.tabId;
+          try {
+            const session = (browserService as any).sessions.get(sessionId);
+            if (session?.browser) {
+              const pages = await session.browser.pages();
+              const target = pages.find(
+                (p: Page) => !p.isClosed() && (p.url() === targetUrl || p.target().url() === targetUrl)
+              );
+              if (target && pages.length > 1) {
+                await target.close();
+                sendResponse(ws, 'tab', { success: true });
+              } else {
+                sendResponse(ws, 'tab', { success: false, error: 'Cannot close the only tab' });
+              }
+            }
+          } catch (closeTabError) {
+            logger.error(`Failed to close tab for session ${sessionId}:`, closeTabError);
+            sendResponse(ws, 'tab', { success: false, error: (closeTabError as Error).message });
+          }
+        }
+        break;
+      }
+
       // --- 其他指令 ---
       case 'page.goto':
       case 'navigate':

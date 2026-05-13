@@ -353,11 +353,47 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
     };
     browserService.on('configUpdated', configUpdateListener);
 
+    const tabSwitchedListener = async (switchedSessionId: string, newPage: Page) => {
+      if (switchedSessionId !== sessionId) return;
+      const currentStreamInfo = activeStreams.get(ws);
+      if (!currentStreamInfo || currentStreamInfo.page === newPage) return;
+
+      logger.info(`Tab switched for stream ${sessionId}, switching page`);
+
+      if (currentStreamInfo.cdpSession) {
+        try {
+          await currentStreamInfo.cdpSession.send('Page.stopScreencast');
+        } catch {
+          /* ignore */
+        }
+        try {
+          await currentStreamInfo.cdpSession.detach();
+        } catch {
+          /* ignore */
+        }
+        currentStreamInfo.cdpSession = null;
+      }
+
+      currentStreamInfo.page.off('close', pageCloseHandler);
+      currentStreamInfo.page.off('crash', pageCrashHandler);
+
+      currentStreamInfo.page = newPage;
+      currentStreamInfo.isActive = false;
+      currentStreamInfo.useCdpScreencast = true;
+
+      newPage.once('close', pageCloseHandler);
+      newPage.once('crash', pageCrashHandler);
+
+      await startCdpScreencast(currentStreamInfo);
+    };
+    browserService.on('tabSwitched', tabSwitchedListener);
+
     ws.on('close', (code, _reason) => {
       logger.info(`'/stream' WebSocket closed for ${sessionId}. Code: ${code}`);
       page?.off('close', pageCloseHandler);
       page?.off('crash', pageCrashHandler);
       browserService.off('configUpdated', configUpdateListener);
+      browserService.off('tabSwitched', tabSwitchedListener);
       cleanupStreamConnection(ws);
     });
     ws.on('error', (error) => {
@@ -365,6 +401,7 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
       page?.off('close', pageCloseHandler);
       page?.off('crash', pageCrashHandler);
       browserService.off('configUpdated', configUpdateListener);
+      browserService.off('tabSwitched', tabSwitchedListener);
       cleanupStreamConnection(ws);
     });
   } catch (error) {

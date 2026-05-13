@@ -128,7 +128,7 @@ export class FileService {
     sessionId: string,
     filename: string,
     data: Buffer
-  ): Promise<{ filePath: string; originalName: string }> {
+  ): Promise<{ filePath: string; originalName: string; machineFilePath?: string; realPath?: string }> {
     await this.checkDiskSpace(500 * 1024 * 1024);
 
     if (data.length > this.maxFileSize) {
@@ -141,6 +141,23 @@ export class FileService {
     const safeName = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}-${path.basename(filename)}`;
     const filePath = path.join(finalDir, safeName);
     await fs.writeFile(filePath, data);
+
+    const originalPath = path.join(finalDir, path.basename(filename));
+    if (originalPath !== filePath) {
+      try {
+        await fs.unlink(originalPath);
+      } catch {
+        /* ignore */
+      }
+      await fs.symlink(filePath, originalPath);
+      return {
+        filePath: originalPath,
+        originalName: path.basename(filename),
+        machineFilePath: originalPath,
+        realPath: filePath,
+      };
+    }
+
     return { filePath, originalName: path.basename(filename) };
   }
 

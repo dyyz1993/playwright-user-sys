@@ -575,6 +575,15 @@ export class BrowserService extends EventEmitter {
       } else {
         browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy ?? ''));
       }
+      // @ts-ignore — puppeteer-core Handler<> type mismatch (dual installations on macOS)
+      browser.on('targetcreated', async (target: Target) => {
+        if (target.type() === 'page') {
+          const newPage = await target.page();
+          if (newPage && !newPage.url().startsWith('devtools://')) {
+            this.emit('tabCreated', sessionId, newPage);
+          }
+        }
+      });
       logger.info('primaryPage', primaryPage);
       // if (primaryPage) {
       //   await this.createTargetHandler(

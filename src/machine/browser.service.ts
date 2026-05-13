@@ -587,6 +587,53 @@ export class BrowserService extends EventEmitter {
       logger.info('primaryPage', primaryPage);
 
       try {
+        // 1. evaluateOnNewDocument so interceptor survives navigation
+        await primaryPage.evaluateOnNewDocument(() => {
+          (window as any).__clipboardContent = '';
+          const origWriteText = (navigator.clipboard as any)?.writeText?.bind(navigator.clipboard);
+          if (origWriteText) {
+            (navigator.clipboard as any).writeText = async function (text: string) {
+              (window as any).__clipboardContent = text;
+              return origWriteText(text);
+            };
+          }
+          const origWrite = (navigator.clipboard as any)?.write?.bind(navigator.clipboard);
+          if (origWrite) {
+            (navigator.clipboard as any).write = async function (items: any[]) {
+              try {
+                for (const item of items) {
+                  if (item.types && item.types.includes && item.types.includes('text/plain')) {
+                    const blob = await item.getType('text/plain');
+                    const text = await blob.text();
+                    (window as any).__clipboardContent = text;
+                  }
+                }
+              } catch (_) {
+                void _;
+              }
+              return origWrite(items);
+            };
+          }
+          const origExecCommand = document.execCommand.bind(document);
+          document.execCommand = function (command: string, ui?: boolean, value?: any) {
+            if (command === 'copy') {
+              const sel = window.getSelection()?.toString();
+              if (sel) (window as any).__clipboardContent = sel;
+            }
+            return origExecCommand(command, ui as any, value);
+          };
+          document.addEventListener(
+            'copy',
+            function () {
+              const selection = window.getSelection ? (window.getSelection()?.toString() ?? '') : '';
+              if (selection) {
+                (window as any).__clipboardContent = selection;
+              }
+            },
+            true
+          );
+        });
+        // 2. Also inject immediately for current page
         await primaryPage.evaluate(() => {
           (window as any).__clipboardContent = '';
           const origWriteText = (navigator.clipboard as any)?.writeText?.bind(navigator.clipboard);
@@ -594,6 +641,23 @@ export class BrowserService extends EventEmitter {
             (navigator.clipboard as any).writeText = async function (text: string) {
               (window as any).__clipboardContent = text;
               return origWriteText(text);
+            };
+          }
+          const origWrite = (navigator.clipboard as any)?.write?.bind(navigator.clipboard);
+          if (origWrite) {
+            (navigator.clipboard as any).write = async function (items: any[]) {
+              try {
+                for (const item of items) {
+                  if (item.types && item.types.includes && item.types.includes('text/plain')) {
+                    const blob = await item.getType('text/plain');
+                    const text = await blob.text();
+                    (window as any).__clipboardContent = text;
+                  }
+                }
+              } catch (_) {
+                void _;
+              }
+              return origWrite(items);
             };
           }
           const origExecCommand = document.execCommand.bind(document);
@@ -1041,6 +1105,23 @@ export class BrowserService extends EventEmitter {
               return origWriteText(text);
             };
           }
+          const origWrite = (navigator.clipboard as any)?.write?.bind(navigator.clipboard);
+          if (origWrite) {
+            (navigator.clipboard as any).write = async function (items: any[]) {
+              try {
+                for (const item of items) {
+                  if (item.types && item.types.includes && item.types.includes('text/plain')) {
+                    const blob = await item.getType('text/plain');
+                    const text = await blob.text();
+                    (window as any).__clipboardContent = text;
+                  }
+                }
+              } catch (_) {
+                void _;
+              }
+              return origWrite(items);
+            };
+          }
           const origExecCommand = document.execCommand.bind(document);
           document.execCommand = function (command: string, ui?: boolean, value?: any) {
             if (command === 'copy') {
@@ -1069,6 +1150,23 @@ export class BrowserService extends EventEmitter {
               (navigator.clipboard as any).writeText = async function (text: string) {
                 (window as any).__clipboardContent = text;
                 return origWriteText(text);
+              };
+            }
+            const origWrite = (navigator.clipboard as any)?.write?.bind(navigator.clipboard);
+            if (origWrite) {
+              (navigator.clipboard as any).write = async function (items: any[]) {
+                try {
+                  for (const item of items) {
+                    if (item.types && item.types.includes && item.types.includes('text/plain')) {
+                      const blob = await item.getType('text/plain');
+                      const text = await blob.text();
+                      (window as any).__clipboardContent = text;
+                    }
+                  }
+                } catch (_) {
+                  void _;
+                }
+                return origWrite(items);
               };
             }
             const origExecCommand = document.execCommand.bind(document);

@@ -90,7 +90,15 @@ export async function handleEventsConnection(
           sendNotification(ws, 'clipboard', { text: content });
         }
       } catch {
-        // page may have navigated or closed
+        try {
+          const freshPage = await browserService.getSessionPage(sessionId);
+          if (freshPage) {
+            const conn = activeEventConnections.get(ws);
+            if (conn) conn.page = freshPage;
+          }
+        } catch (_recoverErr) {
+          void _recoverErr;
+        }
       }
     }, 2000);
     (connectionInfo as any)._clipboardPollInterval = clipboardPollInterval;

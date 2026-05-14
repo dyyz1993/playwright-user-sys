@@ -461,14 +461,15 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
           try {
             const entries = await fs.promises.readdir(tempDir, { withFileTypes: true });
             for (const entry of entries) {
-              if (entry.isDirectory()) continue;
+              if (entry.isDirectory() || entry.isSymbolicLink()) continue;
               const filePath = path.join(tempDir, entry.name);
               try {
                 const stat = await fs.promises.stat(filePath);
                 const ext = path.extname(entry.name).toLowerCase();
                 const isImage = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'].includes(ext);
+                var displayName = entry.name.replace(/^\d+-[a-f0-9]+-/, '');
                 files.push({
-                  name: entry.name,
+                  name: displayName,
                   size: stat.size,
                   type: isImage ? 'image' : 'file',
                   lastModified: stat.mtime.toISOString(),
@@ -540,6 +541,38 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
 
       case 'fileInjectInBrowser':
         await handleFileInjectInBrowser(ws, sessionId, data);
+        break;
+
+      case 'injectFile':
+        if (eventData.fileId) {
+          try {
+            var tempDir = path.join(CONFIG.tempDir, sessionId);
+            var filePath = path.join(tempDir, eventData.fileId);
+            var exists = await fs.promises
+              .access(filePath)
+              .then(function () {
+                return true;
+              })
+              .catch(function () {
+                return false;
+              });
+            if (!exists) {
+              sendNotification(ws, 'injectResult', { success: false, error: 'File not found' });
+              return;
+            }
+            var selector = eventData.selector || 'input[type="file"]';
+            var inputEl = await page.$(selector);
+            if (!inputEl) {
+              sendNotification(ws, 'injectResult', { success: false, error: 'No file input found' });
+              return;
+            }
+            // @ts-ignore - uploadFile requires ElementHandle<HTMLInputElement>
+            await inputEl.uploadFile(filePath);
+            sendNotification(ws, 'injectResult', { success: true });
+          } catch (err: any) {
+            sendNotification(ws, 'injectResult', { success: false, error: err.message });
+          }
+        }
         break;
 
       case 'tab': {

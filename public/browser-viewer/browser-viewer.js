@@ -45,6 +45,9 @@ class BrowserViewer {
     this._cursorPath = this.cursor.querySelector('path');
     this._cursorColor = 'normal';
     this.cursorOffset = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 40 : 0;
+    this._cursorX = 0;
+    this._cursorY = 0;
+    this._cursorInitialized = false;
     this._frameCount = 0;
     this._reconnectAttempts = 0;
     this._maxReconnectAttempts = 3;
@@ -556,7 +559,8 @@ class BrowserViewer {
     confirmBtn.addEventListener('click', window.__bvUploadConfirm);
   }
 
-  _showFileManager() {
+  _showFileManager(allowedTypes, allowMultiple) {
+    this._fmAllowedTypes = allowedTypes || null;
     if (this._fmModal) { this._fmModal.style.display = 'flex'; this._fmRefreshList(); return; }
     var self = this;
 
@@ -593,44 +597,33 @@ class BrowserViewer {
 
     var fmInput = document.createElement('input');
     fmInput.type = 'file';
-    fmInput.multiple = true;
+    fmInput.multiple = allowMultiple !== false;
+    if (allowedTypes) {
+      fmInput.accept = allowedTypes;
+    }
     fmInput.style.display = 'none';
     fmInput.addEventListener('change', function() { self._fmUploadHandler(this.files); });
     document.body.appendChild(fmInput);
     this._fmInput = fmInput;
 
-    injectBtn.addEventListener('click', async function() {
+    injectBtn.addEventListener('click', function() {
       var filePath = self._fmSelected;
       if (!filePath) return;
-      // Normalize absolute path to relative path expected by inject API
-      // API requires "data/temp/..." but machine may return "/app/data/temp/..." or "/data/temp/..."
-      if (filePath.indexOf('/data/temp/') !== -1) {
-        filePath = filePath.substring(filePath.indexOf('/data/temp/') + 1);
-      }
+      var fileId = filePath.split('/').pop();
       injectBtn.textContent = '注入中...';
       injectBtn.style.opacity = '0.6';
       injectBtn.style.pointerEvents = 'none';
-      var selectors = ['input[type="file"]', '#fileInput', 'input[accept]'];
-      var success = false;
-      for (var si = 0; si < selectors.length; si++) {
-        try {
-          var r = await fetch('/api/sessions/' + self.sessionId + '/inject-file', {
-            method: 'POST',
-            headers: { 'x-api-key': self.token, 'content-type': 'application/json' },
-            body: JSON.stringify({ machineFilePath: filePath, selector: selectors[si] })
-          });
-          var d = await r.json();
-          if (r.ok && d.data && d.data.success) { success = true; break; }
-        } catch(e) {}
-      }
-      if (success) {
-        injectBtn.textContent = '\u2705 注入成功';
-        setTimeout(function() { modal.style.display = 'none'; }, 800);
-      } else {
-        injectBtn.textContent = '\u274C 注入失败';
-        injectBtn.style.opacity = '1';
-        injectBtn.style.pointerEvents = 'auto';
-      }
+      self._fmInjectCallback = function(result) {
+        if (result.success) {
+          injectBtn.textContent = '\u2705 注入成功';
+          setTimeout(function() { modal.style.display = 'none'; }, 800);
+        } else {
+          injectBtn.textContent = '\u274C 注入失败';
+          injectBtn.style.opacity = '1';
+          injectBtn.style.pointerEvents = 'auto';
+        }
+      };
+      self.send({ type: 'injectFile', fileId: fileId, selector: 'input[type="file"]' });
     });
 
     var uploadCard = document.createElement('div');
@@ -677,32 +670,125 @@ class BrowserViewer {
 
   _fmAddCard(file) {
     var self = this;
-    var card = document.createElement('div');
-    card.style.cssText = 'background:#2a2a3e;border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;';
     var fileName = file.fileName || file.name || '未知';
     var filePath = file.machineFilePath || file.path || file.url || '';
     var ext = fileName.split('.').pop().toLowerCase();
-    var icon = ['jpg','jpeg','png','gif','webp','svg'].includes(ext) ? '\uD83D\uDDBC\uFE0F' : ['mp4','webm','mov'].includes(ext) ? '\uD83C\uDFA5' : ['pdf'].includes(ext) ? '\uD83D\uDCD5' : '\uD83D\uDCC4';
+    var isImage = ['jpg','jpeg','png','gif','webp','bmp','svg','ico'].indexOf(ext) >= 0;
+
+    function matchesAccept(filename, accept) {
+      if (!accept) return true;
+      var e = filename.split('.').pop().toLowerCase();
+      var parts = accept.split(',').map(function(s) { return s.trim().toLowerCase(); });
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (p === '*/*' || p === '*') return true;
+        if (p.indexOf('/') >= 0) {
+          var cat = p.split('/')[0];
+          if (cat === 'image' && ['jpg','jpeg','png','gif','webp','bmp','svg','ico'].indexOf(e) >= 0) return true;
+          if (cat === 'video' && ['mp4','webm','ogg','avi','mov'].indexOf(e) >= 0) return true;
+          if (cat === 'audio' && ['mp3','wav','ogg','aac','flac'].indexOf(e) >= 0) return true;
+          if (p === 'application/pdf' && e === 'pdf') return true;
+          if (p === 'text/*' && ['txt','csv','json','xml','html','css','js','md'].indexOf(e) >= 0) return true;
+        } else if (p === '.' + e) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    var allowed = !self._fmAllowedTypes || matchesAccept(fileName, self._fmAllowedTypes);
+
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#2a2a3e;border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;position:relative;';
+    if (!allowed) {
+      card.style.opacity = '0.3';
+    }
+
     var size = file.size || file.fileSize || 0;
     var sizeStr = size < 1024 ? size+'B' : size < 1048576 ? (size/1024).toFixed(1)+'KB' : (size/1048576).toFixed(1)+'MB';
-    card.innerHTML = '<div style="font-size:28px;margin-bottom:4px;line-height:1.2;">'+icon+'</div><div style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,0.8);max-width:76px;">'+fileName+'</div><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">'+sizeStr+'</div>';
+
+    var iconContainer = document.createElement('div');
+    iconContainer.style.cssText = 'width:100%;height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;border-radius:4px;overflow:hidden;';
+
+    if (isImage) {
+      var thumb = document.createElement('img');
+      thumb.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:4px;';
+      thumb.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect fill="%23333" width="80" height="80"/><text x="40" y="45" text-anchor="middle" fill="%23666" font-size="12">IMG</text></svg>';
+      iconContainer.appendChild(thumb);
+    } else {
+      var iconLabel = '';
+      var iconColor = '';
+      if (['mp4','webm','mov','avi','ogg'].indexOf(ext) >= 0) {
+        iconLabel = 'VID';
+        iconColor = '#3b82f6';
+      } else if (ext === 'pdf') {
+        iconLabel = 'PDF';
+        iconColor = '#ef4444';
+      } else if (['mp3','wav','aac','flac'].indexOf(ext) >= 0) {
+        iconLabel = 'AUD';
+        iconColor = '#22c55e';
+      } else {
+        iconLabel = ext.toUpperCase() || '?';
+        iconColor = '#6b7280';
+      }
+      var iconEl = document.createElement('div');
+      iconEl.style.cssText = 'width:60px;height:60px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;';
+      iconEl.style.background = iconColor;
+      iconEl.textContent = iconLabel;
+      iconContainer.appendChild(iconEl);
+    }
+
+    var nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,0.8);max-width:76px;';
+    nameEl.textContent = fileName;
+
+    var sizeEl = document.createElement('div');
+    sizeEl.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;';
+    sizeEl.textContent = sizeStr;
+
+    if (!allowed) {
+      var lockEl = document.createElement('div');
+      lockEl.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;';
+      lockEl.textContent = '\u26D4 \u4E0D\u652F\u6301';
+      card.appendChild(iconContainer);
+      card.appendChild(nameEl);
+      card.appendChild(sizeEl);
+      card.appendChild(lockEl);
+    } else {
+      card.appendChild(iconContainer);
+      card.appendChild(nameEl);
+      card.appendChild(sizeEl);
+      card.addEventListener('click', function() {
+        var cards = self._fmGrid.querySelectorAll('[data-fm-path]');
+        cards.forEach(function(c) { c.style.borderColor = 'transparent'; c.style.background = '#2a2a3e'; });
+        card.style.borderColor = '#4caf50';
+        card.style.background = '#1a3a2e';
+        self._fmSelected = filePath;
+        self._fmInjectBtn.style.opacity = '1';
+        self._fmInjectBtn.style.pointerEvents = 'auto';
+        self._fmInjectBtn.textContent = '\u9009\u62E9\u5E76\u6CE8\u5165: ' + fileName;
+      });
+      card.addEventListener('mouseenter', function() {
+        if (card.style.borderColor !== '#4caf50') card.style.borderColor = '#7b68ee';
+      });
+      card.addEventListener('mouseleave', function() {
+        if (card.style.borderColor !== '#4caf50') card.style.borderColor = 'transparent';
+      });
+    }
+
     card.dataset.fmPath = filePath;
-    card.addEventListener('click', function() {
-      var cards = self._fmGrid.querySelectorAll('[data-fm-path]');
-      cards.forEach(function(c) { c.style.borderColor = 'transparent'; c.style.background = '#2a2a3e'; });
-      card.style.borderColor = '#4caf50';
-      card.style.background = '#1a3a2e';
-      self._fmSelected = filePath;
-      self._fmInjectBtn.style.opacity = '1';
-      self._fmInjectBtn.style.pointerEvents = 'auto';
-      self._fmInjectBtn.textContent = '选择并注入: ' + fileName;
-    });
-    card.addEventListener('mouseenter', function() {
-      if (card.style.borderColor !== '#4caf50') card.style.borderColor = '#7b68ee';
-    });
-    card.addEventListener('mouseleave', function() {
-      if (card.style.borderColor !== '#4caf50') card.style.borderColor = 'transparent';
-    });
+
+    var copyBtn = document.createElement('div');
+    copyBtn.style.cssText = 'position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:4px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#aaa;z-index:1;';
+    copyBtn.textContent = '\uD83D\uDCCB';
+    copyBtn.onclick = function(e) {
+      e.stopPropagation();
+      navigator.clipboard.writeText(fileName).catch(function(){});
+      copyBtn.textContent = '\u2705';
+      setTimeout(function() { copyBtn.textContent = '\uD83D\uDCCB'; }, 1000);
+    };
+    card.appendChild(copyBtn);
+
     this._fmGrid.appendChild(card);
   }
 
@@ -795,6 +881,17 @@ class BrowserViewer {
         if (self.lastBlobUrl) URL.revokeObjectURL(self.lastBlobUrl);
         self.lastBlobUrl = url;
         self.img.src = url;
+        if (!self._cursorInitialized && self.cursorOffset > 0) {
+          self._cursorInitialized = true;
+          var _r = self.img.getBoundingClientRect();
+          if (_r.width > 0 && _r.height > 0) {
+            self._cursorX = _r.width / 2;
+            self._cursorY = _r.height / 2;
+            self.cursor.style.left = self._cursorX + 'px';
+            self.cursor.style.top = self._cursorY + 'px';
+            self.cursor.style.display = 'block';
+          }
+        }
       } else if (typeof e.data === 'string') {
         try {
           var msg = JSON.parse(e.data);
@@ -916,7 +1013,12 @@ class BrowserViewer {
             }
           }
         } else if (msg.type === 'filechooser') {
-          self._showFileManager();
+          self._showFileManager(msg.accept, msg.multiple);
+        } else if (msg.type === 'injectResult') {
+          if (self._fmInjectCallback) {
+            self._fmInjectCallback(msg.event || {});
+            self._fmInjectCallback = null;
+          }
         } else if (msg.type === 'response' && msg.requestType === 'fileList') {
           if (self._fmListCallback) {
             self._fmListCallback(msg.data && msg.data.files ? msg.data.files : []);
@@ -965,6 +1067,16 @@ class BrowserViewer {
       return {
         x: Math.round((e.clientX - offsetX) * (1280 / renderWidth)),
         y: Math.round((e.clientY - offsetY) * (800 / renderHeight)),
+      };
+    }
+
+    function getCoordsFromCursor(self) {
+      var r = img.getBoundingClientRect();
+      var scaleX = self.img.naturalWidth / r.width;
+      var scaleY = self.img.naturalHeight / r.height;
+      return {
+        x: Math.round(self._cursorX * scaleX),
+        y: Math.round(self._cursorY * scaleY)
       };
     }
 
@@ -1044,16 +1156,19 @@ class BrowserViewer {
     var isLongPress = false;
     var lastTouch1 = null;
     var lastTouch2 = null;
+    var lastFingerX = 0;
+    var lastFingerY = 0;
 
     img.addEventListener('touchstart', function (e) {
       e.preventDefault();
       self._touchActive = true;
       self._touchLastTime = Date.now();
       var touch = e.touches[0];
-      var c = getCoords(touch);
       touchStartTime = Date.now();
-      touchStartCoords = c;
+      touchStartCoords = null;
       isLongPress = false;
+      lastFingerX = touch.clientX;
+      lastFingerY = touch.clientY;
 
       if (e.touches.length >= 2) {
         lastTouch1 = e.touches[0];
@@ -1065,43 +1180,28 @@ class BrowserViewer {
         self._cursorColor = 'normal';
         self._cursorPath.setAttribute('fill', '#00D4FF');
         self._cursorPath.setAttribute('stroke', '#0099CC');
-        var r = img.getBoundingClientRect();
-        self.cursor.style.left = (touch.clientX - r.left) + 'px';
-        self.cursor.style.top = (touch.clientY - r.top - self.cursorOffset) + 'px';
       }
 
       longPressTimer = setTimeout(function () {
         isLongPress = true;
-        self._cursorColor = 'longpress';
         if (self.cursorOffset > 0) {
+          self._cursorColor = 'longpress';
           self._cursorPath.setAttribute('fill', '#FF6B35');
           self._cursorPath.setAttribute('stroke', '#CC4400');
         }
-        var rc = getCoords(touchStartCoords || touch);
-        rc.button = 2;
+        var rc = getCoordsFromCursor(self);
+        rc.button = 0;
         self.send({ type: 'event', event: { type: 'mousedown', data: rc } });
-        self.send({ type: 'event', event: { type: 'mouseup', data: rc } });
-        self.send({ type: 'event', event: { type: 'contextmenu', data: rc } });
       }, 800);
-
-      c.button = 0;
-      self.send({ type: 'event', event: { type: 'mousedown', data: c } });
     }, { passive: false });
 
     img.addEventListener('touchmove', function (e) {
       e.preventDefault();
       self._touchActive = true;
       self._touchLastTime = Date.now();
-      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-      if (!isLongPress) {
-        self._cursorColor = 'normal';
-        if (self.cursorOffset > 0) {
-          self._cursorPath.setAttribute('fill', '#00D4FF');
-          self._cursorPath.setAttribute('stroke', '#0099CC');
-        }
-      }
 
       if (e.touches.length === 2 && lastTouch1 && lastTouch2) {
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
         var t1 = e.touches[0];
         var t2 = e.touches[1];
         var prevDist = Math.hypot(lastTouch1.clientX - lastTouch2.clientX, lastTouch1.clientY - lastTouch2.clientY);
@@ -1119,13 +1219,22 @@ class BrowserViewer {
       }
 
       var touch = e.touches[0];
-      var c = getCoords(touch);
+      var deltaX = (touch.clientX - lastFingerX) * 1.5;
+      var deltaY = (touch.clientY - lastFingerY) * 1.5;
+      lastFingerX = touch.clientX;
+      lastFingerY = touch.clientY;
 
       var r = img.getBoundingClientRect();
-      self.cursor.style.left = (touch.clientX - r.left) + 'px';
-      self.cursor.style.top = (touch.clientY - r.top - self.cursorOffset) + 'px';
+      self._cursorX = Math.max(0, Math.min(r.width, self._cursorX + deltaX));
+      self._cursorY = Math.max(0, Math.min(r.height, self._cursorY + deltaY));
 
-      self.send({ type: 'event', event: { type: 'mousemove', data: c } });
+      self.cursor.style.left = self._cursorX + 'px';
+      self.cursor.style.top = self._cursorY + 'px';
+
+      if (isLongPress) {
+        var c = getCoordsFromCursor(self);
+        self.send({ type: 'event', event: { type: 'mousemove', data: c } });
+      }
     }, { passive: false });
 
     img.addEventListener('touchend', function (e) {
@@ -1134,23 +1243,8 @@ class BrowserViewer {
       self._touchLastTime = Date.now();
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 
-      var touch = e.changedTouches[0];
-      var c = getCoords(touch);
-
-      if (!isLongPress && touchStartCoords) {
-        var dx = c.x - touchStartCoords.x;
-        var dy = c.y - touchStartCoords.y;
-        var dt = Date.now() - touchStartTime;
-        var velocity = Math.sqrt(dx * dx + dy * dy) / (dt || 1);
-
-        if (velocity > 0.5 && Math.abs(dy) > 30) {
-          self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: Math.round(dx * 3), deltaY: Math.round(dy * 3) } } });
-        } else {
-          c.button = 0;
-          self.send({ type: 'event', event: { type: 'mouseup', data: c } });
-          self.send({ type: 'event', event: { type: 'click', data: c } });
-        }
-      } else if (!isLongPress) {
+      if (isLongPress) {
+        var c = getCoordsFromCursor(self);
         c.button = 0;
         self.send({ type: 'event', event: { type: 'mouseup', data: c } });
         self.send({ type: 'event', event: { type: 'click', data: c } });

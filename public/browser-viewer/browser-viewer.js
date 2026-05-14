@@ -40,7 +40,8 @@ class BrowserViewer {
     this.lastBandwidthTime = Date.now();
     this.currentBandwidth = 0;
     this.cursor = document.createElement('div');
-    this.cursor.style.cssText = 'position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
+    var cursorSize = Math.max(8, Math.round(window.innerWidth * 0.03));
+    this.cursor.style.cssText = 'position:absolute;width:' + cursorSize + 'px;height:' + cursorSize + 'px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
     this._cursorColor = 'normal';
     this.cursorOffset = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 40 : 0;
     this._cursorX = 0;
@@ -111,11 +112,12 @@ class BrowserViewer {
     if (!this.container) throw new Error('#' + this.containerId + ' not found');
 
     this.container.innerHTML =
-      '<div style="width:100%;height:100%;position:relative;background:#000;">' +
+      '<div id="bv-wrapper" style="width:100%;height:100%;position:relative;background:#000;">' +
         '<img id="bv-screen" alt="远程浏览器画面" crossOrigin="anonymous" draggable="false" style="width:100%;height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;pointer-events:auto;" />' +
         '<div id="bv-status" style="position:absolute;top:10px;left:10px;color:#fff;font-size:12px;z-index:10;font-family:system-ui,-apple-system,sans-serif;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:4px;">连接中...</div>' +
       '</div>';
     this.img = this.container.querySelector('#bv-screen');
+    this._wrapper = this.container.querySelector('#bv-wrapper');
     this.img.draggable = false;
     if (this.container) {
       this.container.appendChild(this.loadingIndicator);
@@ -129,9 +131,9 @@ class BrowserViewer {
     imgEl.addEventListener('dragstart', function(e) { e.preventDefault(); });
     imgEl.addEventListener('selectstart', function(e) { e.preventDefault(); });
     imgEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-    if (this.container) {
-      this.container.style.position = 'relative';
-      this.container.appendChild(this.cursor);
+    // Cursor must be inside wrapper (same parent as img) so left/top are relative to wrapper = img's container
+    if (this._wrapper) {
+      this._wrapper.appendChild(this.cursor);
     }
 
     this.kbBtn = document.createElement('div');
@@ -879,9 +881,9 @@ class BrowserViewer {
         if (self.lastBlobUrl) URL.revokeObjectURL(self.lastBlobUrl);
         self.lastBlobUrl = url;
         self.img.src = url;
-        if (!self._cursorInitialized && self.cursorOffset > 0) {
-          self._cursorInitialized = true;
-          var _r = self.img.getBoundingClientRect();
+        // Recalculate cursor position on each frame (img may resize after navigation)
+        if (self.cursorOffset > 0 && self.img.naturalWidth > 0 && self.img.naturalHeight > 0) {
+          var _r = self._wrapper.getBoundingClientRect();
           if (_r.width > 0 && _r.height > 0) {
             var _imgRatio = self.img.naturalWidth / self.img.naturalHeight;
             var _containerRatio = _r.width / _r.height;
@@ -893,8 +895,16 @@ class BrowserViewer {
               _rW = _r.width; _rH = _r.width / _imgRatio;
               _rOffX = 0; _rOffY = (_r.height - _rH) / 2;
             }
-            self._cursorX = _rOffX + _rW / 2;
-            self._cursorY = _rOffY + _rH / 2;
+            if (!self._cursorInitialized) {
+              // First time: center the cursor in the render area
+              self._cursorX = _rOffX + _rW / 2;
+              self._cursorY = _rOffY + _rH / 2;
+              self._cursorInitialized = true;
+            } else {
+              // Clamp existing cursor position to new render area
+              self._cursorX = Math.max(_rOffX, Math.min(_rOffX + _rW, self._cursorX));
+              self._cursorY = Math.max(_rOffY, Math.min(_rOffY + _rH, self._cursorY));
+            }
             self.cursor.style.left = self._cursorX + 'px';
             self.cursor.style.top = self._cursorY + 'px';
             self.cursor.style.display = 'block';
@@ -1079,7 +1089,7 @@ class BrowserViewer {
     }
 
     function getCoordsFromCursor(self) {
-      var r = img.getBoundingClientRect();
+      var r = self._wrapper ? self._wrapper.getBoundingClientRect() : img.getBoundingClientRect();
       var imgRatio = self.img.naturalWidth / self.img.naturalHeight;
       var containerRatio = r.width / r.height;
       var renderWidth, renderHeight, offsetX, offsetY;
@@ -1107,8 +1117,9 @@ class BrowserViewer {
       self.send({ type: 'event', event: { type: 'mousemove', data: c } });
       if (self.cursorOffset > 0) {
         self.cursor.style.display = 'block';
-        self.cursor.style.left = (e.clientX - img.getBoundingClientRect().left) + 'px';
-        self.cursor.style.top = (e.clientY - img.getBoundingClientRect().top - self.cursorOffset) + 'px';
+        var wr = self._wrapper.getBoundingClientRect();
+        self.cursor.style.left = (e.clientX - wr.left) + 'px';
+        self.cursor.style.top = (e.clientY - wr.top - self.cursorOffset) + 'px';
       }
     });
 
@@ -1253,7 +1264,7 @@ class BrowserViewer {
       lastFingerX = touch.clientX;
       lastFingerY = touch.clientY;
 
-      var r = img.getBoundingClientRect();
+      var r = self._wrapper.getBoundingClientRect();
       var _imgRatio = self.img.naturalWidth / self.img.naturalHeight;
       var _containerRatio = r.width / r.height;
       var _rOffX, _rOffY, _rW, _rH;

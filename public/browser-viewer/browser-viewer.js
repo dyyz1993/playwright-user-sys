@@ -1219,6 +1219,13 @@ class BrowserViewer {
       }
 
       var touch = e.touches[0];
+      // Clear long press timer on movement → user is positioning cursor, not clicking
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+      if (!isLongPress && self.cursorOffset > 0) {
+        self._cursorColor = 'normal';
+        self._cursorPath.setAttribute('fill', '#00D4FF');
+        self._cursorPath.setAttribute('stroke', '#0099CC');
+      }
       var deltaX = (touch.clientX - lastFingerX) * 1.5;
       var deltaY = (touch.clientY - lastFingerY) * 1.5;
       lastFingerX = touch.clientX;

@@ -111,12 +111,15 @@ class BrowserViewer {
     if (!this.container) throw new Error('#' + this.containerId + ' not found');
 
     this.container.innerHTML =
-      '<div id="bv-wrapper" style="width:100%;height:100%;position:relative;background:#000;">' +
-        '<img id="bv-screen" alt="远程浏览器画面" crossOrigin="anonymous" draggable="false" style="width:100%;height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;pointer-events:auto;" />' +
-        '<div id="bv-status" style="position:absolute;top:10px;left:10px;color:#fff;font-size:12px;z-index:10;font-family:system-ui,-apple-system,sans-serif;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:4px;">连接中...</div>' +
+      '<div id="bv-wrapper" style="width:100%;height:100%;position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;">' +
+        '<div id="bv-viewport" style="position:relative;overflow:hidden;">' +
+          '<img id="bv-screen" alt="远程浏览器画面" crossOrigin="anonymous" draggable="false" style="width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;pointer-events:auto;" />' +
+          '<div id="bv-status" style="position:absolute;top:10px;left:10px;color:#fff;font-size:12px;z-index:10;font-family:system-ui,-apple-system,sans-serif;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:4px;">连接中...</div>' +
+        '</div>' +
       '</div>';
     this.img = this.container.querySelector('#bv-screen');
     this._wrapper = this.container.querySelector('#bv-wrapper');
+    this._viewport = this.container.querySelector('#bv-viewport');
     this.img.draggable = false;
     if (this.container) {
       this.container.appendChild(this.loadingIndicator);
@@ -130,9 +133,9 @@ class BrowserViewer {
     imgEl.addEventListener('dragstart', function(e) { e.preventDefault(); });
     imgEl.addEventListener('selectstart', function(e) { e.preventDefault(); });
     imgEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-    // Cursor must be inside wrapper (same parent as img) so left/top are relative to wrapper = img's container
-    if (this._wrapper) {
-      this._wrapper.appendChild(this.cursor);
+    // Cursor must be inside viewport so left/top are relative to viewport = img's container
+    if (this._viewport) {
+      this._viewport.appendChild(this.cursor);
     }
 
     this.kbBtn = document.createElement('div');
@@ -205,8 +208,8 @@ class BrowserViewer {
     this.copyBtn.textContent = '\uD83D\uDCCB';
     this.copyBtn.title = '复制 (Ctrl+C) - 复制远程浏览器选中内容到本地';
     this.copyBtn.addEventListener('click', function() {
-      self.send({ type: 'keydown', key: 'c', ctrlKey: true });
-      self.send({ type: 'keyup', key: 'c', ctrlKey: true });
+      self.send({ type: 'event', event: { type: 'keydown', data: { key: 'c', code: 'KeyC', ctrlKey: true } } });
+      self.send({ type: 'event', event: { type: 'keyup', data: { key: 'c', code: 'KeyC', ctrlKey: true } } });
       self.copyBtn.style.background = 'rgba(76,175,80,0.8)';
       setTimeout(function() { self.copyBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
       self._pendingLocalCopy = true;
@@ -342,8 +345,8 @@ class BrowserViewer {
       copyMbBtn.title = '复制到本地';
       copyMbBtn.style.cssText = 'width:36px;height:36px;border:none;border-radius:8px;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
       copyMbBtn.onclick = function() {
-        self.send({ type: 'keydown', key: 'c', ctrlKey: true });
-        self.send({ type: 'keyup', key: 'c', ctrlKey: true });
+        self.send({ type: 'event', event: { type: 'keydown', data: { key: 'c', code: 'KeyC', ctrlKey: true } } });
+        self.send({ type: 'event', event: { type: 'keyup', data: { key: 'c', code: 'KeyC', ctrlKey: true } } });
         self._pendingLocalCopy = true;
         self._pendingLocalCopyIsMobile = true;
         copyMbBtn.style.background = '#4caf50';
@@ -413,6 +416,10 @@ class BrowserViewer {
         if (self[k]) self[k].style.display = 'none';
       });
     }
+
+    window.addEventListener('resize', function() {
+      self._resizeViewport();
+    });
 
     return this;
   }
@@ -511,23 +518,27 @@ class BrowserViewer {
           if (!resp.ok || !data.success) throw new Error(data.message || data.error || '上传失败');
 
           statusEl.textContent = '\u23F3 注入文件到远程浏览器...';
-          var selectors = ['input[type="file"]', '#fileInput', 'input[accept]'];
-          var injSuccess = false;
-          var lastError = '';
-          for (var si = 0; si < selectors.length; si++) {
-            var injResp = await fetch('/api/sessions/' + self.sessionId + '/inject-file', {
-              method: 'POST',
-              headers: { 'x-api-key': self.token, 'content-type': 'application/json' },
-              body: JSON.stringify({ machineFilePath: data.data.machineFilePath, selector: selectors[si] })
-            });
-            var injData = await injResp.json();
-            if (injResp.ok && injData.data && injData.data.success) {
-              injSuccess = true;
-              break;
+          try {
+            var selectors = ['input[type="file"]', '#fileInput', 'input[accept]'];
+            var injSuccess = false;
+            var lastError = '';
+            for (var si = 0; si < selectors.length; si++) {
+              var injResp = await fetch('/api/sessions/' + self.sessionId + '/inject-file', {
+                method: 'POST',
+                headers: { 'x-api-key': self.token, 'content-type': 'application/json' },
+                body: JSON.stringify({ machineFilePath: data.data.machineFilePath, selector: selectors[si] })
+              });
+              var injData = await injResp.json();
+              if (injResp.ok && injData.data && injData.data.success) {
+                injSuccess = true;
+                break;
+              }
+              lastError = injData.message || injData.error || '当前页面没有文件上传元素，请先点击页面上的上传按钮';
             }
-            lastError = injData.message || injData.error || '注入失败';
+            if (!injSuccess) throw new Error(lastError);
+          } catch (injErr) {
+            throw new Error('当前页面没有文件上传元素，请先点击页面上的上传按钮');
           }
-          if (!injSuccess) throw new Error(lastError);
         }
 
         statusEl.style.background = '#f0fdf4';
@@ -882,31 +893,24 @@ class BrowserViewer {
         self.img.src = url;
         // Recalculate cursor position on each frame (img may resize after navigation)
         if (self.cursorOffset > 0 && self.img.naturalWidth > 0 && self.img.naturalHeight > 0) {
-          var _r = self._wrapper.getBoundingClientRect();
-          if (_r.width > 0 && _r.height > 0) {
-            var _imgRatio = self.img.naturalWidth / self.img.naturalHeight;
-            var _containerRatio = _r.width / _r.height;
-            var _rOffX, _rOffY, _rW, _rH;
-            if (_containerRatio > _imgRatio) {
-              _rH = _r.height; _rW = _r.height * _imgRatio;
-              _rOffX = (_r.width - _rW) / 2; _rOffY = 0;
-            } else {
-              _rW = _r.width; _rH = _r.width / _imgRatio;
-              _rOffX = 0; _rOffY = (_r.height - _rH) / 2;
+          self._resizeViewport();
+          var vp = self._viewport;
+          if (vp) {
+            var vpW = vp.offsetWidth;
+            var vpH = vp.offsetHeight;
+            if (vpW > 0 && vpH > 0) {
+              if (!self._cursorInitialized) {
+                self._cursorX = vpW / 2;
+                self._cursorY = vpH / 2;
+                self._cursorInitialized = true;
+              } else {
+                self._cursorX = Math.max(0, Math.min(vpW, self._cursorX));
+                self._cursorY = Math.max(0, Math.min(vpH, self._cursorY));
+              }
+              self.cursor.style.left = self._cursorX + 'px';
+              self.cursor.style.top = self._cursorY + 'px';
+              self.cursor.style.display = 'block';
             }
-            if (!self._cursorInitialized) {
-              // First time: center the cursor in the render area
-              self._cursorX = _rOffX + _rW / 2;
-              self._cursorY = _rOffY + _rH / 2;
-              self._cursorInitialized = true;
-            } else {
-              // Clamp existing cursor position to new render area
-              self._cursorX = Math.max(_rOffX, Math.min(_rOffX + _rW, self._cursorX));
-              self._cursorY = Math.max(_rOffY, Math.min(_rOffY + _rH, self._cursorY));
-            }
-            self.cursor.style.left = self._cursorX + 'px';
-            self.cursor.style.top = self._cursorY + 'px';
-            self.cursor.style.display = 'block';
           }
         }
       } else if (typeof e.data === 'string') {
@@ -1088,26 +1092,12 @@ class BrowserViewer {
     }
 
     function getCoordsFromCursor(self) {
-      var r = self._wrapper ? self._wrapper.getBoundingClientRect() : img.getBoundingClientRect();
-      var imgRatio = self.img.naturalWidth / self.img.naturalHeight;
-      var containerRatio = r.width / r.height;
-      var renderWidth, renderHeight, offsetX, offsetY;
-
-      if (containerRatio > imgRatio) {
-        renderHeight = r.height;
-        renderWidth = r.height * imgRatio;
-        offsetX = (r.width - renderWidth) / 2;
-        offsetY = 0;
-      } else {
-        renderWidth = r.width;
-        renderHeight = r.width / imgRatio;
-        offsetX = 0;
-        offsetY = (r.height - renderHeight) / 2;
-      }
-
+      var vp = self._viewport;
+      var vpW = vp ? vp.offsetWidth : 1;
+      var vpH = vp ? vp.offsetHeight : 1;
       return {
-        x: Math.round((self._cursorX - offsetX) * (self.img.naturalWidth / renderWidth)),
-        y: Math.round((self._cursorY - offsetY) * (self.img.naturalHeight / renderHeight))
+        x: Math.round((self._cursorX / vpW) * self.img.naturalWidth),
+        y: Math.round((self._cursorY / vpH) * self.img.naturalHeight)
       };
     }
 
@@ -1116,9 +1106,12 @@ class BrowserViewer {
       self.send({ type: 'event', event: { type: 'mousemove', data: c } });
       if (self.cursorOffset > 0) {
         self.cursor.style.display = 'block';
-        var wr = self._wrapper.getBoundingClientRect();
-        self.cursor.style.left = (e.clientX - wr.left) + 'px';
-        self.cursor.style.top = (e.clientY - wr.top - self.cursorOffset) + 'px';
+        var vp = self._viewport;
+        if (vp) {
+          var vpr = vp.getBoundingClientRect();
+          self.cursor.style.left = (e.clientX - vpr.left) + 'px';
+          self.cursor.style.top = (e.clientY - vpr.top - self.cursorOffset) + 'px';
+        }
       }
     });
 
@@ -1263,19 +1256,11 @@ class BrowserViewer {
       lastFingerX = touch.clientX;
       lastFingerY = touch.clientY;
 
-      var r = self._wrapper.getBoundingClientRect();
-      var _imgRatio = self.img.naturalWidth / self.img.naturalHeight;
-      var _containerRatio = r.width / r.height;
-      var _rOffX, _rOffY, _rW, _rH;
-      if (_containerRatio > _imgRatio) {
-        _rH = r.height; _rW = r.height * _imgRatio;
-        _rOffX = (r.width - _rW) / 2; _rOffY = 0;
-      } else {
-        _rW = r.width; _rH = r.width / _imgRatio;
-        _rOffX = 0; _rOffY = (r.height - _rH) / 2;
-      }
-      self._cursorX = Math.max(_rOffX, Math.min(_rOffX + _rW, self._cursorX + deltaX));
-      self._cursorY = Math.max(_rOffY, Math.min(_rOffY + _rH, self._cursorY + deltaY));
+      var vp = self._viewport;
+      var vpW = vp ? vp.offsetWidth : 1;
+      var vpH = vp ? vp.offsetHeight : 1;
+      self._cursorX = Math.max(0, Math.min(vpW, self._cursorX + deltaX));
+      self._cursorY = Math.max(0, Math.min(vpH, self._cursorY + deltaY));
 
       self.cursor.style.left = self._cursorX + 'px';
       self.cursor.style.top = self._cursorY + 'px';
@@ -1327,6 +1312,25 @@ class BrowserViewer {
     if (this.eventsWs && this.eventsWs.readyState === WebSocket.OPEN) {
       this.eventsWs.send(JSON.stringify(msg));
     }
+  }
+
+  _resizeViewport() {
+    if (!this._viewport || !this.img || !this.img.naturalWidth) return;
+    var wrapRect = this._wrapper.getBoundingClientRect();
+    if (wrapRect.width === 0 || wrapRect.height === 0) return;
+
+    var imgRatio = this.img.naturalWidth / this.img.naturalHeight;
+    var wrapRatio = wrapRect.width / wrapRect.height;
+    var vpW, vpH;
+    if (wrapRatio > imgRatio) {
+      vpH = wrapRect.height;
+      vpW = wrapRect.height * imgRatio;
+    } else {
+      vpW = wrapRect.width;
+      vpH = wrapRect.width / imgRatio;
+    }
+    this._viewport.style.width = vpW + 'px';
+    this._viewport.style.height = vpH + 'px';
   }
 
   _updateTabs(tabs) {

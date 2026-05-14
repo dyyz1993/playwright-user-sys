@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Coordinate Verification</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #1a1a2e; font-family: monospace; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .container { background: #16213e; border-radius: 16px; padding: 24px; max-width: 1000px; width: 100%; }
+    h1 { color: #e0e0e0; font-size: 18px; margin-bottom: 12px; text-align: center; }
+    
+    /* Coordinate cursor tracker */
+    #cursor-info {
+      background: #0f3460; color: #ffd700; padding: 8px 16px; border-radius: 8px;
+      font-size: 14px; text-align: center; margin-bottom: 16px;
+    }
+    #cursor-info span { color: #e0e0e0; }
+    
+    /* Grid of coordinate targets */
+    .grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+    }
+    .target {
+      background: #1a1a3e; border: 2px solid #333; border-radius: 8px;
+      height: 80px; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; color: #666; font-size: 11px;
+      transition: all 0.15s; cursor: crosshair; user-select: none;
+    }
+    .target:hover {
+      background: #2ecc71 !important; border-color: #27ae60 !important;
+      color: white !important; transform: scale(1.05);
+    }
+    .target .coords { font-size: 10px; color: inherit; }
+    .target .label { font-size: 13px; font-weight: bold; color: inherit; margin-bottom: 2px; }
+    
+    /* Specific coordinate targets at exact positions */
+    .coords-section { margin-top: 20px; }
+    .coords-section h2 { color: #888; font-size: 13px; margin-bottom: 8px; }
+    .coords-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .coord-dot {
+      width: 60px; height: 60px; background: #1a1a3e; border: 2px solid #444;
+      border-radius: 8px; transition: all 0.15s; cursor: crosshair;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; color: #666; text-align: center;
+    }
+    .coord-dot:hover {
+      background: #e74c3c !important; border-color: #c0392b !important;
+      color: white !important; transform: scale(1.15);
+    }
+    
+    /* Mouse tracker */
+    #mouse-tracker {
+      position: fixed; top: 4px; right: 4px; background: rgba(0,0,0,0.8);
+      color: #0f0; padding: 6px 12px; border-radius: 6px; font-size: 12px; z-index: 999;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🧪 坐标验证页面</h1>
+  <div id="cursor-info">鼠标位置: <span id="pos">(等待鼠标移动...)</span></div>
+  
+  <div class="grid">
+    <div class="target" style="grid-column:1"><div class="label">A</div><div class="coords">(160,120)</div></div>
+    <div class="target" style="grid-column:2"><div class="label">B</div><div class="coords">(480,120)</div></div>
+    <div class="target" style="grid-column:3"><div class="label">C</div><div class="coords">(640,120)</div></div>
+    <div class="target" style="grid-column:4"><div class="label">D</div><div class="coords">(800,120)</div></div>
+    <div class="target" style="grid-column:5"><div class="label">E</div><div class="coords">(1120,120)</div></div>
+    
+    <div class="target"><div class="label">F</div><div class="coords">(160,280)</div></div>
+    <div class="target"><div class="label">G</div><div class="coords">(480,280)</div></div>
+    <div class="target"><div class="label">H</div><div class="coords">(640,280)</div></div>
+    <div class="target"><div class="label">I</div><div class="coords">(800,280)</div></div>
+    <div class="target"><div class="label">J</div><div class="coords">(1120,280)</div></div>
+    
+    <div class="target"><div class="label">K</div><div class="coords">(160,440)</div></div>
+    <div class="target"><div class="label">L</div><div class="coords">(480,440)</div></div>
+    <div class="target"><div class="label">M</div><div class="coords">(640,440)</div></div>
+    <div class="target"><div class="label">N</div><div class="coords">(800,440)</div></div>
+    <div class="target"><div class="label">O</div><div class="coords">(1120,440)</div></div>
+    
+    <div class="target"><div class="label">P</div><div class="coords">(160,600)</div></div>
+    <div class="target"><div class="label">Q</div><div class="coords">(480,600)</div></div>
+    <div class="target"><div class="label">R</div><div class="coords">(640,600)</div></div>
+    <div class="target"><div class="label">S</div><div class="coords">(800,600)</div></div>
+    <div class="target"><div class="label">T</div><div class="coords">(1120,600)</div></div>
+  </div>
+  
+  <p style="color:#555;font-size:11px;text-align:center;margin-top:16px;">
+    红色圆点光标悬停在目标上 → 目标变绿 = 坐标精准 ✅<br>
+    如果目标无反应，坐标映射有偏差
+  </p>
+</div>
+
+<script>
+  var pos = document.getElementById('pos');
+  document.addEventListener('mousemove', function(e) {
+    pos.textContent = '(' + e.clientX + ', ' + e.clientY + ')';
+  });
+</script>
+</body>
+</html>

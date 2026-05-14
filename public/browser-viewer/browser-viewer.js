@@ -40,9 +40,7 @@ class BrowserViewer {
     this.lastBandwidthTime = Date.now();
     this.currentBandwidth = 0;
     this.cursor = document.createElement('div');
-    this.cursor.style.cssText = 'position:absolute;width:20px;height:26px;pointer-events:none;z-index:9999;display:none;';
-    this.cursor.innerHTML = '<svg width="20" height="26" viewBox="0 0 20 26" style="display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));"><path d="M0,0 L0,21 L5.5,15.5 L10,24 L13,22.5 L8.5,13.5 L16,13.5 Z" fill="#00D4FF" stroke="#0099CC" stroke-width="1.5" stroke-linejoin="round" /></svg>';
-    this._cursorPath = this.cursor.querySelector('path');
+    this.cursor.style.cssText = 'position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
     this._cursorColor = 'normal';
     this.cursorOffset = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 40 : 0;
     this._cursorX = 0;
@@ -885,8 +883,18 @@ class BrowserViewer {
           self._cursorInitialized = true;
           var _r = self.img.getBoundingClientRect();
           if (_r.width > 0 && _r.height > 0) {
-            self._cursorX = _r.width / 2;
-            self._cursorY = _r.height / 2;
+            var _imgRatio = self.img.naturalWidth / self.img.naturalHeight;
+            var _containerRatio = _r.width / _r.height;
+            var _rOffX, _rOffY, _rW, _rH;
+            if (_containerRatio > _imgRatio) {
+              _rH = _r.height; _rW = _r.height * _imgRatio;
+              _rOffX = (_r.width - _rW) / 2; _rOffY = 0;
+            } else {
+              _rW = _r.width; _rH = _r.width / _imgRatio;
+              _rOffX = 0; _rOffY = (_r.height - _rH) / 2;
+            }
+            self._cursorX = _rOffX + _rW / 2;
+            self._cursorY = _rOffY + _rH / 2;
             self.cursor.style.left = self._cursorX + 'px';
             self.cursor.style.top = self._cursorY + 'px';
             self.cursor.style.display = 'block';
@@ -1072,11 +1080,25 @@ class BrowserViewer {
 
     function getCoordsFromCursor(self) {
       var r = img.getBoundingClientRect();
-      var scaleX = self.img.naturalWidth / r.width;
-      var scaleY = self.img.naturalHeight / r.height;
+      var imgRatio = self.img.naturalWidth / self.img.naturalHeight;
+      var containerRatio = r.width / r.height;
+      var renderWidth, renderHeight, offsetX, offsetY;
+
+      if (containerRatio > imgRatio) {
+        renderHeight = r.height;
+        renderWidth = r.height * imgRatio;
+        offsetX = (r.width - renderWidth) / 2;
+        offsetY = 0;
+      } else {
+        renderWidth = r.width;
+        renderHeight = r.width / imgRatio;
+        offsetX = 0;
+        offsetY = (r.height - renderHeight) / 2;
+      }
+
       return {
-        x: Math.round(self._cursorX * scaleX),
-        y: Math.round(self._cursorY * scaleY)
+        x: Math.round((self._cursorX - offsetX) * (self.img.naturalWidth / renderWidth)),
+        y: Math.round((self._cursorY - offsetY) * (self.img.naturalHeight / renderHeight))
       };
     }
 
@@ -1178,16 +1200,16 @@ class BrowserViewer {
       if (self.cursorOffset > 0) {
         self.cursor.style.display = 'block';
         self._cursorColor = 'normal';
-        self._cursorPath.setAttribute('fill', '#00D4FF');
-        self._cursorPath.setAttribute('stroke', '#0099CC');
+        self.cursor.style.background = 'rgba(255,0,0,0.5)';
+        self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
       }
 
       longPressTimer = setTimeout(function () {
         isLongPress = true;
         if (self.cursorOffset > 0) {
           self._cursorColor = 'longpress';
-          self._cursorPath.setAttribute('fill', '#FF6B35');
-          self._cursorPath.setAttribute('stroke', '#CC4400');
+          self.cursor.style.background = 'rgba(255,165,0,0.6)';
+          self.cursor.style.borderColor = 'rgba(255,140,0,0.9)';
         }
         var rc = getCoordsFromCursor(self);
         rc.button = 0;
@@ -1223,8 +1245,8 @@ class BrowserViewer {
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
       if (!isLongPress && self.cursorOffset > 0) {
         self._cursorColor = 'normal';
-        self._cursorPath.setAttribute('fill', '#00D4FF');
-        self._cursorPath.setAttribute('stroke', '#0099CC');
+        self.cursor.style.background = 'rgba(255,0,0,0.5)';
+        self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
       }
       var deltaX = (touch.clientX - lastFingerX) * 1.5;
       var deltaY = (touch.clientY - lastFingerY) * 1.5;
@@ -1232,8 +1254,18 @@ class BrowserViewer {
       lastFingerY = touch.clientY;
 
       var r = img.getBoundingClientRect();
-      self._cursorX = Math.max(0, Math.min(r.width, self._cursorX + deltaX));
-      self._cursorY = Math.max(0, Math.min(r.height, self._cursorY + deltaY));
+      var _imgRatio = self.img.naturalWidth / self.img.naturalHeight;
+      var _containerRatio = r.width / r.height;
+      var _rOffX, _rOffY, _rW, _rH;
+      if (_containerRatio > _imgRatio) {
+        _rH = r.height; _rW = r.height * _imgRatio;
+        _rOffX = (r.width - _rW) / 2; _rOffY = 0;
+      } else {
+        _rW = r.width; _rH = r.width / _imgRatio;
+        _rOffX = 0; _rOffY = (r.height - _rH) / 2;
+      }
+      self._cursorX = Math.max(_rOffX, Math.min(_rOffX + _rW, self._cursorX + deltaX));
+      self._cursorY = Math.max(_rOffY, Math.min(_rOffY + _rH, self._cursorY + deltaY));
 
       self.cursor.style.left = self._cursorX + 'px';
       self.cursor.style.top = self._cursorY + 'px';
@@ -1259,8 +1291,8 @@ class BrowserViewer {
 
       self._cursorColor = 'normal';
       if (self.cursorOffset > 0) {
-        self._cursorPath.setAttribute('fill', '#00D4FF');
-        self._cursorPath.setAttribute('stroke', '#0099CC');
+        self.cursor.style.background = 'rgba(255,0,0,0.5)';
+        self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
       }
       lastTouch1 = null;
       lastTouch2 = null;

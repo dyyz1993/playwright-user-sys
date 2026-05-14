@@ -91,6 +91,7 @@ COPY --chown=nodejs:nodejs public/browser-viewer ./dist/public/browser-viewer
 COPY --chown=nodejs:nodejs public/test-interactive.html ./dist/src/public/test-interactive.html
 COPY --chown=nodejs:nodejs public/slider-test.html ./dist/src/public/slider-test.html
 COPY --chown=nodejs:nodejs public/accept-test.html ./dist/src/public/accept-test.html
+COPY --chown=nodejs:nodejs public/coords-test.html ./dist/src/public/coords-test.html
 
 # Set environment variables
 ENV NODE_ENV=production \

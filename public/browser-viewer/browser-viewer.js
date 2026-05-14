@@ -1245,7 +1245,10 @@ class BrowserViewer {
     var pinchSampleStart = 0;
     var scrollAccumDist = 0;
 
-    img.addEventListener('touchstart', function (e) {
+    var touchTarget = self.cursorOffset > 0 ? self._wrapper : img;
+    if (touchTarget) touchTarget.style.touchAction = 'none';
+
+    touchTarget.addEventListener('touchstart', function (e) {
       e.preventDefault();
       self._touchActive = true;
       self._touchLastTime = Date.now();
@@ -1291,7 +1294,7 @@ class BrowserViewer {
       }, 800);
     }, { passive: false });
 
-    img.addEventListener('touchmove', function (e) {
+    touchTarget.addEventListener('touchmove', function (e) {
       e.preventDefault();
       self._touchActive = true;
       self._touchLastTime = Date.now();
@@ -1390,7 +1393,7 @@ class BrowserViewer {
       lastFingerY = touch.clientY;
     }, { passive: false });
 
-    img.addEventListener('touchend', function (e) {
+    touchTarget.addEventListener('touchend', function (e) {
       e.preventDefault();
       self._touchActive = true;
       self._touchLastTime = Date.now();

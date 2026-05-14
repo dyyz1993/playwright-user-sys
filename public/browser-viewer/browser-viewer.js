@@ -112,14 +112,16 @@ class BrowserViewer {
 
     this.container.innerHTML =
       '<div id="bv-wrapper" style="width:100%;height:100%;position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;">' +
-        '<div id="bv-viewport" style="position:relative;overflow:hidden;">' +
-          '<img id="bv-screen" alt="远程浏览器画面" crossOrigin="anonymous" draggable="false" style="width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;pointer-events:auto;" />' +
+        '<div id="bv-viewport" style="position:relative;max-width:100%;max-height:100%;line-height:0;">' +
+          '<img id="bv-screen" alt="远程浏览器画面" crossOrigin="anonymous" draggable="false" style="display:block;max-width:100%;max-height:100%;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;pointer-events:auto;" />' +
+          '<div id="bv-cursor-layer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>' +
           '<div id="bv-status" style="position:absolute;top:10px;left:10px;color:#fff;font-size:12px;z-index:10;font-family:system-ui,-apple-system,sans-serif;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:4px;">连接中...</div>' +
         '</div>' +
       '</div>';
     this.img = this.container.querySelector('#bv-screen');
     this._wrapper = this.container.querySelector('#bv-wrapper');
     this._viewport = this.container.querySelector('#bv-viewport');
+    this._cursorLayer = this.container.querySelector('#bv-cursor-layer');
     this.img.draggable = false;
     if (this.container) {
       this.container.appendChild(this.loadingIndicator);
@@ -134,8 +136,8 @@ class BrowserViewer {
     imgEl.addEventListener('selectstart', function(e) { e.preventDefault(); });
     imgEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
     // Cursor must be inside viewport so left/top are relative to viewport = img's container
-    if (this._viewport) {
-      this._viewport.appendChild(this.cursor);
+    if (this._cursorLayer) {
+      this._cursorLayer.appendChild(this.cursor);
     }
 
     this.kbBtn = document.createElement('div');
@@ -166,38 +168,29 @@ class BrowserViewer {
     this.pasteBtn.style.cssText = 'position:absolute;bottom:108px;right:10px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.6);color:white;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:9999;user-select:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
     this.pasteBtn.textContent = '\uD83D\uDCCE';
     this.pasteBtn.title = '粘贴 (Ctrl+V) - 粘贴本地剪贴板内容到远程浏览器';
-    this.pasteBtn.addEventListener('click', async function() {
-      try {
-        var text = await navigator.clipboard.readText();
-        if (!text) throw new Error('Empty clipboard');
-        self.send({ type: 'paste', text: text });
-        self.pasteBtn.style.background = 'rgba(76,175,80,0.8)';
-        setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
-        return;
-      } catch(e) {
-        console.warn('[BV] Clipboard API failed:', e.message);
-      }
-      try {
-        var ta = document.createElement('textarea');
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        ta.contentEditable = 'true';
-        document.body.appendChild(ta);
-        ta.focus();
-        document.execCommand('paste');
-        var text = ta.value || ta.textContent || '';
-        document.body.removeChild(ta);
-        if (text) {
-          self.send({ type: 'paste', text: text });
+    this.pasteBtn.addEventListener('click', function() {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(function(text) {
+          if (text) {
+            self.send({ type: 'paste', text: text });
+            self._addNotification('📎 已发送粘贴指令');
+          } else {
+            self._addNotification('⚠️ 本地剪贴板为空');
+          }
           self.pasteBtn.style.background = 'rgba(76,175,80,0.8)';
           setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
-          return;
-        }
-      } catch(e2) {
-        console.warn('[BV] execCommand paste failed:', e2.message);
+        }).catch(function() {
+          self._addNotification('⚠️ 无法读取剪贴板，请手动 Ctrl+V');
+          self.pasteBtn.style.background = 'rgba(255,59,48,0.8)';
+          setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
+        });
+      } else {
+        self.send({ type: 'event', event: { type: 'keydown', data: { key: 'v', code: 'KeyV', ctrlKey: true } } });
+        self.send({ type: 'event', event: { type: 'keyup', data: { key: 'v', code: 'KeyV', ctrlKey: true } } });
+        self._addNotification('📎 已发送粘贴指令');
+        self.pasteBtn.style.background = 'rgba(76,175,80,0.8)';
+        setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
       }
-      self.pasteBtn.style.background = 'rgba(255,59,48,0.8)';
-      setTimeout(function() { self.pasteBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
     });
     if (this.container) {
       this.container.appendChild(this.pasteBtn);
@@ -212,6 +205,7 @@ class BrowserViewer {
       self.send({ type: 'event', event: { type: 'keyup', data: { key: 'c', code: 'KeyC', ctrlKey: true } } });
       self.copyBtn.style.background = 'rgba(76,175,80,0.8)';
       setTimeout(function() { self.copyBtn.style.background = 'rgba(0,0,0,0.6)'; }, 1000);
+      self._addNotification('📋 已发送复制指令...');
       self._pendingLocalCopy = true;
     });
     if (this.container) {
@@ -347,6 +341,7 @@ class BrowserViewer {
       copyMbBtn.onclick = function() {
         self.send({ type: 'event', event: { type: 'keydown', data: { key: 'c', code: 'KeyC', ctrlKey: true } } });
         self.send({ type: 'event', event: { type: 'keyup', data: { key: 'c', code: 'KeyC', ctrlKey: true } } });
+        self._addNotification('📋 已发送复制指令...');
         self._pendingLocalCopy = true;
         self._pendingLocalCopyIsMobile = true;
         copyMbBtn.style.background = '#4caf50';
@@ -357,26 +352,29 @@ class BrowserViewer {
       pasteMbBtn.textContent = '\uD83D\uDCCE';
       pasteMbBtn.title = '粘贴到远程';
       pasteMbBtn.style.cssText = 'width:36px;height:36px;border:none;border-radius:8px;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
-      pasteMbBtn.onclick = async function() {
-        pasteMbBtn.style.background = '#4caf50';
-        try {
-          var t = await navigator.clipboard.readText();
-          if (t) { self.send({ type: 'paste', text: t }); setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000); return; }
-        } catch(e) { console.warn('[BV] paste clipboard API:', e.message); }
-        try {
-          var ta = document.createElement('textarea');
-          ta.style.position = 'fixed';
-          ta.style.left = '-9999px';
-          ta.contentEditable = 'true';
-          document.body.appendChild(ta);
-          ta.focus();
-          document.execCommand('paste');
-          var t = ta.value || ta.textContent || '';
-          document.body.removeChild(ta);
-          if (t) { self.send({ type: 'paste', text: t }); setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000); return; }
-        } catch(e2) { console.warn('[BV] paste execCommand:', e2.message); }
-        pasteMbBtn.style.background = '#ff3b30';
-        setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000);
+      pasteMbBtn.onclick = function() {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          navigator.clipboard.readText().then(function(text) {
+            if (text) {
+              self.send({ type: 'paste', text: text });
+              self._addNotification('📎 已发送粘贴指令');
+            } else {
+              self._addNotification('⚠️ 本地剪贴板为空');
+            }
+            pasteMbBtn.style.background = '#4caf50';
+            setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000);
+          }).catch(function() {
+            self._addNotification('⚠️ 无法读取剪贴板，请手动粘贴');
+            pasteMbBtn.style.background = '#ff3b30';
+            setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000);
+          });
+        } else {
+          self.send({ type: 'event', event: { type: 'keydown', data: { key: 'v', code: 'KeyV', ctrlKey: true } } });
+          self.send({ type: 'event', event: { type: 'keyup', data: { key: 'v', code: 'KeyV', ctrlKey: true } } });
+          self._addNotification('📎 已发送粘贴指令');
+          pasteMbBtn.style.background = '#4caf50';
+          setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000);
+        }
       };
 
       mobileBar.appendChild(backBtn);
@@ -417,9 +415,7 @@ class BrowserViewer {
       });
     }
 
-    window.addEventListener('resize', function() {
-      self._resizeViewport();
-    });
+
 
     return this;
   }
@@ -892,25 +888,21 @@ class BrowserViewer {
         self.lastBlobUrl = url;
         self.img.src = url;
         // Recalculate cursor position on each frame (img may resize after navigation)
-        if (self.cursorOffset > 0 && self.img.naturalWidth > 0 && self.img.naturalHeight > 0) {
-          self._resizeViewport();
-          var vp = self._viewport;
-          if (vp) {
-            var vpW = vp.offsetWidth;
-            var vpH = vp.offsetHeight;
-            if (vpW > 0 && vpH > 0) {
-              if (!self._cursorInitialized) {
-                self._cursorX = vpW / 2;
-                self._cursorY = vpH / 2;
-                self._cursorInitialized = true;
-              } else {
-                self._cursorX = Math.max(0, Math.min(vpW, self._cursorX));
-                self._cursorY = Math.max(0, Math.min(vpH, self._cursorY));
-              }
-              self.cursor.style.left = self._cursorX + 'px';
-              self.cursor.style.top = self._cursorY + 'px';
-              self.cursor.style.display = 'block';
+        if (self.cursorOffset > 0 && self._cursorLayer) {
+          var vpW = self._viewport.offsetWidth;
+          var vpH = self._viewport.offsetHeight;
+          if (vpW > 0 && vpH > 0) {
+            if (!self._cursorInitialized) {
+              self._cursorX = vpW / 2;
+              self._cursorY = vpH / 2;
+              self._cursorInitialized = true;
+            } else {
+              self._cursorX = Math.max(0, Math.min(vpW, self._cursorX));
+              self._cursorY = Math.max(0, Math.min(vpH, self._cursorY));
             }
+            self.cursor.style.left = self._cursorX + 'px';
+            self.cursor.style.top = self._cursorY + 'px';
+            self.cursor.style.display = 'block';
           }
         }
       } else if (typeof e.data === 'string') {
@@ -1005,32 +997,33 @@ class BrowserViewer {
         } else if (msg.type === 'clipboard') {
           var clipText = (msg.event && msg.event.text) || (msg.data && msg.data.text) || '';
           if (clipText) {
-            self._addNotification('\uD83D\uDCCB \u590D\u5236: ' + clipText.substring(0, 100));
+            self._addNotification('\uD83D\uDCCB \u5DF2\u590D\u5236: ' + clipText.substring(0, 50));
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(clipText).catch(function() {});
+            }
             if (self._pendingLocalCopy) {
               self._pendingLocalCopy = false;
               var isMobilePaste = self._pendingLocalCopyIsMobile || false;
               self._pendingLocalCopyIsMobile = false;
-              navigator.clipboard.writeText(clipText).then(function() {
-                if (isMobilePaste && self.copyMbBtn) {
-                  self.copyMbBtn.style.background = '#4caf50';
-                  self.copyMbBtn.textContent = '\u2705';
-                  setTimeout(function() {
-                    if (self.copyMbBtn) {
-                      self.copyMbBtn.style.background = '';
-                      self.copyMbBtn.textContent = '\uD83D\uDCCB';
-                    }
-                  }, 1500);
-                } else if (self.copyBtn) {
-                  self.copyBtn.style.background = 'rgba(76,175,80,0.8)';
-                  self.copyBtn.textContent = '\u2705';
-                  setTimeout(function() {
-                    if (self.copyBtn) {
-                      self.copyBtn.style.background = 'rgba(0,0,0,0.6)';
-                      self.copyBtn.textContent = '\uD83D\uDCCB';
-                    }
-                  }, 1500);
-                }
-              });
+              if (isMobilePaste && self.copyMbBtn) {
+                self.copyMbBtn.style.background = '#4caf50';
+                self.copyMbBtn.textContent = '\u2705';
+                setTimeout(function() {
+                  if (self.copyMbBtn) {
+                    self.copyMbBtn.style.background = '';
+                    self.copyMbBtn.textContent = '\uD83D\uDCCB';
+                  }
+                }, 1500);
+              } else if (self.copyBtn) {
+                self.copyBtn.style.background = 'rgba(76,175,80,0.8)';
+                self.copyBtn.textContent = '\u2705';
+                setTimeout(function() {
+                  if (self.copyBtn) {
+                    self.copyBtn.style.background = 'rgba(0,0,0,0.6)';
+                    self.copyBtn.textContent = '\uD83D\uDCCB';
+                  }
+                }, 1500);
+              }
             }
           }
         } else if (msg.type === 'filechooser') {
@@ -1068,26 +1061,10 @@ class BrowserViewer {
     var img = this.img;
 
     function getCoords(e) {
-      var r = img.getBoundingClientRect();
-      var imgRatio = 1280 / 800;
-      var containerRatio = r.width / r.height;
-      var renderWidth, renderHeight, offsetX, offsetY;
-
-      if (containerRatio > imgRatio) {
-        renderHeight = r.height;
-        renderWidth = r.height * imgRatio;
-        offsetX = r.left + (r.width - renderWidth) / 2;
-        offsetY = r.top;
-      } else {
-        renderWidth = r.width;
-        renderHeight = r.width / imgRatio;
-        offsetX = r.left;
-        offsetY = r.top + (r.height - renderHeight) / 2;
-      }
-
+      var vpr = self._viewport.getBoundingClientRect();
       return {
-        x: Math.round((e.clientX - offsetX) * (1280 / renderWidth)),
-        y: Math.round((e.clientY - offsetY) * (800 / renderHeight)),
+        x: Math.round((e.clientX - vpr.left) / vpr.width * self.img.naturalWidth),
+        y: Math.round((e.clientY - vpr.top) / vpr.height * self.img.naturalHeight)
       };
     }
 
@@ -1106,12 +1083,9 @@ class BrowserViewer {
       self.send({ type: 'event', event: { type: 'mousemove', data: c } });
       if (self.cursorOffset > 0) {
         self.cursor.style.display = 'block';
-        var vp = self._viewport;
-        if (vp) {
-          var vpr = vp.getBoundingClientRect();
-          self.cursor.style.left = (e.clientX - vpr.left) + 'px';
-          self.cursor.style.top = (e.clientY - vpr.top - self.cursorOffset) + 'px';
-        }
+        var vpr = self._viewport.getBoundingClientRect();
+        self.cursor.style.left = (e.clientX - vpr.left) + 'px';
+        self.cursor.style.top = (e.clientY - vpr.top - self.cursorOffset) + 'px';
       }
     });
 
@@ -1312,25 +1286,6 @@ class BrowserViewer {
     if (this.eventsWs && this.eventsWs.readyState === WebSocket.OPEN) {
       this.eventsWs.send(JSON.stringify(msg));
     }
-  }
-
-  _resizeViewport() {
-    if (!this._viewport || !this.img || !this.img.naturalWidth) return;
-    var wrapRect = this._wrapper.getBoundingClientRect();
-    if (wrapRect.width === 0 || wrapRect.height === 0) return;
-
-    var imgRatio = this.img.naturalWidth / this.img.naturalHeight;
-    var wrapRatio = wrapRect.width / wrapRect.height;
-    var vpW, vpH;
-    if (wrapRatio > imgRatio) {
-      vpH = wrapRect.height;
-      vpW = wrapRect.height * imgRatio;
-    } else {
-      vpW = wrapRect.width;
-      vpH = wrapRect.width / imgRatio;
-    }
-    this._viewport.style.width = vpW + 'px';
-    this._viewport.style.height = vpH + 'px';
   }
 
   _updateTabs(tabs) {

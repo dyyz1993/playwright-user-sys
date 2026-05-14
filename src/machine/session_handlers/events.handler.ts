@@ -872,18 +872,28 @@ async function handleMouseEvents(
 
             case 'keyDown':
               if (data.key) {
-                if (data.ctrlKey) await page.keyboard.down('Control');
-                if (data.shiftKey) await page.keyboard.down('Shift');
-                if (data.altKey) await page.keyboard.down('Alt');
-                await page.keyboard.down(data.key as any);
+                // For modifier+key combos (Ctrl+C, Ctrl+V, etc.), use keyboard.press()
+                // which triggers browser-level actions (copy, paste, select all, etc.)
+                const hasModifier = data.ctrlKey || data.metaKey || data.shiftKey || data.altKey;
+                if (hasModifier) {
+                  const parts: string[] = [];
+                  if (data.ctrlKey || data.metaKey) parts.push('Control');
+                  if (data.shiftKey) parts.push('Shift');
+                  if (data.altKey) parts.push('Alt');
+                  parts.push(data.key);
+                  await page.keyboard.press(parts.join('+') as any);
+                } else {
+                  await page.keyboard.down(data.key as any);
+                }
               }
               break;
             case 'keyUp':
               if (data.key) {
-                await page.keyboard.up(data.key as any);
-                if (data.ctrlKey) await page.keyboard.up('Control');
-                if (data.shiftKey) await page.keyboard.up('Shift');
-                if (data.altKey) await page.keyboard.up('Alt');
+                // Only send up for non-modifier keys (modifier combos handled by press in keyDown)
+                const hasModifier = data.ctrlKey || data.metaKey || data.shiftKey || data.altKey;
+                if (!hasModifier) {
+                  await page.keyboard.up(data.key as any);
+                }
               }
               break;
             case 'keyPress':

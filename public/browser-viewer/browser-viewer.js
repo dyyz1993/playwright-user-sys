@@ -40,8 +40,7 @@ class BrowserViewer {
     this.lastBandwidthTime = Date.now();
     this.currentBandwidth = 0;
     this.cursor = document.createElement('div');
-    var cursorSize = Math.max(8, Math.round(window.innerWidth * 0.03));
-    this.cursor.style.cssText = 'position:absolute;width:' + cursorSize + 'px;height:' + cursorSize + 'px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
+    this.cursor.style.cssText = 'position:absolute;width:10px;height:10px;border-radius:50%;background:rgba(255,0,0,0.5);border:2px solid rgba(255,0,0,0.8);pointer-events:none;transform:translate(-50%,-50%);display:none;z-index:9999;';
     this._cursorColor = 'normal';
     this.cursorOffset = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 40 : 0;
     this._cursorX = 0;

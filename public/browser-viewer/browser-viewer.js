@@ -51,6 +51,7 @@ class BrowserViewer {
     this._maxReconnectAttempts = 3;
     this._pendingLocalCopy = false;
     this._pendingLocalCopyIsMobile = false;
+    this._lastInputValue = '';
 
     this.loadingIndicator = document.createElement('div');
     this.loadingIndicator.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;font-size:14px;z-index:10;pointer-events:none;';
@@ -61,16 +62,16 @@ class BrowserViewer {
     this.errorIndicator.innerHTML = '<div style="font-size:40px;margin-bottom:8px;">😵</div><div id="error-text" style="font-size:15px;color:#333;margin-bottom:12px;">连接失败</div><button onclick="location.reload()" style="padding:10px 24px;background:#007AFF;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;">重新连接</button>';
 
     this.hiddenInput = document.createElement('textarea');
-    this.hiddenInput.style.cssText = 'position:fixed;top:-100px;left:-100px;width:1px;height:1px;opacity:0.01;font-size:16px;border:none;outline:none;resize:none;';
+    this.hiddenInput.style.cssText = 'position:fixed;top:-100px;left:-100px;width:1px;height:40px;opacity:0.01;font-size:16px;border:none;outline:none;resize:none;';
     this.hiddenInput.setAttribute('autocomplete', 'off');
     this.hiddenInput.setAttribute('autocorrect', 'off');
     this.hiddenInput.setAttribute('autocapitalize', 'off');
     this.hiddenInput.setAttribute('spellcheck', 'false');
+    this.hiddenInput.setAttribute('inputmode', 'text');
     document.body.appendChild(this.hiddenInput);
 
     var self = this;
     var isComposing = false;
-    var lastInputValue = '';
 
     this.hiddenInput.addEventListener('compositionstart', function() {
       isComposing = true;
@@ -79,30 +80,38 @@ class BrowserViewer {
     this.hiddenInput.addEventListener('compositionend', function(e) {
       isComposing = false;
       var composedText = e.data || '';
+      self.hiddenInput.value = '';
+      self._lastInputValue = '';
       if (composedText) {
         self.send({ type: 'event', event: { type: 'input', data: { value: composedText } } });
       }
-      setTimeout(function() { self.hiddenInput.value = ''; lastInputValue = ''; }, 50);
     });
 
     this.hiddenInput.addEventListener('input', function(e) {
       if (isComposing) return;
       var newValue = self.hiddenInput.value;
-      if (newValue.length > lastInputValue.length) {
-        var addedText = newValue.substring(lastInputValue.length);
-        for (var i = 0; i < addedText.length; i++) {
-          var ch = addedText[i];
-          self.send({ type: 'event', event: { type: 'keydown', data: { key: ch, code: 'Key' + ch.toUpperCase() } } });
-          self.send({ type: 'event', event: { type: 'keyup', data: { key: ch, code: 'Key' + ch.toUpperCase() } } });
+
+      if (newValue === '' && self._lastInputValue === '') return;
+
+      if (newValue.length > self._lastInputValue.length) {
+        var addedText = newValue.substring(self._lastInputValue.length);
+        if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(addedText)) {
+          self.send({ type: 'event', event: { type: 'input', data: { value: addedText } } });
+        } else {
+          for (var i = 0; i < addedText.length; i++) {
+            var ch = addedText[i];
+            self.send({ type: 'event', event: { type: 'keydown', data: { key: ch, code: 'Key' + ch.toUpperCase() } } });
+            self.send({ type: 'event', event: { type: 'keyup', data: { key: ch, code: 'Key' + ch.toUpperCase() } } });
+          }
         }
-      } else if (newValue.length < lastInputValue.length) {
-        var deletedCount = lastInputValue.length - newValue.length;
+      } else if (newValue.length < self._lastInputValue.length) {
+        var deletedCount = self._lastInputValue.length - newValue.length;
         for (var j = 0; j < deletedCount; j++) {
           self.send({ type: 'event', event: { type: 'keydown', data: { key: 'Backspace', code: 'Backspace' } } });
           self.send({ type: 'event', event: { type: 'keyup', data: { key: 'Backspace', code: 'Backspace' } } });
         }
       }
-      lastInputValue = newValue;
+      self._lastInputValue = newValue;
     });
   }
 
@@ -339,14 +348,21 @@ class BrowserViewer {
       copyMbBtn.title = '复制到本地';
       copyMbBtn.style.cssText = 'width:36px;height:36px;border:none;border-radius:8px;background:rgba(255,255,255,0.15);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
       copyMbBtn.onclick = function() {
+        copyMbBtn.textContent = '⏳';
         self.send({ type: 'event', event: { type: 'keydown', data: { key: 'c', code: 'KeyC', ctrlKey: true } } });
         self.send({ type: 'event', event: { type: 'keyup', data: { key: 'c', code: 'KeyC', ctrlKey: true } } });
         self._addNotification('📋 已发送复制指令...');
         self._pendingLocalCopy = true;
         self._pendingLocalCopyIsMobile = true;
-        copyMbBtn.style.background = '#4caf50';
-        setTimeout(function() { copyMbBtn.style.background = ''; }, 1000);
+        setTimeout(function() {
+          if (self._pendingLocalCopy) {
+            self._pendingLocalCopy = false;
+            copyMbBtn.textContent = '📋';
+            copyMbBtn.style.background = '';
+          }
+        }, 3000);
       };
+      self.copyMbBtn = copyMbBtn;
 
       var pasteMbBtn = document.createElement('button');
       pasteMbBtn.textContent = '\uD83D\uDCCE';
@@ -364,18 +380,48 @@ class BrowserViewer {
             pasteMbBtn.style.background = '#4caf50';
             setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000);
           }).catch(function() {
-            self._addNotification('⚠️ 无法读取剪贴板，请手动粘贴');
-            pasteMbBtn.style.background = '#ff3b30';
-            setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000);
+            self._addNotification('📋 请长按输入框粘贴内容');
+            self.hiddenInput.value = '';
+            self.hiddenInput.focus();
+            var pasteListener = function() {
+              var val = self.hiddenInput.value;
+              if (val && val !== self._lastInputValue) {
+                self.send({ type: 'paste', text: val });
+                self._addNotification('📎 已发送粘贴指令');
+                self.hiddenInput.value = '';
+                self._lastInputValue = '';
+                pasteMbBtn.style.background = '#4caf50';
+                setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000);
+                self.hiddenInput.removeEventListener('input', pasteListener);
+              }
+            };
+            self.hiddenInput.addEventListener('input', pasteListener);
+            setTimeout(function() {
+              self.hiddenInput.removeEventListener('input', pasteListener);
+            }, 5000);
+            pasteMbBtn.style.background = '';
           });
         } else {
-          self.send({ type: 'event', event: { type: 'keydown', data: { key: 'v', code: 'KeyV', ctrlKey: true } } });
-          self.send({ type: 'event', event: { type: 'keyup', data: { key: 'v', code: 'KeyV', ctrlKey: true } } });
-          self._addNotification('📎 已发送粘贴指令');
-          pasteMbBtn.style.background = '#4caf50';
-          setTimeout(function() { pasteMbBtn.style.background = ''; }, 1000);
+          self._addNotification('📋 请长按输入框粘贴内容');
+          self.hiddenInput.value = '';
+          self.hiddenInput.focus();
+          var fallbackListener = function() {
+            var val = self.hiddenInput.value;
+            if (val) {
+              self.send({ type: 'paste', text: val });
+              self._addNotification('📎 已发送粘贴指令');
+              self.hiddenInput.value = '';
+              self._lastInputValue = '';
+              self.hiddenInput.removeEventListener('input', fallbackListener);
+            }
+          };
+          self.hiddenInput.addEventListener('input', fallbackListener);
+          setTimeout(function() {
+            self.hiddenInput.removeEventListener('input', fallbackListener);
+          }, 5000);
         }
       };
+      self.pasteMbBtn = pasteMbBtn;
 
       mobileBar.appendChild(backBtn);
       mobileBar.appendChild(fwdBtn);
@@ -567,7 +613,13 @@ class BrowserViewer {
 
   _showFileManager(allowedTypes, allowMultiple) {
     this._fmAllowedTypes = allowedTypes || null;
-    if (this._fmModal) { this._fmModal.style.display = 'flex'; this._fmRefreshList(); return; }
+    if (this._fmModal) {
+      if (this._fmInput) {
+        this._fmInput.accept = allowedTypes || '';
+        this._fmInput.multiple = allowMultiple !== false;
+      }
+      this._fmModal.style.display = 'flex'; this._fmRefreshList(); return;
+    }
     var self = this;
 
     var modal = document.createElement('div');
@@ -681,28 +733,7 @@ class BrowserViewer {
     var ext = fileName.split('.').pop().toLowerCase();
     var isImage = ['jpg','jpeg','png','gif','webp','bmp','svg','ico'].indexOf(ext) >= 0;
 
-    function matchesAccept(filename, accept) {
-      if (!accept) return true;
-      var e = filename.split('.').pop().toLowerCase();
-      var parts = accept.split(',').map(function(s) { return s.trim().toLowerCase(); });
-      for (var i = 0; i < parts.length; i++) {
-        var p = parts[i];
-        if (p === '*/*' || p === '*') return true;
-        if (p.indexOf('/') >= 0) {
-          var cat = p.split('/')[0];
-          if (cat === 'image' && ['jpg','jpeg','png','gif','webp','bmp','svg','ico'].indexOf(e) >= 0) return true;
-          if (cat === 'video' && ['mp4','webm','ogg','avi','mov'].indexOf(e) >= 0) return true;
-          if (cat === 'audio' && ['mp3','wav','ogg','aac','flac'].indexOf(e) >= 0) return true;
-          if (p === 'application/pdf' && e === 'pdf') return true;
-          if (p === 'text/*' && ['txt','csv','json','xml','html','css','js','md'].indexOf(e) >= 0) return true;
-        } else if (p === '.' + e) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    var allowed = !self._fmAllowedTypes || matchesAccept(fileName, self._fmAllowedTypes);
+    var allowed = !self._fmAllowedTypes || self._matchesAccept(fileName, self._fmAllowedTypes);
 
     var card = document.createElement('div');
     card.style.cssText = 'background:#2a2a3e;border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;position:relative;';
@@ -805,14 +836,39 @@ class BrowserViewer {
   _fmUploadHandler(files) {
     if (!files || !files.length) return;
     var self = this;
+
+    var skippedNames = [];
+    var validFiles = [];
+    for (var i = 0; i < files.length; i++) {
+      if (self._fmAllowedTypes && !self._matchesAccept(files[i].name, self._fmAllowedTypes)) {
+        skippedNames.push(files[i].name);
+      } else {
+        validFiles.push(files[i]);
+      }
+    }
+
+    if (validFiles.length === 0) {
+      if (skippedNames.length === 1) {
+        alert('\u4E0D\u652F\u6301\u7684\u6587\u4EF6\u7C7B\u578B: ' + skippedNames[0]);
+      } else {
+        alert('\u6240\u6709 ' + skippedNames.length + ' \u4E2A\u6587\u4EF6\u5747\u4E0D\u7B26\u5408\u5141\u8BB8\u7684\u6587\u4EF6\u7C7B\u578B');
+      }
+      return;
+    }
+
     var grid = this._fmGrid;
+    var statusText = '\u23F3 \u4E0A\u4F20\u4E2D';
+    if (skippedNames.length > 0) {
+      statusText += ' (' + skippedNames.length + ' \u4E2A\u6587\u4EF6\u5DF2\u8DF3\u8FC7)';
+    }
+    statusText += '...';
     var statusEl = document.createElement('div');
     statusEl.style.cssText = 'grid-column:1/-1;text-align:center;padding:20px;color:rgba(255,255,255,0.6);font-size:13px;';
-    statusEl.textContent = '\u23F3 上传中...';
+    statusEl.textContent = statusText;
     grid.appendChild(statusEl);
 
     var pending = [];
-    for (var i = 0; i < files.length; i++) {
+    for (var i = 0; i < validFiles.length; i++) {
       (function(file) {
         var fd = new FormData();
         fd.append('sessionId', self.sessionId);
@@ -828,12 +884,16 @@ class BrowserViewer {
             return r.json();
           })
         );
-      })(files[i]);
+      })(validFiles[i]);
     }
 
     Promise.all(pending)
     .then(function() {
-      statusEl.textContent = '\u2705 上传完成';
+      var msg = '\u2705 \u4E0A\u4F20\u5B8C\u6210';
+      if (skippedNames.length > 0) {
+        msg += ' (' + skippedNames.length + ' \u4E2A\u6587\u4EF6\u56E0\u7C7B\u578B\u4E0D\u652F\u6301\u5DF2\u8DF3\u8FC7)';
+      }
+      statusEl.textContent = msg;
       self._fmRefreshList();
     })
     .catch(function(err) {
@@ -841,6 +901,27 @@ class BrowserViewer {
       statusEl.style.color = '#ef4444';
       setTimeout(function() { if (statusEl.parentNode) statusEl.parentNode.removeChild(statusEl); }, 3000);
     });
+  }
+
+  _matchesAccept(filename, accept) {
+    if (!accept) return true;
+    var e = filename.split('.').pop().toLowerCase();
+    var parts = accept.split(',').map(function(s) { return s.trim().toLowerCase(); });
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      if (p === '*/*' || p === '*') return true;
+      if (p.indexOf('/') >= 0) {
+        var cat = p.split('/')[0];
+        if (cat === 'image' && ['jpg','jpeg','png','gif','webp','bmp','svg','ico'].indexOf(e) >= 0) return true;
+        if (cat === 'video' && ['mp4','webm','ogg','avi','mov'].indexOf(e) >= 0) return true;
+        if (cat === 'audio' && ['mp3','wav','ogg','aac','flac'].indexOf(e) >= 0) return true;
+        if (p === 'application/pdf' && e === 'pdf') return true;
+        if (p === 'text/*' && ['txt','csv','json','xml','html','css','js','md'].indexOf(e) >= 0) return true;
+      } else if (p === '.' + e) {
+        return true;
+      }
+    }
+    return false;
   }
 
   _connectStream() {
@@ -1149,14 +1230,20 @@ class BrowserViewer {
     });
 
     // === Touch events ===
+    var activeGestureMode = null;
+    var touchStartX = 0;
+    var touchStartY = 0;
     var touchStartTime = 0;
-    var touchStartCoords = null;
     var longPressTimer = null;
     var isLongPress = false;
+    var hasMoved = false;
+    var lastTapTime = 0;
     var lastTouch1 = null;
     var lastTouch2 = null;
     var lastFingerX = 0;
     var lastFingerY = 0;
+    var pinchSampleStart = 0;
+    var scrollAccumDist = 0;
 
     img.addEventListener('touchstart', function (e) {
       e.preventDefault();
@@ -1164,14 +1251,22 @@ class BrowserViewer {
       self._touchLastTime = Date.now();
       var touch = e.touches[0];
       touchStartTime = Date.now();
-      touchStartCoords = null;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      hasMoved = false;
       isLongPress = false;
       lastFingerX = touch.clientX;
       lastFingerY = touch.clientY;
 
+      activeGestureMode = null;
+
       if (e.touches.length >= 2) {
-        lastTouch1 = e.touches[0];
-        lastTouch2 = e.touches[1];
+        lastTouch1 = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+        lastTouch2 = { clientX: e.touches[1].clientX, clientY: e.touches[1].clientY };
+        pinchSampleStart = Date.now();
+        scrollAccumDist = 0;
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        return;
       }
 
       if (self.cursorOffset > 0) {
@@ -1183,6 +1278,7 @@ class BrowserViewer {
 
       longPressTimer = setTimeout(function () {
         isLongPress = true;
+        activeGestureMode = 'drag';
         if (self.cursorOffset > 0) {
           self._cursorColor = 'longpress';
           self.cursor.style.background = 'rgba(255,165,0,0.6)';
@@ -1191,6 +1287,7 @@ class BrowserViewer {
         var rc = getCoordsFromCursor(self);
         rc.button = 0;
         self.send({ type: 'event', event: { type: 'mousedown', data: rc } });
+        if (navigator.vibrate) navigator.vibrate(50);
       }, 800);
     }, { passive: false });
 
@@ -1199,50 +1296,98 @@ class BrowserViewer {
       self._touchActive = true;
       self._touchLastTime = Date.now();
 
-      if (e.touches.length === 2 && lastTouch1 && lastTouch2) {
-        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+      if (e.touches.length >= 2 && lastTouch1 && lastTouch2) {
         var t1 = e.touches[0];
         var t2 = e.touches[1];
-        var prevDist = Math.hypot(lastTouch1.clientX - lastTouch2.clientX, lastTouch1.clientY - lastTouch2.clientY);
-        var currDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-        var deltaY = (prevDist - currDist) * 2;
-        var prevMidX = (lastTouch1.clientX + lastTouch2.clientX) / 2;
-        var prevMidY = (lastTouch1.clientY + lastTouch2.clientY) / 2;
-        var currMidX = (t1.clientX + t2.clientX) / 2;
-        var currMidY = (t1.clientY + t2.clientY) / 2;
-        var deltaX = (currMidX - prevMidX) * 2;
-        self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: Math.round(deltaX), deltaY: Math.round(deltaY) } } });
-        lastTouch1 = t1;
-        lastTouch2 = t2;
+
+        if (activeGestureMode === null) {
+          if (Date.now() - pinchSampleStart < 150) {
+            lastTouch1 = { clientX: t1.clientX, clientY: t1.clientY };
+            lastTouch2 = { clientX: t2.clientX, clientY: t2.clientY };
+            return;
+          }
+
+          var prevDist = Math.hypot(lastTouch1.clientX - lastTouch2.clientX, lastTouch1.clientY - lastTouch2.clientY);
+          var currDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+          var distDelta = Math.abs(currDist - prevDist);
+          var zoomSpeed = distDelta / Math.max(1, Date.now() - pinchSampleStart);
+
+          var prevMidX = (lastTouch1.clientX + lastTouch2.clientX) / 2;
+          var prevMidY = (lastTouch1.clientY + lastTouch2.clientY) / 2;
+          var currMidX = (t1.clientX + t2.clientX) / 2;
+          var currMidY = (t1.clientY + t2.clientY) / 2;
+          scrollAccumDist += Math.hypot(currMidX - prevMidX, currMidY - prevMidY);
+
+          if (zoomSpeed > 0.3 && distDelta > 20) {
+            activeGestureMode = 'zoom';
+          } else if (scrollAccumDist > 50) {
+            activeGestureMode = 'scroll';
+          }
+        }
+
+        if (activeGestureMode === 'zoom') {
+          var prevD = Math.hypot(lastTouch1.clientX - lastTouch2.clientX, lastTouch1.clientY - lastTouch2.clientY);
+          var currD = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+          var zoomDelta = (prevD - currD) * 0.05;
+          self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: 0, deltaY: Math.round(zoomDelta * 20) } } });
+        } else if (activeGestureMode === 'scroll') {
+          var pmx = (lastTouch1.clientX + lastTouch2.clientX) / 2;
+          var pmy = (lastTouch1.clientY + lastTouch2.clientY) / 2;
+          var cmx = (t1.clientX + t2.clientX) / 2;
+          var cmy = (t1.clientY + t2.clientY) / 2;
+          var dx = (cmx - pmx) * 2;
+          var dy = (cmy - pmy) * 2;
+          self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: Math.round(dx), deltaY: Math.round(dy) } } });
+        }
+
+        lastTouch1 = { clientX: t1.clientX, clientY: t1.clientY };
+        lastTouch2 = { clientX: t2.clientX, clientY: t2.clientY };
         return;
       }
 
       var touch = e.touches[0];
-      // Clear long press timer on movement → user is positioning cursor, not clicking
-      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-      if (!isLongPress && self.cursorOffset > 0) {
-        self._cursorColor = 'normal';
-        self.cursor.style.background = 'rgba(255,0,0,0.5)';
-        self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
+      var dx = touch.clientX - lastFingerX;
+      var dy = touch.clientY - lastFingerY;
+      var totalMove = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+
+      if (totalMove > 5) {
+        hasMoved = true;
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
       }
-      var deltaX = (touch.clientX - lastFingerX) * 1.5;
-      var deltaY = (touch.clientY - lastFingerY) * 1.5;
-      lastFingerX = touch.clientX;
-      lastFingerY = touch.clientY;
-
-      var vp = self._viewport;
-      var vpW = vp ? vp.offsetWidth : 1;
-      var vpH = vp ? vp.offsetHeight : 1;
-      self._cursorX = Math.max(0, Math.min(vpW, self._cursorX + deltaX));
-      self._cursorY = Math.max(0, Math.min(vpH, self._cursorY + deltaY));
-
-      self.cursor.style.left = self._cursorX + 'px';
-      self.cursor.style.top = self._cursorY + 'px';
 
       if (isLongPress) {
+        activeGestureMode = 'drag';
         var c = getCoordsFromCursor(self);
         self.send({ type: 'event', event: { type: 'mousemove', data: c } });
+      } else if (hasMoved && activeGestureMode !== 'drag') {
+        if (activeGestureMode === null) {
+          activeGestureMode = 'move';
+        }
+        if (activeGestureMode === 'move') {
+          var now = Date.now();
+          var dt = Math.max(1, now - touchStartTime);
+          var speed = Math.hypot(dx, dy) / dt;
+          var accelerationFactor = 1.0 + Math.min(speed * 0.5, 3.0);
+
+          var vp = self._viewport;
+          var vpW = vp ? vp.offsetWidth : 1;
+          var vpH = vp ? vp.offsetHeight : 1;
+          self._cursorX = Math.max(0, Math.min(vpW, self._cursorX + dx * accelerationFactor));
+          self._cursorY = Math.max(0, Math.min(vpH, self._cursorY + dy * accelerationFactor));
+
+          self.cursor.style.left = self._cursorX + 'px';
+          self.cursor.style.top = self._cursorY + 'px';
+
+          if (self._cursorColor !== 'normal' && self.cursorOffset > 0) {
+            self._cursorColor = 'normal';
+            self.cursor.style.background = 'rgba(255,0,0,0.5)';
+            self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
+          }
+        }
       }
+
+      lastFingerX = touch.clientX;
+      lastFingerY = touch.clientY;
     }, { passive: false });
 
     img.addEventListener('touchend', function (e) {
@@ -1251,20 +1396,48 @@ class BrowserViewer {
       self._touchLastTime = Date.now();
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 
-      if (isLongPress) {
-        var c = getCoordsFromCursor(self);
-        c.button = 0;
-        self.send({ type: 'event', event: { type: 'mouseup', data: c } });
-        self.send({ type: 'event', event: { type: 'click', data: c } });
-      }
+      if (e.touches.length === 0) {
+        if (activeGestureMode === null && !hasMoved) {
+          var now = Date.now();
+          var c = getCoordsFromCursor(self);
+          c.button = 0;
 
-      self._cursorColor = 'normal';
-      if (self.cursorOffset > 0) {
-        self.cursor.style.background = 'rgba(255,0,0,0.5)';
-        self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
+          if (now - lastTapTime < 300) {
+            c.clickCount = 2;
+            self.send({ type: 'event', event: { type: 'click', data: c } });
+          } else {
+            c.clickCount = 1;
+            self.send({ type: 'event', event: { type: 'click', data: c } });
+          }
+          lastTapTime = now;
+
+        } else if (activeGestureMode === 'drag') {
+          var c = getCoordsFromCursor(self);
+          c.button = 0;
+          self.send({ type: 'event', event: { type: 'mouseup', data: c } });
+        }
+
+        activeGestureMode = null;
+        isLongPress = false;
+        hasMoved = false;
+        self._cursorColor = 'normal';
+        if (self.cursorOffset > 0) {
+          self.cursor.style.background = 'rgba(255,0,0,0.5)';
+          self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
+        }
+        lastTouch1 = null;
+        lastTouch2 = null;
+      } else {
+        if (e.touches.length === 1) {
+          lastFingerX = e.touches[0].clientX;
+          lastFingerY = e.touches[0].clientY;
+          lastTouch1 = null;
+          lastTouch2 = null;
+          if (activeGestureMode === 'zoom' || activeGestureMode === 'scroll') {
+            activeGestureMode = null;
+          }
+        }
       }
-      lastTouch1 = null;
-      lastTouch2 = null;
     }, { passive: false });
   }
 

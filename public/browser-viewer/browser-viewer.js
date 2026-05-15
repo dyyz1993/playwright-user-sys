@@ -1360,6 +1360,14 @@ class BrowserViewer {
 
       if (isLongPress) {
         activeGestureMode = 'drag';
+        // 更新本地光标位置（和 Move 一样的位移逻辑）
+        var vp = self._viewport;
+        var vpW = vp ? vp.offsetWidth : 1;
+        var vpH = vp ? vp.offsetHeight : 1;
+        self._cursorX = Math.max(0, Math.min(vpW, self._cursorX + dx));
+        self._cursorY = Math.max(0, Math.min(vpH, self._cursorY + dy));
+        self.cursor.style.left = self._cursorX + 'px';
+        self.cursor.style.top = self._cursorY + 'px';
         var c = getCoordsFromCursor(self);
         self.send({ type: 'event', event: { type: 'mousemove', data: c } });
       } else if (hasMoved && activeGestureMode !== 'drag') {

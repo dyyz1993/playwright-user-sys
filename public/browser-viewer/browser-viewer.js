@@ -1266,7 +1266,9 @@ class BrowserViewer {
             }
           }
         } else if (msg.type === 'filechooser') {
-          self._showFileManager(msg.accept, msg.multiple);
+          // 服务端将 accept/multiple 放在 msg.event 中（与 form.field 一致）
+          var fcData = msg.event || msg.data || {};
+          self._showFileManager(fcData.accept, fcData.multiple);
         } else if (msg.type === 'injectResult') {
           if (self._fmInjectCallback) {
             self._fmInjectCallback(msg.event || {});
@@ -1454,6 +1456,12 @@ class BrowserViewer {
       }
 
       if (self.cursorOffset > 0) {
+        // 将光标位置设为触摸点，避免从 (0,0) 左上角开始跳动
+        var vpr = self._viewport.getBoundingClientRect();
+        self._cursorX = Math.max(0, Math.min((self._viewport.offsetWidth || 1), e.touches[0].clientX - vpr.left));
+        self._cursorY = Math.max(0, Math.min((self._viewport.offsetHeight || 1), e.touches[0].clientY - vpr.top));
+        self.cursor.style.left = self._cursorX + 'px';
+        self.cursor.style.top = self._cursorY + 'px';
         self.cursor.style.display = 'block';
         self._cursorColor = 'normal';
         self.cursor.style.background = 'rgba(255,0,0,0.5)';

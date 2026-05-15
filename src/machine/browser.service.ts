@@ -1061,14 +1061,15 @@ export class BrowserService extends EventEmitter {
           const cursor = document.createElement('div');
           cursor.id = 'remote-cursor-pointer';
           cursor.style.position = 'fixed';
-          cursor.style.width = '16px';
-          cursor.style.height = '16px';
+          cursor.style.width = '10px';
+          cursor.style.height = '10px';
           cursor.style.borderRadius = '50%';
-          cursor.style.backgroundColor = '#ff3b30';
+          cursor.style.border = '2px solid rgba(0,120,255,0.8)';
+          cursor.style.backgroundColor = 'rgba(0,120,255,0.3)';
           cursor.style.transform = 'translate(-50%, -50%)';
           cursor.style.zIndex = '9999999';
           cursor.style.pointerEvents = 'none';
-          cursor.style.cursor = 'pointer'; // 添加指针样式
+          cursor.style.display = 'none';
 
           // 当DOM加载完成后添加到body
           if (document.readyState === 'loading') {
@@ -1095,9 +1096,7 @@ export class BrowserService extends EventEmitter {
             // 更新光标位置
             cursor.style.left = `${cssX}px`;
             cursor.style.top = `${cssY}px`;
-
-            // 传递坐标信息
-            // window.updateMousePosition(cssX, cssY, width, height);
+            cursor.style.display = 'block';
           });
         })
         .catch((error) => {

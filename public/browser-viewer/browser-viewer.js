@@ -134,8 +134,8 @@ class BrowserViewer {
 
     this.container.innerHTML =
       '<div id="bv-wrapper" style="width:100%;height:100%;position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;">' +
-        '<div id="bv-viewport" style="position:relative;max-width:100%;max-height:100%;line-height:0;">' +
-          '<img id="bv-screen" alt="远程浏览器画面" crossOrigin="anonymous" draggable="false" style="display:block;max-width:100%;max-height:100%;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;pointer-events:auto;" />' +
+          '<div id="bv-viewport" style="position:relative;width:100%;height:100%;line-height:0;">' +
+            '<img id="bv-screen" alt="远程浏览器画面" crossOrigin="anonymous" draggable="false" style="display:block;width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;pointer-events:auto;" />' +
           '<div id="bv-cursor-layer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>' +
           '<div id="bv-status" style="position:absolute;top:10px;left:10px;color:#fff;font-size:12px;z-index:10;font-family:system-ui,-apple-system,sans-serif;background:rgba(0,0,0,0.5);padding:2px 8px;border-radius:4px;">连接中...</div>' +
         '</div>' +
@@ -1342,26 +1342,28 @@ class BrowserViewer {
       };
     }
 
+    var _pcMouseMoved = false;
+
+    img.addEventListener('mousedown', function (e) {
+      if (self._touchActive && Date.now() - (self._touchLastTime || 0) < 500) return;
+      _pcMouseMoved = false;
+      var c = getCoords(e);
+      c.button = e.button;
+      self.send({ type: 'event', event: { type: 'mousedown', data: c } });
+    });
+
     img.addEventListener('mousemove', function (e) {
+      _pcMouseMoved = true;
       var c = getCoords(e);
       self.send({ type: 'event', event: { type: 'mousemove', data: c } });
       if (self.cursorOffset > 0) {
         self.cursor.style.display = 'block';
         var vpr = self._viewport.getBoundingClientRect();
-        self.cursor.style.left = (e.clientX - vpr.left) + 'px';
-        self.cursor.style.top = (e.clientY - vpr.top - self.cursorOffset) + 'px';
+        self._cursorX = e.clientX - vpr.left;
+        self._cursorY = e.clientY - vpr.top - self.cursorOffset;
+        self.cursor.style.left = self._cursorX + 'px';
+        self.cursor.style.top = self._cursorY + 'px';
       }
-    });
-
-    img.addEventListener('mouseleave', function () {
-      if (self.cursorOffset > 0) self.cursor.style.display = 'none';
-    });
-
-    img.addEventListener('mousedown', function (e) {
-      if (self._touchActive && Date.now() - (self._touchLastTime || 0) < 500) return;
-      var c = getCoords(e);
-      c.button = e.button;
-      self.send({ type: 'event', event: { type: 'mousedown', data: c } });
     });
 
     img.addEventListener('mouseup', function (e) {
@@ -1373,6 +1375,11 @@ class BrowserViewer {
 
     img.addEventListener('click', function (e) {
       if (self._touchActive && Date.now() - (self._touchLastTime || 0) < 500) return;
+      // 如果 mousedown 后有 mousemove（拖拽选中文本），不发送 click，避免清除选中状态
+      if (_pcMouseMoved) {
+        _pcMouseMoved = false;
+        return;
+      }
       e.preventDefault();
       var c = getCoords(e);
       c.button = e.button;
@@ -1456,10 +1463,12 @@ class BrowserViewer {
       }
 
       if (self.cursorOffset > 0) {
-        // 将光标位置设为触摸点，避免从 (0,0) 左上角开始跳动
+        // 将光标位置设为触摸点上方 cursorOffset 处，限制在 viewport 范围内
         var vpr = self._viewport.getBoundingClientRect();
-        self._cursorX = Math.max(0, Math.min((self._viewport.offsetWidth || 1), e.touches[0].clientX - vpr.left));
-        self._cursorY = Math.max(0, Math.min((self._viewport.offsetHeight || 1), e.touches[0].clientY - vpr.top));
+        var vpW = self._viewport.offsetWidth || 1;
+        var vpH = self._viewport.offsetHeight || 1;
+        self._cursorX = Math.max(0, Math.min(vpW, e.touches[0].clientX - vpr.left));
+        self._cursorY = Math.max(0, Math.min(vpH, e.touches[0].clientY - vpr.top - self.cursorOffset));
         self.cursor.style.left = self._cursorX + 'px';
         self.cursor.style.top = self._cursorY + 'px';
         self.cursor.style.display = 'block';

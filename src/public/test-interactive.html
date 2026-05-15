@@ -49,6 +49,47 @@
 </div>
 
 <div class="section">
+  <h2>动态输入框（受控组件）</h2>
+  <p style="font-size:13px;color:#999;margin:4px 0;">模拟 React/Vue 受控组件 & 百度动态搜索框</p>
+
+  <!-- React 风格受控组件 -->
+  <div style="margin:8px 0;padding:8px;background:#f8f9fa;border-radius:6px;">
+    <h3 style="font-size:15px;margin:0 0 8px 0;">① React 风格受控组件</h3>
+    <input type="text" id="dynamic-input-react" placeholder="React 受控输入..." style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:16px;">
+    <div style="margin-top:6px;font-size:13px;">
+      <span>当前值: </span><code id="dynamic-react-value" style="color:#007AFF;"></code>
+      <span style="margin-left:12px;">事件次数: <span id="dynamic-react-count">0</span></span>
+      <span id="dynamic-react-status" style="margin-left:8px;"></span>
+    </div>
+  </div>
+
+  <!-- 动态搜索框（模拟百度） -->
+  <div style="margin:8px 0;padding:8px;background:#f8f9fa;border-radius:6px;">
+    <h3 style="font-size:15px;margin:0 0 8px 0;">② 动态搜索框（模拟百度）</h3>
+    <div id="dynamic-search-container">
+      <div style="color:#999;font-size:14px;">搜索框将在 500ms 后动态创建...</div>
+    </div>
+    <div style="margin-top:6px;font-size:13px;">
+      <span>当前值: </span><code id="dynamic-search-value" style="color:#FF9500;"></code>
+      <span style="margin-left:12px;">事件次数: <span id="dynamic-search-count">0</span></span>
+      <span id="dynamic-search-status" style="margin-left:8px;"></span>
+    </div>
+    <div id="dynamic-search-suggestions" style="display:none;margin-top:4px;background:white;border:1px solid #ddd;border-radius:4px;max-height:120px;overflow-y:auto;"></div>
+  </div>
+
+  <!-- ContentEditable 输入框 -->
+  <div style="margin:8px 0;padding:8px;background:#f8f9fa;border-radius:6px;">
+    <h3 style="font-size:15px;margin:0 0 8px 0;">③ ContentEditable 输入框</h3>
+    <div id="dynamic-input-contenteditable" contenteditable="true" style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:16px;min-height:40px;background:white;outline:none;" data-placeholder="ContentEditable 输入..."></div>
+    <div style="margin-top:6px;font-size:13px;">
+      <span>当前值: </span><code id="dynamic-ce-value" style="color:#34C759;"></code>
+      <span style="margin-left:12px;">字符数: <span id="dynamic-ce-charcount">0</span></span>
+      <span id="dynamic-ce-status" style="margin-left:8px;"></span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
   <h2>选择</h2>
   <select onchange="logEvent('选择: ' + this.value)">
     <option value="">请选择...</option>
@@ -171,6 +212,136 @@ function logEvent(msg) {
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
 }
+
+// === 动态输入框逻辑 ===
+
+// ① React 风格受控组件
+(function() {
+  var state = { value: '' };
+  var input = document.getElementById('dynamic-input-react');
+  var valueDisplay = document.getElementById('dynamic-react-value');
+  var countDisplay = document.getElementById('dynamic-react-count');
+  var statusDisplay = document.getElementById('dynamic-react-status');
+  var eventCount = 0;
+
+  // React 风格：拦截 value setter，只通过事件更新 state
+  function setState(newValue) {
+    state.value = newValue;
+    valueDisplay.textContent = newValue || '(空)';
+    countDisplay.textContent = ++eventCount;
+    if (newValue && newValue.length > 0) {
+      statusDisplay.textContent = '✓';
+      statusDisplay.style.color = '#34C759';
+    } else {
+      statusDisplay.textContent = '';
+    }
+    logEvent('React 受控: ' + newValue);
+  }
+
+  input.addEventListener('input', function(e) {
+    setState(e.target.value);
+  });
+
+  // 初始化显示
+  valueDisplay.textContent = '(空)';
+})();
+
+// ② 动态搜索框（模拟百度 - 延迟创建）
+(function() {
+  var state = { value: '' };
+  var valueDisplay = document.getElementById('dynamic-search-value');
+  var countDisplay = document.getElementById('dynamic-search-count');
+  var statusDisplay = document.getElementById('dynamic-search-status');
+  var suggestions = document.getElementById('dynamic-search-suggestions');
+  var eventCount = 0;
+
+  var searchSuggestions = ['天气预报', '今日新闻', '翻译', '地图导航', '股票行情', '热门电影', '快递查询', '计算器'];
+
+  function setState(newValue) {
+    state.value = newValue;
+    valueDisplay.textContent = newValue || '(空)';
+    countDisplay.textContent = ++eventCount;
+    if (newValue && newValue.length > 0) {
+      statusDisplay.textContent = '✓';
+      statusDisplay.style.color = '#34C759';
+    } else {
+      statusDisplay.textContent = '';
+    }
+
+    // 显示搜索建议
+    if (newValue && newValue.length > 0) {
+      var matches = searchSuggestions.filter(function(s) { return s.indexOf(newValue) !== -1; });
+      if (matches.length > 0) {
+        suggestions.style.display = 'block';
+        suggestions.innerHTML = matches.map(function(m) {
+          return '<div style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;" onmousedown="document.getElementById(\'dynamic-input-search\').value=\'' + m + '\'; document.getElementById(\'dynamic-input-search\').dispatchEvent(new Event(\'input\', {bubbles:true}));">' + m + '</div>';
+        }).join('');
+      } else {
+        suggestions.style.display = 'none';
+      }
+    } else {
+      suggestions.style.display = 'none';
+    }
+    logEvent('动态搜索: ' + newValue);
+  }
+
+  // 延迟 500ms 动态创建搜索框
+  setTimeout(function() {
+    var container = document.getElementById('dynamic-search-container');
+    container.innerHTML = '<input type="text" id="dynamic-input-search" placeholder="动态搜索框..." style="width:100%;padding:8px 12px;border:2px solid #FF9500;border-radius:6px;font-size:16px;">';
+    var searchInput = document.getElementById('dynamic-input-search');
+    searchInput.addEventListener('input', function(e) {
+      setState(e.target.value);
+    });
+    searchInput.addEventListener('blur', function() {
+      suggestions.style.display = 'none';
+    });
+    logEvent('动态搜索框已创建');
+  }, 500);
+
+  valueDisplay.textContent = '(空)';
+})();
+
+// ③ ContentEditable 输入框
+(function() {
+  var state = { value: '' };
+  var editable = document.getElementById('dynamic-input-contenteditable');
+  var valueDisplay = document.getElementById('dynamic-ce-value');
+  var charCountDisplay = document.getElementById('dynamic-ce-charcount');
+  var statusDisplay = document.getElementById('dynamic-ce-status');
+
+  function setState(newValue) {
+    state.value = newValue;
+    valueDisplay.textContent = newValue || '(空)';
+    charCountDisplay.textContent = (newValue || '').length;
+    if (newValue && newValue.length > 0) {
+      statusDisplay.textContent = '✓';
+      statusDisplay.style.color = '#34C759';
+    } else {
+      statusDisplay.textContent = '';
+    }
+    logEvent('ContentEditable: ' + newValue);
+  }
+
+  editable.addEventListener('input', function(e) {
+    setState(e.target.textContent || e.target.innerText);
+  });
+
+  // 占位符
+  if (!editable.textContent.trim()) {
+    editable.style.color = '#999';
+    editable.textContent = 'ContentEditable 输入...';
+    editable.addEventListener('focus', function handler() {
+      if (editable.textContent === 'ContentEditable 输入...') {
+        editable.textContent = '';
+        editable.style.color = '';
+      }
+      editable.removeEventListener('focus', handler);
+    });
+  }
+
+  valueDisplay.textContent = '(空)';
+})();
 
 logEvent('页面加载完成');
 </script>

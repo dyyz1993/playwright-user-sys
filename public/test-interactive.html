@@ -49,6 +49,47 @@
 </div>
 
 <div class="section">
+  <h2>动态输入框（受控组件）</h2>
+  <p style="font-size:13px;color:#999;margin:4px 0;">模拟 React/Vue 受控组件 & 百度动态搜索框</p>
+
+  <!-- React 风格受控组件 -->
+  <div style="margin:8px 0;padding:8px;background:#f8f9fa;border-radius:6px;">
+    <h3 style="font-size:15px;margin:0 0 8px 0;">① React 风格受控组件</h3>
+    <input type="text" id="dynamic-input-react" placeholder="React 受控输入..." style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:16px;">
+    <div style="margin-top:6px;font-size:13px;">
+      <span>当前值: </span><code id="dynamic-react-value" style="color:#007AFF;"></code>
+      <span style="margin-left:12px;">事件次数: <span id="dynamic-react-count">0</span></span>
+      <span id="dynamic-react-status" style="margin-left:8px;"></span>
+    </div>
+  </div>
+
+  <!-- 动态搜索框（模拟百度） -->
+  <div style="margin:8px 0;padding:8px;background:#f8f9fa;border-radius:6px;">
+    <h3 style="font-size:15px;margin:0 0 8px 0;">② 动态搜索框（模拟百度）</h3>
+    <div id="dynamic-search-container">
+      <div style="color:#999;font-size:14px;">搜索框将在 500ms 后动态创建...</div>
+    </div>
+    <div style="margin-top:6px;font-size:13px;">
+      <span>当前值: </span><code id="dynamic-search-value" style="color:#FF9500;"></code>
+      <span style="margin-left:12px;">事件次数: <span id="dynamic-search-count">0</span></span>
+      <span id="dynamic-search-status" style="margin-left:8px;"></span>
+    </div>
+    <div id="dynamic-search-suggestions" style="display:none;margin-top:4px;background:white;border:1px solid #ddd;border-radius:4px;max-height:120px;overflow-y:auto;"></div>
+  </div>
+
+  <!-- ContentEditable 输入框 -->
+  <div style="margin:8px 0;padding:8px;background:#f8f9fa;border-radius:6px;">
+    <h3 style="font-size:15px;margin:0 0 8px 0;">③ ContentEditable 输入框</h3>
+    <div id="dynamic-input-contenteditable" contenteditable="true" style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:16px;min-height:40px;background:white;outline:none;" data-placeholder="ContentEditable 输入..."></div>
+    <div style="margin-top:6px;font-size:13px;">
+      <span>当前值: </span><code id="dynamic-ce-value" style="color:#34C759;"></code>
+      <span style="margin-left:12px;">字符数: <span id="dynamic-ce-charcount">0</span></span>
+      <span id="dynamic-ce-status" style="margin-left:8px;"></span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
   <h2>选择</h2>
   <select onchange="logEvent('选择: ' + this.value)">
     <option value="">请选择...</option>
@@ -91,6 +132,19 @@
 <div class="section">
   <h2>文件上传</h2>
   <input type="file" onchange="logEvent('文件: ' + this.files[0]?.name + ' (' + this.files[0]?.size + ' bytes)')">
+</div>
+
+<div class="section">
+  <h2>动态文件上传（延迟创建）</h2>
+  <p style="font-size:13px;color:#999;margin:4px 0;">模拟百度等网站的动态 file input — 点击按钮后 500ms 创建 file input 并自动 click</p>
+  <div id="dynamic-upload-container">
+    <button class="btn btn-primary" id="dynamic-upload-trigger" style="display:none;">选择文件上传</button>
+    <div style="color:#999;font-size:14px;">文件上传按钮将在 1 秒后动态创建...</div>
+  </div>
+  <div style="margin-top:6px;font-size:13px;">
+    <span>上传状态: </span><code id="dynamic-upload-status" style="color:#FF9500;">等待中</code>
+    <span style="margin-left:8px;">文件名: <span id="dynamic-upload-filename">(无)</span></span>
+  </div>
 </div>
 
 <div class="section">
@@ -171,6 +225,184 @@ function logEvent(msg) {
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
 }
+
+// === 动态输入框逻辑 ===
+
+// ① React 风格受控组件
+(function() {
+  var state = { value: '' };
+  var input = document.getElementById('dynamic-input-react');
+  var valueDisplay = document.getElementById('dynamic-react-value');
+  var countDisplay = document.getElementById('dynamic-react-count');
+  var statusDisplay = document.getElementById('dynamic-react-status');
+  var eventCount = 0;
+
+  // React 风格：拦截 value setter，只通过事件更新 state
+  function setState(newValue) {
+    state.value = newValue;
+    valueDisplay.textContent = newValue || '(空)';
+    countDisplay.textContent = ++eventCount;
+    if (newValue && newValue.length > 0) {
+      statusDisplay.textContent = '✓';
+      statusDisplay.style.color = '#34C759';
+    } else {
+      statusDisplay.textContent = '';
+    }
+    logEvent('React 受控: ' + newValue);
+  }
+
+  input.addEventListener('input', function(e) {
+    setState(e.target.value);
+  });
+
+  // 初始化显示
+  valueDisplay.textContent = '(空)';
+})();
+
+// ② 动态搜索框（模拟百度 - 延迟创建）
+(function() {
+  var state = { value: '' };
+  var valueDisplay = document.getElementById('dynamic-search-value');
+  var countDisplay = document.getElementById('dynamic-search-count');
+  var statusDisplay = document.getElementById('dynamic-search-status');
+  var suggestions = document.getElementById('dynamic-search-suggestions');
+  var eventCount = 0;
+
+  var searchSuggestions = ['天气预报', '今日新闻', '翻译', '地图导航', '股票行情', '热门电影', '快递查询', '计算器'];
+
+  function setState(newValue) {
+    state.value = newValue;
+    valueDisplay.textContent = newValue || '(空)';
+    countDisplay.textContent = ++eventCount;
+    if (newValue && newValue.length > 0) {
+      statusDisplay.textContent = '✓';
+      statusDisplay.style.color = '#34C759';
+    } else {
+      statusDisplay.textContent = '';
+    }
+
+    // 显示搜索建议
+    if (newValue && newValue.length > 0) {
+      var matches = searchSuggestions.filter(function(s) { return s.indexOf(newValue) !== -1; });
+      if (matches.length > 0) {
+        suggestions.style.display = 'block';
+        suggestions.innerHTML = matches.map(function(m) {
+          return '<div style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eee;" onmousedown="document.getElementById(\'dynamic-input-search\').value=\'' + m + '\'; document.getElementById(\'dynamic-input-search\').dispatchEvent(new Event(\'input\', {bubbles:true}));">' + m + '</div>';
+        }).join('');
+      } else {
+        suggestions.style.display = 'none';
+      }
+    } else {
+      suggestions.style.display = 'none';
+    }
+    logEvent('动态搜索: ' + newValue);
+  }
+
+  // 延迟 500ms 动态创建搜索框
+  setTimeout(function() {
+    var container = document.getElementById('dynamic-search-container');
+    container.innerHTML = '<input type="text" id="dynamic-input-search" placeholder="动态搜索框..." style="width:100%;padding:8px 12px;border:2px solid #FF9500;border-radius:6px;font-size:16px;">';
+    var searchInput = document.getElementById('dynamic-input-search');
+    searchInput.addEventListener('input', function(e) {
+      setState(e.target.value);
+    });
+    searchInput.addEventListener('blur', function() {
+      suggestions.style.display = 'none';
+    });
+    logEvent('动态搜索框已创建');
+  }, 500);
+
+  valueDisplay.textContent = '(空)';
+})();
+
+// ③ ContentEditable 输入框
+(function() {
+  var state = { value: '' };
+  var editable = document.getElementById('dynamic-input-contenteditable');
+  var valueDisplay = document.getElementById('dynamic-ce-value');
+  var charCountDisplay = document.getElementById('dynamic-ce-charcount');
+  var statusDisplay = document.getElementById('dynamic-ce-status');
+
+  function setState(newValue) {
+    state.value = newValue;
+    valueDisplay.textContent = newValue || '(空)';
+    charCountDisplay.textContent = (newValue || '').length;
+    if (newValue && newValue.length > 0) {
+      statusDisplay.textContent = '✓';
+      statusDisplay.style.color = '#34C759';
+    } else {
+      statusDisplay.textContent = '';
+    }
+    logEvent('ContentEditable: ' + newValue);
+  }
+
+  editable.addEventListener('input', function(e) {
+    setState(e.target.textContent || e.target.innerText);
+  });
+
+  // 占位符
+  if (!editable.textContent.trim()) {
+    editable.style.color = '#999';
+    editable.textContent = 'ContentEditable 输入...';
+    editable.addEventListener('focus', function handler() {
+      if (editable.textContent === 'ContentEditable 输入...') {
+        editable.textContent = '';
+        editable.style.color = '';
+      }
+      editable.removeEventListener('focus', handler);
+    });
+  }
+
+  valueDisplay.textContent = '(空)';
+})();
+
+// ④ 动态文件上传（延迟创建，模拟百度等网站）
+(function() {
+  var container = document.getElementById('dynamic-upload-container');
+  var statusEl = document.getElementById('dynamic-upload-status');
+  var filenameEl = document.getElementById('dynamic-upload-filename');
+
+  setTimeout(function() {
+    // 动态创建 file input
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'dynamic-file-input';
+    fileInput.accept = 'image/*,.pdf,.txt';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+
+    // 动态创建触发按钮
+    var triggerBtn = document.createElement('button');
+    triggerBtn.textContent = '📷 选择图片上传';
+    triggerBtn.className = 'btn btn-primary';
+    triggerBtn.style.cssText = 'padding:10px 20px;border:none;border-radius:6px;cursor:pointer;font-size:16px;background:#007AFF;color:white;margin:4px;';
+    triggerBtn.addEventListener('click', function() {
+      statusEl.textContent = '正在打开文件选择器...';
+      statusEl.style.color = '#FF9500';
+      logEvent('动态上传: fileInput.click() 被调用');
+      fileInput.click(); // 触发 __fileInputClickEvent 拦截器
+    });
+
+    fileInput.addEventListener('change', function() {
+      var file = fileInput.files && fileInput.files[0];
+      if (file) {
+        statusEl.textContent = '✅ 上传成功';
+        statusEl.style.color = '#34C759';
+        filenameEl.textContent = file.name + ' (' + file.size + ' bytes)';
+        logEvent('动态上传成功: ' + file.name + ' (' + file.size + ' bytes)');
+      } else {
+        statusEl.textContent = '❌ 未选择文件';
+        statusEl.style.color = '#FF3B30';
+      }
+    });
+
+    container.innerHTML = '';
+    container.appendChild(triggerBtn);
+    logEvent('动态文件上传按钮已创建');
+  }, 1000);
+
+  statusEl.textContent = '等待中';
+})();
 
 logEvent('页面加载完成');
 </script>

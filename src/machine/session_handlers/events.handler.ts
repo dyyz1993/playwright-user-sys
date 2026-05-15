@@ -491,6 +491,119 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         break;
       }
 
+      // --- 浏览远程机器目录 ---
+      case 'browseDir': {
+        const requestedPath = eventData.path || '/';
+        const tempDir = path.resolve(CONFIG.tempDir);
+        const allowedBasePaths = ['/tmp', tempDir];
+
+        const resolvedPath = path.resolve(requestedPath);
+        const isAllowed = allowedBasePaths.some((bp) => resolvedPath.startsWith(bp));
+
+        if (!isAllowed) {
+          sendResponse(ws, requestType, { success: false, error: 'Access denied: path not allowed' });
+          break;
+        }
+
+        try {
+          const entries = await fs.promises.readdir(resolvedPath, { withFileTypes: true });
+          const items = await Promise.all(
+            entries.map(async (entry) => {
+              const fullPath = path.join(resolvedPath, entry.name);
+              try {
+                const stat = await fs.promises.stat(fullPath);
+                const ext = entry.name.split('.').pop()?.toLowerCase() || '';
+                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'avif'].includes(ext);
+                return {
+                  name: entry.name,
+                  path: fullPath,
+                  isDirectory: entry.isDirectory(),
+                  isFile: entry.isFile(),
+                  size: stat.size,
+                  lastModified: stat.mtimeMs,
+                  ext,
+                  isImage,
+                };
+              } catch {
+                return null;
+              }
+            })
+          );
+
+          const validItems = items.filter((item) => item !== null);
+
+          validItems.sort((a, b) => {
+            if (a.isDirectory && !b.isDirectory) return -1;
+            if (!a.isDirectory && b.isDirectory) return 1;
+            return a.name.localeCompare(b.name);
+          });
+
+          sendResponse(ws, requestType, {
+            success: true,
+            path: resolvedPath,
+            parentPath: path.dirname(resolvedPath),
+            items: validItems,
+          });
+        } catch (err) {
+          sendResponse(ws, requestType, {
+            success: false,
+            error: (err as Error).message,
+            path: resolvedPath,
+          });
+        }
+        break;
+      }
+
+      // --- 获取图片缩略图 ---
+      case 'getThumbnail': {
+        const filePath = eventData.path;
+        const maxSize = eventData.maxSize || 200;
+
+        const tempDir2 = path.resolve(CONFIG.tempDir);
+        const resolvedPath2 = path.resolve(filePath);
+        const isAllowed2 = resolvedPath2.startsWith('/tmp') || resolvedPath2.startsWith(tempDir2);
+
+        if (!isAllowed2) {
+          sendResponse(ws, requestType, { success: false, error: 'Access denied' });
+          break;
+        }
+
+        try {
+          const stat = await fs.promises.stat(resolvedPath2);
+          if (!stat.isFile()) {
+            sendResponse(ws, requestType, { success: false, error: 'Not a file' });
+            break;
+          }
+
+          const fileBuffer = await fs.promises.readFile(resolvedPath2);
+          const ext = resolvedPath2.split('.').pop()?.toLowerCase() || 'png';
+          const mimeType =
+            {
+              jpg: 'image/jpeg',
+              jpeg: 'image/jpeg',
+              png: 'image/png',
+              gif: 'image/gif',
+              webp: 'image/webp',
+              bmp: 'image/bmp',
+              svg: 'image/svg+xml',
+              ico: 'image/x-icon',
+              avif: 'image/avif',
+            }[ext] || 'image/png';
+
+          const base64 = fileBuffer.toString('base64');
+
+          sendResponse(ws, requestType, {
+            success: true,
+            dataUrl: `data:${mimeType};base64,${base64}`,
+            size: stat.size,
+            name: resolvedPath2.split('/').pop(),
+          });
+        } catch (err) {
+          sendResponse(ws, requestType, { success: false, error: (err as Error).message });
+        }
+        break;
+      }
+
       // --- 配置更新 ---
       case 'updateClip':
       // falls through to event handler
@@ -786,7 +899,6 @@ async function handleMouseEvents(
 
         try {
           await targetContext.waitForSelector(selector, {
-            visible: true,
             timeout: 5000,
           });
           await targetContext.focus(selector);

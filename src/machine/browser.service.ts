@@ -586,6 +586,15 @@ export class BrowserService extends EventEmitter {
       });
       logger.info('primaryPage', primaryPage);
 
+      // 为 primaryPage 注入 focusin 脚本（targetcreated 不会触发初始页面）
+      try {
+        await this.injectFocusinScript(sessionId, primaryPage as any);
+        await this.injectMouseTrackingScript(primaryPage as any);
+        logger.info(`focusin & mouse tracking injected on primaryPage for session ${sessionId}`);
+      } catch (focusErr) {
+        logger.warn(`Failed to inject focusin on primaryPage for session ${sessionId}:`, focusErr);
+      }
+
       try {
         // 1. evaluateOnNewDocument so interceptor survives navigation
         await primaryPage.evaluateOnNewDocument(() => {
@@ -1125,8 +1134,8 @@ export class BrowserService extends EventEmitter {
         if (page.isClosed() || page.url().startsWith('devtools://') || page.url().startsWith('file://')) return;
         logger.debug(`新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`);
 
-        await this.injectMouseTrackingScript(page);
-        await this.injectFocusinScript(sessionId, page);
+        await this.injectMouseTrackingScript(page as any);
+        await this.injectFocusinScript(sessionId, page as any);
 
         try {
           const cdp = await page.createCDPSession();

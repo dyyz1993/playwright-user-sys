@@ -52,6 +52,9 @@ class BrowserViewer {
     this._pendingLocalCopy = false;
     this._pendingLocalCopyIsMobile = false;
     this._lastInputValue = '';
+    this._fmCurrentPath = null;
+    this._fmMode = 'session';
+    this._fmThumbnailCache = {};
 
     this.loadingIndicator = document.createElement('div');
     this.loadingIndicator.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;font-size:14px;z-index:10;pointer-events:none;';
@@ -83,7 +86,12 @@ class BrowserViewer {
       self.hiddenInput.value = '';
       self._lastInputValue = '';
       if (composedText) {
-        self.send({ type: 'event', event: { type: 'input', data: { value: composedText } } });
+        var inputData = { value: composedText };
+        if (self._focusedSelector) {
+          inputData.selector = self._focusedSelector;
+          if (self._focusedFrameSelector) inputData.frameSelector = self._focusedFrameSelector;
+        }
+        self.send({ type: 'event', event: { type: 'input', data: inputData } });
       }
     });
 
@@ -96,7 +104,12 @@ class BrowserViewer {
       if (newValue.length > self._lastInputValue.length) {
         var addedText = newValue.substring(self._lastInputValue.length);
         if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(addedText)) {
-          self.send({ type: 'event', event: { type: 'input', data: { value: addedText } } });
+          var inputDataCJK = { value: addedText };
+          if (self._focusedSelector) {
+            inputDataCJK.selector = self._focusedSelector;
+            if (self._focusedFrameSelector) inputDataCJK.frameSelector = self._focusedFrameSelector;
+          }
+          self.send({ type: 'event', event: { type: 'input', data: inputDataCJK } });
         } else {
           for (var i = 0; i < addedText.length; i++) {
             var ch = addedText[i];
@@ -627,7 +640,13 @@ class BrowserViewer {
     modal.innerHTML =
       '<div style="background:#1e1e2e;border-radius:16px;width:90%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.5);color:#fff;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.1);flex-shrink:0;">' +
-          '<span style="font-size:16px;font-weight:600;">\uD83D\uDCC1 文件管理器</span>' +
+          '<div style="display:flex;gap:8px;align-items:center;">' +
+            '<span style="font-size:16px;font-weight:600;">\uD83D\uDCC1 文件管理器</span>' +
+            '<div style="display:flex;gap:4px;margin-left:12px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;overflow:hidden;">' +
+              '<button id="bv-fm-tab-session" class="bv-fm-tab" style="padding:4px 10px;border:none;font-size:12px;cursor:pointer;background:rgba(255,255,255,0.2);color:white;">📁 会话文件</button>' +
+              '<button id="bv-fm-tab-browse" class="bv-fm-tab" style="padding:4px 10px;border:none;font-size:12px;cursor:pointer;background:transparent;color:rgba(255,255,255,0.6);">🖥️ 远程文件</button>' +
+            '</div>' +
+          '</div>' +
           '<span id="bv-fm-close" style="font-size:22px;cursor:pointer;color:rgba(255,255,255,0.6);line-height:1;">&times;</span>' +
         '</div>' +
         '<div style="flex:1;overflow-y:auto;padding:16px;">' +
@@ -640,6 +659,27 @@ class BrowserViewer {
       '</div>';
     document.body.appendChild(modal);
     this._fmModal = modal;
+
+    var tabSession = modal.querySelector('#bv-fm-tab-session');
+    var tabBrowse = modal.querySelector('#bv-fm-tab-browse');
+    if (tabSession && tabBrowse) {
+      tabSession.addEventListener('click', function() {
+        self._fmMode = 'session';
+        tabSession.style.background = 'rgba(255,255,255,0.2)';
+        tabSession.style.color = 'white';
+        tabBrowse.style.background = 'transparent';
+        tabBrowse.style.color = 'rgba(255,255,255,0.6)';
+        self._fmRefreshList();
+      });
+      tabBrowse.addEventListener('click', function() {
+        self._fmMode = 'browse';
+        tabBrowse.style.background = 'rgba(255,255,255,0.2)';
+        tabBrowse.style.color = 'white';
+        tabSession.style.background = 'transparent';
+        tabSession.style.color = 'rgba(255,255,255,0.6)';
+        self._fmBrowseDir(self._fmCurrentPath || '/tmp');
+      });
+    }
 
     var grid = modal.querySelector('#bv-fm-grid');
     var injectBtn = modal.querySelector('#bv-fm-inject');
@@ -685,6 +725,7 @@ class BrowserViewer {
     });
 
     var uploadCard = document.createElement('div');
+    uploadCard.setAttribute('data-fm-upload', '');
     uploadCard.style.cssText = 'background:#2a2a3e;border-radius:8px;padding:12px;text-align:center;cursor:pointer;transition:all 0.2s;border:2px dashed rgba(255,255,255,0.2);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;';
     uploadCard.innerHTML = '<div style="font-size:24px;margin-bottom:6px;">＋</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">上传文件</div>';
     uploadCard.addEventListener('click', function() { self._fmUploadNew(); });
@@ -695,6 +736,10 @@ class BrowserViewer {
 
   _fmRefreshList() {
     var self = this;
+    if (self._fmMode === 'browse') {
+      self._fmBrowseDir(self._fmCurrentPath || '/tmp');
+      return;
+    }
     var grid = this._fmGrid;
     while (grid.children.length > 1) {
       grid.removeChild(grid.lastChild);
@@ -724,6 +769,119 @@ class BrowserViewer {
     };
 
     self.send({ type: 'fileList' });
+  }
+
+  _fmBrowseDir(dirPath) {
+    var self = this;
+    self._fmCurrentPath = dirPath;
+    var grid = document.getElementById('bv-fm-grid');
+    if (!grid) return;
+
+    var uploadCard = grid.querySelector('[data-fm-upload]');
+    grid.innerHTML = '';
+    if (uploadCard) grid.appendChild(uploadCard);
+
+    var loadingEl = document.createElement('div');
+    loadingEl.style.cssText = 'grid-column:1/-1;text-align:center;color:#999;padding:20px;';
+    loadingEl.textContent = '加载中...';
+    grid.appendChild(loadingEl);
+
+    self._fmBrowseCallback = function(items) {
+      loadingEl.remove();
+
+      if (dirPath && dirPath !== '/') {
+        var parentCard = document.createElement('div');
+        parentCard.style.cssText = 'cursor:pointer;border:2px dashed #555;border-radius:8px;padding:12px;text-align:center;color:#999;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+        parentCard.innerHTML = '<div style="font-size:24px;">⬆️</div><div style="font-size:12px;margin-top:4px;">返回上级</div>';
+        parentCard.addEventListener('click', function() {
+          self._fmBrowseDir(dirPath.split('/').slice(0, -1).join('/') || '/');
+        });
+        grid.insertBefore(parentCard, uploadCard);
+      }
+
+      if (!items || items.length === 0) {
+        var emptyEl = document.createElement('div');
+        emptyEl.style.cssText = 'grid-column:1/-1;text-align:center;color:#666;padding:20px;';
+        emptyEl.textContent = '空目录';
+        grid.appendChild(emptyEl);
+        return;
+      }
+
+      items.forEach(function(item) {
+        var card = document.createElement('div');
+        card.setAttribute('data-fm-path', item.path);
+
+        if (item.isDirectory) {
+          card.style.cssText = 'cursor:pointer;border:1px solid #333;border-radius:8px;padding:8px;text-align:center;color:#ccc;background:#1a1a1a;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+          card.innerHTML = '<div style="font-size:28px;">📁</div><div style="font-size:11px;margin-top:4px;word-break:break-all;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + item.name + '</div>';
+          card.addEventListener('click', function() {
+            self._fmBrowseDir(item.path);
+          });
+        } else {
+          var allowed = !self._fmAllowedTypes || self._matchesAccept(item.name, self._fmAllowedTypes);
+          card.style.cssText = 'cursor:' + (allowed ? 'pointer' : 'default') + ';border:1px solid #333;border-radius:8px;padding:8px;text-align:center;color:#ccc;background:#1a1a1a;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;' + (allowed ? '' : 'opacity:0.4;');
+
+          var iconContainer = document.createElement('div');
+          iconContainer.style.cssText = 'width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:24px;';
+
+          if (item.isImage) {
+            var thumb = document.createElement('img');
+            thumb.style.cssText = 'width:48px;height:48px;object-fit:cover;border-radius:4px;';
+            thumb.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="#333"/><text x="24" y="28" text-anchor="middle" fill="#666" font-size="10">IMG</text></svg>');
+            iconContainer.appendChild(thumb);
+
+            if (self._fmThumbnailCache[item.path]) {
+              thumb.src = self._fmThumbnailCache[item.path];
+            } else {
+              self.send({ type: 'browseDir_getThumbnail', data: { path: item.path } });
+              self._fmThumbnailPending = self._fmThumbnailPending || {};
+              self._fmThumbnailPending[item.path] = thumb;
+            }
+          } else {
+            var ext = item.ext || '?';
+            var iconText = ext.toUpperCase().substring(0, 3);
+            iconContainer.innerHTML = '<span style="color:#999;font-weight:bold;font-size:14px;background:#2a2a2a;border-radius:4px;padding:4px 8px;">' + iconText + '</span>';
+          }
+
+          card.appendChild(iconContainer);
+
+          var nameEl = document.createElement('div');
+          nameEl.style.cssText = 'font-size:11px;margin-top:4px;word-break:break-all;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+          nameEl.textContent = item.name;
+          card.appendChild(nameEl);
+
+          if (item.size) {
+            var sizeEl = document.createElement('div');
+            sizeEl.style.cssText = 'font-size:10px;color:#666;margin-top:2px;';
+            sizeEl.textContent = item.size < 1024 ? item.size + ' B' : (item.size / 1024).toFixed(1) + ' KB';
+            card.appendChild(sizeEl);
+          }
+
+          if (!allowed) {
+            var lockEl = document.createElement('div');
+            lockEl.style.cssText = 'position:absolute;top:4px;right:4px;font-size:10px;color:#FF3B30;';
+            lockEl.textContent = '🔒';
+            card.appendChild(lockEl);
+          }
+
+          if (allowed) {
+            card.addEventListener('click', function() {
+              var prev = grid.querySelector('[data-fm-path][style*="border-color: rgb(76"]');
+              if (prev) prev.style.borderColor = '#333';
+              card.style.borderColor = '#4caf50';
+              card.style.background = '#1a2a1a';
+              self._fmSelected = item.path;
+              self._fmInjectBtn.style.opacity = '1';
+              self._fmInjectBtn.style.pointerEvents = 'auto';
+            });
+          }
+        }
+
+        grid.insertBefore(card, uploadCard);
+      });
+    };
+
+    self.send({ type: 'browseDir', data: { path: dirPath } });
   }
 
   _fmAddCard(file) {
@@ -1114,10 +1272,33 @@ class BrowserViewer {
             self._fmInjectCallback(msg.event || {});
             self._fmInjectCallback = null;
           }
+        } else if (msg.type === 'form.field') {
+          // 保存服务端发来的焦点元素 selector，用于 input 事件回填
+          var fieldData = msg.event || msg.data || {};
+          self._focusedSelector = fieldData.selector || null;
+          self._focusedFrameSelector = fieldData.frameSelector || null;
+          self._focusedTag = fieldData.tag || null;
+          console.log('[BV] form.field:', self._focusedSelector, 'tag:', self._focusedTag);
         } else if (msg.type === 'response' && msg.requestType === 'fileList') {
           if (self._fmListCallback) {
             self._fmListCallback(msg.data && msg.data.files ? msg.data.files : []);
             self._fmListCallback = null;
+          }
+        } else if (msg.type === 'response' && msg.requestType === 'browseDir') {
+          if (self._fmBrowseCallback) {
+            self._fmBrowseCallback(msg.data && msg.data.items ? msg.data.items : []);
+            self._fmBrowseCallback = null;
+          }
+        } else if (msg.type === 'response' && msg.requestType === 'browseDir_getThumbnail') {
+          if (msg.data && msg.data.dataUrl && self._fmThumbnailPending) {
+            if (msg.data.path) {
+              self._fmThumbnailCache[msg.data.path] = msg.data.dataUrl;
+            }
+            Object.keys(self._fmThumbnailPending).forEach(function(p) {
+              if (self._fmThumbnailCache[p]) {
+                self._fmThumbnailPending[p].src = self._fmThumbnailCache[p];
+              }
+            });
           }
         }
       } catch {}

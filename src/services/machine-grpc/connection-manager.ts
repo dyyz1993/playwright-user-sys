@@ -84,6 +84,19 @@ export class MachineConnectionManager extends EventEmitter {
     }
 
     this.connections.delete(machineId);
+
+    // 清理关联的 gRPC 客户端，防止连接泄漏
+    const client = this.clients.get(machineId);
+    if (client) {
+      try {
+        // MachineServiceClient 继承自 grpc Client，运行时有 close() 方法
+        (client as unknown as { close: () => void }).close();
+      } catch (error) {
+        logger.error(`关闭机器 gRPC 客户端时出错 (${machineId}):`, error);
+      }
+      this.clients.delete(machineId);
+    }
+
     logger.info(`机器连接已移除: ${machineId}`);
 
     try {

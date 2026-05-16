@@ -209,8 +209,13 @@ export class FileService {
 
   private async checkDiskSpace(minRequiredBytes: number): Promise<void> {
     try {
-      const { execSync } = await import('child_process');
-      const output = execSync('df -k .', { encoding: 'utf8' });
+      const { execFile } = await import('child_process');
+      const output = await new Promise<string>((resolve, reject) => {
+        execFile('df', ['-k', '.'], { encoding: 'utf8' }, (err, stdout) => {
+          if (err) reject(err);
+          else resolve(stdout);
+        });
+      });
       const lines = output.trim().split('\n');
       const parts = lines[1].split(/\s+/);
       const availableKB = parseInt(parts[3], 10);

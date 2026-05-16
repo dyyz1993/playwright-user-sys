@@ -983,7 +983,7 @@ export class BrowserService extends EventEmitter {
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--remote-allow-origins=*',
+        '--remote-allow-origins=localhost',
         '--remote-debugging-port=0',
         '--disable-dev-shm-usage',
         '--disable-responsive-ui',
@@ -996,7 +996,7 @@ export class BrowserService extends EventEmitter {
         '--disable-blink-features=AutomationControlled',
         '--webrtc-ip-handling-policy=disable_non_proxied_udp',
         '--force-webrtc-ip-handling-policy',
-        '--remote-debugging-address=0.0.0.0',
+        '--remote-debugging-address=127.0.0.1',
       ],
       // headless: false,
       headless: true,

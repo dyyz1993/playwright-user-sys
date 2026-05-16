@@ -266,6 +266,11 @@ export async function getSessionFiles(request: FastifyRequest, reply: FastifyRep
 
     const { sessionId } = request.params as { sessionId: string };
 
+    // 验证 sessionId 格式为 UUID，防止路径遍历
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
+      return sendError(reply, '无效的会话ID格式', 400);
+    }
+
     const session = await SessionModel.findById(sessionId);
     if (!session || session.user_id !== request.user.id) {
       return sendError(reply, '会话不存在或不属于该用户', 404);

@@ -158,34 +158,24 @@ export class UserModel {
       let successCount = 0;
       const queryBuilder = trx || db;
 
-      // 获取所有用户信息
-      const userIds = Array.from(userCredits.keys());
-      const users = await queryBuilder('users').whereIn('id', userIds);
-
-      // 创建用户ID到用户对象的映射
-      const userMap = new Map<number, User>();
-      for (const user of users) {
-        userMap.set(user.id, user);
-      }
-
-      // 检查并扣除点数
+      // 原子化扣减：使用 WHERE credits >= amount 防止 TOCTOU 竞态
       for (const [userId, amount] of userCredits.entries()) {
-        const user = userMap.get(userId);
-
-        if (!user) {
-          logger.warn(`用户 ${userId} 不存在，跳过扣除点数`);
+        if (amount <= 0) {
+          logger.warn(`用户 ${userId} 扣除金额无效 (${amount})，跳过`);
           continue;
         }
 
-        if (user.credits < amount) {
-          logger.warn(`用户 ${userId} 点数不足，剩余: ${user.credits}，需要: ${amount}，跳过扣除点数`);
+        const affectedRows = await queryBuilder('users')
+          .where('id', userId)
+          .where('credits', '>=', amount)
+          .decrement('credits', amount);
+
+        if (affectedRows === 0) {
+          logger.warn(`用户 ${userId} 点数不足或不存在，跳过扣除点数`);
           continue;
         }
 
-        // 扣除点数
-        await queryBuilder('users').where('id', userId).decrement('credits', amount);
-
-        logger.info(`批量扣除: 用户 ${userId} 扣除 ${amount} 点，剩余 ${user.credits - amount} 点`);
+        logger.info(`批量扣除: 用户 ${userId} 扣除 ${amount} 点`);
         successCount++;
       }
 

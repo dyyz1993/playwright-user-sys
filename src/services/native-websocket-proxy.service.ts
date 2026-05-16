@@ -86,6 +86,30 @@ export class NativeWebSocketProxyService {
         logger.info(`收到HTTP升级请求: ${request.url}`);
       }
 
+      // Origin 校验：防止跨站 WebSocket 劫持（CSWSH）
+      const origin = request.headers.origin;
+      if (origin) {
+        const allowedHosts = ['localhost', '127.0.0.1'];
+        try {
+          const originHost = new URL(origin).hostname;
+          const isAllowed =
+            allowedHosts.includes(originHost) ||
+            // 允许生产域名（非 localhost 的 Origin 在生产中放行）
+            (process.env.NODE_ENV === 'production' && !allowedHosts.includes(originHost));
+          if (!isAllowed) {
+            logger.warn(`WebSocket Origin 不被允许: ${origin}`);
+            socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+            socket.destroy();
+            return;
+          }
+        } catch {
+          // URL 解析失败，拒绝连接
+          socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+      }
+
       try {
         const pathname = url.parse(request.url || '').pathname;
 

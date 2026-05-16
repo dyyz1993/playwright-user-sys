@@ -139,6 +139,58 @@ const DEFAULT_SESSION_CONFIG: SessionConfig = {
   // clip 默认为 undefined (全屏)
 };
 
+const CLIPBOARD_INTERCEPTOR_SCRIPT = `
+  (window).__clipboardContent = '';
+  var origWriteText = (navigator.clipboard)?.writeText?.bind(navigator.clipboard);
+  if (origWriteText) {
+    navigator.clipboard.writeText = async function (text) {
+      (window).__clipboardContent = text;
+      return origWriteText(text);
+    };
+  }
+  var origWrite = (navigator.clipboard)?.write?.bind(navigator.clipboard);
+  if (origWrite) {
+    navigator.clipboard.write = async function (items) {
+      try {
+        for (var i = 0; i < items.length; i++) {
+          var item = items[i];
+          if (item.types && item.types.includes && item.types.includes('text/plain')) {
+            var blob = await item.getType('text/plain');
+            var text = await blob.text();
+            (window).__clipboardContent = text;
+          }
+        }
+      } catch (_) { /* ignore */ }
+      return origWrite(items);
+    };
+  }
+  var origExecCommand = document.execCommand.bind(document);
+  document.execCommand = function (command, ui, value) {
+    if (command === 'copy') {
+      var sel = window.getSelection()?.toString();
+      if (sel) (window).__clipboardContent = sel;
+    }
+    return origExecCommand(command, ui, value);
+  };
+  document.addEventListener('copy', function () {
+    var selection = window.getSelection ? (window.getSelection()?.toString() || '') : '';
+    if (selection) {
+      (window).__clipboardContent = selection;
+    }
+  }, true);
+  var origFileInputClick = HTMLInputElement.prototype.click;
+  HTMLInputElement.prototype.click = function () {
+    if (this.type === 'file') {
+      (window).__fileInputClickEvent = {
+        accept: this.accept || '',
+        multiple: this.multiple || false,
+        timestamp: Date.now(),
+      };
+    }
+    return origFileInputClick.apply(this, arguments);
+  };
+`;
+
 /**
  * 浏览器服务类 - 专注于核心浏览器管理和能力提供
  */
@@ -627,119 +679,9 @@ export class BrowserService extends EventEmitter {
 
       try {
         // 1. evaluateOnNewDocument so interceptor survives navigation
-        await primaryPage.evaluateOnNewDocument(() => {
-          (window as any).__clipboardContent = '';
-          const origWriteText = (navigator.clipboard as any)?.writeText?.bind(navigator.clipboard);
-          if (origWriteText) {
-            (navigator.clipboard as any).writeText = async function (text: string) {
-              (window as any).__clipboardContent = text;
-              return origWriteText(text);
-            };
-          }
-          const origWrite = (navigator.clipboard as any)?.write?.bind(navigator.clipboard);
-          if (origWrite) {
-            (navigator.clipboard as any).write = async function (items: any[]) {
-              try {
-                for (const item of items) {
-                  if (item.types && item.types.includes && item.types.includes('text/plain')) {
-                    const blob = await item.getType('text/plain');
-                    const text = await blob.text();
-                    (window as any).__clipboardContent = text;
-                  }
-                }
-              } catch (_) {
-                void _;
-              }
-              return origWrite(items);
-            };
-          }
-          const origExecCommand = document.execCommand.bind(document);
-          document.execCommand = function (command: string, ui?: boolean, value?: any) {
-            if (command === 'copy') {
-              const sel = window.getSelection()?.toString();
-              if (sel) (window as any).__clipboardContent = sel;
-            }
-            return origExecCommand(command, ui as any, value);
-          };
-          document.addEventListener(
-            'copy',
-            function () {
-              const selection = window.getSelection ? (window.getSelection()?.toString() ?? '') : '';
-              if (selection) {
-                (window as any).__clipboardContent = selection;
-              }
-            },
-            true
-          );
-          const origFileInputClick = HTMLInputElement.prototype.click;
-          HTMLInputElement.prototype.click = function () {
-            if (this.type === 'file') {
-              (window as any).__fileInputClickEvent = {
-                accept: this.accept || '',
-                multiple: this.multiple || false,
-                timestamp: Date.now(),
-              };
-            }
-            return origFileInputClick.apply(this, arguments as any);
-          };
-        });
+        await primaryPage.evaluateOnNewDocument(CLIPBOARD_INTERCEPTOR_SCRIPT);
         // 2. Also inject immediately for current page
-        await primaryPage.evaluate(() => {
-          (window as any).__clipboardContent = '';
-          const origWriteText = (navigator.clipboard as any)?.writeText?.bind(navigator.clipboard);
-          if (origWriteText) {
-            (navigator.clipboard as any).writeText = async function (text: string) {
-              (window as any).__clipboardContent = text;
-              return origWriteText(text);
-            };
-          }
-          const origWrite = (navigator.clipboard as any)?.write?.bind(navigator.clipboard);
-          if (origWrite) {
-            (navigator.clipboard as any).write = async function (items: any[]) {
-              try {
-                for (const item of items) {
-                  if (item.types && item.types.includes && item.types.includes('text/plain')) {
-                    const blob = await item.getType('text/plain');
-                    const text = await blob.text();
-                    (window as any).__clipboardContent = text;
-                  }
-                }
-              } catch (_) {
-                void _;
-              }
-              return origWrite(items);
-            };
-          }
-          const origExecCommand = document.execCommand.bind(document);
-          document.execCommand = function (command: string, ui?: boolean, value?: any) {
-            if (command === 'copy') {
-              const sel = window.getSelection()?.toString();
-              if (sel) (window as any).__clipboardContent = sel;
-            }
-            return origExecCommand(command, ui as any, value);
-          };
-          document.addEventListener(
-            'copy',
-            function () {
-              const selection = window.getSelection ? (window.getSelection()?.toString() ?? '') : '';
-              if (selection) {
-                (window as any).__clipboardContent = selection;
-              }
-            },
-            true
-          );
-          const origFileInputClick = HTMLInputElement.prototype.click;
-          HTMLInputElement.prototype.click = function () {
-            if (this.type === 'file') {
-              (window as any).__fileInputClickEvent = {
-                accept: this.accept || '',
-                multiple: this.multiple || false,
-                timestamp: Date.now(),
-              };
-            }
-            return origFileInputClick.apply(this, arguments as any);
-          };
-        });
+        await primaryPage.evaluate(CLIPBOARD_INTERCEPTOR_SCRIPT);
       } catch (primaryClipErr) {
         logger.warn(`Failed to inject clipboard on primary page (session: ${sessionId}):`, primaryClipErr);
       }
@@ -1191,120 +1133,10 @@ export class BrowserService extends EventEmitter {
         }
 
         // --- BEGIN: Clipboard interception (evaluateOnNewDocument) ---
-        await page.evaluateOnNewDocument(() => {
-          (window as any).__clipboardContent = '';
-          const origWriteText = (navigator.clipboard as any)?.writeText?.bind(navigator.clipboard);
-          if (origWriteText) {
-            (navigator.clipboard as any).writeText = async function (text: string) {
-              (window as any).__clipboardContent = text;
-              return origWriteText(text);
-            };
-          }
-          const origWrite = (navigator.clipboard as any)?.write?.bind(navigator.clipboard);
-          if (origWrite) {
-            (navigator.clipboard as any).write = async function (items: any[]) {
-              try {
-                for (const item of items) {
-                  if (item.types && item.types.includes && item.types.includes('text/plain')) {
-                    const blob = await item.getType('text/plain');
-                    const text = await blob.text();
-                    (window as any).__clipboardContent = text;
-                  }
-                }
-              } catch (_) {
-                void _;
-              }
-              return origWrite(items);
-            };
-          }
-          const origExecCommand = document.execCommand.bind(document);
-          document.execCommand = function (command: string, ui?: boolean, value?: any) {
-            if (command === 'copy') {
-              const sel = window.getSelection()?.toString();
-              if (sel) (window as any).__clipboardContent = sel;
-            }
-            return origExecCommand(command, ui as any, value);
-          };
-          document.addEventListener(
-            'copy',
-            function () {
-              const selection = window.getSelection ? (window.getSelection()?.toString() ?? '') : '';
-              if (selection) {
-                (window as any).__clipboardContent = selection;
-              }
-            },
-            true
-          );
-          const origFileInputClick = HTMLInputElement.prototype.click;
-          HTMLInputElement.prototype.click = function () {
-            if (this.type === 'file') {
-              (window as any).__fileInputClickEvent = {
-                accept: this.accept || '',
-                multiple: this.multiple || false,
-                timestamp: Date.now(),
-              };
-            }
-            return origFileInputClick.apply(this, arguments as any);
-          };
-        });
+        await page.evaluateOnNewDocument(CLIPBOARD_INTERCEPTOR_SCRIPT);
 
         try {
-          await page.evaluate(() => {
-            (window as any).__clipboardContent = '';
-            const origWriteText = (navigator.clipboard as any)?.writeText?.bind(navigator.clipboard);
-            if (origWriteText) {
-              (navigator.clipboard as any).writeText = async function (text: string) {
-                (window as any).__clipboardContent = text;
-                return origWriteText(text);
-              };
-            }
-            const origWrite = (navigator.clipboard as any)?.write?.bind(navigator.clipboard);
-            if (origWrite) {
-              (navigator.clipboard as any).write = async function (items: any[]) {
-                try {
-                  for (const item of items) {
-                    if (item.types && item.types.includes && item.types.includes('text/plain')) {
-                      const blob = await item.getType('text/plain');
-                      const text = await blob.text();
-                      (window as any).__clipboardContent = text;
-                    }
-                  }
-                } catch (_) {
-                  void _;
-                }
-                return origWrite(items);
-              };
-            }
-            const origExecCommand = document.execCommand.bind(document);
-            document.execCommand = function (command: string, ui?: boolean, value?: any) {
-              if (command === 'copy') {
-                const sel = window.getSelection()?.toString();
-                if (sel) (window as any).__clipboardContent = sel;
-              }
-              return origExecCommand(command, ui as any, value);
-            };
-            document.addEventListener(
-              'copy',
-              function () {
-                const selection = window.getSelection ? (window.getSelection()?.toString() ?? '') : '';
-                if (selection) {
-                  (window as any).__clipboardContent = selection;
-                }
-              },
-              true
-            );
-            const origFileInputClick = HTMLInputElement.prototype.click;
-            HTMLInputElement.prototype.click = function () {
-              if (this.type === 'file') {
-                (window as any).__fileInputClickEvent = {
-                  accept: this.accept || '',
-                  multiple: this.multiple || false,
-                  timestamp: Date.now(),
-                };
-              }
-              return origFileInputClick.apply(this, arguments as any);
-            };
-          });
+          await page.evaluate(CLIPBOARD_INTERCEPTOR_SCRIPT);
         } catch (clipEvalErr) {
           logger.warn(`Failed to inject clipboard on current page for session ${sessionId}:`, clipEvalErr);
         }

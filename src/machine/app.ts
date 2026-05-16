@@ -112,6 +112,17 @@ export class MachineServer {
       // 启动代理服务器（使用此实例的代理服务）
       this.proxyService.start();
 
+      // 清理上次运行残留的过期临时文件（1小时前创建的）
+      try {
+        const { fileService } = await import('./services/file.service.js');
+        const cleaned = await fileService.cleanupExpiredFiles(60 * 60 * 1000);
+        if (cleaned > 0) {
+          logger.info(`启动时清理了 ${cleaned} 个残留临时文件目录`);
+        }
+      } catch (cleanupError) {
+        logger.warn('启动时清理临时文件失败:', cleanupError);
+      }
+
       // 注册机器（使用此实例的 gRPC 客户端）
       await this.grpcClient.register();
 

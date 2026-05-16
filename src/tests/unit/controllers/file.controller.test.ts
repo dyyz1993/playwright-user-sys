@@ -28,6 +28,10 @@ vi.mock('fs', async () => {
   };
 });
 
+vi.mock('stream/promises', () => ({
+  pipeline: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('../../../utils/response.js', () => ({
   sendSuccess: vi.fn((reply, _data, _message) => {
     reply.status = vi.fn().mockReturnValue(reply);

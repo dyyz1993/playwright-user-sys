@@ -347,5 +347,8 @@ export async function handleSessionDisconnect(sessionId: string, userId: number,
     logger.info(`会话断开处理完成 (${sessionId}): 持续时间=${result.duration}秒, 消耗点数=${result.creditsUsed}点`);
   } catch (error) {
     logger.error(`处理会话断开连接失败 (sessionId: ${sessionId}):`, error);
+    // 重新抛出错误，避免会话释放失败被静默吞掉
+    // 调用方可以根据需要进行重试或上报
+    throw error;
   }
 }

@@ -483,11 +483,41 @@ export class BrowserService extends EventEmitter {
       }
 
       const puppeteerOptions = await this.convertPuppeteerOptions(options);
+      let launchTimedOut = false;
       const browserPromise = puppeteer.launch(puppeteerOptions);
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(`启动浏览器超时 (${timeout}ms)`)), timeout);
+        setTimeout(() => {
+          launchTimedOut = true;
+          reject(new Error(`启动浏览器超时 (${timeout}ms)`));
+        }, timeout);
       });
-      const browser = await Promise.race([browserPromise, timeoutPromise]);
+
+      let browser: import('puppeteer').Browser;
+      try {
+        browser = await Promise.race([browserPromise, timeoutPromise]);
+      } catch (launchError) {
+        // 如果超时了，后台的 browserPromise 仍会完成，产生孤儿进程
+        // 主动 catch 并 kill 它
+        if (launchTimedOut) {
+          browserPromise
+            .then(async (orphanedBrowser) => {
+              try {
+                const proc = orphanedBrowser.process();
+                if (proc && proc.pid) {
+                  process.kill(proc.pid, 'SIGKILL');
+                  logger.warn(`已清理超时启动的孤儿浏览器进程 (PID: ${proc.pid}, sessionId: ${sessionId})`);
+                }
+                await orphanedBrowser.close().catch(() => {});
+              } catch (killErr) {
+                logger.warn(`清理超时孤儿浏览器进程失败 (sessionId: ${sessionId}):`, killErr);
+              }
+            })
+            .catch(() => {
+              // 启动本身就失败了，不需要清理
+            });
+        }
+        throw launchError;
+      }
 
       const primaryPage = (await browser.pages())[0];
 
@@ -807,34 +837,48 @@ export class BrowserService extends EventEmitter {
    * 关闭浏览器实例
    */
   async closeBrowser(sessionId: string): Promise<boolean> {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
+    const sessionRef = this.sessions.get(sessionId);
+    if (!sessionRef) {
       logger.warn(`关闭浏览器：会话不存在 (sessionId: ${sessionId})`);
       return false;
     }
+    // 在 try 之前捕获所有需要的字段，确保 catch 分支也能访问
+    const userDataDir = sessionRef.userDataDir;
+    const isSharedUserData = sessionRef.sharedUserData;
+    const sessionUserId = sessionRef.userId;
+    const sessionStartTime = sessionRef.startTime;
+    const sessionSharedUserData = sessionRef.sharedUserData;
+
     try {
       const connection = this.connections.get(sessionId);
       let totalConnectedTime = connection ? connection.totalConnectedTime : 0;
-      if (!connection && session.startTime) {
-        totalConnectedTime = Math.floor((Date.now() - session.startTime) / 1000);
+      if (!connection && sessionStartTime) {
+        totalConnectedTime = Math.floor((Date.now() - sessionStartTime) / 1000);
       }
 
-      const userDataDir = session.userDataDir;
-      const isSharedUserData = session.sharedUserData;
-
       // ===== 清理共享浏览器记录 =====
-      if (session.sharedUserData && session.userId) {
-        const registeredSessionId = this.userSharedBrowsers.get(session.userId);
+      if (sessionSharedUserData && sessionUserId) {
+        const registeredSessionId = this.userSharedBrowsers.get(sessionUserId);
         if (registeredSessionId === sessionId) {
-          this.userSharedBrowsers.delete(session.userId);
-          logger.info(`清理共享浏览器记录 (userId: ${session.userId}, sessionId: ${sessionId})`);
+          this.userSharedBrowsers.delete(sessionUserId);
+          logger.info(`清理共享浏览器记录 (userId: ${sessionUserId}, sessionId: ${sessionId})`);
         }
       }
 
       try {
-        await session.browser.close();
+        await sessionRef.browser.close();
       } catch (closeErr) {
         logger.error(`关闭浏览器进程失败 (sessionId: ${sessionId}):`, closeErr);
+        // browser.close() 失败时，强制 kill 子进程防止僵尸
+        try {
+          const proc = sessionRef.browser.process();
+          if (proc && proc.pid) {
+            process.kill(proc.pid, 'SIGKILL');
+            logger.warn(`已强制终止浏览器进程 (PID: ${proc.pid}, sessionId: ${sessionId})`);
+          }
+        } catch (killErr) {
+          logger.warn(`强制终止浏览器进程失败 (sessionId: ${sessionId}):`, killErr);
+        }
       }
 
       // 等待 OS 释放文件锁
@@ -874,11 +918,10 @@ export class BrowserService extends EventEmitter {
     } catch (error) {
       logger.error(`关闭浏览器失败 (sessionId: ${sessionId}):`, error);
 
-      // ===== 清理共享浏览器记录 =====
-      const session = this.sessions.get(sessionId);
-      if (session && session.sharedUserData && session.userId) {
-        this.userSharedBrowsers.delete(session.userId);
-        logger.info(`清理共享浏览器记录 (userId: ${session.userId}, sessionId: ${sessionId})`);
+      // ===== 清理共享浏览器记录（使用 try 之前捕获的字段）=====
+      if (sessionSharedUserData && sessionUserId) {
+        this.userSharedBrowsers.delete(sessionUserId);
+        logger.info(`清理共享浏览器记录 (userId: ${sessionUserId}, sessionId: ${sessionId})`);
       }
 
       this.sessions.delete(sessionId);
@@ -1139,7 +1182,7 @@ export class BrowserService extends EventEmitter {
         try {
           const cdp = await page.createCDPSession();
           await cdp.send('Browser.grantPermissions', {
-            origin: page.url() || 'https://www.baidu.com',
+            origin: page.url() || 'http://192.168.0.29:3011/public/test-interactive.html',
             permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'],
           });
           logger.info(`Clipboard permissions granted for session ${sessionId}`);

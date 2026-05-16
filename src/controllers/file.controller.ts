@@ -4,6 +4,7 @@ import { CleanupTempFilesQueryRoute } from '@shared/types/routes.js';
 import { SessionModel } from '../models/session.model.js';
 import { logger } from '@shared/utils/logger.js';
 import fs from 'fs';
+import { pipeline } from 'stream/promises';
 import path from 'path';
 
 // 确保上传目录存在
@@ -37,7 +38,7 @@ export async function uploadFile(request: FastifyRequest, reply: FastifyReply) {
     const fileName = uniqueSuffix + '-' + path.basename(file.filename);
     const filePath = path.join(uploadDir, fileName);
 
-    await file.file.pipe(fs.createWriteStream(filePath));
+    await pipeline(file.file, fs.createWriteStream(filePath));
 
     const fileUrl = `/uploads/${fileName}`;
 
@@ -82,7 +83,7 @@ export async function uploadTempFile(request: FastifyRequest, reply: FastifyRepl
     const filePath = path.join(tempDir, fileName);
 
     // 保存文件
-    await file.file.pipe(fs.createWriteStream(filePath));
+    await pipeline(file.file, fs.createWriteStream(filePath));
 
     // 返回文件信息
     const fileUrl = `/temp/${fileName}`;

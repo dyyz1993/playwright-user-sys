@@ -209,6 +209,7 @@ interface MouseEventData {
   selector?: string;
   frameSelector?: string;
   value?: string;
+  replace?: boolean;
   deltaX?: number;
   deltaY?: number;
   tx?: number;
@@ -874,7 +875,7 @@ async function handleMouseEvents(
     switch (eventType) {
       case 'input': {
         let targetContext: Page | Frame = page;
-        const { selector, frameSelector, value } = data;
+        const { selector, frameSelector, value, replace } = data;
         if (!selector && value) {
           await page.keyboard.type(value, { delay: 50 });
           sendResponse(ws, requestType, { success: true });
@@ -901,15 +902,49 @@ async function handleMouseEvents(
           await targetContext.waitForSelector(selector, {
             timeout: 5000,
           });
-          await targetContext.focus(selector);
-          await targetContext.evaluate((sel) => {
-            const input = document.querySelector(sel) as HTMLInputElement | HTMLTextAreaElement;
-            if (input) input.value = '';
-            const event = new Event('input', { bubbles: true });
-            input.dispatchEvent(event);
-          }, selector);
 
-          await targetContext.type(selector, value ?? '', { delay: 30 + Math.random() * 50 });
+          if (replace) {
+            // 全量替换模式：直接设置 value，不逐字 type
+            await targetContext.evaluate(
+              (sel: string, val: string) => {
+                const input = document.querySelector(sel) as HTMLInputElement | HTMLTextAreaElement;
+                if (input) {
+                  // 选中文本触发 select 事件，然后设置新值
+                  input.focus();
+                  input.select();
+                  if (val) {
+                    // 使用 execCommand 保留 undo 历史（如果可用）
+                    if (document.queryCommandSupported('insertText')) {
+                      document.execCommand('insertText', false, val);
+                    } else {
+                      input.value = val;
+                    }
+                  } else {
+                    // 清空：用 execCommand delete
+                    if (document.queryCommandSupported('delete')) {
+                      document.execCommand('delete');
+                    } else {
+                      input.value = '';
+                    }
+                  }
+                  input.dispatchEvent(new Event('input', { bubbles: true }));
+                  input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              },
+              selector,
+              value ?? ''
+            );
+          } else {
+            // 原有逻辑：清空 + type
+            await targetContext.focus(selector);
+            await targetContext.evaluate((sel: string) => {
+              const input = document.querySelector(sel) as HTMLInputElement | HTMLTextAreaElement;
+              if (input) input.value = '';
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+            }, selector);
+            await targetContext.type(selector, value ?? '', { delay: 30 + Math.random() * 50 });
+          }
+
           logger.info(`Successfully filled input for session ${sessionId}`);
           sendResponse(ws, requestType, { success: true });
         } catch (fillError) {

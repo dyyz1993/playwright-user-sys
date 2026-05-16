@@ -9,6 +9,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SessionStatus, WebhookEventType } from '../../../shared/types/index.js';
 
+// Shared mock for connectionManager - used by both mock registrations
+const mockConnectionManager = {
+  launchBrowser: vi.fn(),
+  closeBrowser: vi.fn(),
+};
+
 vi.mock('uuid', () => ({
   v4: vi.fn().mockReturnValue('session-001'),
 }));
@@ -38,17 +44,11 @@ vi.mock('../../../models/machine.model.js', () => ({
 }));
 
 vi.mock('../../../services/machine-grpc/index.js', () => ({
-  connectionManager: {
-    launchBrowser: vi.fn(),
-    closeBrowser: vi.fn(),
-  },
+  connectionManager: mockConnectionManager,
 }));
 
 vi.mock('../../../services/machine-grpc.service.js', () => ({
-  connectionManager: {
-    launchBrowser: vi.fn(),
-    closeBrowser: vi.fn(),
-  },
+  connectionManager: mockConnectionManager,
 }));
 
 function createMockTrx(sessionData: Record<string, unknown> | null) {
@@ -154,7 +154,7 @@ describe('SessionService', () => {
     const machineModule = await import('../../../models/machine.model.js');
     MachineModel = machineModule.MachineModel;
 
-    const grpcModule = await import('../../../services/machine-grpc.service.js');
+    const grpcModule = await import('../../../services/machine-grpc/index.js');
     connectionManager = grpcModule.connectionManager;
 
     const webhookModule = await import('../../../utils/webhook.js');

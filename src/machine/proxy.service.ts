@@ -84,6 +84,13 @@ export class ProxyService {
    */
   stop(): Promise<void> {
     return new Promise((resolve, reject) => {
+      // 关闭 WebSocketServer 以释放资源
+      try {
+        this.wss.close();
+      } catch (wssErr) {
+        logger.warn('关闭 WebSocketServer 时出错:', wssErr);
+      }
+
       this.server.close((err) => {
         if (err) {
           logger.error('关闭代理服务器失败:', err);

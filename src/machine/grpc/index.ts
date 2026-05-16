@@ -8,6 +8,9 @@ import os from 'os';
 import { browserService } from '../browser.service.js';
 import { logger } from '@shared/utils/logger.js';
 import { MachineConfig, CONFIG } from '../config.js';
+
+// gRPC 重连退避计数器
+let grpcReconnectAttempts = 0;
 import { ConnectionManager } from './connection-manager.js';
 import { getCpuUsage, getMemoryUsage, getDiskSpace, getLocalIpAddress } from './system-info.js';
 import { serviceImplementation } from './service-handlers.js';
@@ -351,6 +354,12 @@ export async function startGrpcClient(): Promise<void> {
     if (isGrpcConnectionError) {
       logger.warn('检测到 gRPC 连接错误，将在内部处理而不抛出异常');
 
+      // 带指数退避的重连：10s → 20s → 40s → 80s（上限 80s）
+      const baseDelay = 10000;
+      const jitter = Math.random() * 3000; // 添加 0-3s 随机抖动
+      const backoffDelay = Math.min(baseDelay * Math.pow(2, grpcReconnectAttempts), 80000) + jitter;
+      grpcReconnectAttempts++;
+
       setTimeout(async () => {
         try {
           const { getMachineServer } = await import('../index.js');
@@ -362,8 +371,9 @@ export async function startGrpcClient(): Promise<void> {
             return;
           }
 
-          logger.info('尝试重新启动 gRPC 客户端...');
+          logger.info(`尝试重新启动 gRPC 客户端 (第 ${grpcReconnectAttempts} 次)...`);
           await startGrpcClient();
+          grpcReconnectAttempts = 0; // 重置退避计数器
           logger.info('gRPC 客户端重新启动成功');
         } catch (reconnectError) {
           logger.error('gRPC 客户端重新启动失败:', reconnectError);
@@ -374,14 +384,15 @@ export async function startGrpcClient(): Promise<void> {
             const state = server?.getState();
 
             if (server && state !== 'shutting_down' && state !== 'stopped') {
-              setTimeout(() => startGrpcClient(), 10000);
+              // 下一次重连会在外层的指数退避中自动调度
+              setTimeout(() => startGrpcClient(), Math.min(baseDelay * Math.pow(2, grpcReconnectAttempts), 80000));
             }
           } catch (stateError) {
             logger.error('获取机器端状态失败:', stateError);
-            setTimeout(() => startGrpcClient(), 10000);
+            setTimeout(() => startGrpcClient(), Math.min(baseDelay * Math.pow(2, grpcReconnectAttempts), 80000));
           }
         }
-      }, 10000);
+      }, backoffDelay);
 
       return;
     }

@@ -27,7 +27,10 @@ describe('P0-3 FIX: WebSocket viewer paths now require JWT authentication', () =
   });
 
   it('proves viewer path routes to handleViewerWebSocketProxy with auth in the upgrade handler', () => {
-    const upgradeBlockStart = lines.findIndex((l) => l.includes("server.on('upgrade'"));
+    // 查找 upgrade 监听器注册（可能是 server.on('upgrade', ...) 或 server.on('upgrade', this.upgradeHandler)）
+    const upgradeBlockStart = lines.findIndex(
+      (l) => l.includes("server.on('upgrade'") || l.includes('this.upgradeHandler =')
+    );
     expect(upgradeBlockStart).toBeGreaterThanOrEqual(0);
 
     const viewerBranchStart = lines.findIndex(

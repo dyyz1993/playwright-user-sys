@@ -40,6 +40,7 @@ export class NativeWebSocketProxyService {
   private maxConnections: number = 1000;
   private connectionTimestamps: Map<string, number> = new Map();
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  private upgradeHandler: ((request: http.IncomingMessage, socket: stream.Duplex, head: Buffer) => void) | null = null;
 
   constructor(server: http.Server) {
     if (!server) {
@@ -79,8 +80,8 @@ export class NativeWebSocketProxyService {
 
     logger.info('HTTP代理实例已创建');
 
-    // 拦截所有upgrade事件
-    server.on('upgrade', (request, socket, head) => {
+    // 保存 upgrade 监听器引用，以便后续精确移除
+    this.upgradeHandler = (request, socket, head) => {
       if (process.env.NODE_ENV !== 'production') {
         logger.info(`收到HTTP升级请求: ${request.url}`);
       }
@@ -134,7 +135,10 @@ export class NativeWebSocketProxyService {
           logger.error('关闭socket失败:', socketError);
         }
       }
-    });
+    };
+
+    // 注册 upgrade 监听器
+    server.on('upgrade', this.upgradeHandler);
 
     this.heartbeatInterval = setInterval(() => {
       const now = Date.now();
@@ -307,7 +311,9 @@ export class NativeWebSocketProxyService {
 
     try {
       const validatedParams = wsConnectQuerySchema.parse(queryParams);
-      logger.info(`WebSocket连接参数: ${JSON.stringify(validatedParams)}`);
+      // 避免在日志中记录完整的 API Key
+      const safeParams = { ...validatedParams, apiKey: '***REDACTED***' };
+      logger.info(`WebSocket连接参数: ${JSON.stringify(safeParams)}`);
 
       const user = await UserModel.findByApiKey(validatedParams.apiKey as string);
       if (!user) {
@@ -671,8 +677,11 @@ export class NativeWebSocketProxyService {
     // 关闭代理
     this.proxy.close();
 
-    // 移除upgrade事件监听器
-    this.server.removeAllListeners('upgrade');
+    // 移除 upgrade 事件监听器（仅移除自己注册的）
+    if (this.upgradeHandler) {
+      this.server.removeListener('upgrade', this.upgradeHandler);
+      this.upgradeHandler = null;
+    }
 
     logger.info('WebSocket代理服务已关闭');
   }

@@ -2,6 +2,7 @@ import { MachineModel } from '../models/machine.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@shared/utils/logger.js';
+import { connectionManager } from './machine-grpc.service.js';
 
 export async function addMachine(
   body: { hostname: string; ip: string; grpcPort?: number; proxyPort?: number; maxInstances?: number },
@@ -50,8 +51,6 @@ export async function batchRestartMachines(
   machineIds: string[],
   adminId: number
 ): Promise<{ restarted: string[]; failed: Array<{ machineId: string; error: string }> }> {
-  const { connectionManager } = await import('./machine-grpc.service.js');
-
   const restarted: string[] = [];
   const failed: Array<{ machineId: string; error: string }> = [];
 

@@ -111,7 +111,7 @@ export const serviceImplementation = {
           logger.error(`获取 call 对象方法失败:`, error);
         }
 
-        const dataHandler = (message: MachineMessage) => {
+        const dataHandler = async (message: MachineMessage) => {
           logger.info('收到第一条消息:', message);
 
           try {
@@ -131,6 +131,25 @@ export const serviceImplementation = {
             } catch (writeError) {
               logger.error('发送错误响应失败:', writeError);
             }
+            call.end();
+            return;
+          }
+
+          try {
+            const machine = await MachineModel.findById(machineId);
+            if (!machine) {
+              logger.warn(`未注册的机器尝试连接，已拒绝: ${machineId}`);
+              try {
+                call.write({ error: { message: `机器未注册: ${machineId}` } });
+              } catch (writeError) {
+                logger.error('发送错误响应失败:', writeError);
+              }
+              call.end();
+              return;
+            }
+            logger.info(`机器注册验证通过: ${machineId}`);
+          } catch (error) {
+            logger.error(`验证机器注册状态时出错 (${machineId}):`, error);
             call.end();
             return;
           }

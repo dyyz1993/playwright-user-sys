@@ -3,6 +3,7 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { STORAGE_CONFIG } from '../config/storage.config.js';
 import { logger } from '../shared/utils/logger.js';
+import { UserModel } from '../models/user.model.js';
 
 /**
  * Storage statistics for a user
@@ -361,8 +362,6 @@ export class StorageService {
     page: number;
     limit: number;
   }> {
-    const { UserModel } = await import('../models/user.model.js');
-
     const page = options?.page || 1;
     const limit = options?.limit || 20;
     const search = options?.search;
@@ -451,7 +450,6 @@ export class StorageService {
       freedSpace: number;
     }>;
   }> {
-    const { UserModel } = await import('../models/user.model.js');
     const details: Array<{ userId: number; username: string; freedSpace: number }> = [];
     let totalFreedSpace = 0;
 

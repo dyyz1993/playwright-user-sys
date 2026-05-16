@@ -187,7 +187,9 @@ export class NativeWebSocketProxyService {
     const parsedUrl = url.parse(request.url || '', true);
     const queryParams = parsedUrl.query;
     const sessionIdParam = queryParams.sessionId as string | undefined;
-    const apiKeyParam = queryParams.apiKey as string | undefined;
+    // 优先从 Authorization header 获取 API Key，fallback 到 query 参数
+    const headerApiKey = request.headers['x-api-key'] as string | undefined;
+    const apiKeyParam = headerApiKey || (queryParams.apiKey as string | undefined);
 
     if (sessionIdParam) {
       await this.handleExistingSessionProxy(request, socket, head, sessionIdParam, queryParams);
@@ -334,6 +336,11 @@ export class NativeWebSocketProxyService {
     let sessionId: string | null = null;
 
     try {
+      // 优先从 header 获取 apiKey，fallback 到 query 参数
+      const headerApiKey = request.headers['x-api-key'] as string | undefined;
+      if (headerApiKey) {
+        (queryParams as Record<string, unknown>).apiKey = headerApiKey;
+      }
       const validatedParams = wsConnectQuerySchema.parse(queryParams);
       // 避免在日志中记录完整的 API Key
       const safeParams = { ...validatedParams, apiKey: '***REDACTED***' };
@@ -669,7 +676,6 @@ export class NativeWebSocketProxyService {
 
   private async handleCleanupDisconnect(sessionId: string): Promise<void> {
     try {
-      const { SessionModel } = await import('../models/session.model.js');
       const session = await SessionModel.findById(sessionId);
 
       if (session && session.user_id && session.machine_id) {

@@ -3,6 +3,7 @@ import { MachineModel } from '../models/machine.model.js';
 import { UserModel } from '../models/user.model.js';
 import { SessionStatus, WebhookEventType } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
+import { connectionManager } from './machine-grpc.service.js';
 
 export interface BatchReleaseResult {
   released: string[];
@@ -10,8 +11,6 @@ export interface BatchReleaseResult {
 }
 
 export async function batchReleaseSessions(sessionIds: string[]): Promise<BatchReleaseResult> {
-  const { connectionManager } = await import('./machine-grpc.service.js');
-
   const released: string[] = [];
   const failed: Array<{ sessionId: string; error: string }> = [];
 

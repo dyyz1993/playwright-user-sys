@@ -15,11 +15,11 @@ import {
 } from '../schemas/index.js';
 
 export default async function machineRoutes(fastify: FastifyInstance): Promise<void> {
-  // 注册机器
+  // 注册机器（需要管理员级别的 API Key）
   fastify.post(
     '/register',
     {
-      onRequest: [fastify.verifyApiKey],
+      onRequest: [fastify.verifyApiKey, fastify.verifyAdmin],
       schema: {
         body: zodToJsonSchema(registerMachineRequestSchema),
         response: {
@@ -32,11 +32,11 @@ export default async function machineRoutes(fastify: FastifyInstance): Promise<v
     machineController.registerMachine
   );
 
-  // 更新机器状态
+  // 更新机器状态（需要管理员级别的 API Key）
   fastify.put(
     '/:id/status',
     {
-      onRequest: [fastify.verifyApiKey],
+      onRequest: [fastify.verifyApiKey, fastify.verifyAdmin],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         body: zodToJsonSchema(updateMachineStatusRequestSchema),

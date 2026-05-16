@@ -7,6 +7,8 @@ import { env } from '../config/env.js';
 import { db } from '../config/database.js';
 import { calculateCreditsUsed } from '@shared/utils/credits-calculator.js';
 import { v4 as uuidv4 } from 'uuid';
+// Dynamic import to avoid import-time side effects (gRPC/proto loading)
+// machine-grpc/index.ts creates connectionManager and loads proto at import time
 
 export interface ReleaseSessionOptions {
   sessionId: string;
@@ -240,9 +242,9 @@ export async function createBrowserSession(
   logger.info(`创建会话成功: ${sessionId}`);
 
   try {
-    const { connectionManager } = await import('../services/machine-grpc.service.js');
     logger.info(`向机器 ${machineId} 发送启动浏览器请求 (sessionId: ${sessionId})`);
 
+    const { connectionManager } = await import('./machine-grpc/index.js');
     const launchOptions = { ...options, userId };
     const result = await connectionManager.launchBrowser(machineId, sessionId, launchOptions);
     logger.info(`启动浏览器结果: ${JSON.stringify(result)}`);
@@ -332,8 +334,8 @@ export async function handleSessionDisconnect(sessionId: string, userId: number,
     }
 
     try {
-      const { connectionManager } = await import('../services/machine-grpc.service.js');
       logger.info(`向机器 ${machineId} 发送关闭浏览器请求 (sessionId: ${sessionId})`);
+      const { connectionManager } = await import('./machine-grpc/index.js');
       await connectionManager.closeBrowser(machineId, sessionId);
     } catch (error) {
       logger.error(`关闭浏览器失败 (sessionId: ${sessionId}):`, error);

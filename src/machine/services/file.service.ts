@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { execFile } from 'child_process';
 import { logger } from '@shared/utils/logger.js';
 
 const DEFAULT_TEMP_DIR = 'data/temp';
@@ -209,7 +210,6 @@ export class FileService {
 
   private async checkDiskSpace(minRequiredBytes: number): Promise<void> {
     try {
-      const { execFile } = await import('child_process');
       const output = await new Promise<string>((resolve, reject) => {
         execFile('df', ['-k', '.'], { encoding: 'utf8' }, (err, stdout) => {
           if (err) reject(err);

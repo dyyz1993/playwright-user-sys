@@ -37,6 +37,13 @@ vi.mock('../../../models/machine.model.js', () => ({
   },
 }));
 
+vi.mock('../../../services/machine-grpc/index.js', () => ({
+  connectionManager: {
+    launchBrowser: vi.fn(),
+    closeBrowser: vi.fn(),
+  },
+}));
+
 vi.mock('../../../services/machine-grpc.service.js', () => ({
   connectionManager: {
     launchBrowser: vi.fn(),

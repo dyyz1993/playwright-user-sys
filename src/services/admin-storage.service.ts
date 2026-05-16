@@ -1,7 +1,9 @@
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { UserModel } from '../models/user.model.js';
 import { join } from 'path';
+import { readdirSync, existsSync } from 'fs';
 import { logger } from '@shared/utils/logger.js';
+import { StorageService } from './storage.service.js';
 
 export async function getStorageStats(query: {
   userId?: number;
@@ -11,8 +13,6 @@ export async function getStorageStats(query: {
   sortBy?: 'totalSize' | 'username' | 'sessionsSize' | 'sharedSize';
   sortOrder?: 'asc' | 'desc';
 }) {
-  const { StorageService } = await import('./storage.service.js');
-
   if (query.userId) {
     const user = await UserModel.findById(query.userId);
     if (!user) {
@@ -23,7 +23,6 @@ export async function getStorageStats(query: {
     const sessionsPath = join(process.cwd(), 'data', 'user-data', String(query.userId), 'sessions');
     let sessionsCount = 0;
     try {
-      const { readdirSync, existsSync } = await import('fs');
       if (existsSync(sessionsPath)) {
         const entries = readdirSync(sessionsPath, { withFileTypes: true });
         sessionsCount = entries.filter((e: { isDirectory: () => boolean }) => e.isDirectory()).length;
@@ -60,7 +59,6 @@ export async function getStorageStats(query: {
 }
 
 export async function cleanupUserData(userIds: number[], type: 'sessions' | 'shared' | 'all', adminId: number) {
-  const { StorageService } = await import('./storage.service.js');
   const result = await StorageService.adminCleanupUserData(userIds, type);
 
   OperationLogModel.create({
@@ -80,7 +78,6 @@ export async function cleanupUserData(userIds: number[], type: 'sessions' | 'sha
 }
 
 export async function cleanupAllOldData(days: number | undefined, adminId: number) {
-  const { StorageService } = await import('./storage.service.js');
   const result = await StorageService.adminCleanupAllOldData(days);
 
   OperationLogModel.create({
@@ -99,6 +96,5 @@ export async function cleanupAllOldData(days: number | undefined, adminId: numbe
 }
 
 export async function getSystemStorageStats() {
-  const { StorageService } = await import('./storage.service.js');
   return StorageService.getSystemStorageStats();
 }

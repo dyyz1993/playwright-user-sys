@@ -28,23 +28,32 @@ export default async function demoRoutes(fastify: FastifyInstance) {
     reply.type('text/html').send(html);
   });
 
-  fastify.post('/api/demo/session', async (request, reply) => {
-    try {
-      if (process.env.DEMO_ENABLED === 'false') {
-        return reply.code(503).send({ success: false, error: 'Demo 功能已禁用' });
+  // Demo 创建会话：每 IP 每分钟最多 5 次，防止资源耗尽
+  fastify.post(
+    '/api/demo/session',
+    {
+      config: {
+        rateLimit: { max: 5, timeWindow: '1 minute' },
+      },
+    },
+    async (request, reply) => {
+      try {
+        if (process.env.DEMO_ENABLED === 'false') {
+          return reply.code(503).send({ success: false, error: 'Demo 功能已禁用' });
+        }
+        await ensureInit();
+
+        const ip = request.ip || (request.headers['x-forwarded-for'] as string) || 'unknown';
+        const result = await demoService.createSession(String(ip).split(',')[0].trim());
+
+        return reply.code(201).send({ success: true, data: result });
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : '创建会话失败';
+        const code = msg.includes('较多') ? 503 : 500;
+        return reply.code(code).send({ success: false, error: msg });
       }
-      await ensureInit();
-
-      const ip = request.ip || (request.headers['x-forwarded-for'] as string) || 'unknown';
-      const result = await demoService.createSession(String(ip).split(',')[0].trim());
-
-      return reply.code(201).send({ success: true, data: result });
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : '创建会话失败';
-      const code = msg.includes('较多') ? 503 : 500;
-      return reply.code(code).send({ success: false, error: msg });
     }
-  });
+  );
 
   fastify.get('/api/demo/session/:id/status', async (request, reply) => {
     const { id } = request.params as { id: string };

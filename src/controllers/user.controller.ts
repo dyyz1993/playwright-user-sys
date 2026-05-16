@@ -123,11 +123,13 @@ export async function updateUser(request: AuthenticatedRequestWithParams<IdParam
       return sendError(reply, '更新用户失败', 500);
     }
 
-    // 记录操作日志 - 异步处理
+    // 记录操作日志 - 异步处理（脱敏密码字段）
+    const logData = { ...userData } as Record<string, unknown>;
+    delete logData.password;
     OperationLogModel.create({
       admin_id: adminId,
       action: '更新用户',
-      details: userData as unknown as Record<string, unknown>,
+      details: logData,
       target_user_id: userId,
     }).catch((logError) => {
       request.log.error({ err: logError }, '记录操作日志失败');

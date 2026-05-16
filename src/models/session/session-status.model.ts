@@ -196,25 +196,24 @@ export const statusMethods = {
       `标记会话已过期 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${previousCreditsUsed}点`
     );
 
-    await db('sessions').where({ id }).update({
-      status: SessionStatus.EXPIRED,
-      end_time: new Date(),
-      duration: finalDuration,
-      credits_used: creditsUsed,
-      updated_at: new Date(),
+    // 使用事务确保状态更新和积分扣减的原子性
+    await db.transaction(async (trx) => {
+      await trx('sessions').where({ id }).update({
+        status: SessionStatus.EXPIRED,
+        end_time: new Date(),
+        duration: finalDuration,
+        credits_used: creditsUsed,
+        updated_at: new Date(),
+      });
+
+      if (creditsUsed > previousCreditsUsed) {
+        const creditsToDeduct = creditsUsed - previousCreditsUsed;
+        const { UserModel } = await import('../user.model.js');
+        await UserModel.deductCredits(session.user_id, creditsToDeduct, trx);
+      }
     });
 
     const updatedSession = await crudMethods.findById(id);
-
-    if (updatedSession && creditsUsed > previousCreditsUsed) {
-      const creditsToDeduct = creditsUsed - previousCreditsUsed;
-      try {
-        const { UserModel } = await import('../user.model.js');
-        await UserModel.deductCredits(session.user_id, creditsToDeduct);
-      } catch (error) {
-        logger.error(`扣除用户 ${session.user_id} 的点数失败:`, error);
-      }
-    }
 
     return updatedSession;
   },
@@ -254,25 +253,24 @@ export const statusMethods = {
       `标记会话错误 (${id}): 持续时间=${finalDuration}秒, 消耗点数=${creditsUsed}点, 初始消耗=${previousCreditsUsed}点`
     );
 
-    await db('sessions').where({ id }).update({
-      status: SessionStatus.ERROR,
-      end_time: new Date(),
-      duration: finalDuration,
-      credits_used: creditsUsed,
-      updated_at: new Date(),
+    // 使用事务确保状态更新和积分扣减的原子性
+    await db.transaction(async (trx) => {
+      await trx('sessions').where({ id }).update({
+        status: SessionStatus.ERROR,
+        end_time: new Date(),
+        duration: finalDuration,
+        credits_used: creditsUsed,
+        updated_at: new Date(),
+      });
+
+      if (creditsUsed > previousCreditsUsed) {
+        const creditsToDeduct = creditsUsed - previousCreditsUsed;
+        const { UserModel } = await import('../user.model.js');
+        await UserModel.deductCredits(session.user_id, creditsToDeduct, trx);
+      }
     });
 
     const updatedSession = await crudMethods.findById(id);
-
-    if (updatedSession && creditsUsed > previousCreditsUsed) {
-      const creditsToDeduct = creditsUsed - previousCreditsUsed;
-      try {
-        const { UserModel } = await import('../user.model.js');
-        await UserModel.deductCredits(session.user_id, creditsToDeduct);
-      } catch (error) {
-        logger.error(`扣除用户 ${session.user_id} 的点数失败:`, error);
-      }
-    }
 
     return updatedSession;
   },

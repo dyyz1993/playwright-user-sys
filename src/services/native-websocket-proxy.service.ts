@@ -637,22 +637,24 @@ export class NativeWebSocketProxyService {
     this.activeConnections.delete(sessionId);
     this.connectionTimestamps.delete(sessionId);
 
-    // 查找与这个会话关联的用户和机器信息
-    Promise.resolve().then(async () => {
-      try {
-        // 从数据库获取会话信息
-        const session = await import('../models/session.model.js').then((module) =>
-          module.SessionModel.findById(sessionId)
-        );
-
-        if (session && session.user_id && session.machine_id) {
-          await handleSessionDisconnect(sessionId, session.user_id, session.machine_id);
-          logger.info(`会话资源已清理 (sessionId: ${sessionId})`);
-        }
-      } catch (error) {
-        logger.error(`清理会话资源失败 (sessionId: ${sessionId}):`, error);
-      }
+    // 异步清理会话资源（带 catch 防止 unhandled rejection）
+    this.handleCleanupDisconnect(sessionId).catch((error) => {
+      logger.error(`清理会话资源失败 (sessionId: ${sessionId}):`, error);
     });
+  }
+
+  private async handleCleanupDisconnect(sessionId: string): Promise<void> {
+    try {
+      const { SessionModel } = await import('../models/session.model.js');
+      const session = await SessionModel.findById(sessionId);
+
+      if (session && session.user_id && session.machine_id) {
+        await handleSessionDisconnect(sessionId, session.user_id, session.machine_id);
+        logger.info(`会话资源已清理 (sessionId: ${sessionId})`);
+      }
+    } catch (error) {
+      logger.error(`清理会话资源失败 (sessionId: ${sessionId}):`, error);
+    }
   }
 
   // 关闭服务，释放所有资源

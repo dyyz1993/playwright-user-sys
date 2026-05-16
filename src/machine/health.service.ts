@@ -74,8 +74,8 @@ export function startHealthServer(port?: number): void {
     }
   });
 
-  server.listen(healthPort, () => {
-    logger.info(`Health server listening on port ${healthPort}`);
+  server.listen(healthPort, '127.0.0.1', () => {
+    logger.info(`Health server listening on 127.0.0.1:${healthPort}`);
   });
 }
 

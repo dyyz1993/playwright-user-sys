@@ -307,33 +307,6 @@ export class BrowserService extends EventEmitter {
   }
 
   /**
-   * 清理独立会话的用户数据目录
-   * 注意：共享会话的目录不会被清理
-   * @param sessionId 会话ID
-   */
-  private async cleanupUserDataDir(sessionId: string): Promise<void> {
-    const session = this.sessions.get(sessionId);
-    if (!session || !session.userDataDir) {
-      return;
-    }
-
-    // 如果是共享会话，不清理目录
-    if (session.sharedUserData) {
-      logger.info(`共享会话不清理用户数据目录 (sessionId: ${sessionId})`);
-      return;
-    }
-
-    try {
-      if (fsSync.existsSync(session.userDataDir)) {
-        await fs.rm(session.userDataDir, { recursive: true, force: true });
-        logger.info(`已清理独立会话的用户数据目录 (sessionId: ${sessionId}): ${session.userDataDir}`);
-      }
-    } catch (error: unknown) {
-      logger.error(`清理用户数据目录失败 (sessionId: ${sessionId}):`, error);
-    }
-  }
-
-  /**
    * 启动活动报告
    */
   private startActivityReporting() {
@@ -1021,7 +994,7 @@ export class BrowserService extends EventEmitter {
 
     await page.evaluateOnNewDocument((fnName) => {
       // document.removeEventListener('focusin', handleFocusin);
-      document.addEventListener('focusin', function (event) {
+      document.addEventListener('focusin', function (_event) {
         if (typeof (window as unknown as Record<string, unknown>)[fnName] === 'function') {
           (window as unknown as Record<string, () => void>)[fnName](); // Call the dynamic function
         }

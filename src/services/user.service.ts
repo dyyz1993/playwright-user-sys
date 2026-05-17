@@ -1,12 +1,10 @@
 import { db } from '../config/database.js';
-import { UserModel, CreateUserInput, UpdateUserInput, User } from '../models/user.model.js';
-import { OperationLogModel } from '../models/operation-log.model.js';
+import { UserModel, User } from '../models/user.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { UserRole, UserStatus, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
 import { NotFoundError } from '../utils/errors.js';
 import { hashPassword } from '../utils/auth.js';
 import { v4 as uuidv4 } from 'uuid';
-import { logger } from '@shared/utils/logger.js';
 
 export interface CreateUserServiceInput {
   username: string;

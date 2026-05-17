@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { UserModel, UpdateUserInput } from '../models/user.model.js';
+import { UserModel } from '../models/user.model.js';
 import { verifyPasswordWithMigration, hashPassword, generateToken } from '../utils/auth.js';
 import { UserStatus } from '@shared/types/index.js';
 import { logger } from '@shared/utils/logger.js';

@@ -1,6 +1,6 @@
 import { logger } from '@shared/utils/logger.js';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { z, ZodError } from 'zod';
+import { z } from 'zod';
 import { MachineModel } from '../models/machine.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { sendSuccess, sendError, sendCreated, sendPaginated, getSafeErrorMessage } from '../utils/response.js';
@@ -12,7 +12,7 @@ import {
   batchOperationRequestSchema,
   updateMachineInputSchema,
 } from '../schemas/index.js';
-import { toMachineMemoryDTO, toMachineInfoDTO } from '@shared/mappers/index.js';
+import { toMachineMemoryDTO } from '@shared/mappers/index.js';
 import { IdParamRoute, CleanupOldMachinesBodyRoute } from '@shared/types/routes.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 

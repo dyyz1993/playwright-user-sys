@@ -383,7 +383,7 @@ async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string)
         activeElement &&
         (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable)
       ) {
-        let selector = activeElement.id
+        const selector = activeElement.id
           ? `#${CSS.escape(activeElement.id)}`
           : activeElement.getAttribute('name')
             ? `[name="${CSS.escape(activeElement.getAttribute('name')!)}"]`
@@ -576,7 +576,6 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
       // --- 获取图片缩略图 ---
       case 'getThumbnail': {
         const filePath = eventData.path;
-        const maxSize = eventData.maxSize || 200;
 
         const tempDir2 = path.resolve(CONFIG.tempDir);
         const resolvedPath2 = path.resolve(filePath);

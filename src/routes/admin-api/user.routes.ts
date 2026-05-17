@@ -407,7 +407,6 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const adminId = request.user?.id;
         const query = request.query as { search?: string; role?: string; status?: string };
 
         const csvContent = await UserService.exportUsersCsv(query);

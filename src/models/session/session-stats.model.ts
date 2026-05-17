@@ -1,7 +1,6 @@
 import { db } from '../../config/database.js';
 import { SessionRow } from '@shared/types/tables.js';
 import { logger } from '@shared/utils/logger.js';
-import type { Session } from './types.js';
 
 export const statsMethods = {
   async getUserSessionStats(

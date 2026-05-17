@@ -62,12 +62,6 @@ class MemoryStoreService extends EventEmitter {
     return MemoryStoreService.instance;
   }
 
-  // 清理定时器
-  private cleanupTimer: NodeJS.Timeout | null = null;
-
-  // 数据一致性检查定时器
-  private consistencyCheckTimer: NodeJS.Timeout | null = null;
-
   /**
    * 私有构造函数，确保单例模式
    */
@@ -86,7 +80,7 @@ class MemoryStoreService extends EventEmitter {
    */
   private startCleanupTimer(): void {
     // 每小时清理一次过期数据
-    this.cleanupTimer = setInterval(
+    setInterval(
       () => {
         try {
           logger.info('开始清理过期数据...');
@@ -111,7 +105,7 @@ class MemoryStoreService extends EventEmitter {
    */
   private startConsistencyCheckTimer(): void {
     // 每 5 分钟检查一次数据一致性
-    this.consistencyCheckTimer = setInterval(
+    setInterval(
       async () => {
         try {
           logger.info('开始数据一致性检查...');

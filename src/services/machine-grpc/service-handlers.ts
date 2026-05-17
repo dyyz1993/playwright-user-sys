@@ -13,7 +13,7 @@ import type {
   MachineMessage,
   ManagerMessage,
 } from '../../shared/types/grpc.js';
-import type { ServerUnaryCall, sendUnaryData, ServerDuplexStream } from '@grpc/grpc-js';
+import type { ServerUnaryCall, sendUnaryData } from '@grpc/grpc-js';
 
 function getConnectionManager() {
   return import('./index.js').then((m) => m.connectionManager);

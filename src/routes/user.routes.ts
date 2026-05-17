@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest, FastifyReply, RouteHandlerMethod } from 'fastify';
+import { FastifyInstance, RouteHandlerMethod } from 'fastify';
 import userController from '../controllers/user.controller.js';
 import { sendSuccess, sendError } from '../utils/response.js';
 import { userDetailSchema } from '../schemas/index.js';
@@ -18,7 +18,6 @@ import {
 } from '../schemas/index.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import * as UserService from '../services/user.service.js';
-import * as UserAuthService from '../services/auth.service.js';
 import { verifyPasswordWithMigration, hashPassword } from '../utils/auth.js';
 
 function toISO(v: Date | string | null | undefined): string | null {

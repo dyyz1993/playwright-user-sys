@@ -221,7 +221,7 @@ async function captureAndSend(ws: WebSocket, page: Page, sessionId: string): Pro
 }
 
 function startScreenshotLoop(streamInfo: StreamInfo): void {
-  const { ws, page, sessionId, currentFps } = streamInfo;
+  const { ws, sessionId, currentFps } = streamInfo;
   const intervalMs = 1000 / currentFps;
 
   logger.info(`Starting screenshot loop fallback for ${sessionId} at ${currentFps} FPS`);

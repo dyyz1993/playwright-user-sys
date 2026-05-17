@@ -12,7 +12,7 @@ export default fp(async function (fastify: FastifyInstance) {
     {
       parseAs: 'string',
     },
-    function (req, body, done) {
+    function (_req, body, done) {
       if (body === '') {
         // 如果请求体为空，返回空对象
         done(null, {});

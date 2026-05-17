@@ -1,11 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { v4 as uuidv4 } from 'uuid';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import { errorResponseSchema } from '../../schemas/index.js';
 import { AddMachineBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
-import { getSafeErrorMessage } from '../../utils/response.js';
 import * as AdminMachineService from '../../services/admin-machine.service.js';
 
 export async function adminApiMachineRoutes(fastify: FastifyInstance): Promise<void> {

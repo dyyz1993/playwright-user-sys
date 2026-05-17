@@ -54,7 +54,6 @@ export class ConnectionManager {
       setGrpcConnected(false);
       this.stopHeartbeat();
       this.onDisconnected();
-      const error = new Error('UNAVAILABLE: Connection closed by server');
       this.onReconnectNeeded();
     });
 

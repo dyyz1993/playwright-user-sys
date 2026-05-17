@@ -3,10 +3,9 @@ import { getSafeErrorMessage } from '../utils/response.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import { errorResponseSchema, idParamSchema } from '../schemas/index.js';
-import { IdParamRoute, UpdateMachineBodyRoute, MachineIdArrayBodyRoute } from '@shared/types/routes.js';
+import { UpdateMachineBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './admin-api/authenticate.js';
 import * as AdminMachineService from '../services/admin-machine.service.js';
-import * as AdminOpLogService from '../services/admin-operation-log.service.js';
 
 export default async function adminMachineApiRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);

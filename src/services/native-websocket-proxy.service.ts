@@ -1,18 +1,15 @@
 import * as stream from 'stream';
 import * as http from 'http';
 import * as net from 'net';
-import type * as crypto from 'crypto';
 import * as url from 'url';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import httpProxy from 'http-proxy';
-import type { WebSocket as WSClient } from 'ws';
 import { UserModel } from '../models/user.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { logger } from '@shared/utils/logger.js';
 import { createBrowserSession, handleSessionDisconnect } from './session.service.js';
 import { memoryStore } from './memory-store.service.js';
-import { env } from '../config/env.js';
 import { SessionStatus } from '@shared/types/index.js';
 
 const wsConnectQuerySchema = z.object({
@@ -568,7 +565,6 @@ export class NativeWebSocketProxyService {
         }
       });
 
-      let clientHeaderSent = false;
       let machineHeaderReceived = false;
       let bridged = false;
 
@@ -609,7 +605,6 @@ export class NativeWebSocketProxyService {
 
             // Forward cleaned 101 response to client
             socket.write(Buffer.from(cleanHeaders + '\r\n\r\n'));
-            clientHeaderSent = true;
             machineHeaderReceived = true;
 
             // If there's body data after headers, write it

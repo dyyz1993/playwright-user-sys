@@ -14,11 +14,10 @@ import { getSessionDetailPageData } from '../controllers/admin/session-detail-pa
 import { getCreditsHistoryPageData } from '../controllers/admin/credits-page.controller.js';
 import { getLogsPageData } from '../controllers/admin/logs-page.controller.js';
 import { getProfilePageData } from '../controllers/admin/profile-page.controller.js';
-import { sendError, getSafeErrorMessage } from '../utils/response.js';
+import { getSafeErrorMessage } from '../utils/response.js';
 import { env } from '../config/env.js';
-import { SessionModel } from '../models/session/index.js';
 
-function requireAdmin(request: FastifyRequest, reply: FastifyReply): boolean {
+function requireAdmin(request: FastifyRequest, _reply: FastifyReply): boolean {
   if (request.user?.role !== 'admin') {
     return false;
   }
@@ -78,7 +77,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
           return reply.redirect('/admin/login');
         }
 
-        const { user, token } = await webLogin(username, password, request.ip);
+        const { user: _user, token } = await webLogin(username, password, request.ip);
 
         reply.setCookie('token', token, {
           path: '/',
@@ -373,12 +372,12 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     }
   );
 
-  fastify.post('/admin/logout', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/admin/logout', async (_request: FastifyRequest, reply: FastifyReply) => {
     reply.clearCookie('token', { path: '/' });
     return reply.redirect('/admin/login');
   });
 
-  fastify.get('/admin/logout', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/admin/logout', async (_request: FastifyRequest, reply: FastifyReply) => {
     reply.clearCookie('token', { path: '/' });
     return reply.redirect('/admin/login');
   });
@@ -406,7 +405,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       '/admin/debug/verify-token',
       async (request: FastifyRequest<DebugVerifyTokenBodyRoute>, _reply: FastifyReply) => {
         const jwt = (await import('jsonwebtoken')).default;
-        const { env } = await import('../config/env.js');
+        const { env: _env } = await import('../config/env.js');
 
         const body = request.body;
         const token = body.token || request.cookies?.token;

@@ -3,7 +3,7 @@ import { db } from '../config/database.js';
 import { UserRole, UserStatus, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
 import { UserRow } from '@shared/types/tables.js';
 import { v4 as uuidv4 } from 'uuid';
-import { hashPassword, comparePassword, verifyPasswordWithMigration } from '../utils/auth.js';
+import { hashPassword, verifyPasswordWithMigration } from '../utils/auth.js';
 import { logger } from '../shared/utils/logger.js';
 
 export interface User extends Omit<UserRow, 'created_at' | 'updated_at'> {

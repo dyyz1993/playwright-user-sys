@@ -48,9 +48,15 @@ export default async function demoRoutes(fastify: FastifyInstance) {
 
         return reply.code(201).send({ success: true, data: result });
       } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : '创建会话失败';
-        const code = msg.includes('较多') ? 503 : 500;
-        return reply.code(code).send({ success: false, error: msg });
+        const rawMsg = error instanceof Error ? error.message : '创建会话失败';
+        const code = rawMsg.includes('较多') ? 503 : 500;
+        const clientMsg =
+          process.env.NODE_ENV === 'production'
+            ? code === 503
+              ? '当前使用人数较多，请稍后再试'
+              : '创建会话失败'
+            : rawMsg;
+        return reply.code(code).send({ success: false, error: clientMsg });
       }
     }
   );

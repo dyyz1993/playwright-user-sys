@@ -12,7 +12,7 @@ import { MachineConfig, CONFIG } from '../config.js';
 // gRPC 重连退避计数器
 let grpcReconnectAttempts = 0;
 import { ConnectionManager } from './connection-manager.js';
-import { getCpuUsage, getMemoryUsage, getDiskSpace, getLocalIpAddress } from './system-info.js';
+import { getDiskSpace, getLocalIpAddress } from './system-info.js';
 import { serviceImplementation } from './service-handlers.js';
 import type { RegisterRequest, RegisterResponse, MachineMessage, ManagerMessage } from '../../shared/types/grpc.js';
 
@@ -57,8 +57,6 @@ export function getServerConfig(): MachineConfig {
   return serverConfig;
 }
 
-let _grpcClientInstance: GrpcClient | null = null;
-
 export class GrpcClient extends EventEmitter {
   private client!: MachineServiceClient;
   private connectionManager: ConnectionManager;
@@ -67,7 +65,6 @@ export class GrpcClient extends EventEmitter {
   constructor(config: MachineConfig = CONFIG) {
     super();
     this.config = config;
-    _grpcClientInstance = this;
     this.initClient();
 
     this.connectionManager = new ConnectionManager(

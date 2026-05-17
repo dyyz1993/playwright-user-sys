@@ -1,6 +1,5 @@
 import { SessionModel } from '../../models/session.model.js';
 import { MachineModel } from '../../models/machine.model.js';
-import { UserModel } from '../../models/user.model.js';
 import * as UserService from '../../services/user.service.js';
 
 export async function getDashboardData(userId?: number) {

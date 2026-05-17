@@ -47,6 +47,8 @@ export default [
       'preserve-caught-error': 'warn',
       'no-case-declarations': 'warn',
       'no-async-promise-executor': 'warn',
+      'prefer-const': ['warn', { destructuring: 'all' }],
+      'no-return-await': 'warn',
       'no-restricted-imports': [
         'error',
         {

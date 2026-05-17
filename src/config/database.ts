@@ -133,7 +133,7 @@ const createDbProxy = () => {
   } as Knex;
 
   return new Proxy(proxyFn, {
-    get(target, prop) {
+    get(_target, prop) {
       if (prop === 'then' || prop === 'catch') {
         // 不拦截 Promise 方法
         return undefined;
@@ -143,14 +143,14 @@ const createDbProxy = () => {
       }
       throw new Error('Database not initialized. Call initDatabase() first.');
     },
-    set(target, prop, value) {
+    set(_target, prop, value) {
       if (dbInstance) {
         (dbInstance as unknown as Record<string | symbol, unknown>)[prop] = value;
         return true;
       }
       return false;
     },
-    has(target, prop) {
+    has(_target, prop) {
       return prop in (dbInstance || {});
     },
   });

@@ -8,6 +8,10 @@ import fs from 'fs';
 import path from 'path';
 import { CONFIG } from '../config.js';
 
+// !! 导航相关超时常量（毫秒） !!
+const NAVIGATION_TIMEOUT = 15_000; // goBack/goForward/reload
+const PAGE_LOAD_TIMEOUT = 30_000; // goto 完整页面加载
+
 // !! 扩展 Window 接口以包含自定义函数 !!
 declare global {
   interface Window {
@@ -344,7 +348,7 @@ async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string)
     logger.warn(`Page closed or WebSocket not open when handling raw focus for ${sessionId}.`);
     return;
   }
-  logger.info(`Handling raw focus event for ${sessionId}. Evaluating page...`);
+  logger.debug(`Handling raw focus event for ${sessionId}. Evaluating page...`);
   try {
     // Evaluate page to get current focused element data *now*
     const focusedElementInfo = await page.evaluate(() => {
@@ -365,7 +369,12 @@ async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string)
               ? `iframe.${CSS.escape(activeElement.classList[0])}`
               : 'iframe');
 
-        activeElement = (activeElement as HTMLIFrameElement).contentWindow!.document.activeElement as HTMLElement;
+        const iframeElement = activeElement as HTMLIFrameElement;
+        if (!iframeElement.contentWindow) {
+          // contentWindow is null, skip iframe traversal
+          return null;
+        }
+        activeElement = iframeElement.contentWindow.document.activeElement as HTMLElement;
       }
       if (
         activeElement &&
@@ -405,11 +414,11 @@ async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string)
 
     // Send notification if data was collected and WS is open
     if (focusedElementInfo && ws.readyState === WebSocket.OPEN) {
-      logger.info(`Sending form.field notification for ${sessionId}`);
+      logger.debug(`Sending form.field notification for ${sessionId}`);
       // Assuming sendNotification exists and works correctly
       sendNotification(ws, 'form.field', focusedElementInfo);
     } else if (ws.readyState === WebSocket.OPEN) {
-      logger.info(`No suitable element focused when evaluating for ${sessionId}.`);
+      logger.debug(`No suitable element focused when evaluating for ${sessionId}.`);
     }
   } catch (evalError: unknown) {
     if (!page.isClosed() && ws.readyState === WebSocket.OPEN) {
@@ -770,13 +779,13 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
           if (data?.action) {
             switch (data.action) {
               case 'goBack':
-                await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 });
+                await page.goBack({ waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT });
                 break;
               case 'goForward':
-                await page.goForward({ waitUntil: 'domcontentloaded', timeout: 15000 });
+                await page.goForward({ waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT });
                 break;
               case 'reload':
-                await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
+                await page.reload({ waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT });
                 break;
             }
             logger.info(`Navigate action ${data.action} for session ${sessionId}`);
@@ -784,7 +793,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
             logger.info(`Navigating page for session ${sessionId} to ${data?.url}`);
             await page.goto(data?.url, {
               waitUntil: 'domcontentloaded',
-              timeout: 30000,
+              timeout: PAGE_LOAD_TIMEOUT,
             });
           }
           sendResponse(ws, requestType, { success: true });
@@ -799,7 +808,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
 
       case 'goBack':
         try {
-          await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 });
+          await page.goBack({ waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT });
           sendResponse(ws, requestType, { success: true });
         } catch (backError: unknown) {
           sendResponse(ws, requestType, { success: false, error: (backError as Error).message });
@@ -808,7 +817,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
 
       case 'goForward':
         try {
-          await page.goForward({ waitUntil: 'domcontentloaded', timeout: 15000 });
+          await page.goForward({ waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT });
           sendResponse(ws, requestType, { success: true });
         } catch (fwdError: unknown) {
           sendResponse(ws, requestType, { success: false, error: (fwdError as Error).message });
@@ -817,7 +826,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
 
       case 'reload':
         try {
-          await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
+          await page.reload({ waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT });
           sendResponse(ws, requestType, { success: true });
         } catch (reloadError: unknown) {
           sendResponse(ws, requestType, { success: false, error: (reloadError as Error).message });

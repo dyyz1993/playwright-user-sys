@@ -146,7 +146,8 @@ export default fp(async function (fastify: FastifyInstance) {
     // 尝试 JWT Token
     if (hasToken) {
       try {
-        const token = authHeader!.split(' ')[1];
+        const parts = authHeader.split(' ');
+        const token = parts.length === 2 ? parts[1] : '';
 
         const jwtSecret = getJwtSecret();
         const decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };

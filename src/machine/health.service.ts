@@ -81,8 +81,9 @@ export function startHealthServer(port?: number): void {
 
 export async function stopHealthServer(): Promise<void> {
   if (!server) return;
+  const serverToClose = server;
   return new Promise((resolve) => {
-    server!.close(() => {
+    serverToClose.close(() => {
       server = null;
       logger.info('Health server stopped');
       resolve();

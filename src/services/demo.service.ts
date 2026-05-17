@@ -56,11 +56,17 @@ export class DemoService {
         });
 
         user = await UserModel.findByUsername(DEMO_USER_USERNAME);
-        logger.info(`Demo 用户已创建: id=${user!.id}`);
+        if (!user) {
+          throw new Error('Demo user creation failed: user not found after insert');
+        }
+        logger.info(`Demo 用户已创建: id=${user.id}`);
       }
 
-      this.demoUserId = user!.id;
-      this.demoApiKey = user!.api_key;
+      if (!user) {
+        throw new Error('Demo user not found');
+      }
+      this.demoUserId = user.id;
+      this.demoApiKey = user.api_key;
       this._initialized = true;
       logger.info(`Demo 服务已初始化: userId=${this.demoUserId}`);
 

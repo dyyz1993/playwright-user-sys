@@ -49,6 +49,9 @@ export const idParamSchema = z.object({
 // 通用时间戳字段
 export const timestampSchema = z.string().or(z.date());
 
+/** 单次充值最大金额 */
+export const MAX_RECHARGE_AMOUNT = 1_000_000;
+
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
 export type PaginationQueryType = z.infer<typeof paginationQuerySchema>;
 export type IdParam = z.infer<typeof idParamSchema>;

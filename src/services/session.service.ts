@@ -90,7 +90,10 @@ export async function releaseSession(options: ReleaseSessionOptions): Promise<Re
       }
 
       const userAfterSettlement = await trx('users').where({ id: userId }).first();
-      const balanceAfter = userAfterSettlement!.credits;
+      if (!userAfterSettlement) {
+        throw new Error(`User ${userId} not found after settlement`);
+      }
+      const balanceAfter = userAfterSettlement.credits;
 
       await trx('credit_history').insert({
         user_id: userId,

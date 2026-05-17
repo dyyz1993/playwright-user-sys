@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { UserRole, UserStatus } from '@shared/types/index.js';
-import { successResponseSchema, timestampSchema } from './common.schema.js';
+import { successResponseSchema, timestampSchema, MAX_RECHARGE_AMOUNT } from './common.schema.js';
 
 // 用户基本信息模式
 export const userBaseSchema = z.object({
@@ -91,7 +91,7 @@ export const resetApiKeyResponseSchema = successResponseSchema(
 
 // 添加点数请求模式
 export const addCreditsRequestSchema = z.object({
-  amount: z.number().int().positive().max(1000000, '单次充值金额不能超过 1,000,000'),
+  amount: z.number().int().positive().max(MAX_RECHARGE_AMOUNT, '单次充值金额不能超过 1,000,000'),
 });
 
 // 添加点数响应模式

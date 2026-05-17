@@ -386,7 +386,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
   fastify.register(async function debugRoutes(fastify) {
     fastify.addHook('preHandler', async (_request: FastifyRequest, reply: FastifyReply) => {
       if (process.env.NODE_ENV === 'production') {
-        return reply.code(404).send({ error: 'Not found' });
+        return reply.code(404).send({ success: false, error: 'Not found' });
       }
     });
 
@@ -412,7 +412,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         const token = body.token || request.cookies?.token;
 
         if (!token) {
-          return { error: 'No token provided' };
+          return { success: false, error: 'No token provided' };
         }
 
         const jwtSecret =
@@ -444,7 +444,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       { onRequest: [fastify.verifyJWT] },
       async (request: FastifyRequest, _reply: FastifyReply) => {
         if (!request.user) {
-          return { error: 'Not authenticated' };
+          return { success: false, error: 'Not authenticated' };
         }
         const { getUserById } = await import('../services/user.service.js');
         const user = await getUserById(request.user.id);
@@ -462,11 +462,11 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       async (request: FastifyRequest, reply: FastifyReply) => {
         try {
           if (!request.user) {
-            return { error: 'Not authenticated' };
+            return { success: false, error: 'Not authenticated' };
           }
           const data = await getProfilePageData(request.user.id);
           if (!data) {
-            return { error: 'User not found' };
+            return { success: false, error: 'User not found' };
           }
 
           return reply.view('pages/profile', {
@@ -484,7 +484,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
             flash: request.flash,
           });
         } catch (error: unknown) {
-          return { error: getSafeErrorMessage(error) };
+          return { success: false, error: getSafeErrorMessage(error) };
         }
       }
     );

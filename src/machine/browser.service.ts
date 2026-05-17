@@ -961,30 +961,35 @@ export class BrowserService extends EventEmitter {
       protocolTimeout: 60000,
     };
 
+    // 确保 args 数组存在
+    if (!result.args) {
+      result.args = [];
+    }
+
     // 处理 userDataDir - 必须在启动时传递
     if (options.userDataDir) {
-      result.args!.push(`--user-data-dir=${options.userDataDir}`);
+      result.args.push(`--user-data-dir=${options.userDataDir}`);
       logger.info(`设置 userDataDir: ${options.userDataDir}`);
     }
 
     if (options.args && Array.isArray(options.args)) {
-      result.args!.push(...options.args);
+      result.args.push(...options.args);
     }
 
     if (options.userAgent) {
-      result.args!.push(`--user-agent=${options.userAgent}`);
+      result.args.push(`--user-agent=${options.userAgent}`);
     }
 
     if (options.proxy) {
-      result.args!.push(`--proxy-server=${options.proxy}`);
+      result.args.push(`--proxy-server=${options.proxy}`);
     }
 
     if (options.proxyBypass) {
-      result.args!.push(`--proxy-bypass-list=${options.proxyBypass}`);
+      result.args.push(`--proxy-bypass-list=${options.proxyBypass}`);
     }
 
     if (options.viewport) {
-      result.args!.push(`--window-size=${options.viewport.width},${options.viewport.height}`);
+      result.args.push(`--window-size=${options.viewport.width},${options.viewport.height}`);
     }
 
     if (options.defaultViewport) {
@@ -1018,7 +1023,6 @@ export class BrowserService extends EventEmitter {
       // document.removeEventListener('focusin', handleFocusin);
       document.addEventListener('focusin', function (event) {
         if (typeof (window as unknown as Record<string, unknown>)[fnName] === 'function') {
-          console.log('focusin', event.target);
           (window as unknown as Record<string, () => void>)[fnName](); // Call the dynamic function
         }
       });
@@ -1073,7 +1077,6 @@ export class BrowserService extends EventEmitter {
 
           // 当DOM加载完成后添加到body
           if (document.readyState === 'loading') {
-            console.log('DOMContentLoaded', document.readyState);
             document.addEventListener('DOMContentLoaded', () => {
               document.body.appendChild(cursor);
             });
@@ -1082,11 +1085,6 @@ export class BrowserService extends EventEmitter {
           }
 
           // 创建新的mousemove事件监听器
-
-          // 保存监听器引用
-          document.addEventListener('click', function (e: MouseEvent) {
-            console.log('click', e.clientX, e.clientY);
-          });
           // 添加新的事件监听器
           document.addEventListener('mousemove', function (e: MouseEvent) {
             // 使用原始坐标，无需缩放转换

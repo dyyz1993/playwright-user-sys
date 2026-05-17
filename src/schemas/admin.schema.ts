@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { UserRole, UserStatus } from '@shared/types/index.js';
-import { successResponseSchema } from './common.schema.js';
+import { successResponseSchema, MAX_RECHARGE_AMOUNT } from './common.schema.js';
 
 // 管理员登录请求模式
 export const adminLoginRequestSchema = z.object({
@@ -119,7 +119,7 @@ export const adminDeleteUserResponseSchema = z.object({
 
 // 管理员添加点数请求模式
 export const adminAddCreditsRequestSchema = z.object({
-  amount: z.number().int().positive().max(1000000, '单次充值金额不能超过 1,000,000'),
+  amount: z.number().int().positive().max(MAX_RECHARGE_AMOUNT, '单次充值金额不能超过 1,000,000'),
   reason: z.string().optional(),
 });
 

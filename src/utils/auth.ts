@@ -17,7 +17,10 @@ export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     if (process.env.NODE_ENV === 'test') return 'test-secret-key-for-testing-only-32chars';
-    if (process.env.NODE_ENV === 'development') return 'dev-only-secret-key';
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('\x1b[33m[WARN] Using default development JWT secret. Set JWT_SECRET in production!\x1b[0m');
+      return 'dev-only-secret-key';
+    }
     throw new Error('JWT_SECRET environment variable is required in production');
   }
   return secret;

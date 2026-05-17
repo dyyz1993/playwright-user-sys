@@ -280,9 +280,12 @@ export const statusMethods = {
       const now = new Date();
       const timeoutDate = new Date(now.getTime() - timeoutMs);
 
-      const expiredSessions = await db('sessions')
-        .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED])
-        .where('start_time', '<', timeoutDate);
+      const expiredSessions = await db.transaction(async (trx) =>
+        trx('sessions')
+          .whereIn('status', [SessionStatus.CREATED, SessionStatus.CONNECTED])
+          .where('start_time', '<', timeoutDate)
+          .forUpdate()
+      );
 
       logger.info(`找到 ${expiredSessions.length} 个超时会话`);
 

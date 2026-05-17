@@ -61,18 +61,20 @@ export async function getStorageStats(query: {
 export async function cleanupUserData(userIds: number[], type: 'sessions' | 'shared' | 'all', adminId: number) {
   const result = await StorageService.adminCleanupUserData(userIds, type);
 
-  OperationLogModel.create({
-    admin_id: adminId,
-    action: '清理用户存储',
-    details: {
-      type,
-      userIds,
-      cleanedUsers: result.cleanedUsers,
-      freedSpace: result.freedSpace,
-    },
-  }).catch((err) => {
+  try {
+    await OperationLogModel.create({
+      admin_id: adminId,
+      action: '清理用户存储',
+      details: {
+        type,
+        userIds,
+        cleanedUsers: result.cleanedUsers,
+        freedSpace: result.freedSpace,
+      },
+    });
+  } catch (err) {
     logger.warn('记录操作日志失败:', err);
-  });
+  }
 
   return result;
 }
@@ -80,17 +82,19 @@ export async function cleanupUserData(userIds: number[], type: 'sessions' | 'sha
 export async function cleanupAllOldData(days: number | undefined, adminId: number) {
   const result = await StorageService.adminCleanupAllOldData(days);
 
-  OperationLogModel.create({
-    admin_id: adminId,
-    action: '清理旧数据',
-    details: {
-      days,
-      deletedCount: result.deletedCount,
-      freedSpace: result.freedSpace,
-    },
-  }).catch((err) => {
+  try {
+    await OperationLogModel.create({
+      admin_id: adminId,
+      action: '清理旧数据',
+      details: {
+        days,
+        deletedCount: result.deletedCount,
+        freedSpace: result.freedSpace,
+      },
+    });
+  } catch (err) {
     logger.warn('记录操作日志失败:', err);
-  });
+  }
 
   return result;
 }

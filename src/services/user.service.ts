@@ -27,7 +27,7 @@ export async function createUser(data: CreateUserServiceInput, adminId?: number)
   return await db.transaction(async (trx) => {
     const existing = await trx('users').where({ username: data.username }).first();
     if (existing) {
-      throw new Error(`用户名 "${data.username}" 已存在`);
+      throw new Error('用户名已存在');
     }
 
     const hashedPassword = await hashPassword(data.password);

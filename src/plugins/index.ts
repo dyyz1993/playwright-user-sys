@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
+import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import sensible from '@fastify/sensible';
 import gracefulShutdown from 'fastify-graceful-shutdown';
@@ -34,6 +35,38 @@ export default fp(async function (fastify: FastifyInstance) {
       keyGenerator: (request: { ip: string }) => request.ip,
     });
   }
+
+  // 注册安全响应头插件
+  // @ts-expect-error — fastify-helmet compatible with Fastify v5
+  await fastify.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "'unsafe-eval'",
+          'https://cdn.tailwindcss.com',
+          'https://cdnjs.cloudflare.com',
+        ],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com', 'https://cdnjs.cloudflare.com'],
+        fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'data:'],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'", 'ws:', 'wss:'],
+        frameSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    xFrameOptions: { action: 'deny' },
+    xContentTypeOptions: { action: 'nosniff' },
+    strictTransportSecurity: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+    },
+    xXssProtection: { mode: '0' },
+    crossOriginEmbedderPolicy: false,
+  });
 
   // 注册 CORS 插件
   const defaultOrigins =

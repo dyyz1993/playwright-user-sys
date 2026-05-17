@@ -262,7 +262,7 @@ function startScreenshotLoop(streamInfo: StreamInfo): void {
 }
 
 // --- 等待页面就绪 ---
-const DEFAULT_START_URL = 'https://www.baidu.com';
+const DEFAULT_START_URL = 'http://192.168.0.29:3011/public/test-interactive.html';
 
 async function waitForPageReady(page: Page, _sessionId: string): Promise<void> {
   const currentUrl = page.url();

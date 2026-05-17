@@ -416,7 +416,8 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
         }
 
         const jwtSecret =
-          process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
+          process.env.JWT_SECRET ||
+          (process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : 'dev-only-secret-key');
 
         try {
           const decoded = jwt.verify(token, jwtSecret);

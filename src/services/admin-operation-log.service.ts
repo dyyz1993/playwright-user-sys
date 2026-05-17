@@ -30,7 +30,9 @@ export async function createOperationLog(data: {
   details?: Record<string, unknown>;
   target_user_id?: number;
 }): Promise<void> {
-  OperationLogModel.create(data).catch((err) => {
+  try {
+    await OperationLogModel.create(data);
+  } catch (err) {
     logger.warn('记录操作日志失败:', err);
-  });
+  }
 }

@@ -72,7 +72,8 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         request.log.error({ err: error }, '创建用户失败');
         const message = error instanceof Error ? error.message : '未知错误';
         const statusCode = message.includes('已存在') ? 409 : 500;
-        return sendError(reply, '创建用户失败: ' + message, statusCode);
+        const userMessage = statusCode === 409 ? '用户名已存在' : '创建用户失败';
+        return sendError(reply, userMessage, statusCode);
       }
     }
   );
@@ -481,7 +482,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         body: {
           type: 'object',
           properties: {
-            userIds: { type: 'array', items: { type: 'number' } },
+            userIds: { type: 'array', items: { type: 'number' }, maxItems: 100 },
           },
           required: ['userIds'],
         },
@@ -539,7 +540,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         body: {
           type: 'object',
           properties: {
-            userIds: { type: 'array', items: { type: 'number' } },
+            userIds: { type: 'array', items: { type: 'number' }, maxItems: 100 },
             credits: { type: 'number' },
             reason: { type: 'string' },
           },

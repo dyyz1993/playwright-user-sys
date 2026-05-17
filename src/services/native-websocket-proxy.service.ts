@@ -231,7 +231,8 @@ export class NativeWebSocketProxyService {
       }
 
       const jwtSecret =
-        process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
+        process.env.JWT_SECRET ||
+        (process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : 'dev-only-secret-key');
 
       let decoded: { id: number; role: string };
       try {
@@ -471,7 +472,8 @@ export class NativeWebSocketProxyService {
       }
 
       const jwtSecret =
-        process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : String(env.JWT_SECRET);
+        process.env.JWT_SECRET ||
+        (process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : 'dev-only-secret-key');
 
       let decoded: { id: number; role: string };
       try {

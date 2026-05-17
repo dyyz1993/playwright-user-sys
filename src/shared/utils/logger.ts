@@ -2,6 +2,26 @@ import { config } from '../../config/index.js';
 import path from 'path';
 import fs from 'fs';
 
+const SENSITIVE_FIELDS = ['apiKey', 'password', 'token', 'secret', 'authorization'];
+
+function sanitize(value: unknown): unknown {
+  if (!value || typeof value !== 'object') return value;
+  if (value instanceof Error) return value;
+  if (Array.isArray(value)) return value.map(sanitize);
+
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+    if (SENSITIVE_FIELDS.some((f) => key.toLowerCase().includes(f.toLowerCase()))) {
+      sanitized[key] = '***REDACTED***';
+    } else if (typeof val === 'object' && val !== null) {
+      sanitized[key] = sanitize(val);
+    } else {
+      sanitized[key] = val;
+    }
+  }
+  return sanitized;
+}
+
 // 创建日志目录
 const logsDir = path.resolve(process.cwd(), 'logs');
 if (!fs.existsSync(logsDir)) {
@@ -27,32 +47,36 @@ const logLevel = config.logging?.level || 'info';
  */
 export const logger = {
   info(message: string, ...args: unknown[]): void {
+    const sanitizedArgs = args.map(sanitize);
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] [INFO] ${message}`;
-    console.log(`\x1b[36m${formattedMessage}\x1b[0m`, ...args);
-    this.writeToFile(formattedMessage, args);
+    console.log(`\x1b[36m${formattedMessage}\x1b[0m`, ...sanitizedArgs);
+    this.writeToFile(formattedMessage, sanitizedArgs);
   },
 
   warn(message: string, ...args: unknown[]): void {
+    const sanitizedArgs = args.map(sanitize);
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] [WARN] ${message}`;
-    console.log(`\x1b[33m${formattedMessage}\x1b[0m`, ...args);
-    this.writeToFile(formattedMessage, args);
+    console.log(`\x1b[33m${formattedMessage}\x1b[0m`, ...sanitizedArgs);
+    this.writeToFile(formattedMessage, sanitizedArgs);
   },
 
   error(message: string, ...args: unknown[]): void {
+    const sanitizedArgs = args.map(sanitize);
     const timestamp = new Date().toISOString();
     const formattedMessage = `[${timestamp}] [ERROR] ${message}`;
-    console.error(`\x1b[31m${formattedMessage}\x1b[0m`, ...args);
-    this.writeToFile(formattedMessage, args);
+    console.error(`\x1b[31m${formattedMessage}\x1b[0m`, ...sanitizedArgs);
+    this.writeToFile(formattedMessage, sanitizedArgs);
   },
 
   debug(message: string, ...args: unknown[]): void {
     if (logLevel === 'debug') {
+      const sanitizedArgs = args.map(sanitize);
       const timestamp = new Date().toISOString();
       const formattedMessage = `[${timestamp}] [DEBUG] ${message}`;
-      console.log(`\x1b[32m${formattedMessage}\x1b[0m`, ...args);
-      this.writeToFile(formattedMessage, args);
+      console.log(`\x1b[32m${formattedMessage}\x1b[0m`, ...sanitizedArgs);
+      this.writeToFile(formattedMessage, sanitizedArgs);
     }
   },
 

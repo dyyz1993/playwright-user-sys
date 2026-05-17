@@ -31,18 +31,20 @@ export async function addMachine(
     throw new Error('创建机器失败');
   }
 
-  OperationLogModel.create({
-    admin_id: adminId,
-    action: '添加机器',
-    details: {
-      hostname: body.hostname,
-      ip: body.ip,
-      grpcPort: body.grpcPort,
-      proxyPort: body.proxyPort,
-    },
-  }).catch((err) => {
+  try {
+    await OperationLogModel.create({
+      admin_id: adminId,
+      action: '添加机器',
+      details: {
+        hostname: body.hostname,
+        ip: body.ip,
+        grpcPort: body.grpcPort,
+        proxyPort: body.proxyPort,
+      },
+    });
+  } catch (err) {
     logger.warn('记录操作日志失败:', err);
-  });
+  }
 
   return machine;
 }
@@ -73,13 +75,15 @@ export async function batchRestartMachines(
 
       restarted.push(machineId);
 
-      OperationLogModel.create({
-        admin_id: adminId,
-        action: '批量重启机器',
-        details: { hostname: machine.hostname },
-      }).catch((err) => {
+      try {
+        await OperationLogModel.create({
+          admin_id: adminId,
+          action: '批量重启机器',
+          details: { hostname: machine.hostname },
+        });
+      } catch (err) {
         logger.warn('记录操作日志失败:', err);
-      });
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '重启失败';
       failed.push({ machineId, error: message });
@@ -108,17 +112,19 @@ export async function updateMachineConfig(
     throw new Error('更新机器失败');
   }
 
-  OperationLogModel.create({
-    admin_id: adminId,
-    action: '更新机器配置',
-    details: {
-      hostname: body.hostname,
-      ip: body.ip,
-      maxInstances: body.maxInstances,
-    },
-  }).catch((err) => {
+  try {
+    await OperationLogModel.create({
+      admin_id: adminId,
+      action: '更新机器配置',
+      details: {
+        hostname: body.hostname,
+        ip: body.ip,
+        maxInstances: body.maxInstances,
+      },
+    });
+  } catch (err) {
     logger.warn('记录操作日志失败:', err);
-  });
+  }
 
   return updatedMachine;
 }

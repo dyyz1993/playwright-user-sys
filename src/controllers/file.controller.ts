@@ -304,8 +304,8 @@ export async function getSessionFiles(request: FastifyRequest, reply: FastifyRep
           lastModified: stat.mtime.toISOString(),
           machineFilePath: filePath,
         });
-      } catch (_) {
-        void _;
+      } catch (e: unknown) {
+        logger.debug('Failed to stat file in file list:', (e as Error)?.message);
       }
     }
 

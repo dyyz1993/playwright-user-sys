@@ -19,16 +19,10 @@ export class Session {
   private apiKey: string;
   private info: SessionInfo;
 
-  constructor(baseUrl: string, apiKey: string, info: Record<string, any>) {
+  constructor(baseUrl: string, apiKey: string, info: SessionInfo) {
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
-    this.info = {
-      id: info.id,
-      status: info.status,
-      directUrl: info.directUrl,
-      viewerUrl: info.viewerUrl,
-      ...info,
-    };
+    this.info = { ...info };
   }
 
   get id(): string {

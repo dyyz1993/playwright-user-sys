@@ -121,7 +121,7 @@ export async function handleEventsConnection(
             if (conn) conn.page = freshPage;
           }
         } catch (_recoverErr) {
-          void _recoverErr;
+          logger.debug('Failed to recover page for clipboard polling:', (_recoverErr as Error)?.message);
         }
       }
     }, 2000);
@@ -340,14 +340,14 @@ async function handleFileUploadChunk(ws: WebSocket, sessionId: string, data: Fil
 async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string): Promise<void> {
   logger.info('handleRawFocusEvent', sessionId);
   // Check states before evaluating
-  if ((page && page!.isClosed()) || (ws && ws.readyState !== WebSocket.OPEN)) {
+  if (page.isClosed() || ws.readyState !== WebSocket.OPEN) {
     logger.warn(`Page closed or WebSocket not open when handling raw focus for ${sessionId}.`);
     return;
   }
   logger.info(`Handling raw focus event for ${sessionId}. Evaluating page...`);
   try {
     // Evaluate page to get current focused element data *now*
-    const focusedElementInfo = await page!.evaluate(() => {
+    const focusedElementInfo = await page.evaluate(() => {
       let frameSelector: string | null = null; // 用于存储 iframe 的选择器
       let activeElement = document.activeElement as HTMLElement & { value?: string };
       if (activeElement && activeElement.tagName === 'IFRAME') {
@@ -412,7 +412,7 @@ async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string)
       logger.info(`No suitable element focused when evaluating for ${sessionId}.`);
     }
   } catch (evalError) {
-    if (!page!.isClosed() && ws.readyState === WebSocket.OPEN) {
+    if (!page.isClosed() && ws.readyState === WebSocket.OPEN) {
       logger.error(`Error evaluating focus state for session ${sessionId} after raw event:`, evalError);
     }
   }
@@ -482,12 +482,12 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
                   lastModified: stat.mtime.toISOString(),
                   machineFilePath: filePath,
                 });
-              } catch (_) {
-                void _;
+              } catch (e: unknown) {
+                logger.debug('Failed to stat file for file list:', (e as Error)?.message);
               }
             }
-          } catch (_) {
-            void _;
+          } catch (e: unknown) {
+            logger.debug('Failed to read temp dir for file list:', (e as Error)?.message);
           }
           files.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
           sendResponse(ws, 'fileList', { success: true, files });
@@ -1106,8 +1106,8 @@ function cleanupEventConnection(ws: WebSocket): void {
             logger.info('Focus listener removed from page context.');
           }
         }, functionName)
-        .catch(() => {
-          /* Ignore errors during cleanup */
+        .catch((e) => {
+          logger.debug('Error removing focus listener during cleanup:', (e as Error)?.message);
         });
       // !! 如何安全地移除 exposeFunction 绑定的函数是 Puppeteer 的一个挑战 !!
       // 通常页面关闭会自动清理，或者需要更复杂的追踪

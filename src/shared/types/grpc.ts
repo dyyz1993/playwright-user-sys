@@ -233,7 +233,7 @@ export interface MachineProtoPackage {
     new (
       address: string,
       credentials: import('@grpc/grpc-js').ChannelCredentials,
-      options?: object
+      options?: Record<string, unknown>
     ): MachineServiceClient;
   };
 }

@@ -23,6 +23,21 @@ echo ""
 echo "3️⃣  类型安全数量检查..."
 bash scripts/check-type-safety.sh || FAILED=1
 
+# 4. Non-null assertion check
+echo ""
+echo "4️⃣  非空断言检查..."
+bash scripts/check-non-null-assertions.sh || FAILED=1
+
+# 5. @ts-ignore check
+echo ""
+echo "5️⃣  @ts-ignore 数量检查..."
+bash scripts/check-ts-ignore.sh || FAILED=1
+
+# 6. Empty catch check
+echo ""
+echo "6️⃣  空捕获检查..."
+bash scripts/check-empty-catch.sh || FAILED=1
+
 if [ "$FAILED" -ne 0 ]; then
   echo ""
   echo "❌ Pre-commit 检查失败"

@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { SessionCreateOptions, SessionStatus } from '@shared/types/index.js';
+import type { SessionInfo } from './types.js';
 import { Session } from './session.js';
 
 export { Session } from './session.js';
@@ -130,7 +131,7 @@ export class SessionManager {
    */
   async createAndConnect(options?: SessionCreateOptions): Promise<Session> {
     const data = await this.create(options);
-    return new Session(this.client['baseUrl'], this.client['apiKey'], data);
+    return new Session(this.client['baseUrl'], this.client['apiKey'], data as unknown as SessionInfo);
   }
 
   /**

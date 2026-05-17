@@ -443,10 +443,13 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       '/admin/debug/user',
       { onRequest: [fastify.verifyJWT] },
       async (request: FastifyRequest, _reply: FastifyReply) => {
+        if (!request.user) {
+          return { error: 'Not authenticated' };
+        }
         const { getUserById } = await import('../services/user.service.js');
-        const user = await getUserById(request.user!.id);
+        const user = await getUserById(request.user.id);
         return {
-          userId: request.user!.id,
+          userId: request.user.id,
           userExists: !!user,
           userData: user,
         };
@@ -458,7 +461,10 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       { onRequest: [fastify.verifyJWT] },
       async (request: FastifyRequest, reply: FastifyReply) => {
         try {
-          const data = await getProfilePageData(request.user!.id);
+          if (!request.user) {
+            return { error: 'Not authenticated' };
+          }
+          const data = await getProfilePageData(request.user.id);
           if (!data) {
             return { error: 'User not found' };
           }
@@ -489,7 +495,11 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
     { onRequest: [fastify.verifyJWT] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const data = await getProfilePageData(request.user!.id);
+        if (!request.user) {
+          request.flash('error', '未登录');
+          return reply.redirect('/admin/login');
+        }
+        const data = await getProfilePageData(request.user.id);
         if (!data) {
           request.flash('error', '用户不存在');
           return reply.redirect('/admin');

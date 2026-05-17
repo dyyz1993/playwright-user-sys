@@ -3,7 +3,7 @@ import { db } from '../config/database.js';
 import { CreditHistoryRow } from '@shared/types/tables.js';
 
 export interface CreditHistory extends Omit<CreditHistoryRow, 'metadata' | 'created_at' | 'updated_at'> {
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
 }

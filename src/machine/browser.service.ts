@@ -567,7 +567,9 @@ export class BrowserService extends EventEmitter {
                   process.kill(proc.pid, 'SIGKILL');
                   logger.warn(`已清理超时启动的孤儿浏览器进程 (PID: ${proc.pid}, sessionId: ${sessionId})`);
                 }
-                await orphanedBrowser.close().catch(() => {});
+                await orphanedBrowser.close().catch((e) => {
+                  logger.debug('Error closing orphaned browser:', (e as Error)?.message);
+                });
               } catch (killErr) {
                 logger.warn(`清理超时孤儿浏览器进程失败 (sessionId: ${sessionId}):`, killErr);
               }
@@ -718,7 +720,9 @@ export class BrowserService extends EventEmitter {
             true
           );
         })
-        .catch(() => {});
+        .catch((e) => {
+          logger.debug('Error injecting file input interceptor:', (e as Error)?.message);
+        });
 
       const browserWSEndpoint = browser.wsEndpoint();
       const wsUrl = new URL(browserWSEndpoint);

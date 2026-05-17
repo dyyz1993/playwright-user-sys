@@ -47,7 +47,7 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
       user: toLoginUser(user),
       token,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
@@ -74,7 +74,7 @@ export async function getCurrentUser(request: FastifyRequest, reply: FastifyRepl
     return sendSuccess(reply, {
       user: toCurrentUserResponse(user),
     });
-  } catch (error) {
+  } catch (error: unknown) {
     request.log.error(error);
     return sendError(reply, '获取用户信息失败', 500);
   }

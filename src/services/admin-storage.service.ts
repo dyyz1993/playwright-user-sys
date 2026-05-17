@@ -72,7 +72,7 @@ export async function cleanupUserData(userIds: number[], type: 'sessions' | 'sha
         freedSpace: result.freedSpace,
       },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     logger.warn('记录操作日志失败:', err);
   }
 
@@ -92,7 +92,7 @@ export async function cleanupAllOldData(days: number | undefined, adminId: numbe
         freedSpace: result.freedSpace,
       },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     logger.warn('记录操作日志失败:', err);
   }
 

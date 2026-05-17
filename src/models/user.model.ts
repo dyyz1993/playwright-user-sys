@@ -180,7 +180,7 @@ export class UserModel {
       }
 
       return successCount;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('批量扣除用户点数失败:', error);
       throw error;
     }
@@ -237,7 +237,7 @@ export class UserModel {
         limit,
         totalPages: Math.ceil(total / limit),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('查询用户数据失败:', error);
       throw error;
     }
@@ -265,7 +265,7 @@ export class UserModel {
       const inactive = inactiveResult ? Number(inactiveResult.count) : 0;
 
       return { total, active, inactive };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('获取用户统计数据失败:', error);
       throw error;
     }
@@ -289,7 +289,7 @@ export class UserModel {
       const available = total;
 
       return { total, used, available };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('获取点数统计数据失败:', error);
       return { total: 0, used: 0, available: 0 };
     }
@@ -300,7 +300,7 @@ export class UserModel {
     try {
       const result = await db('users').count('id as count').first();
       return result ? Number(result.count) : 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('统计用户数失败:', error);
       return 0;
     }
@@ -312,7 +312,7 @@ export class UserModel {
       const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       const result = await db('users').where('created_at', '>=', cutoffDate).count('id as count').first();
       return result ? Number(result.count) : 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('统计新用户数失败:', error);
       return 0;
     }
@@ -323,7 +323,7 @@ export class UserModel {
     try {
       const result = await db('users').sum('credits as total').first();
       return result && result.total ? Number(result.total) : 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('统计用户点数总和失败:', error);
       return 0;
     }

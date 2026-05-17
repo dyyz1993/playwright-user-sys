@@ -269,7 +269,7 @@ export const serviceImplementation = {
         logger.error('连接错误:', error);
         call.end();
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('处理 Connect 请求失败:', error);
       call.end();
     }

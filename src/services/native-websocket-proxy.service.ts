@@ -72,7 +72,7 @@ export class NativeWebSocketProxyService {
           if (sock.writable) {
             sock.end();
           }
-        } catch (socketError) {
+        } catch (socketError: unknown) {
           logger.error(`关闭socket失败 (sessionId: ${sessionId}):`, socketError);
         }
       }
@@ -122,7 +122,7 @@ export class NativeWebSocketProxyService {
                 socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
                 socket.destroy();
               }
-            } catch (socketError) {
+            } catch (socketError: unknown) {
               logger.error('关闭socket失败:', socketError);
             }
           });
@@ -142,20 +142,20 @@ export class NativeWebSocketProxyService {
                   socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
                   socket.destroy();
                 }
-              } catch (socketError) {
+              } catch (socketError: unknown) {
                 logger.error('关闭socket失败:', socketError);
               }
             });
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('处理HTTP升级请求失败:', error);
         try {
           if (!socket.destroyed && socket.writable) {
             socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
             socket.destroy();
           }
-        } catch (socketError) {
+        } catch (socketError: unknown) {
           logger.error('关闭socket失败:', socketError);
         }
       }
@@ -319,7 +319,7 @@ export class NativeWebSocketProxyService {
           logger.info(`WebSocket代理连接成功 (sessionId: ${sessionId})`);
         }
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`已有会话代理失败 (sessionId: ${sessionId}):`, error);
       if (!socket.destroyed && socket.writable) {
         socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
@@ -428,7 +428,7 @@ export class NativeWebSocketProxyService {
       });
 
       logger.info(`WebSocket代理转发已设置 (sessionId: ${sessionId})`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('处理WebSocket连接失败:', error);
 
       if (sessionId) {
@@ -650,7 +650,7 @@ export class NativeWebSocketProxyService {
         logger.error(`Viewer WebSocket连接错误 (sessionId: ${sessionId}):`, err.message);
         netSocket.destroy();
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Viewer WebSocket代理失败 (sessionId: ${sessionId}):`, error);
       if (!socket.destroyed && socket.writable) {
         socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
@@ -684,7 +684,7 @@ export class NativeWebSocketProxyService {
         await handleSessionDisconnect(sessionId, session.user_id, session.machine_id);
         logger.info(`会话资源已清理 (sessionId: ${sessionId})`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`清理会话资源失败 (sessionId: ${sessionId}):`, error);
     }
   }

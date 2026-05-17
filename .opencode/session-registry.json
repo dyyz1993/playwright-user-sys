@@ -164,7 +164,84 @@
     "id": "ses_1defcd531ffeexmKznx8tk4QcR",
     "name": "fix-file-upload-clipboard",
     "parentID": "ses_1deff24d8ffeNimtJEe0Q5oP8O",
-    "status": "running",
+    "status": "idle",
     "createdAt": 1778670316239
+  },
+  "fix-catch-browser-service": {
+    "id": "ses_1cb980b45ffeL8I37lhxEDL5VK",
+    "name": "fix-catch-browser-service",
+    "parentID": "ses_1cb98b090ffeAexrCl7KsHPKQg",
+    "status": "running",
+    "createdAt": 1778995688635
+  },
+  "fix-catch-events-handler": {
+    "id": "ses_1cb9878e3ffe9QcfQuOhOiXaUP",
+    "name": "fix-catch-events-handler",
+    "parentID": "fix-catch-browser-service",
+    "status": "running",
+    "createdAt": 1778995660574
+  },
+  "fix-catch-machine-controller": {
+    "id": "ses_1cb9864a7ffeRmJJWOqOwXPPUI",
+    "name": "fix-catch-machine-controller",
+    "parentID": "fix-catch-events-handler",
+    "status": "running",
+    "createdAt": 1778995665753
+  },
+  "fix-catch-conn-manager": {
+    "id": "ses_1cb984e01ffeT4WMRdR0ZGdNUh",
+    "name": "fix-catch-conn-manager",
+    "parentID": "fix-catch-machine-controller",
+    "status": "running",
+    "createdAt": 1778995671551
+  },
+  "fix-catch-storage-service": {
+    "id": "ses_1cb983b08ffefXBmfn30I4ncjx",
+    "name": "fix-catch-storage-service",
+    "parentID": "fix-catch-conn-manager",
+    "status": "running",
+    "createdAt": 1778995676408
+  },
+  "fix-session-any": {
+    "id": "ses_1cb88bb42ffe1IbYC9Ri42pl2h",
+    "name": "fix-session-any",
+    "parentID": "ses_1cb8c377dffeLmPw1T9qh3eMFi",
+    "status": "running",
+    "createdAt": 1778996692158
+  },
+  "fix-user-any": {
+    "id": "ses_1cb88b9beffemFmOkjKIS9CJKA",
+    "name": "fix-user-any",
+    "parentID": "ses_1cb8c377dffeLmPw1T9qh3eMFi",
+    "status": "running",
+    "createdAt": 1778996692546
+  },
+  "fix-memory-any": {
+    "id": "ses_1cb88b847ffepjsthYpzun1WNT",
+    "name": "fix-memory-any",
+    "parentID": "ses_1cb8c377dffeLmPw1T9qh3eMFi",
+    "status": "running",
+    "createdAt": 1778996692922
+  },
+  "fix-catch-batch-1": {
+    "id": "ses_1caf53072ffeF4YuxLTxd1CADj",
+    "name": "fix-catch-batch-1",
+    "parentID": "ses_1caf889a0ffeXuk5R0YNf90Io0",
+    "status": "running",
+    "createdAt": 1779006361486
+  },
+  "fix-catch-batch-2": {
+    "id": "ses_1caf5289fffem5FtFP02VnFBoL",
+    "name": "fix-catch-batch-2",
+    "parentID": "ses_1caf889a0ffeXuk5R0YNf90Io0",
+    "status": "running",
+    "createdAt": 1779006363489
+  },
+  "fix-catch-batch-3": {
+    "id": "ses_1caf5233fffeEMGszQsJXu0MCa",
+    "name": "fix-catch-batch-3",
+    "parentID": "ses_1caf889a0ffeXuk5R0YNf90Io0",
+    "status": "running",
+    "createdAt": 1779006364865
   }
 }

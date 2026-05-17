@@ -43,7 +43,7 @@ export const queryMethods = {
         limit,
         totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`获取用户会话失败 (userId: ${userId}):`, error);
       throw error;
     }
@@ -56,7 +56,7 @@ export const queryMethods = {
       logger.info(`找到 ${sessions.length} 个活跃会话`);
 
       return sessions.map(parseSessionOptions);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('查询活跃会话失败:', error);
       return [];
     }
@@ -69,7 +69,7 @@ export const queryMethods = {
       logger.info(`找到用户 ${userId} 的 ${sessions.length} 个会话`);
 
       return sessions.map(parseSessionOptions);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`获取用户所有会话失败 (userId: ${userId}):`, error);
       return [];
     }
@@ -89,7 +89,7 @@ export const queryMethods = {
       logger.info(`找到机器 ${machineId} 上的 ${sessions.length} 个会话`);
 
       return sessions.map(parseSessionOptions);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`查询机器 ${machineId} 上的会话失败:`, error);
       return [];
     }
@@ -136,7 +136,7 @@ export const queryMethods = {
         limit,
         totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('查询会话数据失败:', error);
       return {
         items: [],
@@ -159,7 +159,7 @@ export const queryMethods = {
       logger.info(`找到机器 ${machineId} 上的 ${sessions.length} 个活跃会话`);
 
       return sessions.map(parseSessionOptions);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`查询机器 ${machineId} 上的活跃会话失败:`, error);
       return [];
     }
@@ -174,7 +174,7 @@ export const queryMethods = {
         .limit(limit);
 
       return sessions.map(parseSessionOptions) as Array<Session & { username: string }>;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('获取最近会话失败:', error);
       return [];
     }

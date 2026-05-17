@@ -139,7 +139,7 @@ export class GrpcClient extends EventEmitter {
           }
         });
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('注册时获取系统信息失败:', error);
       return new Promise((resolve, reject) => {
         const systemInfo = {
@@ -186,7 +186,7 @@ export class GrpcClient extends EventEmitter {
                   logger.info('取消现有连接');
                   try {
                     existingCall.cancel();
-                  } catch (cancelError) {
+                  } catch (cancelError: unknown) {
                     logger.warn('取消连接时出错:', cancelError);
                   }
                   this.connectionManager.setConnected(false);
@@ -204,7 +204,7 @@ export class GrpcClient extends EventEmitter {
               this.connectionManager.startHeartbeat();
 
               resolve();
-            } catch (error) {
+            } catch (error: unknown) {
               logger.error('连接到管理端失败:', error);
               reject(error);
             }
@@ -252,7 +252,7 @@ export class GrpcClient extends EventEmitter {
       logger.info('尝试重新连接到管理端...');
       await this.connect();
       logger.info('重新连接成功');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('重新连接失败:', error);
       throw error;
     }
@@ -298,7 +298,7 @@ export class GrpcClient extends EventEmitter {
       } else {
         logger.info(`已发送会话状态更新 (sessionId: ${sessionId}, status: ${status}, duration: ${finalDuration}s)`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`发送会话状态更新失败:`, error);
     }
   }
@@ -327,7 +327,7 @@ export class GrpcClient extends EventEmitter {
       } else {
         logger.info(`已发送会话截图更新 (sessionId: ${sessionId}, screenshotUrl: ${screenshotUrl})`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`发送会话截图更新失败:`, error);
     }
   }
@@ -375,7 +375,7 @@ export async function startGrpcClient(): Promise<void> {
           await startGrpcClient();
           grpcReconnectAttempts = 0; // 重置退避计数器
           logger.info('gRPC 客户端重新启动成功');
-        } catch (reconnectError) {
+        } catch (reconnectError: unknown) {
           logger.error('gRPC 客户端重新启动失败:', reconnectError);
 
           try {
@@ -387,7 +387,7 @@ export async function startGrpcClient(): Promise<void> {
               // 下一次重连会在外层的指数退避中自动调度
               setTimeout(() => startGrpcClient(), Math.min(baseDelay * Math.pow(2, grpcReconnectAttempts), 80000));
             }
-          } catch (stateError) {
+          } catch (stateError: unknown) {
             logger.error('获取机器端状态失败:', stateError);
             setTimeout(() => startGrpcClient(), Math.min(baseDelay * Math.pow(2, grpcReconnectAttempts), 80000));
           }

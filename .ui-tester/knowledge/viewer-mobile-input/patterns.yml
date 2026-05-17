@@ -1,0 +1,59 @@
+# Module: viewer-mobile-input
+# Reusable operation sequences and findings
+
+mobile_mode_detection:
+  description: "How the viewer detects mobile mode"
+  mechanism: |
+    The viewer checks UA in constructor:
+    this.cursorOffset = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 40 : 0;
+    When cursorOffset > 0, the _inputBar is created in constructor.
+  key_property: "cursorOffset"
+  mobile_value: 40
+  desktop_value: 0
+
+input_bar_show_flow:
+  description: "How the input bar appears when a remote input is focused"
+  steps:
+    - action: "remote_focus"
+      description: "User taps/clicks on an input field on the remote browser page"
+    - action: "daemon_detect"
+      description: "Daemon's injected listener detects focus event on remote page"
+    - action: "ws_message"
+      description: "Daemon sends {type: 'form.field', selector: '...', tag: '...', value: '...'} via WebSocket"
+    - action: "viewer_receive"
+      description: "Viewer receives form.field message, sets _focusedSelector and _focusedTag"
+    - action: "show_input_bar"
+      description: "Calls _showInputBar(remoteValue) - sets display:block, pre-fills value, shows label"
+  expected_result: "Dark bar with input field, ✕ clear button, ↵ send button appears at bottom"
+
+input_bar_hide_flow:
+  description: "How the input bar is dismissed"
+  triggers:
+    - "Click send button (↵) → sends Enter key + _hideInputBar()"
+    - "Click clear button (✕) → clears input + syncs to remote"
+    - "Click outside input bar → _hideInputBar()"
+
+input_sync_flow:
+  description: "How typed text is sent to the remote browser"
+  mechanism: |
+    Input field has 'input' event listener → calls _syncInputToRemote()
+    _syncInputToRemote calculates diff and sends:
+    {type: 'event', event: {type: 'input', data: {value: newValue, replace: true, selector: focusedSelector}}}
+  ime_support: "compositionstart/compositionend events filter out intermediate IME characters"
+
+force_mobile_mode:
+  description: "How to force mobile mode in desktop browser for testing"
+  steps:
+    - action: eval
+      selector: "javascript"
+      value: "window.BrowserViewer.instance.cursorOffset = 40"
+      description: "Set cursorOffset to mobile value"
+  note: "Input bar must be manually created if it wasn't created in constructor"
+
+tips:
+  - "The viewer page navigates to about:blank after 3-4 eval commands in automated testing - likely a Playwright + WebSocket interaction bug"
+  - "agent-browser set device only changes viewport, not navigator.maxTouchPoints - use --user-agent at daemon startup"
+  - "form.field events are sent by the daemon, not generated client-side"
+  - "The input bar z-index is 10000, above all other viewer elements"
+  - "Remote screen coordinates: the #bv-screen image maps viewer clicks to remote browser coords using the image's bounding rect"
+  - "Remote resolution is typically 1280x800, displayed at variable size based on viewer viewport"

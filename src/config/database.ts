@@ -73,7 +73,7 @@ export async function initDatabase(dbName?: string) {
       try {
         await dbInstance.destroy();
         logger.info('旧数据库连接已销毁');
-      } catch (e) {
+      } catch (e: unknown) {
         logger.error('销毁旧连接时出错:', e);
         throw e;
       }
@@ -102,7 +102,7 @@ export async function initDatabase(dbName?: string) {
     logger.info('数据库连接创建成功');
 
     return dbInstance;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('创建数据库连接失败:', error);
     throw error;
   }
@@ -114,7 +114,7 @@ if (process.env.NODE_ENV !== 'test') {
   try {
     dbInstance = knex(createDatabaseConfig());
     logger.info('数据库连接创建成功');
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('创建数据库连接失败:', error);
     throw error;
   }

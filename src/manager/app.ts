@@ -16,7 +16,7 @@ async function resetAllMachineStatus(): Promise<void> {
     // 将所有机器标记为离线
     await db('machines').update({ status: 'offline' });
     logger.info('所有机器已重置为离线状态');
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('重置机器状态失败:', error);
   }
 }
@@ -115,7 +115,7 @@ export async function startManager() {
           const { cleanupExpiredUploads } = await import('../controllers/file.controller.js');
           await cleanupExpiredUploads();
           logger.info('定时清理过期上传文件完成');
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn('定时清理过期上传文件失败:', error);
         }
       },
@@ -145,7 +145,7 @@ export async function startManager() {
     logger.info(`✅ HTTP 服务器已启动: http://${env.HOST}:${env.PORT}`);
     logger.info(`✅ gRPC 服务器已启动: ${env.HOST}:${grpcPort}`);
     logger.info(`📚 API 文档: http://${env.HOST}:${env.PORT}/docs`);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('❌ 启动服务器失败:', error);
     process.exit(1);
   }

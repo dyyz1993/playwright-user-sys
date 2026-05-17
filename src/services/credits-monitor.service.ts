@@ -45,7 +45,7 @@ export async function checkSessionCredits(): Promise<void> {
         logger.info(
           `标记无效会话为已断开 (sessionId: ${session.id}, 机器: ${session.machine_id || '无'}, 持续时间: ${duration}s)`
         );
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`标记无效会话时出错 (${session.id}):`, error);
       }
     }
@@ -147,7 +147,7 @@ export async function checkSessionCredits(): Promise<void> {
                 `事务中已扣除用户 ${userId} 的点数: ${totalNewCreditsToDeduct} 点，共 ${sessionUpdates.length} 个会话`
               );
             });
-          } catch (error) {
+          } catch (error: unknown) {
             logger.error(`更新会话和扣除点数事务失败 (userId: ${userId}):`, error);
             // 事务失败，继续处理下一个用户
             continue;
@@ -186,7 +186,7 @@ export async function checkSessionCredits(): Promise<void> {
                 logger.info(`发送关闭浏览器命令 (machineId: ${machineId}, sessionId: ${session.id})`);
                 connectionManager.sendCloseBrowserCommand(machineId, session.id);
               }
-            } catch (error) {
+            } catch (error: unknown) {
               logger.error(`关闭浏览器失败 (machineId: ${machineId}, sessionId: ${session.id}):`, error);
 
               // 如果关闭失败，尝试发送关闭命令
@@ -223,11 +223,11 @@ export async function checkSessionCredits(): Promise<void> {
             warning_at: new Date(),
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`处理用户 ${userId} 的会话时出错:`, error);
       }
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('检查会话点数时出错:', error);
   }
 }

@@ -98,7 +98,7 @@ class MemoryStoreService extends EventEmitter {
           this.cleanupOfflineMachines(7 * 24 * 60 * 60 * 1000);
 
           logger.info('数据清理完成');
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('清理过期数据时出错:', error);
         }
       },
@@ -120,7 +120,7 @@ class MemoryStoreService extends EventEmitter {
           await this.checkDataConsistency();
 
           logger.info('数据一致性检查完成');
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('数据一致性检查时出错:', error);
         }
       },
@@ -421,7 +421,7 @@ class MemoryStoreService extends EventEmitter {
 
       // 更新每台机器的活跃会话数
       this.updateMachineSessionCounts();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('数据一致性检查失败:', error);
     }
   }
@@ -465,7 +465,7 @@ class MemoryStoreService extends EventEmitter {
             activeConnections = connectionManager.getActiveConnections();
             logger.info(`当前活跃连接的机器: ${activeConnections.length} 台`);
             logger.info(`活跃连接的机器 ID: ${JSON.stringify(activeConnections)}`);
-          } catch (connError) {
+          } catch (connError: unknown) {
             logger.error('获取活跃连接失败:', connError);
             activeConnections = [];
           }
@@ -494,7 +494,7 @@ class MemoryStoreService extends EventEmitter {
             last_heartbeat: new Date(machine.lastSeen || Date.now()),
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('加载机器数据或获取活跃连接失败:', error);
 
         // 如果无法获取活跃连接，则使用数据库中的状态，但将所有机器标记为离线
@@ -562,7 +562,7 @@ class MemoryStoreService extends EventEmitter {
       logger.info(
         `内存中现有 ${this.machines.size} 台机器（${this.getOnlineMachines().length} 台在线）和 ${this.sessions.size} 个活跃会话`
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('从数据库加载初始数据失败:', error);
     }
   }

@@ -1,0 +1,33 @@
+# Module: viewer-mobile-input
+# Site: http://192.168.0.29:3011/browser-viewer/
+# Version: 1
+# Status: verified
+# Last verified: 2026-05-16
+# Verified in round: r1
+
+viewer_page:
+  url: "http://192.168.0.29:3011/browser-viewer/index.html"
+  url_params: "sessionId, token, wsHost"
+  container: "#viewer-container"
+  screen_image: "#bv-screen"
+  cursor_layer: "#bv-cursor-layer"
+  status_display: "#bv-status"
+  wrapper: "#bv-wrapper"
+  viewport: "#bv-viewport"
+
+viewer_input_bar:
+  # Only created when cursorOffset > 0 (mobile mode)
+  input_bar_container: "div[style*='bottom:60px']"  # _inputBar div
+  input_label: "div[style*='font-size:10px']"  # _inputLabel - shows "INPUT: selector"
+  input_field: "input[type='text'][placeholder='输入内容...']"  # _inputField
+  clear_button: "div[style*='border-radius:50%'][style*='255,59,48']"  # Red ✕ button
+  send_button: "div[style*='border-radius:50%'][style*='0,122,255']"  # Blue ↵ button
+
+viewer_keyboard_button:
+  # The ⌨ keyboard toggle button (bottom-right corner)
+  selector: "div[style*='bottom:10px'][style*='right:10px']"
+  text: "⌨"
+
+viewer_global_object:
+  # The viewer instance is accessible as:
+  js_path: "window.BrowserViewer.instance"

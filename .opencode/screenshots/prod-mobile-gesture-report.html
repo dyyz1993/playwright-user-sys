@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile Gesture Test Report - Production Viewer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 24px; }
+  .header { background: #1a1a2e; color: white; padding: 24px 32px; border-radius: 12px; margin-bottom: 24px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header .meta { color: #a0a0b0; font-size: 14px; margin-top: 8px; }
+  .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+  .summary-card { background: white; padding: 20px 24px; border-radius: 8px; flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .summary-card .number { font-size: 32px; font-weight: 700; }
+  .summary-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+  .passed .number { color: #10b981; }
+  .failed .number { color: #ef4444; }
+  .total .number { color: #3b82f6; }
+  .scenario { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .scenario h3 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+  .detail { font-size: 14px; color: #666; margin-top: 8px; line-height: 1.6; }
+  .detail code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .screenshots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+  .screenshot-item { text-align: center; }
+  .screenshot-item img { width: 100%; border-radius: 6px; border: 1px solid #e5e5e5; }
+  .screenshot-item .viewport-label { font-size: 12px; color: #888; margin-top: 4px; }
+  .findings { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .findings h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .findings ul { padding-left: 20px; }
+  .findings li { margin-bottom: 4px; font-size: 14px; }
+  .knowledge-status { background: white; border-radius: 8px; padding: 20px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .knowledge-status h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .evidence { margin-top: 12px; }
+  .evidence img { max-width: 400px; border-radius: 6px; border: 1px solid #e5e5e5; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📱 移动端 Viewer 手势系统测试报告</h1>
+  <div class="meta">Date: 2026-05-15 | URL: http://192.168.0.29:3011 | Session: ui-test-gesture-1778787570</div>
+</div>
+
+<div class="summary">
+  <div class="summary-card total"><div class="number">10</div><div class="label">Total Scenarios</div></div>
+  <div class="summary-card passed"><div class="number">10</div><div class="label">Passed</div></div>
+  <div class="summary-card failed"><div class="number">0</div><div class="label">Failed</div></div>
+</div>
+
+<!-- T1 -->
+<div class="scenario">
+  <h3>T1: Demo 页面加载 <span class="badge badge-pass">PASSED</span></h3>
+  <div class="detail">
+    用移动端 UA 打开 <code>http://192.168.0.29:3011/demo</code>，页面正常加载，显示"开始体验"按钮。<br>
+    ✅ 无 JS 错误
+  </div>
+  <div class="evidence">
+    <img src="prod-mobile-01-demo-page.png" alt="Demo page loaded">
+  </div>
+</div>
+
+<!-- T2 -->
+<div class="scenario">
+  <h3>T2: 创建会话并打开 Viewer <span class="badge badge-pass">PASSED</span></h3>
+  <div class="detail">
+    通过 <code>POST /api/demo/session</code> 创建会话，返回 <code>sessionId</code> 和 <code>demoApiKey</code>。<br>
+    打开 Viewer 页面，等待连接成功（blob URL 作为 img src）。<br>
+    ✅ Viewer 连接成功，16 FPS，506 KB/s
+  </div>
+  <div class="evidence">
+    <img src="prod-mobile-04-viewer-mobile-mode.png" alt="Viewer connected">
+  </div>
+</div>
+
+<!-- T3 -->
+<div class="scenario">
+  <h3>T3: 移动端工具栏验证 <span class="badge badge-pass">PASSED</span></h3>
+  <div class="detail">
+    ✅ 底部工具栏 6 个按钮：←、→、🏠、📁(上传文件)、📋(复制到本地)、📎(粘贴到远程)<br>
+    ✅ 顶部状态栏有"返回 Demo"链接 (href=/demo)<br>
+    ✅ 桌面端浮动按钮 (⌨📁📎📋) 均隐藏 (display: none)
+  </div>
+</div>
+
+<!-- T4 -->
+<div class="scenario">
+  <h3>T4: Touch 事件绑定到 wrapper（全屏）<span class="badge badge-pass">PASSED</span></h3>
+  <div class="detail">
+    验证代码：<code>var touchTarget = self.cursorOffset > 0 ? self._wrapper : img;</code><br>
+    ✅ <code>cursorOffset = 40</code>（移动端）→ touch 绑定到 <code>#bv-wrapper</code><br>
+    ✅ <code>wrapper.style.touchAction = 'none'</code><br>
+    ✅ 在 wrapper 上 dispatch TouchEvent → 正确触发 click 事件
+  </div>
+</div>
+
+<!-- T5 -->
+<div class="scenario">
+  <h3>T5: Tap 手势（轻触 → click）<span class="badge badge-pass">PASSED</span></h3>
+  <div class="detail">
+    模拟：touchstart(640,365) → 立即 touchend(640,365)，移动距离 0px<br>
+    ✅ 发送 <code>{ type: 'event', event: { type: 'click', data: { x: 640, y: 400, button: 0, clickCount: 1 } } }</code>
+  </div>
+</div>
+
+<!-- T6 -->
+<div class="scenario">
+  <h3>T6: Move 手势（滑动 → 光标移动）<span class="badge badge-pass">PASSED</span></h3>
+  <div class="detail">
+    模拟：touchstart → touchmove(60px) → touchmove(120px) → touchend<br>
+    ✅ 光标从 (640, 303) 移动到 (1120, 343) — 480px 位移<br>
+    ✅ 加速度效果：输入 180px → 实际位移 480px（约 2.67 倍加速）<br>
+    加速度公式：<code>factor = 1.0 + min(speed * 0.5, 3.0)</code>
+  </div>
+  <div class="evidence">
+    <img src="prod-mobile-03-viewer-connected.png" alt="Viewer with cursor">
+  </div>
+</div>
+
+<!-- T7 -->
+<div class="scenario">
+  <h3>T7: Drag 手势（长按 → 拖拽）<span class="badge badge-pass">PASSED</span></h3>
+  <div class="detail">
+    模拟：touchstart → 等待 900ms(>800ms 阈值) → touchmove(40px) → touchend<br>
+    ✅ 光标颜色变为 <code>longpress</code>（橙色）<br>
+    ✅ 发送 <code>mousedown</code>（坐标 640,400）<br>
+    ✅ 发送 <code>mousemove</code>（坐标 640,400）<br>
+    ✅ 发送 <code>mouseup</code>（坐标 640,400）<br>
+    ✅ <strong>未发送 click</strong>（正确行为：拖拽松手不发 click）
+  </div>
+</div>
+
+<!-- T8 -->
+<div class="scenario">
+  <h3>T8: 中文输入 <span class="badge badge-pass">PASSED</span></h3>
+  <div class="detail">
+    模拟：compositionstart → compositionupdate('zhong') → compositionend('中')<br>
+    ✅ <code>hiddenInput.value</code> 被清空为 <code>''</code><br>
+    ✅ <code>_lastInputValue</code> 被重置为 <code>''</code><br>
+    ✅ 发送 <code>{ type: 'event', event: { type: 'input', data: { value: '中' } } }</code>
+  </div>
+</div>
+
+<!-- T9 -->
+<div class="scenario">
+  <h3>T9: 复制/粘贴按钮 <span class="badge badge-pass">PASSED</span></h3>
+  <div class="detail">
+    复制按钮：<br>
+    ✅ 点击后按钮从 📋 变为 ⏳（加载状态）<br>
+    ✅ 异步完成后恢复为 📋<br><br>
+    粘贴按钮（mock clipboard API）：<br>
+    ✅ 发送 <code>{ type: 'paste', text: 'mocked paste content' }</code><br>
+    ✅ 显示通知 "📎 已发送粘贴指令"<br>
+    ⚠️ 注意：HTTP 环境下 clipboard API 不可用（需要 HTTPS），会 fallback 到 hiddenInput 粘贴模式
+  </div>
+</div>
+
+<!-- T10 -->
+<div class="scenario">
+  <h3>T10: 上传按钮 <span class="badge badge-pass">PASSED</span></h3>
+  <div class="detail">
+    点击 📁 按钮：<br>
+    ✅ 文件管理器 Modal 弹出（zIndex: 99999）<br>
+    ✅ 显示 "📁 文件管理器" 标题<br>
+    ✅ 包含 "×" 关闭按钮、"＋上传文件" 按钮、"取消" 按钮
+  </div>
+  <div class="evidence">
+    <img src="prod-mobile-05-file-manager.png" alt="File manager modal">
+  </div>
+</div>
+
+<div class="findings">
+  <h3>🔍 关键发现</h3>
+  <ul>
+    <li><strong>手势系统完全正常</strong>：Tap、Move（带加速度）、Drag（长按拖拽，松手无 click）均按预期工作</li>
+    <li><strong>Touch 绑定在 wrapper</strong>：<code>touchTarget = cursorOffset > 0 ? _wrapper : img</code>，移动端 touch 绑到 #bv-wrapper</li>
+    <li><strong>加速度模型有效</strong>：180px 输入产生 480px 位移（~2.67x 加速），符合 <code>1 + min(speed*0.5, 3.0)</code> 公式</li>
+    <li><strong>中文输入修复有效</strong>：compositionend 后 hiddenInput 清空，正确发送 input 事件</li>
+    <li><strong>Clipboard API 限制</strong>：HTTP 环境下不可用，粘贴按钮有 fallback 到 hiddenInput 聚焦模式</li>
+    <li><strong>API 响应字段</strong>：<code>data.sessionId</code>（非 data.id），<code>data.demoApiKey</code>（非 data.token）</li>
+    <li><strong>Session 过期</strong>：Demo session 5 分钟后过期（maxDuration: 300）</li>
+  </ul>
+</div>
+
+<div class="knowledge-status">
+  <h3>📚 知识沉淀状态</h3>
+  <p style="font-size:14px;color:#666;">gesture-mobile: <strong>verified</strong> (2026-05-15)</p>
+  <p style="font-size:14px;color:#666;">文件: selectors.yml v1, patterns.yml v1, sessions/2026-05-15.md</p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1495 @@
+npm warn Unknown project config "node-linker". This will stop working in the next major version of npm.
+[36m[2026-05-14T18:06:21.605Z] [INFO] 使用环境变量配置初始化 MachineServer[0m
+[36m[2026-05-14T18:06:21.608Z] [INFO] 机器端状态变更: stopped -> starting[0m
+[36m[2026-05-14T18:06:21.608Z] [INFO] 机器端配置:[0m {
+  machineId: 'machine-1',
+  machineName: 'local-machine',
+  managerHost: 'localhost:50051',
+  proxyPort: 8081,
+  grpcPort: 50052
+}
+[36m[2026-05-14T18:06:21.608Z] [INFO] gRPC 服务器配置已更新:[0m { machineId: 'machine-1', grpcPort: 50052 }
+[36m[2026-05-14T18:06:21.608Z] [INFO] 开始启动 gRPC 服务器，端口: 50052[0m
+[36m[2026-05-14T18:06:21.612Z] [INFO] 代理服务器运行在端口 8081[0m
+[36m[2026-05-14T18:06:21.613Z] [INFO] gRPC 服务器已启动并绑定到端口 50052[0m
+[36m[2026-05-14T18:06:21.619Z] [INFO] 注册机器:[0m {
+  machine_id: 'machine-1',
+  name: 'local-machine',
+  ip_address: '127.0.0.1',
+  grpc_port: 50052,
+  proxy_port: 8081,
+  max_sessions: 10,
+  system_info: {
+    os: 'darwin',
+    cpu: 'Apple M2 Max',
+    memory: 34359738368,
+    disk: 994662584320
+  }
+}
+[36m[2026-05-14T18:06:21.660Z] [INFO] 注册成功:[0m { success: true, message: '注册成功' }
+[36m[2026-05-14T18:06:21.660Z] [INFO] 尝试连接到管理端...[0m
+[36m[2026-05-14T18:06:21.661Z] [INFO] 已启动心跳定时器，每 30 秒发送一次心跳[0m
+[36m[2026-05-14T18:06:21.661Z] [INFO] 机器端状态变更: starting -> running[0m
+[36m[2026-05-14T18:06:21.661Z] [INFO] 机器端启动完成[0m
+[36m[2026-05-14T18:06:21.662Z] [INFO] Health server listening on port 9100[0m
+[36m[2026-05-14T18:06:21.669Z] [INFO] 准备发送首次心跳消息: {"machine_id":"machine-1","heartbeat":{"timestamp":1778781981669,"cpu_usage":51.708984375,"memory_usage":99.09272193908691,"disk_usage":1.2333743532121444,"active_sessions":0}}[0m
+[36m[2026-05-14T18:06:21.670Z] [INFO] 使用 write 方法发送消息结果: true[0m
+[36m[2026-05-14T18:07:11.148Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: 'b3f538c6-fe38-4bef-abf2-d0c784fe78cf',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:07:11.148Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:07:11.148Z] [INFO] 开始启动浏览器 (sessionId: b3f538c6-fe38-4bef-abf2-d0c784fe78cf)[0m
+[36m[2026-05-14T18:07:11.148Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: b3f538c6-fe38-4bef-abf2-d0c784fe78cf): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/b3f538c6-fe38-4bef-abf2-d0c784fe78cf[0m
+[36m[2026-05-14T18:07:11.149Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/b3f538c6-fe38-4bef-abf2-d0c784fe78cf[0m
+[36m[2026-05-14T18:07:11.243Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:07:11.243Z] [INFO] Initial session config for b3f538c6-fe38-4bef-abf2-d0c784fe78cf: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:11.243Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/b3f538c6-fe38-4bef-abf2-d0c784fe78cf[0m
+[36m[2026-05-14T18:07:11.243Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/b3f538c6-fe38-4bef-abf2-d0c784fe78cf',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:07:12.154Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:07:12.154Z] [INFO] 已设置浏览器事件监听 (sessionId: b3f538c6-fe38-4bef-abf2-d0c784fe78cf)[0m
+[36m[2026-05-14T18:07:12.154Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: 'E7CE8878410E1AE0D896D5213648EE4D'
+}
+[36m[2026-05-14T18:07:12.157Z] [INFO] 浏览器已启动 (sessionId: b3f538c6-fe38-4bef-abf2-d0c784fe78cf, port: 54511, path: /devtools/browser/1269e8f0-6ad3-436f-840a-98a1089170fb, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/b3f538c6-fe38-4bef-abf2-d0c784fe78cf, sharedUserData: false)[0m
+[36m[2026-05-14T18:07:12.183Z] [INFO] 截图已保存 (sessionId: b3f538c6-fe38-4bef-abf2-d0c784fe78cf): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/b3f538c6-fe38-4bef-abf2-d0c784fe78cf-3ae3d397-65d6-4e2d-ae14-a5be137b9f88.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:07:12.183Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:07:12.184Z] [INFO] 已发送会话截图更新 (sessionId: b3f538c6-fe38-4bef-abf2-d0c784fe78cf, screenshotUrl: /screenshots/b3f538c6-fe38-4bef-abf2-d0c784fe78cf-3ae3d397-65d6-4e2d-ae14-a5be137b9f88.jpeg)[0m
+[36m[2026-05-14T18:07:12.184Z] [INFO] 浏览器启动成功 (sessionId: b3f538c6-fe38-4bef-abf2-d0c784fe78cf, port: 54511)[0m
+[36m[2026-05-14T18:07:24.057Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '51ab8b39-ded0-4294-bd6e-024035be1b70',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:07:24.058Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:07:24.058Z] [INFO] 开始启动浏览器 (sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70)[0m
+[36m[2026-05-14T18:07:24.058Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:24.058Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:24.152Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:07:24.152Z] [INFO] Initial session config for 51ab8b39-ded0-4294-bd6e-024035be1b70: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:24.152Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:24.152Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/51ab8b39-ded0-4294-bd6e-024035be1b70',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:07:24.692Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:07:24.692Z] [INFO] 已设置浏览器事件监听 (sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70)[0m
+[36m[2026-05-14T18:07:24.692Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: 'C7071FD7C3ACF856BA55AB150298059C'
+}
+[36m[2026-05-14T18:07:24.694Z] [INFO] 浏览器已启动 (sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70, port: 54541, path: /devtools/browser/7fd16850-ba8f-4353-b659-9b8bf8282652, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/51ab8b39-ded0-4294-bd6e-024035be1b70, sharedUserData: false)[0m
+[36m[2026-05-14T18:07:24.730Z] [INFO] 截图已保存 (sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/51ab8b39-ded0-4294-bd6e-024035be1b70-b6303db8-98e2-444e-b0bf-5729150ff28f.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:07:24.730Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:07:24.730Z] [INFO] 已发送会话截图更新 (sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70, screenshotUrl: /screenshots/51ab8b39-ded0-4294-bd6e-024035be1b70-b6303db8-98e2-444e-b0bf-5729150ff28f.jpeg)[0m
+[36m[2026-05-14T18:07:24.730Z] [INFO] 浏览器启动成功 (sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70, port: 54541)[0m
+[36m[2026-05-14T18:07:24.845Z] [INFO] 收到 WebSocket 升级请求: /ws/51ab8b39-ded0-4294-bd6e-024035be1b70/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:24.845Z] [INFO] 从路径中提取到 sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:24.845Z] [INFO] 最终 sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70, pathname: /ws/51ab8b39-ded0-4294-bd6e-024035be1b70/stream[0m
+[36m[2026-05-14T18:07:24.845Z] [INFO] 路由到 Stream Handler (sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70)[0m
+[36m[2026-05-14T18:07:24.846Z] [INFO] Handling '/stream' WebSocket connection for session 51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:24.867Z] [INFO] 收到 WebSocket 升级请求: /ws/51ab8b39-ded0-4294-bd6e-024035be1b70/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:24.867Z] [INFO] 从路径中提取到 sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:24.867Z] [INFO] 最终 sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70, pathname: /ws/51ab8b39-ded0-4294-bd6e-024035be1b70/events[0m
+[36m[2026-05-14T18:07:24.867Z] [INFO] 路由到 Events Handler (sessionId: 51ab8b39-ded0-4294-bd6e-024035be1b70)[0m
+[36m[2026-05-14T18:07:24.867Z] [INFO] Handling new '/events' connection for session 51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:24.867Z] [INFO] Stored '/events' connection for session 51ab8b39-ded0-4294-bd6e-024035be1b70 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:24.868Z] [INFO] Attached page listeners for 51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:24.868Z] [INFO] Subscribed to raw focus events for session 51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:24.868Z] [INFO] Attached browserService 'configUpdated' listener for 51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:24.868Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:07:24.869Z] [INFO] Received event from session 51ab8b39-ded0-4294-bd6e-024035be1b70:[0m event undefined
+[36m[2026-05-14T18:07:24.952Z] [INFO] Navigation detected for session 51ab8b39-ded0-4294-bd6e-024035be1b70: https://www.baidu.com/[0m
+[36m[2026-05-14T18:07:24.955Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:07:27.368Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/85398bb5-e95c-414c-a2fd-396cf17c2e84
+[36m[2026-05-14T18:07:27.505Z] [INFO] CDP Screencast started[0m {
+  sessionId: '51ab8b39-ded0-4294-bd6e-024035be1b70',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:07:28.991Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:07:28.992Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:07:28.992Z] [INFO] 开始启动浏览器 (sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1)[0m
+[36m[2026-05-14T18:07:28.992Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:28.992Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:29.087Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:07:29.088Z] [INFO] Initial session config for 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:29.088Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:29.088Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:07:29.717Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:07:29.717Z] [INFO] 已设置浏览器事件监听 (sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1)[0m
+[36m[2026-05-14T18:07:29.717Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: '0B3FC255D3E859AF4F9077A839718107'
+}
+[36m[2026-05-14T18:07:29.719Z] [INFO] 浏览器已启动 (sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1, port: 54595, path: /devtools/browser/8ad91634-1610-4cd5-a4ef-a7052e270e4a, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1, sharedUserData: false)[0m
+[36m[2026-05-14T18:07:29.754Z] [INFO] 截图已保存 (sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1-e6eba423-dc73-4a40-8f17-b02e78c6340f.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:07:29.754Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:07:29.755Z] [INFO] 已发送会话截图更新 (sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1, screenshotUrl: /screenshots/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1-e6eba423-dc73-4a40-8f17-b02e78c6340f.jpeg)[0m
+[36m[2026-05-14T18:07:29.755Z] [INFO] 浏览器启动成功 (sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1, port: 54595)[0m
+[36m[2026-05-14T18:07:29.824Z] [INFO] Received event from session 51ab8b39-ded0-4294-bd6e-024035be1b70:[0m tab undefined
+[36m[2026-05-14T18:07:29.828Z] [INFO] '/stream' WebSocket closed for 51ab8b39-ded0-4294-bd6e-024035be1b70. Code: 1001[0m
+[36m[2026-05-14T18:07:29.829Z] [INFO] '/events' WebSocket closed for session 51ab8b39-ded0-4294-bd6e-024035be1b70. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:07:29.829Z] [INFO] Cleaning up '/events' connection for session 51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:29.829Z] [INFO] Removed browserService 'configUpdated' listener for 51ab8b39-ded0-4294-bd6e-024035be1b70[0m
+[36m[2026-05-14T18:07:29.829Z] [INFO] '/events' connection removed for session 51ab8b39-ded0-4294-bd6e-024035be1b70. Remaining: 0[0m
+[36m[2026-05-14T18:07:29.858Z] [INFO] 收到 WebSocket 升级请求: /ws/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:29.858Z] [INFO] 从路径中提取到 sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:29.858Z] [INFO] 最终 sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1, pathname: /ws/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1/stream[0m
+[36m[2026-05-14T18:07:29.858Z] [INFO] 路由到 Stream Handler (sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1)[0m
+[36m[2026-05-14T18:07:29.858Z] [INFO] Handling '/stream' WebSocket connection for session 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:29.884Z] [INFO] 收到 WebSocket 升级请求: /ws/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:29.885Z] [INFO] 从路径中提取到 sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:29.885Z] [INFO] 最终 sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1, pathname: /ws/8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1/events[0m
+[36m[2026-05-14T18:07:29.885Z] [INFO] 路由到 Events Handler (sessionId: 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1)[0m
+[36m[2026-05-14T18:07:29.885Z] [INFO] Handling new '/events' connection for session 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:29.885Z] [INFO] Stored '/events' connection for session 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:29.885Z] [INFO] Attached page listeners for 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:29.885Z] [INFO] Subscribed to raw focus events for session 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:29.885Z] [INFO] Attached browserService 'configUpdated' listener for 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:29.885Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:07:29.885Z] [INFO] Received event from session 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1:[0m event undefined
+[36m[2026-05-14T18:07:29.965Z] [INFO] Navigation detected for session 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1: https://www.baidu.com/[0m
+[36m[2026-05-14T18:07:29.967Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:07:31.901Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '6fd9fa1f-5ba7-43c1-9030-e3cd6a399834',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:07:31.901Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:07:31.901Z] [INFO] 开始启动浏览器 (sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834)[0m
+[36m[2026-05-14T18:07:31.901Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:31.901Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:31.976Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:07:31.976Z] [INFO] Initial session config for 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:31.976Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:31.976Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:07:32.326Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/c740564b-19ed-4fc0-b231-17182c8a1bab
+[36m[2026-05-14T18:07:32.480Z] [INFO] CDP Screencast started[0m {
+  sessionId: '8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:07:33.267Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:07:33.268Z] [INFO] 已设置浏览器事件监听 (sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834)[0m
+[36m[2026-05-14T18:07:33.268Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: 'A7560ADF1F172785544BE980584E5765'
+}
+[36m[2026-05-14T18:07:33.270Z] [INFO] 浏览器已启动 (sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834, port: 54640, path: /devtools/browser/1d1e05d0-e93a-4fe5-b6d5-e1929734c2f6, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834, sharedUserData: false)[0m
+[36m[2026-05-14T18:07:33.492Z] [INFO] 截图已保存 (sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834-18481411-3479-44f9-9fbd-64cdd001f1b6.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:07:33.492Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:07:33.492Z] [INFO] 已发送会话截图更新 (sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834, screenshotUrl: /screenshots/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834-18481411-3479-44f9-9fbd-64cdd001f1b6.jpeg)[0m
+[36m[2026-05-14T18:07:33.492Z] [INFO] 浏览器启动成功 (sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834, port: 54640)[0m
+[36m[2026-05-14T18:07:33.562Z] [INFO] '/stream' WebSocket closed for 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1. Code: 1001[0m
+[36m[2026-05-14T18:07:33.562Z] [INFO] '/events' WebSocket closed for session 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:07:33.562Z] [INFO] Cleaning up '/events' connection for session 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:33.562Z] [INFO] Removed browserService 'configUpdated' listener for 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1[0m
+[36m[2026-05-14T18:07:33.562Z] [INFO] '/events' connection removed for session 8d9b0a68-9d02-4ac4-ad0f-5c921303ccb1. Remaining: 0[0m
+[36m[2026-05-14T18:07:33.580Z] [INFO] 收到 WebSocket 升级请求: /ws/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:33.580Z] [INFO] 从路径中提取到 sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:33.580Z] [INFO] 最终 sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834, pathname: /ws/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834/stream[0m
+[36m[2026-05-14T18:07:33.580Z] [INFO] 路由到 Stream Handler (sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834)[0m
+[36m[2026-05-14T18:07:33.580Z] [INFO] Handling '/stream' WebSocket connection for session 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:33.602Z] [INFO] 收到 WebSocket 升级请求: /ws/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:33.603Z] [INFO] 从路径中提取到 sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:33.603Z] [INFO] 最终 sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834, pathname: /ws/6fd9fa1f-5ba7-43c1-9030-e3cd6a399834/events[0m
+[36m[2026-05-14T18:07:33.603Z] [INFO] 路由到 Events Handler (sessionId: 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834)[0m
+[36m[2026-05-14T18:07:33.603Z] [INFO] Handling new '/events' connection for session 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:33.603Z] [INFO] Stored '/events' connection for session 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:33.603Z] [INFO] Attached page listeners for 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:33.603Z] [INFO] Subscribed to raw focus events for session 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:33.603Z] [INFO] Attached browserService 'configUpdated' listener for 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:33.603Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:07:33.603Z] [INFO] Received event from session 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834:[0m event undefined
+[36m[2026-05-14T18:07:33.689Z] [INFO] Navigation detected for session 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834: https://www.baidu.com/[0m
+[36m[2026-05-14T18:07:33.693Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:07:36.212Z] [INFO] CDP Screencast started[0m {
+  sessionId: '6fd9fa1f-5ba7-43c1-9030-e3cd6a399834',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:07:36.216Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/cb1fd4d5-24b9-459a-87b9-bf82d7142457
+[36m[2026-05-14T18:07:36.610Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '3ed35290-dc11-48ab-bce8-cc73c91d6f17',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:07:36.610Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:07:36.610Z] [INFO] 开始启动浏览器 (sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17)[0m
+[36m[2026-05-14T18:07:36.610Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:36.611Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:36.703Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:07:36.703Z] [INFO] Initial session config for 3ed35290-dc11-48ab-bce8-cc73c91d6f17: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:36.703Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:36.703Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/3ed35290-dc11-48ab-bce8-cc73c91d6f17',
+    '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:07:38.171Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:07:38.171Z] [INFO] 已设置浏览器事件监听 (sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17)[0m
+[36m[2026-05-14T18:07:38.171Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: '3AD193E1FC45308295F6DD9BBD506427'
+}
+[36m[2026-05-14T18:07:38.178Z] [INFO] 浏览器已启动 (sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17, port: 54690, path: /devtools/browser/d5fd9835-4cff-4498-8396-f827296065c4, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/3ed35290-dc11-48ab-bce8-cc73c91d6f17, sharedUserData: false)[0m
+[36m[2026-05-14T18:07:38.399Z] [INFO] 截图已保存 (sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/3ed35290-dc11-48ab-bce8-cc73c91d6f17-40ec8492-a00d-48a9-9099-00b91264f2ec.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:07:38.399Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:07:38.400Z] [INFO] 已发送会话截图更新 (sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17, screenshotUrl: /screenshots/3ed35290-dc11-48ab-bce8-cc73c91d6f17-40ec8492-a00d-48a9-9099-00b91264f2ec.jpeg)[0m
+[36m[2026-05-14T18:07:38.400Z] [INFO] 浏览器启动成功 (sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17, port: 54690)[0m
+[36m[2026-05-14T18:07:38.488Z] [INFO] '/stream' WebSocket closed for 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834. Code: 1001[0m
+[36m[2026-05-14T18:07:38.489Z] [INFO] '/events' WebSocket closed for session 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:07:38.489Z] [INFO] Cleaning up '/events' connection for session 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:38.489Z] [INFO] Removed browserService 'configUpdated' listener for 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834[0m
+[36m[2026-05-14T18:07:38.489Z] [INFO] '/events' connection removed for session 6fd9fa1f-5ba7-43c1-9030-e3cd6a399834. Remaining: 0[0m
+[36m[2026-05-14T18:07:38.505Z] [INFO] 收到 WebSocket 升级请求: /ws/3ed35290-dc11-48ab-bce8-cc73c91d6f17/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:38.505Z] [INFO] 从路径中提取到 sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:38.505Z] [INFO] 最终 sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17, pathname: /ws/3ed35290-dc11-48ab-bce8-cc73c91d6f17/stream[0m
+[36m[2026-05-14T18:07:38.505Z] [INFO] 路由到 Stream Handler (sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17)[0m
+[36m[2026-05-14T18:07:38.505Z] [INFO] Handling '/stream' WebSocket connection for session 3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:38.527Z] [INFO] 收到 WebSocket 升级请求: /ws/3ed35290-dc11-48ab-bce8-cc73c91d6f17/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:38.528Z] [INFO] 从路径中提取到 sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:38.528Z] [INFO] 最终 sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17, pathname: /ws/3ed35290-dc11-48ab-bce8-cc73c91d6f17/events[0m
+[36m[2026-05-14T18:07:38.528Z] [INFO] 路由到 Events Handler (sessionId: 3ed35290-dc11-48ab-bce8-cc73c91d6f17)[0m
+[36m[2026-05-14T18:07:38.528Z] [INFO] Handling new '/events' connection for session 3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:38.528Z] [INFO] Stored '/events' connection for session 3ed35290-dc11-48ab-bce8-cc73c91d6f17 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:38.528Z] [INFO] Attached page listeners for 3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:38.528Z] [INFO] Subscribed to raw focus events for session 3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:38.528Z] [INFO] Attached browserService 'configUpdated' listener for 3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:38.528Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:07:38.528Z] [INFO] Received event from session 3ed35290-dc11-48ab-bce8-cc73c91d6f17:[0m event undefined
+[36m[2026-05-14T18:07:38.607Z] [INFO] Navigation detected for session 3ed35290-dc11-48ab-bce8-cc73c91d6f17: https://www.baidu.com/[0m
+[36m[2026-05-14T18:07:38.611Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:07:40.533Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: 'd226a810-ea85-40ef-a8dd-79b0c204cdd6',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:07:40.533Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:07:40.534Z] [INFO] 开始启动浏览器 (sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6)[0m
+[36m[2026-05-14T18:07:40.534Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:40.534Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:40.626Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:07:40.626Z] [INFO] Initial session config for d226a810-ea85-40ef-a8dd-79b0c204cdd6: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:40.626Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:40.626Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/d226a810-ea85-40ef-a8dd-79b0c204cdd6',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:07:41.356Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/fc826711-359e-4562-bf87-d0bfa31062b0
+[36m[2026-05-14T18:07:41.361Z] [INFO] CDP Screencast started[0m {
+  sessionId: '3ed35290-dc11-48ab-bce8-cc73c91d6f17',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:07:41.921Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:07:41.921Z] [INFO] 已设置浏览器事件监听 (sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6)[0m
+[36m[2026-05-14T18:07:41.921Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: '3332530A385C1CCEBAA765C83F243BE7'
+}
+[36m[2026-05-14T18:07:41.922Z] [INFO] 浏览器已启动 (sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6, port: 54778, path: /devtools/browser/0c565a6c-2167-4dd1-9e15-94c4949166f3, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/d226a810-ea85-40ef-a8dd-79b0c204cdd6, sharedUserData: false)[0m
+[36m[2026-05-14T18:07:42.151Z] [INFO] 截图已保存 (sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/d226a810-ea85-40ef-a8dd-79b0c204cdd6-2e14693d-62c3-4341-9fa0-2f9998862a4e.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:07:42.151Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:07:42.151Z] [INFO] 已发送会话截图更新 (sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6, screenshotUrl: /screenshots/d226a810-ea85-40ef-a8dd-79b0c204cdd6-2e14693d-62c3-4341-9fa0-2f9998862a4e.jpeg)[0m
+[36m[2026-05-14T18:07:42.151Z] [INFO] 浏览器启动成功 (sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6, port: 54778)[0m
+[36m[2026-05-14T18:07:42.239Z] [INFO] '/stream' WebSocket closed for 3ed35290-dc11-48ab-bce8-cc73c91d6f17. Code: 1001[0m
+[36m[2026-05-14T18:07:42.239Z] [INFO] '/events' WebSocket closed for session 3ed35290-dc11-48ab-bce8-cc73c91d6f17. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:07:42.239Z] [INFO] Cleaning up '/events' connection for session 3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:42.240Z] [INFO] Removed browserService 'configUpdated' listener for 3ed35290-dc11-48ab-bce8-cc73c91d6f17[0m
+[36m[2026-05-14T18:07:42.240Z] [INFO] '/events' connection removed for session 3ed35290-dc11-48ab-bce8-cc73c91d6f17. Remaining: 0[0m
+[36m[2026-05-14T18:07:42.260Z] [INFO] 收到 WebSocket 升级请求: /ws/d226a810-ea85-40ef-a8dd-79b0c204cdd6/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:42.260Z] [INFO] 从路径中提取到 sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:42.260Z] [INFO] 最终 sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6, pathname: /ws/d226a810-ea85-40ef-a8dd-79b0c204cdd6/stream[0m
+[36m[2026-05-14T18:07:42.260Z] [INFO] 路由到 Stream Handler (sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6)[0m
+[36m[2026-05-14T18:07:42.260Z] [INFO] Handling '/stream' WebSocket connection for session d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:42.296Z] [INFO] 收到 WebSocket 升级请求: /ws/d226a810-ea85-40ef-a8dd-79b0c204cdd6/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:42.296Z] [INFO] 从路径中提取到 sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:42.296Z] [INFO] 最终 sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6, pathname: /ws/d226a810-ea85-40ef-a8dd-79b0c204cdd6/events[0m
+[36m[2026-05-14T18:07:42.296Z] [INFO] 路由到 Events Handler (sessionId: d226a810-ea85-40ef-a8dd-79b0c204cdd6)[0m
+[36m[2026-05-14T18:07:42.297Z] [INFO] Handling new '/events' connection for session d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:42.297Z] [INFO] Stored '/events' connection for session d226a810-ea85-40ef-a8dd-79b0c204cdd6 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:42.297Z] [INFO] Attached page listeners for d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:42.297Z] [INFO] Subscribed to raw focus events for session d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:42.297Z] [INFO] Attached browserService 'configUpdated' listener for d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:42.297Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:07:42.300Z] [INFO] Received event from session d226a810-ea85-40ef-a8dd-79b0c204cdd6:[0m event undefined
+[36m[2026-05-14T18:07:42.374Z] [INFO] Navigation detected for session d226a810-ea85-40ef-a8dd-79b0c204cdd6: https://www.baidu.com/[0m
+[36m[2026-05-14T18:07:42.377Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:07:44.285Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:07:44.285Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:07:44.285Z] [INFO] 开始启动浏览器 (sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3)[0m
+[36m[2026-05-14T18:07:44.285Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:44.285Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:44.374Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:07:44.374Z] [INFO] Initial session config for 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:44.374Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:44.374Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:07:45.169Z] [INFO] CDP Screencast started[0m {
+  sessionId: 'd226a810-ea85-40ef-a8dd-79b0c204cdd6',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:07:45.174Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/523a8e9f-7192-433c-82eb-39b76e82b59b
+[36m[2026-05-14T18:07:45.760Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:07:45.760Z] [INFO] 已设置浏览器事件监听 (sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3)[0m
+[36m[2026-05-14T18:07:45.760Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: '17CC19D5C6D372C48F2892B2C48C0992'
+}
+[36m[2026-05-14T18:07:45.762Z] [INFO] 浏览器已启动 (sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3, port: 54830, path: /devtools/browser/049dd273-dcd9-4c13-a22b-125d14bcebab, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3, sharedUserData: false)[0m
+[36m[2026-05-14T18:07:46.069Z] [INFO] 截图已保存 (sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3-82ca5fec-d283-42fd-b44e-b51eb4692ae5.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:07:46.069Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:07:46.069Z] [INFO] 已发送会话截图更新 (sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3, screenshotUrl: /screenshots/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3-82ca5fec-d283-42fd-b44e-b51eb4692ae5.jpeg)[0m
+[36m[2026-05-14T18:07:46.069Z] [INFO] 浏览器启动成功 (sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3, port: 54830)[0m
+[36m[2026-05-14T18:07:46.150Z] [INFO] '/events' WebSocket closed for session d226a810-ea85-40ef-a8dd-79b0c204cdd6. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:07:46.150Z] [INFO] Cleaning up '/events' connection for session d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:46.151Z] [INFO] Removed browserService 'configUpdated' listener for d226a810-ea85-40ef-a8dd-79b0c204cdd6[0m
+[36m[2026-05-14T18:07:46.151Z] [INFO] '/events' connection removed for session d226a810-ea85-40ef-a8dd-79b0c204cdd6. Remaining: 0[0m
+[36m[2026-05-14T18:07:46.151Z] [INFO] '/stream' WebSocket closed for d226a810-ea85-40ef-a8dd-79b0c204cdd6. Code: 1001[0m
+[36m[2026-05-14T18:07:46.173Z] [INFO] 收到 WebSocket 升级请求: /ws/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:46.173Z] [INFO] 从路径中提取到 sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:46.173Z] [INFO] 最终 sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3, pathname: /ws/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3/stream[0m
+[36m[2026-05-14T18:07:46.173Z] [INFO] 路由到 Stream Handler (sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3)[0m
+[36m[2026-05-14T18:07:46.173Z] [INFO] Handling '/stream' WebSocket connection for session 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:46.194Z] [INFO] 收到 WebSocket 升级请求: /ws/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:46.194Z] [INFO] 从路径中提取到 sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:46.194Z] [INFO] 最终 sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3, pathname: /ws/06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3/events[0m
+[36m[2026-05-14T18:07:46.194Z] [INFO] 路由到 Events Handler (sessionId: 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3)[0m
+[36m[2026-05-14T18:07:46.194Z] [INFO] Handling new '/events' connection for session 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:46.194Z] [INFO] Stored '/events' connection for session 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:46.194Z] [INFO] Attached page listeners for 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:46.194Z] [INFO] Subscribed to raw focus events for session 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:46.194Z] [INFO] Attached browserService 'configUpdated' listener for 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:46.194Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:07:46.195Z] [INFO] Received event from session 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3:[0m event undefined
+[36m[2026-05-14T18:07:46.269Z] [INFO] Navigation detected for session 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3: https://www.baidu.com/[0m
+[36m[2026-05-14T18:07:46.273Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:07:48.221Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: 'd6059242-e26d-4c4d-8889-f5b6f01f98cc',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:07:48.221Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:07:48.221Z] [INFO] 开始启动浏览器 (sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc)[0m
+[36m[2026-05-14T18:07:48.222Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:48.222Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:48.307Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:07:48.307Z] [INFO] Initial session config for d6059242-e26d-4c4d-8889-f5b6f01f98cc: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:48.307Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:48.307Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/d6059242-e26d-4c4d-8889-f5b6f01f98cc',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:07:48.826Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/58d9a388-200a-4567-8175-9cad8e9579ea
+[36m[2026-05-14T18:07:48.830Z] [INFO] CDP Screencast started[0m {
+  sessionId: '06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:07:49.558Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:07:49.558Z] [INFO] 已设置浏览器事件监听 (sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc)[0m
+[36m[2026-05-14T18:07:49.558Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: 'A65D1DF16F7F90D22F2A61A93BA09704'
+}
+[36m[2026-05-14T18:07:49.559Z] [INFO] 浏览器已启动 (sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc, port: 54899, path: /devtools/browser/1068cd3a-16df-4d25-87b0-736f78411438, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/d6059242-e26d-4c4d-8889-f5b6f01f98cc, sharedUserData: false)[0m
+[36m[2026-05-14T18:07:49.962Z] [INFO] 截图已保存 (sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/d6059242-e26d-4c4d-8889-f5b6f01f98cc-60c3413c-3cf1-4a06-b55c-e826832dc0f2.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:07:49.962Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:07:49.962Z] [INFO] 已发送会话截图更新 (sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc, screenshotUrl: /screenshots/d6059242-e26d-4c4d-8889-f5b6f01f98cc-60c3413c-3cf1-4a06-b55c-e826832dc0f2.jpeg)[0m
+[36m[2026-05-14T18:07:49.962Z] [INFO] 浏览器启动成功 (sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc, port: 54899)[0m
+[36m[2026-05-14T18:07:50.038Z] [INFO] '/stream' WebSocket closed for 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3. Code: 1001[0m
+[36m[2026-05-14T18:07:50.039Z] [INFO] '/events' WebSocket closed for session 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:07:50.039Z] [INFO] Cleaning up '/events' connection for session 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:50.039Z] [INFO] Removed browserService 'configUpdated' listener for 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3[0m
+[36m[2026-05-14T18:07:50.039Z] [INFO] '/events' connection removed for session 06b82142-0ef1-4c6f-a2a0-dcacea1a5ad3. Remaining: 0[0m
+[36m[2026-05-14T18:07:50.052Z] [INFO] 收到 WebSocket 升级请求: /ws/d6059242-e26d-4c4d-8889-f5b6f01f98cc/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:50.052Z] [INFO] 从路径中提取到 sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:50.052Z] [INFO] 最终 sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc, pathname: /ws/d6059242-e26d-4c4d-8889-f5b6f01f98cc/stream[0m
+[36m[2026-05-14T18:07:50.052Z] [INFO] 路由到 Stream Handler (sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc)[0m
+[36m[2026-05-14T18:07:50.052Z] [INFO] Handling '/stream' WebSocket connection for session d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:50.076Z] [INFO] 收到 WebSocket 升级请求: /ws/d6059242-e26d-4c4d-8889-f5b6f01f98cc/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:50.076Z] [INFO] 从路径中提取到 sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:50.076Z] [INFO] 最终 sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc, pathname: /ws/d6059242-e26d-4c4d-8889-f5b6f01f98cc/events[0m
+[36m[2026-05-14T18:07:50.076Z] [INFO] 路由到 Events Handler (sessionId: d6059242-e26d-4c4d-8889-f5b6f01f98cc)[0m
+[36m[2026-05-14T18:07:50.076Z] [INFO] Handling new '/events' connection for session d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:50.076Z] [INFO] Stored '/events' connection for session d6059242-e26d-4c4d-8889-f5b6f01f98cc with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:50.076Z] [INFO] Attached page listeners for d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:50.076Z] [INFO] Subscribed to raw focus events for session d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:50.076Z] [INFO] Attached browserService 'configUpdated' listener for d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:50.076Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:07:50.077Z] [INFO] Received event from session d6059242-e26d-4c4d-8889-f5b6f01f98cc:[0m event undefined
+[36m[2026-05-14T18:07:50.145Z] [INFO] Navigation detected for session d6059242-e26d-4c4d-8889-f5b6f01f98cc: https://www.baidu.com/[0m
+[36m[2026-05-14T18:07:50.148Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:07:52.047Z] [INFO] Received event from session d6059242-e26d-4c4d-8889-f5b6f01f98cc:[0m event undefined
+[36m[2026-05-14T18:07:52.192Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:07:52.192Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:07:52.192Z] [INFO] 开始启动浏览器 (sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd)[0m
+[36m[2026-05-14T18:07:52.192Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:52.192Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:52.280Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:07:52.280Z] [INFO] Initial session config for 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:52.280Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:52.280Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:07:52.632Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/8b223979-f658-4154-b942-80b01b162def
+[36m[2026-05-14T18:07:52.891Z] [INFO] CDP Screencast started[0m {
+  sessionId: 'd6059242-e26d-4c4d-8889-f5b6f01f98cc',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:07:53.602Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:07:53.602Z] [INFO] 已设置浏览器事件监听 (sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd)[0m
+[36m[2026-05-14T18:07:53.602Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: 'C95246B7CBCBD1D7A6EB9725728FC778'
+}
+[36m[2026-05-14T18:07:53.605Z] [INFO] 浏览器已启动 (sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd, port: 54956, path: /devtools/browser/4e05b70c-4e77-4533-9e35-505553556df3, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd, sharedUserData: false)[0m
+[36m[2026-05-14T18:07:53.826Z] [INFO] 截图已保存 (sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd-de3c4e9e-6188-4c68-9d8f-49c383165321.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:07:53.827Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:07:53.827Z] [INFO] 已发送会话截图更新 (sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd, screenshotUrl: /screenshots/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd-de3c4e9e-6188-4c68-9d8f-49c383165321.jpeg)[0m
+[36m[2026-05-14T18:07:53.827Z] [INFO] 浏览器启动成功 (sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd, port: 54956)[0m
+[36m[2026-05-14T18:07:53.908Z] [INFO] '/stream' WebSocket closed for d6059242-e26d-4c4d-8889-f5b6f01f98cc. Code: 1001[0m
+[36m[2026-05-14T18:07:53.909Z] [INFO] '/events' WebSocket closed for session d6059242-e26d-4c4d-8889-f5b6f01f98cc. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:07:53.909Z] [INFO] Cleaning up '/events' connection for session d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:53.909Z] [INFO] Removed browserService 'configUpdated' listener for d6059242-e26d-4c4d-8889-f5b6f01f98cc[0m
+[36m[2026-05-14T18:07:53.909Z] [INFO] '/events' connection removed for session d6059242-e26d-4c4d-8889-f5b6f01f98cc. Remaining: 0[0m
+[36m[2026-05-14T18:07:53.924Z] [INFO] 收到 WebSocket 升级请求: /ws/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:53.925Z] [INFO] 从路径中提取到 sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:53.925Z] [INFO] 最终 sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd, pathname: /ws/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd/stream[0m
+[36m[2026-05-14T18:07:53.925Z] [INFO] 路由到 Stream Handler (sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd)[0m
+[36m[2026-05-14T18:07:53.925Z] [INFO] Handling '/stream' WebSocket connection for session 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:53.947Z] [INFO] 收到 WebSocket 升级请求: /ws/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:53.947Z] [INFO] 从路径中提取到 sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:53.947Z] [INFO] 最终 sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd, pathname: /ws/1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd/events[0m
+[36m[2026-05-14T18:07:53.947Z] [INFO] 路由到 Events Handler (sessionId: 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd)[0m
+[36m[2026-05-14T18:07:53.947Z] [INFO] Handling new '/events' connection for session 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:53.948Z] [INFO] Stored '/events' connection for session 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:53.948Z] [INFO] Attached page listeners for 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:53.948Z] [INFO] Subscribed to raw focus events for session 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:53.948Z] [INFO] Attached browserService 'configUpdated' listener for 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:53.948Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:07:53.948Z] [INFO] Received event from session 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd:[0m event undefined
+[36m[2026-05-14T18:07:54.019Z] [INFO] Navigation detected for session 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd: https://www.baidu.com/[0m
+[36m[2026-05-14T18:07:54.024Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:07:55.920Z] [INFO] Received event from session 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd:[0m event undefined
+[36m[2026-05-14T18:07:56.162Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '15f995f8-2071-4cb4-a803-deb40b971cf0',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:07:56.162Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:07:56.162Z] [INFO] 开始启动浏览器 (sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0)[0m
+[36m[2026-05-14T18:07:56.162Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:07:56.162Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:07:56.245Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:07:56.245Z] [INFO] Initial session config for 15f995f8-2071-4cb4-a803-deb40b971cf0: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:56.245Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:07:56.245Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/15f995f8-2071-4cb4-a803-deb40b971cf0',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:07:56.478Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/b41cb1c6-49fe-47ea-8c78-bacf41b997f1
+[36m[2026-05-14T18:07:56.617Z] [INFO] CDP Screencast started[0m {
+  sessionId: '1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:07:57.499Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:07:57.499Z] [INFO] 已设置浏览器事件监听 (sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0)[0m
+[36m[2026-05-14T18:07:57.499Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: 'F8FAC47DB8DC467B6767937AE1A25058'
+}
+[36m[2026-05-14T18:07:57.500Z] [INFO] 浏览器已启动 (sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0, port: 55011, path: /devtools/browser/b42bd3c5-d9a1-45fd-8a5d-af4db54f479d, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/15f995f8-2071-4cb4-a803-deb40b971cf0, sharedUserData: false)[0m
+[36m[2026-05-14T18:07:57.734Z] [INFO] 截图已保存 (sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/15f995f8-2071-4cb4-a803-deb40b971cf0-2e05103d-7bfc-405f-b59b-cd40bb4ae416.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:07:57.734Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:07:57.734Z] [INFO] 已发送会话截图更新 (sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0, screenshotUrl: /screenshots/15f995f8-2071-4cb4-a803-deb40b971cf0-2e05103d-7bfc-405f-b59b-cd40bb4ae416.jpeg)[0m
+[36m[2026-05-14T18:07:57.734Z] [INFO] 浏览器启动成功 (sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0, port: 55011)[0m
+[36m[2026-05-14T18:07:57.815Z] [INFO] '/stream' WebSocket closed for 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd. Code: 1001[0m
+[36m[2026-05-14T18:07:57.816Z] [INFO] '/events' WebSocket closed for session 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:07:57.816Z] [INFO] Cleaning up '/events' connection for session 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:57.816Z] [INFO] Removed browserService 'configUpdated' listener for 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd[0m
+[36m[2026-05-14T18:07:57.816Z] [INFO] '/events' connection removed for session 1d3e0e0e-b179-4d90-8ac9-36e3bc308bcd. Remaining: 0[0m
+[36m[2026-05-14T18:07:57.831Z] [INFO] 收到 WebSocket 升级请求: /ws/15f995f8-2071-4cb4-a803-deb40b971cf0/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:57.831Z] [INFO] 从路径中提取到 sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:07:57.831Z] [INFO] 最终 sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0, pathname: /ws/15f995f8-2071-4cb4-a803-deb40b971cf0/stream[0m
+[36m[2026-05-14T18:07:57.831Z] [INFO] 路由到 Stream Handler (sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0)[0m
+[36m[2026-05-14T18:07:57.831Z] [INFO] Handling '/stream' WebSocket connection for session 15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:07:57.854Z] [INFO] 收到 WebSocket 升级请求: /ws/15f995f8-2071-4cb4-a803-deb40b971cf0/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:07:57.854Z] [INFO] 从路径中提取到 sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:07:57.854Z] [INFO] 最终 sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0, pathname: /ws/15f995f8-2071-4cb4-a803-deb40b971cf0/events[0m
+[36m[2026-05-14T18:07:57.854Z] [INFO] 路由到 Events Handler (sessionId: 15f995f8-2071-4cb4-a803-deb40b971cf0)[0m
+[36m[2026-05-14T18:07:57.854Z] [INFO] Handling new '/events' connection for session 15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:07:57.855Z] [INFO] Stored '/events' connection for session 15f995f8-2071-4cb4-a803-deb40b971cf0 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:07:57.855Z] [INFO] Attached page listeners for 15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:07:57.855Z] [INFO] Subscribed to raw focus events for session 15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:07:57.855Z] [INFO] Attached browserService 'configUpdated' listener for 15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:07:57.855Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:07:57.855Z] [INFO] Received event from session 15f995f8-2071-4cb4-a803-deb40b971cf0:[0m event undefined
+[36m[2026-05-14T18:07:57.924Z] [INFO] Navigation detected for session 15f995f8-2071-4cb4-a803-deb40b971cf0: https://www.baidu.com/[0m
+[36m[2026-05-14T18:07:57.926Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:08:00.525Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/f8d34a16-d15e-485b-8a24-5c89947cd6bb
+[36m[2026-05-14T18:08:00.657Z] [INFO] CDP Screencast started[0m {
+  sessionId: '15f995f8-2071-4cb4-a803-deb40b971cf0',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:08:01.852Z] [INFO] Received event from session 15f995f8-2071-4cb4-a803-deb40b971cf0:[0m event undefined
+[36m[2026-05-14T18:08:01.852Z] [INFO] keyDown[0m Coords: null
+[36m[2026-05-14T18:08:01.853Z] [INFO] Received event from session 15f995f8-2071-4cb4-a803-deb40b971cf0:[0m event undefined
+[36m[2026-05-14T18:08:01.853Z] [INFO] keyUp[0m Coords: null
+[31m[2026-05-14T18:08:01.853Z] [ERROR] Failed to handle event keyDown for session 15f995f8-2071-4cb4-a803-deb40b971cf0:[0m Error: Unknown key: "Control+c"
+    at assert (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/puppeteer/node_modules/puppeteer-core/src/util/assert.ts:19:11)
+    at CdpKeyboard.#keyDescriptionForString (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/puppeteer/node_modules/puppeteer-core/src/cdp/Input.ts:111:11)
+    at CdpKeyboard.down (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/puppeteer/node_modules/puppeteer-core/src/cdp/Input.ts:62:54)
+    at CdpKeyboard.press (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/puppeteer/node_modules/puppeteer-core/src/cdp/Input.ts:201:16)
+    at handleMouseEvents (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/machine/session_handlers/events.handler.ts:884:39)
+    at handleIncomingEventMessage (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/machine/session_handlers/events.handler.ts:524:9)
+    at WebSocket.<anonymous> (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/machine/session_handlers/events.handler.ts:169:7)
+    at WebSocket.emit (node:events:508:28)
+    at Receiver.receiverOnMessage (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/ws/lib/websocket.js:1220:20)
+    at Receiver.emit (node:events:508:28)
+[36m[2026-05-14T18:08:02.820Z] [INFO] Received event from session 15f995f8-2071-4cb4-a803-deb40b971cf0:[0m tab undefined
+[36m[2026-05-14T18:08:05.331Z] [INFO] '/stream' WebSocket closed for 15f995f8-2071-4cb4-a803-deb40b971cf0. Code: 1001[0m
+[36m[2026-05-14T18:08:05.332Z] [INFO] '/events' WebSocket closed for session 15f995f8-2071-4cb4-a803-deb40b971cf0. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:08:05.332Z] [INFO] Cleaning up '/events' connection for session 15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:08:05.332Z] [INFO] Removed browserService 'configUpdated' listener for 15f995f8-2071-4cb4-a803-deb40b971cf0[0m
+[36m[2026-05-14T18:08:05.332Z] [INFO] '/events' connection removed for session 15f995f8-2071-4cb4-a803-deb40b971cf0. Remaining: 0[0m
+[36m[2026-05-14T18:12:38.724Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '417872b4-e52f-4682-bbc6-8ff5c2c50815',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:12:38.725Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:12:38.725Z] [INFO] 开始启动浏览器 (sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815)[0m
+[36m[2026-05-14T18:12:38.725Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:38.725Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:38.827Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15[0m
+[36m[2026-05-14T18:12:38.827Z] [INFO] Initial session config for 417872b4-e52f-4682-bbc6-8ff5c2c50815: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:12:38.827Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:38.828Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/417872b4-e52f-4682-bbc6-8ff5c2c50815',
+    '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:12:40.192Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:12:40.192Z] [INFO] 已设置浏览器事件监听 (sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815)[0m
+[36m[2026-05-14T18:12:40.192Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: '61B7A0D49AF1724AFF6EA46104B9AAB2'
+}
+[36m[2026-05-14T18:12:40.194Z] [INFO] 浏览器已启动 (sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815, port: 55971, path: /devtools/browser/dcf9e0a9-6d5d-493a-a474-02d6fa17cab9, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/417872b4-e52f-4682-bbc6-8ff5c2c50815, sharedUserData: false)[0m
+[36m[2026-05-14T18:12:40.610Z] [INFO] 截图已保存 (sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/417872b4-e52f-4682-bbc6-8ff5c2c50815-caed4aa1-e655-4303-9e56-308c44777e9f.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:12:40.610Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:12:40.610Z] [INFO] 已发送会话截图更新 (sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815, screenshotUrl: /screenshots/417872b4-e52f-4682-bbc6-8ff5c2c50815-caed4aa1-e655-4303-9e56-308c44777e9f.jpeg)[0m
+[36m[2026-05-14T18:12:40.610Z] [INFO] 浏览器启动成功 (sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815, port: 55971)[0m
+[36m[2026-05-14T18:12:40.747Z] [INFO] 收到 WebSocket 升级请求: /ws/417872b4-e52f-4682-bbc6-8ff5c2c50815/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:12:40.748Z] [INFO] 从路径中提取到 sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:40.748Z] [INFO] 最终 sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815, pathname: /ws/417872b4-e52f-4682-bbc6-8ff5c2c50815/stream[0m
+[36m[2026-05-14T18:12:40.748Z] [INFO] 路由到 Stream Handler (sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815)[0m
+[36m[2026-05-14T18:12:40.748Z] [INFO] Handling '/stream' WebSocket connection for session 417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:40.768Z] [INFO] 收到 WebSocket 升级请求: /ws/417872b4-e52f-4682-bbc6-8ff5c2c50815/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:12:40.768Z] [INFO] 从路径中提取到 sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:40.768Z] [INFO] 最终 sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815, pathname: /ws/417872b4-e52f-4682-bbc6-8ff5c2c50815/events[0m
+[36m[2026-05-14T18:12:40.768Z] [INFO] 路由到 Events Handler (sessionId: 417872b4-e52f-4682-bbc6-8ff5c2c50815)[0m
+[36m[2026-05-14T18:12:40.768Z] [INFO] Handling new '/events' connection for session 417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:40.768Z] [INFO] Stored '/events' connection for session 417872b4-e52f-4682-bbc6-8ff5c2c50815 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:12:40.769Z] [INFO] Attached page listeners for 417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:40.769Z] [INFO] Subscribed to raw focus events for session 417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:40.769Z] [INFO] Attached browserService 'configUpdated' listener for 417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:40.769Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:12:40.769Z] [INFO] Received event from session 417872b4-e52f-4682-bbc6-8ff5c2c50815:[0m event undefined
+[36m[2026-05-14T18:12:40.857Z] [INFO] Navigation detected for session 417872b4-e52f-4682-bbc6-8ff5c2c50815: https://www.baidu.com/[0m
+[36m[2026-05-14T18:12:40.860Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:12:42.742Z] [INFO] Received event from session 417872b4-e52f-4682-bbc6-8ff5c2c50815:[0m event undefined
+[36m[2026-05-14T18:12:42.899Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '74e2f50f-294b-4e01-9981-14d7278206c3',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:12:42.899Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:12:42.899Z] [INFO] 开始启动浏览器 (sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3)[0m
+[36m[2026-05-14T18:12:42.899Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:42.899Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:42.989Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:12:42.989Z] [INFO] Initial session config for 74e2f50f-294b-4e01-9981-14d7278206c3: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:12:42.989Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:42.989Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/74e2f50f-294b-4e01-9981-14d7278206c3',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:12:43.398Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/a866afd6-3401-4d88-afb4-5e43367292fb
+[36m[2026-05-14T18:12:43.667Z] [INFO] CDP Screencast started[0m {
+  sessionId: '417872b4-e52f-4682-bbc6-8ff5c2c50815',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:12:44.306Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:12:44.306Z] [INFO] 已设置浏览器事件监听 (sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3)[0m
+[36m[2026-05-14T18:12:44.306Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: 'CFD8899C5967408CE9CEAD69C247D493'
+}
+[36m[2026-05-14T18:12:44.309Z] [INFO] 浏览器已启动 (sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3, port: 56032, path: /devtools/browser/8c7698a5-206c-4b01-ad52-cad68e021c52, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/74e2f50f-294b-4e01-9981-14d7278206c3, sharedUserData: false)[0m
+[36m[2026-05-14T18:12:44.525Z] [INFO] 截图已保存 (sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/74e2f50f-294b-4e01-9981-14d7278206c3-60deffd3-8633-4405-9bdd-32de83171f7a.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:12:44.525Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:12:44.525Z] [INFO] 已发送会话截图更新 (sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3, screenshotUrl: /screenshots/74e2f50f-294b-4e01-9981-14d7278206c3-60deffd3-8633-4405-9bdd-32de83171f7a.jpeg)[0m
+[36m[2026-05-14T18:12:44.525Z] [INFO] 浏览器启动成功 (sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3, port: 56032)[0m
+[36m[2026-05-14T18:12:44.609Z] [INFO] '/stream' WebSocket closed for 417872b4-e52f-4682-bbc6-8ff5c2c50815. Code: 1001[0m
+[36m[2026-05-14T18:12:44.609Z] [INFO] '/events' WebSocket closed for session 417872b4-e52f-4682-bbc6-8ff5c2c50815. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:12:44.609Z] [INFO] Cleaning up '/events' connection for session 417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:44.610Z] [INFO] Removed browserService 'configUpdated' listener for 417872b4-e52f-4682-bbc6-8ff5c2c50815[0m
+[36m[2026-05-14T18:12:44.610Z] [INFO] '/events' connection removed for session 417872b4-e52f-4682-bbc6-8ff5c2c50815. Remaining: 0[0m
+[36m[2026-05-14T18:12:44.635Z] [INFO] 收到 WebSocket 升级请求: /ws/74e2f50f-294b-4e01-9981-14d7278206c3/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:12:44.635Z] [INFO] 从路径中提取到 sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:44.635Z] [INFO] 最终 sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3, pathname: /ws/74e2f50f-294b-4e01-9981-14d7278206c3/stream[0m
+[36m[2026-05-14T18:12:44.635Z] [INFO] 路由到 Stream Handler (sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3)[0m
+[36m[2026-05-14T18:12:44.635Z] [INFO] Handling '/stream' WebSocket connection for session 74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:44.656Z] [INFO] 收到 WebSocket 升级请求: /ws/74e2f50f-294b-4e01-9981-14d7278206c3/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:12:44.656Z] [INFO] 从路径中提取到 sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:44.657Z] [INFO] 最终 sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3, pathname: /ws/74e2f50f-294b-4e01-9981-14d7278206c3/events[0m
+[36m[2026-05-14T18:12:44.657Z] [INFO] 路由到 Events Handler (sessionId: 74e2f50f-294b-4e01-9981-14d7278206c3)[0m
+[36m[2026-05-14T18:12:44.657Z] [INFO] Handling new '/events' connection for session 74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:44.657Z] [INFO] Stored '/events' connection for session 74e2f50f-294b-4e01-9981-14d7278206c3 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:12:44.657Z] [INFO] Attached page listeners for 74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:44.657Z] [INFO] Subscribed to raw focus events for session 74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:44.657Z] [INFO] Attached browserService 'configUpdated' listener for 74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:44.657Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:12:44.657Z] [INFO] Received event from session 74e2f50f-294b-4e01-9981-14d7278206c3:[0m event undefined
+[36m[2026-05-14T18:12:44.735Z] [INFO] Navigation detected for session 74e2f50f-294b-4e01-9981-14d7278206c3: https://www.baidu.com/[0m
+[36m[2026-05-14T18:12:44.738Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:12:46.621Z] [INFO] Received event from session 74e2f50f-294b-4e01-9981-14d7278206c3:[0m event undefined
+[36m[2026-05-14T18:12:46.856Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '4ab6f5b0-15bc-4f16-96a8-6010e0e71d62',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:12:46.857Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:12:46.857Z] [INFO] 开始启动浏览器 (sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62)[0m
+[36m[2026-05-14T18:12:46.857Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:12:46.857Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:12:46.946Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:12:46.946Z] [INFO] Initial session config for 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:12:46.946Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:12:46.946Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:12:48.184Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/8ce7c7ff-a394-40d3-b50d-953af89ff6d7
+[36m[2026-05-14T18:12:48.193Z] [INFO] CDP Screencast started[0m {
+  sessionId: '74e2f50f-294b-4e01-9981-14d7278206c3',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:12:48.223Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:12:48.223Z] [INFO] 已设置浏览器事件监听 (sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62)[0m
+[36m[2026-05-14T18:12:48.223Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: 'AA59884FBC749F90E35FA10D7DFAD5D1'
+}
+[36m[2026-05-14T18:12:48.225Z] [INFO] 浏览器已启动 (sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62, port: 56079, path: /devtools/browser/5761ecf7-fb60-415a-bb0c-2b10ebb1b4f7, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62, sharedUserData: false)[0m
+[36m[2026-05-14T18:12:48.605Z] [INFO] 截图已保存 (sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62-f3949be0-4ca0-4b82-b746-82ebd26be8b5.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:12:48.605Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:12:48.606Z] [INFO] 已发送会话截图更新 (sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62, screenshotUrl: /screenshots/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62-f3949be0-4ca0-4b82-b746-82ebd26be8b5.jpeg)[0m
+[36m[2026-05-14T18:12:48.606Z] [INFO] 浏览器启动成功 (sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62, port: 56079)[0m
+[36m[2026-05-14T18:12:48.699Z] [INFO] '/stream' WebSocket closed for 74e2f50f-294b-4e01-9981-14d7278206c3. Code: 1001[0m
+[36m[2026-05-14T18:12:48.701Z] [INFO] '/events' WebSocket closed for session 74e2f50f-294b-4e01-9981-14d7278206c3. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:12:48.701Z] [INFO] Cleaning up '/events' connection for session 74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:48.701Z] [INFO] Removed browserService 'configUpdated' listener for 74e2f50f-294b-4e01-9981-14d7278206c3[0m
+[36m[2026-05-14T18:12:48.701Z] [INFO] '/events' connection removed for session 74e2f50f-294b-4e01-9981-14d7278206c3. Remaining: 0[0m
+[36m[2026-05-14T18:12:48.722Z] [INFO] 收到 WebSocket 升级请求: /ws/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:12:48.723Z] [INFO] 从路径中提取到 sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:12:48.723Z] [INFO] 最终 sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62, pathname: /ws/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62/stream[0m
+[36m[2026-05-14T18:12:48.723Z] [INFO] 路由到 Stream Handler (sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62)[0m
+[36m[2026-05-14T18:12:48.723Z] [INFO] Handling '/stream' WebSocket connection for session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:12:48.745Z] [INFO] 收到 WebSocket 升级请求: /ws/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:12:48.745Z] [INFO] 从路径中提取到 sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:12:48.745Z] [INFO] 最终 sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62, pathname: /ws/4ab6f5b0-15bc-4f16-96a8-6010e0e71d62/events[0m
+[36m[2026-05-14T18:12:48.745Z] [INFO] 路由到 Events Handler (sessionId: 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62)[0m
+[36m[2026-05-14T18:12:48.745Z] [INFO] Handling new '/events' connection for session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:12:48.745Z] [INFO] Stored '/events' connection for session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:12:48.745Z] [INFO] Attached page listeners for 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:12:48.745Z] [INFO] Subscribed to raw focus events for session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:12:48.745Z] [INFO] Attached browserService 'configUpdated' listener for 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:12:48.746Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:12:48.746Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m event undefined
+[36m[2026-05-14T18:12:48.831Z] [INFO] Navigation detected for session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62: https://www.baidu.com/[0m
+[36m[2026-05-14T18:12:48.838Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:12:51.609Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/3e81a8ce-1f47-4b7a-8469-d2a9381281cd
+[36m[2026-05-14T18:12:51.743Z] [INFO] CDP Screencast started[0m {
+  sessionId: '4ab6f5b0-15bc-4f16-96a8-6010e0e71d62',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:12:52.745Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m event undefined
+[36m[2026-05-14T18:12:52.745Z] [INFO] keyDown[0m Coords: null
+[36m[2026-05-14T18:12:52.746Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m event undefined
+[36m[2026-05-14T18:12:52.746Z] [INFO] keyUp[0m Coords: null
+[31m[2026-05-14T18:12:52.746Z] [ERROR] Failed to handle event keyDown for session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m Error: Unknown key: "Control+c"
+    at assert (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/puppeteer/node_modules/puppeteer-core/src/util/assert.ts:19:11)
+    at CdpKeyboard.#keyDescriptionForString (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/puppeteer/node_modules/puppeteer-core/src/cdp/Input.ts:111:11)
+    at CdpKeyboard.down (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/puppeteer/node_modules/puppeteer-core/src/cdp/Input.ts:62:54)
+    at CdpKeyboard.press (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/puppeteer/node_modules/puppeteer-core/src/cdp/Input.ts:201:16)
+    at handleMouseEvents (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/machine/session_handlers/events.handler.ts:884:39)
+    at handleIncomingEventMessage (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/machine/session_handlers/events.handler.ts:524:9)
+    at WebSocket.<anonymous> (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/machine/session_handlers/events.handler.ts:169:7)
+    at WebSocket.emit (node:events:508:28)
+    at Receiver.receiverOnMessage (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/ws/lib/websocket.js:1220:20)
+    at Receiver.emit (node:events:508:28)
+[36m[2026-05-14T18:12:53.707Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m tab undefined
+[36m[2026-05-14T18:12:58.708Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m tab undefined
+[33m[2026-05-14T18:12:59.747Z] [WARN] Frame starvation for 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62: no frame for 3807ms, falling back to screenshot loop[0m
+[36m[2026-05-14T18:12:59.747Z] [INFO] Starting screenshot loop fallback for 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62 at 15 FPS[0m
+[36m[2026-05-14T18:13:03.708Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m tab undefined
+[36m[2026-05-14T18:13:08.754Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m tab undefined
+[36m[2026-05-14T18:13:13.709Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m tab undefined
+[36m[2026-05-14T18:13:18.708Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m tab undefined
+[36m[2026-05-14T18:13:23.708Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m tab undefined
+[36m[2026-05-14T18:13:28.708Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m tab undefined
+[36m[2026-05-14T18:13:33.708Z] [INFO] Received event from session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62:[0m tab undefined
+[36m[2026-05-14T18:13:36.344Z] [INFO] 收到启动浏览器请求:[0m {
+  session_id: '1605d39a-3418-42f2-8822-c0b963bd2589',
+  options: {
+    cookies: [],
+    args: [],
+    user_agent: '',
+    proxy: '',
+    viewport: { width: 1280, height: 800 },
+    storage_state_path: '',
+    storage_state: null,
+    shared_user_data: false,
+    user_data_dir: '',
+    timezone: '',
+    proxy_bypass: ''
+  },
+  user_id: '62'
+}
+[36m[2026-05-14T18:13:36.344Z] [INFO] 转换后的浏览器选项:[0m {
+  viewport: { width: 1280, height: 800 },
+  args: [],
+  sharedUserData: false,
+  userId: '62'
+}
+[36m[2026-05-14T18:13:36.344Z] [INFO] 开始启动浏览器 (sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589)[0m
+[36m[2026-05-14T18:13:36.344Z] [INFO] 使用独立用户数据目录 (userId: 62, sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:36.344Z] [INFO] 已创建用户数据目录: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:36.445Z] [INFO] 成功生成浏览器指纹: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36[0m
+[36m[2026-05-14T18:13:36.445Z] [INFO] Initial session config for 1605d39a-3418-42f2-8822-c0b963bd2589: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:13:36.445Z] [INFO] 设置 userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:36.445Z] [INFO] result[0m {
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--remote-allow-origins=*',
+    '--remote-debugging-port=0',
+    '--disable-dev-shm-usage',
+    '--disable-responsive-ui',
+    '--force-device-scale-factor=1',
+    '--headless=new',
+    '--disable-setuid-sandbox',
+    '--disable-blink-features=AutomationControlled',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--force-webrtc-ip-handling-policy',
+    '--remote-debugging-address=0.0.0.0',
+    '--user-data-dir=/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/1605d39a-3418-42f2-8822-c0b963bd2589',
+    '--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+    '--window-size=1280,800'
+  ],
+  headless: true,
+  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  protocolTimeout: 60000,
+  defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 }
+}
+[36m[2026-05-14T18:13:37.727Z] [INFO] ✅ Viewport 已设置: 1280x800[0m
+[36m[2026-05-14T18:13:37.727Z] [INFO] 已设置浏览器事件监听 (sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589)[0m
+[36m[2026-05-14T18:13:37.727Z] [INFO] primaryPage[0m CdpPage {
+  _isDragging: false,
+  _timeoutSettings: TimeoutSettings {},
+  _tabId: '834CB9BBB8CE7764DC1F1FEA6D0D0259'
+}
+[36m[2026-05-14T18:13:37.729Z] [INFO] 浏览器已启动 (sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589, port: 56251, path: /devtools/browser/b68c18a1-4371-4914-baf2-38838390fab7, userDataDir: /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/user-data/62/sessions/1605d39a-3418-42f2-8822-c0b963bd2589, sharedUserData: false)[0m
+[36m[2026-05-14T18:13:38.110Z] [INFO] 截图已保存 (sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589): /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/data/screenshots/1605d39a-3418-42f2-8822-c0b963bd2589-a4585dc7-d71b-4d39-bd63-83ae0981340f.jpeg (6.6KB)[0m
+[33m[2026-05-14T18:13:38.110Z] [WARN] 无法发送会话截图更新，未连接到管理服务器[0m
+[36m[2026-05-14T18:13:38.111Z] [INFO] 已发送会话截图更新 (sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589, screenshotUrl: /screenshots/1605d39a-3418-42f2-8822-c0b963bd2589-a4585dc7-d71b-4d39-bd63-83ae0981340f.jpeg)[0m
+[36m[2026-05-14T18:13:38.111Z] [INFO] 浏览器启动成功 (sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589, port: 56251)[0m
+[36m[2026-05-14T18:13:38.191Z] [INFO] '/stream' WebSocket closed for 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62. Code: 1001[0m
+[36m[2026-05-14T18:13:38.192Z] [INFO] '/events' WebSocket closed for session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:13:38.192Z] [INFO] Cleaning up '/events' connection for session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:13:38.192Z] [INFO] Removed browserService 'configUpdated' listener for 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62[0m
+[36m[2026-05-14T18:13:38.192Z] [INFO] '/events' connection removed for session 4ab6f5b0-15bc-4f16-96a8-6010e0e71d62. Remaining: 0[0m
+[36m[2026-05-14T18:13:38.286Z] [INFO] 收到 WebSocket 升级请求: /ws/1605d39a-3418-42f2-8822-c0b963bd2589/stream?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:13:38.286Z] [INFO] 从路径中提取到 sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:38.286Z] [INFO] 最终 sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589, pathname: /ws/1605d39a-3418-42f2-8822-c0b963bd2589/stream[0m
+[36m[2026-05-14T18:13:38.286Z] [INFO] 路由到 Stream Handler (sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589)[0m
+[36m[2026-05-14T18:13:38.286Z] [INFO] Handling '/stream' WebSocket connection for session 1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:38.309Z] [INFO] 收到 WebSocket 升级请求: /ws/1605d39a-3418-42f2-8822-c0b963bd2589/events?token=6b7be5fd-e533-45b6-933d-08df91963367[0m
+[36m[2026-05-14T18:13:38.309Z] [INFO] 从路径中提取到 sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:38.309Z] [INFO] 最终 sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589, pathname: /ws/1605d39a-3418-42f2-8822-c0b963bd2589/events[0m
+[36m[2026-05-14T18:13:38.309Z] [INFO] 路由到 Events Handler (sessionId: 1605d39a-3418-42f2-8822-c0b963bd2589)[0m
+[36m[2026-05-14T18:13:38.309Z] [INFO] Handling new '/events' connection for session 1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:38.309Z] [INFO] Stored '/events' connection for session 1605d39a-3418-42f2-8822-c0b963bd2589 with initial config: {"fps":15,"interactionMode":"general_navigation","touchMode":"touchpad"}[0m
+[36m[2026-05-14T18:13:38.309Z] [INFO] Attached page listeners for 1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:38.310Z] [INFO] Subscribed to raw focus events for session 1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:38.310Z] [INFO] Attached browserService 'configUpdated' listener for 1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:38.310Z] [INFO] Sent configSync:[0m {
+  fps: 15,
+  interactionMode: 'general_navigation',
+  touchMode: 'touchpad'
+}
+[36m[2026-05-14T18:13:38.310Z] [INFO] Received event from session 1605d39a-3418-42f2-8822-c0b963bd2589:[0m event undefined
+[36m[2026-05-14T18:13:38.393Z] [INFO] Navigation detected for session 1605d39a-3418-42f2-8822-c0b963bd2589: https://www.baidu.com/[0m
+[36m[2026-05-14T18:13:38.396Z] [INFO] Target changed:  page[0m https://www.baidu.com/
+[36m[2026-05-14T18:13:40.856Z] [INFO] Target created:  other[0m blob:https://www.baidu.com/216f202e-9e86-4876-9502-86109e5b206a
+[36m[2026-05-14T18:13:41.124Z] [INFO] CDP Screencast started[0m {
+  sessionId: '1605d39a-3418-42f2-8822-c0b963bd2589',
+  config: {
+    format: 'webp',
+    quality: 60,
+    maxWidth: 1280,
+    maxHeight: 800,
+    everyNthFrame: 2
+  }
+}
+[36m[2026-05-14T18:13:41.235Z] [INFO] Received event from session 1605d39a-3418-42f2-8822-c0b963bd2589:[0m navigate { url: 'https://www.baidu.com' }
+[36m[2026-05-14T18:13:41.236Z] [INFO] Navigating page for session 1605d39a-3418-42f2-8822-c0b963bd2589 to https://www.baidu.com[0m
+[36m[2026-05-14T18:13:41.322Z] [INFO] Navigation detected for session 1605d39a-3418-42f2-8822-c0b963bd2589: https://www.baidu.com/[0m
+[36m[2026-05-14T18:13:41.555Z] [INFO] '/stream' WebSocket closed for 1605d39a-3418-42f2-8822-c0b963bd2589. Code: 1001[0m
+[36m[2026-05-14T18:13:41.555Z] [INFO] '/events' WebSocket closed for session 1605d39a-3418-42f2-8822-c0b963bd2589. Code: 1001, Reason: [0m
+[36m[2026-05-14T18:13:41.555Z] [INFO] Cleaning up '/events' connection for session 1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:41.556Z] [INFO] Removed browserService 'configUpdated' listener for 1605d39a-3418-42f2-8822-c0b963bd2589[0m
+[36m[2026-05-14T18:13:41.556Z] [INFO] '/events' connection removed for session 1605d39a-3418-42f2-8822-c0b963bd2589. Remaining: 0[0m
+[36m[2026-05-14T18:14:45.484Z] [INFO] 收到退出信号，正在优雅地关闭...[0m
+[36m[2026-05-14T18:14:45.486Z] [INFO] 机器端状态变更: running -> shutting_down[0m
+[36m[2026-05-14T18:14:45.486Z] [INFO] 正在停止机器端...[0m
+[36m[2026-05-14T18:14:45.535Z] [INFO] 收到退出信号，正在优雅地关闭...[0m
+[36m[2026-05-14T18:14:45.536Z] [INFO] 机器端已经在停止中，不需要重复停止[0m

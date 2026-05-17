@@ -55,7 +55,7 @@ export async function batchReleaseSessions(sessionIds: string[]): Promise<BatchR
         });
 
         released.push(sessionId);
-      } catch (_machineError) {
+      } catch (_machineError: unknown) {
         const now = new Date();
         const startTime = session.start_time ? new Date(session.start_time) : new Date(session.created_at);
         const duration = Math.floor((now.getTime() - startTime.getTime()) / 1000);

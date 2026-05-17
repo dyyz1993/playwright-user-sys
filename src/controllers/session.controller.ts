@@ -125,7 +125,7 @@ export async function getSession(request: FastifyRequest<IdParamRoute>, reply: F
     }
 
     return sendSuccess(reply, toSessionDetail(session));
-  } catch (error) {
+  } catch (error: unknown) {
     request.log.error(error);
     return sendError(reply, '获取会话信息失败', 500);
   }
@@ -202,7 +202,7 @@ export async function releaseSession(request: FastifyRequest<IdParamRoute>, repl
       toSessionReleaseDTO(sessionId, SessionStatus.DISCONNECTED, result.duration),
       '会话已释放'
     );
-  } catch (error) {
+  } catch (error: unknown) {
     request.log.error(error);
     return sendError(reply, '释放会话失败', 500);
   }
@@ -284,7 +284,7 @@ export async function closeSession(request: FastifyRequest<IdParamRoute>, reply:
       toSessionReleaseDTO(sessionId, SessionStatus.DISCONNECTED, result.duration),
       '会话已关闭'
     );
-  } catch (error) {
+  } catch (error: unknown) {
     request.log.error(error);
     return sendError(reply, '关闭会话失败', 500);
   }
@@ -319,7 +319,7 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
         const { connectionManager } = await import('../services/machine-grpc.service.js');
         await connectionManager.requestScreenshot(session.machine_id, sessionId);
         await new Promise((resolve) => setTimeout(resolve, 3000));
-      } catch (screenshotErr) {
+      } catch (screenshotErr: unknown) {
         logger.warn(`触发实时截图失败 (sessionId: ${sessionId}):`, screenshotErr);
         // 非关键优化：实时截图失败不影响已有截图的返回
       }
@@ -366,8 +366,9 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
           await fs.mkdir(path.dirname(localPath), { recursive: true });
           await fs.writeFile(localPath, buffer);
           logger.info(`截图已从 machine 缓存到 manager (${buffer.length} bytes): ${localPath}`);
-        } catch (cacheErr) {
-          logger.warn(`从 machine 下载截图失败: ${cacheErr}`);
+        } catch (cacheErr: unknown) {
+          const cacheErrMsg = cacheErr instanceof Error ? cacheErr.message : String(cacheErr);
+          logger.warn(`从 machine 下载截图失败: ${cacheErrMsg}`);
           // 非关键回退：下载失败后外层会返回 404
         }
       }
@@ -376,7 +377,7 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
     return sendSuccess(reply, {
       screenshot_url: screenshotUrl,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     request.log.error(error);
     return sendError(reply, '获取会话截图失败', 500);
   }

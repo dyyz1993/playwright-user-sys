@@ -38,13 +38,13 @@ export function getCpuUsage(): number {
     const cpuUsage = totalDiff > 0 ? 100 - (idleDiff / totalDiff) * 100 : 0;
 
     return Math.min(Math.max(cpuUsage, 0), 100);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('计算CPU使用率失败:', error);
     try {
       const loadavg = os.loadavg()[0];
       const cpuCount = os.cpus().length;
       return Math.min((loadavg / cpuCount) * 100, 100);
-    } catch (fallbackError) {
+    } catch (fallbackError: unknown) {
       logger.error('获取系统负载失败，使用默认CPU使用率:', fallbackError);
       return 50;
     }
@@ -101,7 +101,7 @@ export async function getDiskSpace(): Promise<number> {
     }
 
     return 1000000000;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('获取磁盘空间失败:', error);
     return 1000000000;
   }
@@ -149,7 +149,7 @@ export async function getDiskUsage(): Promise<number> {
     }
 
     return 50;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('获取磁盘使用率失败:', error);
     return 50;
   }

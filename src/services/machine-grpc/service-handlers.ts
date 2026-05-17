@@ -107,7 +107,7 @@ export const serviceImplementation = {
         logger.debug(`call 对象类型: ${typeof call}`);
         try {
           logger.debug(`call 对象方法: ${Object.getOwnPropertyNames(Object.getPrototypeOf(call)).join(', ')}`);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`获取 call 对象方法失败:`, error);
         }
 
@@ -116,7 +116,7 @@ export const serviceImplementation = {
 
           try {
             logger.debug(`消息类型: ${typeof message}, 字段: ${Object.keys(message).join(', ')}`);
-          } catch (error) {
+          } catch (error: unknown) {
             logger.error('解析消息字段失败:', error);
           }
 
@@ -128,7 +128,7 @@ export const serviceImplementation = {
             try {
               call.write({ error: { message: '缺少机器 ID' } });
               logger.info('已发送错误响应');
-            } catch (writeError) {
+            } catch (writeError: unknown) {
               logger.error('发送错误响应失败:', writeError);
             }
             call.end();
@@ -141,14 +141,14 @@ export const serviceImplementation = {
               logger.warn(`未注册的机器尝试连接，已拒绝: ${machineId}`);
               try {
                 call.write({ error: { message: `机器未注册: ${machineId}` } });
-              } catch (writeError) {
+              } catch (writeError: unknown) {
                 logger.error('发送错误响应失败:', writeError);
               }
               call.end();
               return;
             }
             logger.info(`机器注册验证通过: ${machineId}`);
-          } catch (error) {
+          } catch (error: unknown) {
             logger.error(`验证机器注册状态时出错 (${machineId}):`, error);
             call.end();
             return;

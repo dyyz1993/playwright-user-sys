@@ -86,7 +86,7 @@ async function startCdpScreencast(streamInfo: StreamInfo): Promise<void> {
         await cdpSession.send('Page.screencastFrameAck', {
           sessionId: event.sessionId,
         });
-      } catch (err) {
+      } catch (err: unknown) {
         logger.error('CDP frame send failed', {
           sessionId,
           error: (err as Error).message,
@@ -141,7 +141,7 @@ async function startCdpScreencast(streamInfo: StreamInfo): Promise<void> {
         startScreenshotLoop(streamInfo);
       }
     }, 2000);
-  } catch (err) {
+  } catch (err: unknown) {
     logger.error('CDP Screencast start failed, falling back to screenshot loop', {
       sessionId,
       error: (err as Error).message,
@@ -172,7 +172,7 @@ async function restartCdpScreencast(streamInfo: StreamInfo): Promise<void> {
     logger.info('CDP Screencast restarted with new config', {
       sessionId: streamInfo.sessionId,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     logger.error('CDP Screencast restart failed', {
       sessionId: streamInfo.sessionId,
       error: (err as Error).message,
@@ -244,7 +244,7 @@ function startScreenshotLoop(streamInfo: StreamInfo): void {
           streamInfo.page = activePage;
           logger.info(`Recovered page reference for ${sessionId}, switching to new page`);
         }
-      } catch (recoveryErr) {
+      } catch (recoveryErr: unknown) {
         logger.error(`Failed to recover page for ${sessionId}: ${recoveryErr}`);
       }
     }
@@ -404,7 +404,7 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
       browserService.off('tabSwitched', tabSwitchedListener);
       cleanupStreamConnection(ws);
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Error handling '/stream' for ${sessionId}:`, error);
     ws.close(1011, 'Internal server error during stream setup');
     cleanupStreamConnection(ws);

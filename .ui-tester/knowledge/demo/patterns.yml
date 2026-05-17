@@ -179,3 +179,16 @@ tips:
   - "Mobile viewer has top status bar (CPU/RAM + 返回 Demo) and bottom nav bar (URL input + ← → 🏠)"
   - "Session status 'created' vs 'connected': machine service doesn't always report connected via gRPC"
   - "CDN resources (cdn.tailwindcss.com, cloudflare font-awesome) may fail to load (status 0)"
+  
+  # === Keyboard Forwarding (tested 2026-05-14) ===
+  - "KEYBOARD BUG: keydown/keyup events use Playwright keyboard.down()/up() which do NOT trigger browser actions"
+  - "Ctrl+A via keyboard.down('Control')+keyboard.down('a') does NOT select all text in remote browser"
+  - "Ctrl+C via keyboard.down('Control')+keyboard.down('c') does NOT copy text in remote browser"
+  - "Only keyboard.press('Control+a') triggers native Select All, but keyPress handler is unreachable from viewer"
+  - "nameMap missing: 'keypress' should map to 'keyPress' for page.keyboard.press() to work"
+  - "PASTE BUG: Viewer sends { type:'paste', text:'...' } but server expects data.text (format mismatch)"
+  - "Clipboard interception is comprehensive (writeText, write, execCommand copy, copy event listener)"
+  - "Clipboard polling runs every 500ms checking window.__clipboardContent"
+  - "Clipboard notification: server sends { type:'clipboard', data:{text} } → viewer shows 📋 已复制"
+  - "File upload via demo file manager works end-to-end (upload-session API + inject-file API)"
+  - "File injection tries selectors: ['input[type=file]', 'input[accept]'] on remote page"

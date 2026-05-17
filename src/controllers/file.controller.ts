@@ -55,7 +55,7 @@ export async function uploadFile(request: FastifyRequest, reply: FastifyReply) {
       },
       '文件上传成功'
     );
-  } catch (error) {
+  } catch (error: unknown) {
     request.log.error({ err: error }, '文件上传失败');
     return sendError(reply, '文件上传失败', 500);
   }
@@ -100,7 +100,7 @@ export async function uploadTempFile(request: FastifyRequest, reply: FastifyRepl
       },
       '临时文件上传成功'
     );
-  } catch (error) {
+  } catch (error: unknown) {
     request.log.error({ err: error }, '临时文件上传失败');
     return sendError(reply, '临时文件上传失败', 500);
   }
@@ -128,7 +128,7 @@ export async function getFileList(request: FastifyRequest, reply: FastifyReply) 
     );
 
     return sendSuccess(reply, fileList);
-  } catch (error) {
+  } catch (error: unknown) {
     request.log.error({ err: error }, '获取文件列表失败');
     return sendError(reply, '获取文件列表失败', 500);
   }
@@ -169,7 +169,7 @@ export async function cleanupTempFiles(request: FastifyRequest<CleanupTempFilesQ
       },
       '临时文件清理完成'
     );
-  } catch (error) {
+  } catch (error: unknown) {
     request.log.error({ err: error }, '清理临时文件失败');
     return sendError(reply, '清理临时文件失败', 500);
   }
@@ -312,7 +312,7 @@ export async function getSessionFiles(request: FastifyRequest, reply: FastifyRep
     files.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
 
     return sendSuccess(reply, { files });
-  } catch (error) {
+  } catch (error: unknown) {
     request.log.error({ err: error }, '获取会话文件列表失败');
     return sendError(reply, '获取会话文件列表失败', 500);
   }

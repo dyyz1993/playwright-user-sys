@@ -69,7 +69,7 @@ export async function createIsolatedTestDatabase(): Promise<IsolatedTestDatabase
   try {
     await db.migrate.latest();
     console.log(`[测试数据库] 迁移完成: ${dbName}`);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(`[测试数据库] 迁移失败: ${dbName}`, error);
     throw error;
   }
@@ -82,7 +82,7 @@ export async function dropIsolatedTestDatabase(testDb: IsolatedTestDatabase): Pr
 
   try {
     await db.destroy();
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn(`[测试数据库] 关闭连接失败: ${dbName}`, error);
   }
 
@@ -91,7 +91,7 @@ export async function dropIsolatedTestDatabase(testDb: IsolatedTestDatabase): Pr
   try {
     await adminDb.raw(`DROP DATABASE IF EXISTS \`${dbName}\``);
     console.log(`[测试数据库] 删除数据库: ${dbName}`);
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn(`[测试数据库] 删除数据库失败: ${dbName}`, error);
   } finally {
     await adminDb.destroy();
@@ -102,7 +102,7 @@ export async function clearTables(db: Knex, tables: string[]): Promise<void> {
   for (const table of tables) {
     try {
       await db(table).del();
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn(`[测试数据库] 清空表失败: ${table}`, error);
     }
   }

@@ -52,14 +52,14 @@ export async function checkMachineStatus(): Promise<void> {
             await handleOfflineMachineSessions(machine.machine_id);
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`检查机器 ${machine.machine_id} 状态时出错:`, error);
       }
     }
 
     // 清理过期的会话数据
     memoryStore.cleanupOldSessions();
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('检查机器状态时出错:', error);
   }
 }
@@ -116,7 +116,7 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
         try {
           await UserModel.deductCredits(userId, minutes);
           logger.info(`已扣除用户 ${userId} 的点数: ${minutes} 点 (sessionId: ${sessionId})`);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`扣除点数失败 (sessionId: ${sessionId}):`, error);
         }
 
@@ -130,11 +130,11 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
 
         // 减少机器的实例计数
         await MachineModel.decrementInstanceCount(machineId);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`处理会话 ${session.id} 时出错:`, error);
       }
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`处理机器 ${machineId} 上的会话时出错:`, error);
   }
 }
@@ -179,7 +179,7 @@ async function handleOfflineMachineSessionsV2(machineId: string): Promise<void> 
     }
 
     logger.info(`机器 ${machineId} 上的所有会话已处理完成`);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`处理离线机器会话失败 (${machineId}):`, error);
   }
 }
@@ -213,7 +213,7 @@ export async function forceCheckAllMachines(): Promise<void> {
     }
 
     logger.info(`强制检查完成，共更新了 ${updatedCount} 台机器的状态`);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('强制检查机器状态失败:', error);
   }
 }
@@ -230,7 +230,7 @@ export async function cleanupOldMachines(daysThreshold: number = 30): Promise<vo
     const result = await MachineModel.deleteOldMachines(cutoffDate);
 
     logger.info(`已清理 ${result} 台长时间未活动的机器记录`);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('清理旧机器记录失败:', error);
   }
 }
@@ -245,7 +245,7 @@ export async function startMachineMonitor(intervalMs: number = 30000): Promise<N
   try {
     await memoryStore.loadInitialData();
     logger.info('已从数据库加载初始数据到内存');
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('从数据库加载初始数据失败:', error);
   }
 
@@ -253,7 +253,7 @@ export async function startMachineMonitor(intervalMs: number = 30000): Promise<N
   try {
     await forceCheckAllMachines();
     logger.info('初始机器状态强制检查完成');
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('初始机器状态强制检查失败:', error);
   }
 
@@ -261,7 +261,7 @@ export async function startMachineMonitor(intervalMs: number = 30000): Promise<N
   try {
     await checkMachineStatus();
     logger.info('初始机器状态检查完成');
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('初始机器状态检查失败:', error);
   }
 

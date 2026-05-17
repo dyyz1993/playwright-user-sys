@@ -32,7 +32,7 @@ export async function createOperationLog(data: {
 }): Promise<void> {
   try {
     await OperationLogModel.create(data);
-  } catch (err) {
+  } catch (err: unknown) {
     logger.warn('记录操作日志失败:', err);
   }
 }

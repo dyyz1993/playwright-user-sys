@@ -62,7 +62,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
           api_key: user.api_key,
           created_at: toISO(user.created_at),
         });
-      } catch (error) {
+      } catch (error: unknown) {
         request.log.error(error);
         return sendError(reply, '获取用户信息失败', 500);
       }
@@ -97,7 +97,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         const apiKey = await UserService.resetApiKey(userId);
 
         return sendSuccess(reply, { api_key: apiKey });
-      } catch (error) {
+      } catch (error: unknown) {
         request.log.error(error);
         return sendError(reply, '重新生成 API Key 失败', 500);
       }
@@ -151,7 +151,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
           api_key: updatedUser.api_key,
           created_at: toISO(updatedUser.created_at),
         });
-      } catch (error) {
+      } catch (error: unknown) {
         request.log.error(error);
         return sendError(reply, '更新用户信息失败', 500);
       }
@@ -210,7 +210,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
         await UserService.updateUser(userId, { password: hashedPassword });
 
         return sendSuccess(reply, { message: '密码修改成功' });
-      } catch (error) {
+      } catch (error: unknown) {
         request.log.error(error);
         return sendError(reply, '修改密码失败', 500);
       }

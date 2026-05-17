@@ -87,7 +87,7 @@ export function verifyToken(token: string): jwt.JwtPayload | null {
   try {
     const secret = getJwtSecret();
     return jwt.verify(token, secret) as jwt.JwtPayload;
-  } catch (_error) {
+  } catch (_error: unknown) {
     return null;
   }
 }

@@ -1,0 +1,94 @@
+npm warn Unknown project config "node-linker". This will stop working in the next major version of npm.
+
+🚀 Mobile Viewer Gesture & Feature Tests
+==================================================
+
+📋 Test 1: Demo Page Load + Mobile Adaptation
+  ✅ T1-1: Demo page loads without errors
+  ✅ T1-2: Hero section and start button visible
+  ✅ T1-3: Browser section hidden on mobile
+
+📋 Test 2: Create Session & Open Viewer
+  ✅ T2-1: Create session via API
+  ✅ T2-2: Open viewer page directly
+
+📋 Test 3: Mobile Bottom Toolbar
+  ✅ T3-1: All toolbar buttons present
+  ✅ T3-2: Top status bar with "返回 Demo" link
+  ✅ T3-3: Viewer container has proper mobile margins
+
+📋 Test 4: Touch Gesture - Tap
+  ❌ T4-1: Tap sends click event with clickCount:1: page.evaluate: TypeError: Failed to construct 'TouchEvent': Failed to read the 'changedTouches' property from 'TouchEventInit': Failed to convert value to 'Touch'.
+    at eval (eval at evaluate (:290:30), <anonymous>:1:299)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+
+📋 Test 5: Touch Gesture - Move
+  ❌ T5-1: Swipe moves cursor: page.evaluate: TypeError: Failed to construct 'TouchEvent': Failed to read the 'changedTouches' property from 'TouchEventInit': Failed to convert value to 'Touch'.
+    at eval (eval at evaluate (:290:30), <anonymous>:1:299)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+
+📋 Test 6: Touch Gesture - Drag
+  ❌ T6-1: Long press sends mousedown, cursor turns orange: page.evaluate: TypeError: Failed to construct 'TouchEvent': Failed to read the 'changedTouches' property from 'TouchEventInit': Failed to convert value to 'Touch'.
+    at eval (eval at evaluate (:290:30), <anonymous>:1:299)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+  ❌ T6-2: Drag sends mousemove + mouseup, NO click: page.evaluate: TypeError: Failed to construct 'TouchEvent': Failed to read the 'changedTouches' property from 'TouchEventInit': Failed to convert value to 'Touch'.
+    at eval (eval at evaluate (:290:30), <anonymous>:1:299)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+
+📋 Test 7: Touch Gesture - Pinch Zoom
+  ❌ T7-1: Pinch zoom sends wheel events: page.evaluate: TypeError: Failed to construct 'TouchEvent': Failed to read the 'changedTouches' property from 'TouchEventInit': Failed to convert value to 'Touch'.
+    at eval (eval at evaluate (:290:30), <anonymous>:1:299)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+
+📋 Test 8: Chinese Input
+  ✅ T8-1: compositionend sends input event
+  ✅ T8-2: No duplicate input after compositionend
+
+📋 Test 9: Copy/Paste Buttons
+  ❌ T9-1: Copy button shows ⏳ state: Button text: "📋", expected ⏳
+  ❌ T9-2: Paste button responds to click: Failed to create demo session: 当前没有可用的实例机器，请稍后再试
+
+📋 Test 10: Upload Button
+  ❌ T10-1: Upload button exists: Failed to create demo session: 当前没有可用的实例机器，请稍后再试
+  ❌ T10-2: File manager accept attribute updated: Failed to create demo session: 当前没有可用的实例机器，请稍后再试
+
+📋 Bonus: Navigation
+  ❌ Bonus: Home button navigates to baidu: Failed to create demo session: 当前没有可用的实例机器，请稍后再试
+
+==================================================
+📊 Results: 10/20 passed, 10 failed
+==================================================
+
+❌ Failed tests:
+  - T4-1: Tap sends click event with clickCount:1: page.evaluate: TypeError: Failed to construct 'TouchEvent': Failed to read the 'changedTouches' property from 'TouchEventInit': Failed to convert value to 'Touch'.
+    at eval (eval at evaluate (:290:30), <anonymous>:1:299)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+  - T5-1: Swipe moves cursor: page.evaluate: TypeError: Failed to construct 'TouchEvent': Failed to read the 'changedTouches' property from 'TouchEventInit': Failed to convert value to 'Touch'.
+    at eval (eval at evaluate (:290:30), <anonymous>:1:299)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+  - T6-1: Long press sends mousedown, cursor turns orange: page.evaluate: TypeError: Failed to construct 'TouchEvent': Failed to read the 'changedTouches' property from 'TouchEventInit': Failed to convert value to 'Touch'.
+    at eval (eval at evaluate (:290:30), <anonymous>:1:299)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+  - T6-2: Drag sends mousemove + mouseup, NO click: page.evaluate: TypeError: Failed to construct 'TouchEvent': Failed to read the 'changedTouches' property from 'TouchEventInit': Failed to convert value to 'Touch'.
+    at eval (eval at evaluate (:290:30), <anonymous>:1:299)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+  - T7-1: Pinch zoom sends wheel events: page.evaluate: TypeError: Failed to construct 'TouchEvent': Failed to read the 'changedTouches' property from 'TouchEventInit': Failed to convert value to 'Touch'.
+    at eval (eval at evaluate (:290:30), <anonymous>:1:299)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+  - T9-1: Copy button shows ⏳ state: Button text: "📋", expected ⏳
+  - T9-2: Paste button responds to click: Failed to create demo session: 当前没有可用的实例机器，请稍后再试
+  - T10-1: Upload button exists: Failed to create demo session: 当前没有可用的实例机器，请稍后再试
+  - T10-2: File manager accept attribute updated: Failed to create demo session: 当前没有可用的实例机器，请稍后再试
+  - Bonus: Home button navigates to baidu: Failed to create demo session: 当前没有可用的实例机器，请稍后再试
+
+📁 Screenshots saved to: .opencode/screenshots/

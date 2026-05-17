@@ -182,7 +182,7 @@ export class MachineModel {
         limit,
         totalPages: Math.ceil((total ? Number(total.count) : 0) / limit),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('查询机器数据失败:', error);
       throw error;
     }
@@ -235,7 +235,7 @@ export class MachineModel {
         status: machine.status,
         lastSeen: machine.last_seen,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('查找可用机器失败:', error);
       return null;
     }
@@ -299,7 +299,7 @@ export class MachineModel {
         limit: machines.length,
         totalPages: 1,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`查询${status}状态的机器失败:`, error);
       return {
         items: [],
@@ -318,7 +318,7 @@ export class MachineModel {
       const result = await db('machines').where('status', 'offline').where('last_seen', '<', cutoffDate).delete();
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('删除旧机器记录失败:', error);
       return 0;
     }
@@ -331,7 +331,7 @@ export class MachineModel {
       const result = await db('machines').where({ id }).delete();
 
       return result > 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`删除机器失败 (${id}):`, error);
       return false;
     }
@@ -342,7 +342,7 @@ export class MachineModel {
     try {
       const result = await db('machines').count('id as count').first();
       return result ? Number(result.count) : 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('统计机器数失败:', error);
       return 0;
     }
@@ -353,7 +353,7 @@ export class MachineModel {
     try {
       const result = await db('machines').where('status', 'online').count('id as count').first();
       return result ? Number(result.count) : 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('统计在线机器数失败:', error);
       return 0;
     }
@@ -378,7 +378,7 @@ export class MachineModel {
         status: machine.status,
         lastSeen: machine.last_seen,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('获取所有机器失败:', error);
       return [];
     }
@@ -425,7 +425,7 @@ export class MachineModel {
         activeSessions: machineActiveSessions,
         healthStatus,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('获取机器详情失败:', error);
       return null;
     }
@@ -495,7 +495,7 @@ export class MachineModel {
           },
           checkedAt: new Date(),
         };
-      } catch (grpcError) {
+      } catch (grpcError: unknown) {
         return {
           machineId: id,
           status: 'unhealthy',
@@ -504,7 +504,7 @@ export class MachineModel {
           checkedAt: new Date(),
         };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('健康检查失败:', error);
       return {
         machineId: id,

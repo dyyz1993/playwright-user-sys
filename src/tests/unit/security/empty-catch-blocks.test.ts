@@ -53,7 +53,8 @@ function findEmptyCatchBlocks(sourceFiles: string[]): EmptyCatch[] {
 
   // Pattern: catch (...) { } with only whitespace/comments until closing }
   // We need to handle multi-line catch blocks
-  const catchPattern = /\bcatch\s*\(\s*\w+\s*\)\s*\{/g;
+  // Match both `catch (e) {` and `catch (e: unknown) {`
+  const catchPattern = /\bcatch\s*\(\s*\w+(?:\s*:\s*\w+)?\s*\)\s*\{/g;
 
   for (const filePath of sourceFiles) {
     const content = fs.readFileSync(filePath, 'utf-8');
@@ -103,7 +104,7 @@ function findEmptyCatchBlocks(sourceFiles: string[]): EmptyCatch[] {
 
 function findLogOnlyCatchBlocks(sourceFiles: string[]): EmptyCatch[] {
   const logOnlyCatches: EmptyCatch[] = [];
-  const catchPattern = /\bcatch\s*\(\s*\w+\s*\)\s*\{/g;
+  const catchPattern = /\bcatch\s*\(\s*\w+(?:\s*:\s*\w+)?\s*\)\s*\{/g;
 
   for (const filePath of sourceFiles) {
     const content = fs.readFileSync(filePath, 'utf-8');

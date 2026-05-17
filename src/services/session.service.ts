@@ -337,7 +337,7 @@ export async function handleSessionDisconnect(sessionId: string, userId: number,
       logger.info(`向机器 ${machineId} 发送关闭浏览器请求 (sessionId: ${sessionId})`);
       const { connectionManager } = await import('./machine-grpc/index.js');
       await connectionManager.closeBrowser(machineId, sessionId);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`关闭浏览器失败 (sessionId: ${sessionId}):`, error);
     }
 
@@ -347,7 +347,7 @@ export async function handleSessionDisconnect(sessionId: string, userId: number,
     });
 
     logger.info(`会话断开处理完成 (${sessionId}): 持续时间=${result.duration}秒, 消耗点数=${result.creditsUsed}点`);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`处理会话断开连接失败 (sessionId: ${sessionId}):`, error);
     // 重新抛出错误，避免会话释放失败被静默吞掉
     // 调用方可以根据需要进行重试或上报

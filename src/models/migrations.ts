@@ -221,7 +221,7 @@ export async function runMigrations() {
     await createIndexes();
     await initAdminUser();
     logger.info('✅ 数据库迁移完成');
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('❌ 数据库迁移失败:', error);
     throw error;
   }

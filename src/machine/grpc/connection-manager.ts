@@ -43,7 +43,7 @@ export class ConnectionManager {
       try {
         logger.debug(`收到管理端消息: ${JSON.stringify(message)}`);
         this.handleManagerMessage(message);
-      } catch (dataError) {
+      } catch (dataError: unknown) {
         logger.error('处理管理端消息时出错:', dataError);
       }
     });
@@ -119,7 +119,7 @@ export class ConnectionManager {
 
           logger.warn('心跳检测到连接已断开');
           this.onReconnectNeeded();
-        } catch (stateError) {
+        } catch (stateError: unknown) {
           logger.error('心跳定时器中获取机器端状态失败:', stateError);
           this.onReconnectNeeded();
         }
@@ -168,7 +168,7 @@ export class ConnectionManager {
       } else {
         logger.debug('心跳消息发送成功');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('发送心跳消息失败:', error);
 
       this.connected = false;
@@ -185,7 +185,7 @@ export class ConnectionManager {
         }
 
         this.onReconnectNeeded();
-      } catch (stateError) {
+      } catch (stateError: unknown) {
         logger.error('心跳发送失败后获取机器端状态失败:', stateError);
         this.onReconnectNeeded();
       }
@@ -233,7 +233,7 @@ export class ConnectionManager {
           logger.info(`开始重启机器服务...`);
           await machineServer.restart();
           logger.info(`机器服务重启指令已发送`);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`重启机器服务失败:`, error);
         }
         return;
@@ -262,7 +262,7 @@ export class ConnectionManager {
             const fs = await import('fs/promises');
             await fs.writeFile('.machine_deleted', 'true');
             logger.info(`已创建机器删除标记文件`);
-          } catch (fsError) {
+          } catch (fsError: unknown) {
             logger.error(`创建机器删除标记文件失败:`, fsError);
           }
 
@@ -270,7 +270,7 @@ export class ConnectionManager {
             logger.info(`收到永久关闭命令，进程即将退出`);
             process.exit(0);
           }, 1000);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`处理永久关闭命令失败:`, error);
         }
         return;
@@ -297,7 +297,7 @@ export class ConnectionManager {
           `消息字段 ${key}: ${typeof (message as Record<string, unknown>)[key]}, 值: ${JSON.stringify((message as Record<string, unknown>)[key])}`
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`处理来自管理服务器的消息时出错:`, error);
     }
   }
@@ -330,7 +330,7 @@ export class ConnectionManager {
       } else {
         logger.debug(`心跳响应发送成功`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`处理心跳请求失败:`, error);
     }
   }

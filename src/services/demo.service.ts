@@ -65,7 +65,7 @@ export class DemoService {
       logger.info(`Demo 服务已初始化: userId=${this.demoUserId}`);
 
       await this.cleanupStaleSessions();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Demo 服务初始化失败:', error);
     }
   }
@@ -143,7 +143,7 @@ export class DemoService {
         });
         logger.info(`Demo 会话已释放: ${sessionId}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn(`Demo 会话释放失败: ${sessionId}`, error);
     }
   }
@@ -210,7 +210,7 @@ export class DemoService {
           logger.warn('Demo会话释放失败', { sessionId: s.id, error: (err as Error).message })
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('清理残留 demo 会话失败:', error);
     }
   }

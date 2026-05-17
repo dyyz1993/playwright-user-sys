@@ -57,7 +57,7 @@ export class ProxyService {
             sessionManager.handleDisconnection(sessionId);
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('从请求中提取 sessionId 失败:', error);
       }
 
@@ -87,7 +87,7 @@ export class ProxyService {
       // 关闭 WebSocketServer 以释放资源
       try {
         this.wss.close();
-      } catch (wssErr) {
+      } catch (wssErr: unknown) {
         logger.warn('关闭 WebSocketServer 时出错:', wssErr);
       }
 
@@ -143,7 +143,7 @@ export class ProxyService {
         res.writeHead(500);
         res.end('Proxy error');
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('处理 HTTP 请求失败:', error);
       res.writeHead(500);
       res.end('Internal Server Error');
@@ -272,7 +272,7 @@ export class ProxyService {
         }
         // 不需要手动 destroy socket, proxy.ws 在出错时会处理
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('处理 WebSocket 升级请求失败:', error);
       if (activityInterval) {
         clearInterval(activityInterval);
@@ -281,14 +281,14 @@ export class ProxyService {
       if (sessionId && !(error instanceof Error && error.message.includes('Session not found'))) {
         try {
           sessionManager.handleDisconnection(sessionId);
-        } catch (disconnectError) {
+        } catch (disconnectError: unknown) {
           logger.error(`Error calling handleDisconnection for ${sessionId} during upgrade error:`, disconnectError);
         }
       }
       if (!socket.destroyed) {
         try {
           socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-        } catch (writeError) {
+        } catch (writeError: unknown) {
           logger.warn('Failed to write error to socket during upgrade error handling:', writeError);
         }
         socket.destroy();

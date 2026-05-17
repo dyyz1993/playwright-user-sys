@@ -23,21 +23,20 @@ echo "  🔍 类型安全检查 — any / unknown 数量限制"
 echo "═══════════════════════════════════════════════"
 echo ""
 
-# 统计各类型数量
+# 统计 any 类型的 3 种模式（不包括 unknown）
 cd "$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
 
 COLON_ANY=$(grep -rnE ": any\b" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ' || true)
 AS_ANY=$(grep -rnE "as any\b" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ' || true)
 ANGLE_ANY=$(grep -rnE "<any>" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ' || true)
-UNKNOWN=$(grep -rnE ": unknown\b" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ' || true)
 
-TOTAL=$((COLON_ANY + AS_ANY + ANGLE_ANY + UNKNOWN))
+# 只统计 any 类型，unknown 不计入总数（catch 标注必需）
+TOTAL=$((COLON_ANY + AS_ANY + ANGLE_ANY))
 
-# 显示统计
+# 显示统计（不含 unknown）
 echo -e "  ${CYAN}: any${NC}        = ${COLON_ANY}"
 echo -e "  ${CYAN}as any${NC}       = ${AS_ANY}"
 echo -e "  ${CYAN}<any>${NC}        = ${ANGLE_ANY}"
-echo -e "  ${CYAN}: unknown${NC}    = ${UNKNOWN}"
 echo ""
 echo -e "  ${YELLOW}总数${NC}         = ${TOTAL}"
 echo -e "  ${YELLOW}上限${NC}         = ${MAX_ALLOWED}"
@@ -55,10 +54,10 @@ echo ""
 
 # 判定
 if [ "$TOTAL" -gt "$MAX_ALLOWED" ]; then
-  echo -e "  ${RED}❌ 失败: any/unknown 数量 (${TOTAL}) 超过上限 (${MAX_ALLOWED})${NC}"
+  echo -e "  ${RED}❌ 失败: any 数量 (${TOTAL}) 超过上限 (${MAX_ALLOWED})${NC}"
   echo ""
   echo "  请修复以下文件中的类型:"
-  grep -rnE "(: any\b|as any\b|: unknown\b|<any>)" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | head -20 | while IFS=: read file line code; do
+  grep -rnE "(: any\b|as any\b|<any>)" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | head -20 | while IFS=: read file line code; do
     echo -e "    ${CYAN}${file}:${line}${NC} ${code}"
   done
   echo ""

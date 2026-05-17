@@ -18,7 +18,7 @@ export const statusMethods = {
         });
       logger.info(`数据库层面：机器 ${machineId} 有 ${result} 个会话被标记为 DISCONNECTED`);
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`数据库层面：标记机器 ${machineId} 会话为 DISCONNECTED 时出错:`, error);
       throw error;
     }
@@ -145,14 +145,14 @@ export const statusMethods = {
               trx
             );
             logger.info(`✅ 创建积分历史记录: 用户 ${userId}, 扣除 ${creditsToDeduct} 点, 剩余 ${balanceAfter} 点`);
-          } catch (error) {
+          } catch (error: unknown) {
             logger.error(`扣除用户 ${userId} 的点数失败:`, error);
             throw error;
           }
         } else {
           logger.info(`无需额外扣费 (${id}), credits_used 未增加`);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`标记会话已断开失败 (${id}):`, error);
         throw error;
       }
@@ -314,14 +314,14 @@ export const statusMethods = {
               duration,
               expired_at: now,
             });
-          } catch (error) {
+          } catch (error: unknown) {
             logger.error(`扣除点数失败 (超时会话 ${session.id}):`, error);
           }
         }
       }
 
       return expiredSessions.length;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('检查超时会话失败:', error);
       return 0;
     }

@@ -51,7 +51,7 @@ export async function sendWebhookEvent(event: WebhookEvent): Promise<boolean> {
       await WebhookEventModel.markFailed(event.id, `HTTP ${response.status}: ${errorText}`);
       return false;
     }
-  } catch (error) {
+  } catch (error: unknown) {
     await WebhookEventModel.markFailed(event.id, error instanceof Error ? error.message : String(error));
     return false;
   }

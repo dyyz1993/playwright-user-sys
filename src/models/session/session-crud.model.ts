@@ -13,7 +13,7 @@ export const crudMethods = {
       try {
         optionsJson = JSON.stringify(data.options);
         JSON.parse(optionsJson!);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Invalid session options JSON:', error);
         throw new Error('Invalid options format: must be valid JSON');
       }
@@ -47,7 +47,7 @@ export const crudMethods = {
           } else {
             parsedOptions = session.options;
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`解析会话选项失败 (ID: ${id}):`, error);
           parsedOptions = null;
         }
@@ -63,7 +63,7 @@ export const crudMethods = {
         created_at: session.created_at ? new Date(session.created_at) : new Date(),
         updated_at: session.updated_at ? new Date(session.updated_at) : new Date(),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`查找会话失败 (ID: ${id}):`, error);
       throw error;
     }
@@ -97,7 +97,7 @@ export const crudMethods = {
       }
 
       return count;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('批量更新会话失败:', error);
       throw error;
     }
@@ -137,7 +137,7 @@ export const crudMethods = {
           } else {
             parsedOptions = session.options;
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`解析会话选项失败 (ID: ${id}):`, error);
           parsedOptions = null;
         }
@@ -147,7 +147,7 @@ export const crudMethods = {
         ...session,
         options: parsedOptions,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('获取会话详情失败:', error);
       return null;
     }

@@ -106,7 +106,7 @@ export const logger = {
       }
 
       fileStream.write(logMessage + '\n');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('\x1b[31m[日志写入失败]\x1b[0m', error);
     }
   },
@@ -124,7 +124,7 @@ export const logger = {
 
       // 记录日志轮转信息
       console.log(`\x1b[36m[日志文件已轮转到 ${newLogFile}]\x1b[0m`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('\x1b[31m[日志轮转失败]\x1b[0m', error);
     }
   },
@@ -143,14 +143,14 @@ const scheduleLogRotation = () => {
     setTimeout(() => {
       try {
         logger.rotateLogFile();
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('\x1b[31m[日志轮转计划失败]\x1b[0m', error);
       } finally {
         // 无论如何都要继续计划下一次轮转
         scheduleLogRotation();
       }
     }, timeUntilMidnight);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('\x1b[31m[计划日志轮转失败]\x1b[0m', error);
     // 如果计划失败，尝试在一小时后重试
     setTimeout(() => scheduleLogRotation(), 3600000);

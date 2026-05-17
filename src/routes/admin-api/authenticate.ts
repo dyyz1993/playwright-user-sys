@@ -17,7 +17,7 @@ export function createAuthenticate(fastify: FastifyInstance) {
       if (request.user.role !== UserRole.ADMIN) {
         return reply.status(403).send({ success: false, error: '需要管理员权限' });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (reply.sent) return;
 
       request.log.error({ err: error }, '认证失败');

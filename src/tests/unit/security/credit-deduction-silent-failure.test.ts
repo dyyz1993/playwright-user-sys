@@ -16,7 +16,9 @@ describe('Credit Deduction Fix Verification (session-status.model.ts:149)', () =
     const filePath = path.resolve('src/models/session/session-status.model.ts');
     const source = fs.readFileSync(filePath, 'utf-8');
 
-    const innerCatchBlock = source.match(/catch\s*\(\s*error\s*\)\s*\{\s*logger\.error\([^)]*扣除用户[^)]*\)[^}]*\}/s);
+    const innerCatchBlock = source.match(
+      /catch\s*\(\s*error\s*:\s*unknown\s*\)\s*\{\s*logger\.error\([^)]*扣除用户[^)]*\)[^}]*\}/s
+    );
 
     expect(innerCatchBlock).toBeDefined();
     expect(innerCatchBlock?.[0]).toContain('throw error');

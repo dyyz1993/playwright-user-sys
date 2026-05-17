@@ -42,7 +42,7 @@ export async function addMachine(
         proxyPort: body.proxyPort,
       },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     logger.warn('记录操作日志失败:', err);
   }
 
@@ -81,7 +81,7 @@ export async function batchRestartMachines(
           action: '批量重启机器',
           details: { hostname: machine.hostname },
         });
-      } catch (err) {
+      } catch (err: unknown) {
         logger.warn('记录操作日志失败:', err);
       }
     } catch (error: unknown) {
@@ -122,7 +122,7 @@ export async function updateMachineConfig(
         maxInstances: body.maxInstances,
       },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     logger.warn('记录操作日志失败:', err);
   }
 

@@ -119,7 +119,7 @@ export class MachineServer {
         if (cleaned > 0) {
           logger.info(`启动时清理了 ${cleaned} 个残留临时文件目录`);
         }
-      } catch (cleanupError) {
+      } catch (cleanupError: unknown) {
         logger.warn('启动时清理临时文件失败:', cleanupError);
       }
 
@@ -142,7 +142,7 @@ export class MachineServer {
       this.setState(MachineState.RUNNING);
 
       logger.info('机器端启动完成');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('启动机器端失败:', error);
       this.setState(MachineState.STOPPED);
       process.exit(1);
@@ -166,7 +166,7 @@ export class MachineServer {
       await this.start();
 
       logger.info('机器端重启完成');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('重启机器端失败:', error);
       // 即使出错，也尝试重新启动
       this.setState(MachineState.STOPPED);
@@ -227,7 +227,7 @@ export class MachineServer {
       this.setState(MachineState.STOPPED);
 
       logger.info('机器端已停止');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('停止机器端失败:', error);
       // 即使出错，也设置状态为已停止
       this.setState(MachineState.STOPPED);
@@ -256,7 +256,7 @@ export class MachineServer {
           if (count > 0) {
             logger.info(`已清理 ${count} 个过期临时文件目录`);
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn('定时清理临时文件失败:', error);
         }
       },
@@ -336,7 +336,7 @@ export class MachineServer {
 
                 // 重连成功，设置状态为运行中
                 this.setState(MachineState.RUNNING);
-              } catch (err) {
+              } catch (err: unknown) {
                 logger.error(`第 ${attemptNumber} 次重连失败:`, err);
                 throw err; // 抛出错误，触发重试
               }
@@ -367,7 +367,7 @@ export class MachineServer {
               setImmediate(() => this.handleUncaughtException(error));
             }, this.COOLDOWN_PERIOD);
           });
-        } catch (outerError) {
+        } catch (outerError: unknown) {
           logger.error('重连过程中发生外部错误:', outerError);
         } finally {
           this.reconnectTimer = null;

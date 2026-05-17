@@ -28,7 +28,7 @@ export const statsMethods = {
         total_duration,
         total_credits_used,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`获取用户会话统计失败 (userId: ${userId}):`, error);
       return {
         total_sessions: 0,
@@ -47,7 +47,7 @@ export const statsMethods = {
         .count('id as count')
         .first();
       return result ? Number(result.count) : 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`统计用户活跃会话失败 (userId: ${userId}):`, error);
       return 0;
     }
@@ -61,7 +61,7 @@ export const statsMethods = {
         .count('id as count')
         .first();
       return result ? Number(result.count) : 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('统计活跃会话数失败:', error);
       return 0;
     }
@@ -71,7 +71,7 @@ export const statsMethods = {
     try {
       const result = await db('sessions').count('id as count').first();
       return result ? Number(result.count) : 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('统计总会话数失败:', error);
       return 0;
     }
@@ -81,7 +81,7 @@ export const statsMethods = {
     try {
       const result = await db('sessions').sum('credits_used as total').first();
       return result && result.total ? Number(result.total) : 0;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('计算已使用点数失败:', error);
       return 0;
     }
@@ -164,7 +164,7 @@ export const statsMethods = {
         avgDuration,
         byUser: Array.from(byUserMap.values()),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('获取会话统计失败:', error);
       return {
         total: 0,

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drag Mode Cursor Follow - Production Test Report</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 24px; }
+  .header { background: #1a1a2e; color: white; padding: 24px 32px; border-radius: 12px; margin-bottom: 24px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header .meta { color: #a0a0b0; font-size: 14px; margin-top: 8px; }
+  .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+  .summary-card { background: white; padding: 20px 24px; border-radius: 8px; flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .summary-card .number { font-size: 32px; font-weight: 700; }
+  .summary-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+  .passed .number { color: #10b981; }
+  .failed .number { color: #ef4444; }
+  .total .number { color: #3b82f6; }
+  .scenario { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .scenario h3 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .badge-pass { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #e5e5e5; }
+  th { background: #f9fafb; font-weight: 600; }
+  .code { background: #f1f5f9; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; white-space: pre-wrap; margin: 8px 0; }
+  .findings { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .findings h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .findings ul { padding-left: 20px; }
+  .findings li { margin-bottom: 4px; font-size: 14px; }
+  .screenshot-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 12px; }
+  .screenshot-item { text-align: center; }
+  .screenshot-item img { max-width: 400px; border-radius: 6px; border: 1px solid #e5e5e5; }
+  .screenshot-item .viewport-label { font-size: 12px; color: #888; margin-top: 4px; }
+  .check { color: #10b981; }
+  .cross { color: #ef4444; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🧪 Drag Mode Cursor Follow - Production Test Report</h1>
+  <div class="meta">Date: 2026-05-15 | Server: http://192.168.0.29:3011 | Session: prod-drag-test-1778846120</div>
+</div>
+
+<div class="summary">
+  <div class="summary-card total"><div class="number">6</div><div class="label">Total Assertions</div></div>
+  <div class="summary-card passed"><div class="number">6</div><div class="label">Passed</div></div>
+  <div class="summary-card failed"><div class="number">0</div><div class="label">Failed</div></div>
+</div>
+
+<div class="scenario">
+  <h3>Drag Mode Cursor Movement Test <span class="badge badge-pass">ALL PASSED</span></h3>
+  <p style="font-size:14px; color:#666; margin-top:4px;">Long press (800ms) triggers drag mode, cursor follows finger movement, mouse events sent to remote browser</p>
+
+  <h4 style="margin-top:16px;">Test Environment</h4>
+  <table>
+    <tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>Server</td><td>http://192.168.0.29:3011</td></tr>
+    <tr><td>User-Agent</td><td>iPhone (Safari Mobile) - triggers cursorOffset=40</td></tr>
+    <tr><td>browser-viewer.js</td><td>69,615 bytes ✅</td></tr>
+    <tr><td>Session ID</td><td>551316f0-90d2-4015-9a7a-1050cf900bbd</td></tr>
+    <tr><td>Stream</td><td>Connected via blob: URL ✅</td></tr>
+    <tr><td>cursorOffset</td><td>40 (mobile mode active) ✅</td></tr>
+  </table>
+
+  <h4 style="margin-top:16px;">Cursor Coordinates</h4>
+  <table>
+    <tr><th>State</th><th>X</th><th>Y</th><th>Left</th><th>Top</th><th>Background</th></tr>
+    <tr><td>Before (initial)</td><td>640</td><td>303</td><td>640px</td><td>303px</td><td>rgba(255,0,0,0.5) red</td></tr>
+    <tr><td>After long press (800ms)</td><td>640</td><td>303</td><td>640px</td><td>303px</td><td>rgba(255,165,0,0.6) 🟠 orange</td></tr>
+    <tr><td>After touchmove (+80px)</td><td>720</td><td>383</td><td>720px</td><td>383px</td><td>rgba(255,165,0,0.6) 🟠 orange</td></tr>
+    <tr><td>After touchend</td><td>720</td><td>383</td><td>720px</td><td>383px</td><td>rgba(255,0,0,0.5) red (normal)</td></tr>
+  </table>
+
+  <h4 style="margin-top:16px;">Assertion Results</h4>
+  <table>
+    <tr><th>Assertion</th><th>Expected</th><th>Actual</th><th>Status</th></tr>
+    <tr>
+      <td>result.moved</td>
+      <td>true</td>
+      <td>true (640→720 X, 303→383 Y)</td>
+      <td class="check">✅ PASS</td>
+    </tr>
+    <tr>
+      <td>result.isOrange</td>
+      <td>true (during drag)</td>
+      <td>rgba(255,165,0,0.6) + border rgba(255,140,0,0.9)</td>
+      <td class="check">✅ PASS</td>
+    </tr>
+    <tr>
+      <td>result.hasMousedown</td>
+      <td>true</td>
+      <td>1 mousedown event sent</td>
+      <td class="check">✅ PASS</td>
+    </tr>
+    <tr>
+      <td>result.hasMousemove</td>
+      <td>true (CORE)</td>
+      <td>1 mousemove event sent</td>
+      <td class="check">✅ PASS</td>
+    </tr>
+    <tr>
+      <td>result.hasMouseup</td>
+      <td>true</td>
+      <td>1 mouseup event sent</td>
+      <td class="check">✅ PASS</td>
+    </tr>
+    <tr>
+      <td>result.hasClick</td>
+      <td>false (no click in drag)</td>
+      <td>0 click events</td>
+      <td class="check">✅ PASS</td>
+    </tr>
+  </table>
+
+  <h4 style="margin-top:16px;">Events Sent (Total: 18)</h4>
+  <div class="code">All events: tab, tab, mousedown, tab, tab, tab, tab, tab, mousemove, tab, tab, tab, tab, tab, mouseup, tab, tab, tab
+
+Mouse events breakdown:
+  mousedown: 1 (sent at long press trigger, 800ms after touchstart)
+  mousemove:  1 (sent on touchmove, coordinates follow finger position)
+  mouseup:   1 (sent on touchend)
+  click:     0 (correctly NOT sent - drag mode suppresses click)
+  tab:      15 (background tab polling events)</div>
+</div>
+
+<div class="findings">
+  <h3>Key Findings</h3>
+  <ul>
+    <li><strong>Drag mode works correctly</strong>: Long press (800ms) triggers drag mode, cursor turns orange, mousemove follows finger position</li>
+    <li><strong>Cursor offset works</strong>: cursorOffset=40 when mobile UA detected, cursor positioned 40px above finger for visibility</li>
+    <li><strong>Event sequence correct</strong>: mousedown → mousemove → mouseup, no click during drag</li>
+    <li><strong>Authentication required</strong>: Viewer needs <code>token=</code> URL parameter with API key for WebSocket connection</li>
+    <li><strong>Mobile UA required</strong>: Desktop UA results in cursorOffset=0, which disables cursor display and drag mode entirely</li>
+    <li><strong>Stream reconnection</strong>: Initial sessions had stream disconnect (1006), resolved by passing token in URL params</li>
+  </ul>
+</div>
+
+<div class="scenario">
+  <h3>Screenshots</h3>
+  <div class="screenshot-grid">
+    <div class="screenshot-item">
+      <img src="../../../../.opencode/screenshots/prod-drag-final.png" alt="Final state after drag">
+      <div class="viewport-label">After Drag Test (Mobile View)</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="../../../../.opencode/screenshots/prod-drag-orange-cursor.png" alt="Orange cursor during drag">
+      <div class="viewport-label">Orange Cursor During Long Press (Drag Mode Active) 🟠</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

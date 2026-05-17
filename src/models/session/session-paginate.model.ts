@@ -97,7 +97,7 @@ export const paginateMethods = {
         limit,
         totalPages: Math.ceil((totalResult ? Number(totalResult.count) : 0) / limit),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('分页查询会话失败:', error);
       return {
         items: [],
@@ -211,7 +211,7 @@ export const paginateMethods = {
         limit,
         totalPages: Math.ceil((totalResult ? Number(totalResult.count) : 0) / limit),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('分页查询会话失败:', error);
       return {
         items: [],

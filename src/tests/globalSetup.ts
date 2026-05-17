@@ -79,7 +79,7 @@ async function runMigrations(): Promise<void> {
     } else {
       console.log('[全局初始化] 数据库表已存在，跳过迁移');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[全局初始化] 迁移失败:', error);
     throw error;
   } finally {
@@ -102,7 +102,7 @@ export default async function setup() {
     console.log('========================================');
     console.log('[全局初始化] 测试环境初始化完成');
     console.log('========================================\n');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[全局初始化] 初始化失败:', error);
     throw error;
   }

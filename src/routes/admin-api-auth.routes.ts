@@ -79,7 +79,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
             if (request.user.role !== UserRole.ADMIN) {
               return sendError(reply, '需要管理员权限', 403);
             }
-          } catch (error) {
+          } catch (error: unknown) {
             if (reply.sent) return;
             request.log.error({ err: error }, '认证失败');
             return sendError(reply, '认证失败', 401);

@@ -139,7 +139,7 @@ describe('UserService', () => {
     vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
     const { createUser } = await import('../../../services/user.service.js');
-    await expect(createUser({ username: 'testuser', password: 'pass' })).rejects.toThrow('用户名 "testuser" 已存在');
+    await expect(createUser({ username: 'testuser', password: 'pass' })).rejects.toThrow('用户名已存在');
   });
 
   // ========================================

@@ -20,14 +20,24 @@ export async function createUser(request: AuthenticatedRequest, reply: FastifyRe
     const adminId = request.user.id;
     const userData = createUserRequestSchema.parse(request.body) as CreateUserInput;
 
-    // 检查用户名是否已存在
+    // 检查用户名是否已存在（快速失败）
     const existingUser = await UserModel.findByUsername(userData.username);
     if (existingUser) {
       return sendError(reply, '用户名已存在', 409);
     }
 
-    // 创建用户
-    const user = await UserModel.create(userData);
+    // 创建用户（捕获并发创建的竞态条件）
+    let user: Awaited<ReturnType<typeof UserModel.create>>;
+    try {
+      user = await UserModel.create(userData);
+    } catch (createError: unknown) {
+      // MySQL ER_DUP_ENTRY / SQLite UNIQUE constraint violation
+      const msg = createError instanceof Error ? createError.message : String(createError);
+      if (msg.includes('Duplicate') || msg.includes('UNIQUE') || msg.includes('已存在')) {
+        return sendError(reply, '用户名已存在', 409);
+      }
+      throw createError;
+    }
     if (!user) {
       return sendError(reply, '创建用户失败', 500);
     }

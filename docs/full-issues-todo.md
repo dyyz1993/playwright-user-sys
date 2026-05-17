@@ -44,7 +44,7 @@
 ### A3 类型断言 `as X`（源码 185 个）
 - [ ] **A3-1**: 双 `puppeteer-core` 依赖去重（难度 ⭐⭐⭐ | 风险 🔴 高）
   - `browser.service.ts` 19 个 as X → puppeteer 类型冲突
-- [ ] **A3-2**: `events.handler.ts` keyboard 类型用 `KeyInput`（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **A3-2**: `events.handler.ts` keyboard 类型用 `KeyInput`（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-17 已加注释说明断言安全性
 - [ ] **A3-3**: `browser-inject.service.ts` ElementHandle 类型（难度 ⭐⭐ | 风险 🟡 中）
 - [ ] **A3-4**: DB 模型 — Knex 查询行类型用 `Row`/`DbRow` 替代 `as SomeModel`（难度 ⭐⭐ | 风险 🟡 中）
 
@@ -186,10 +186,10 @@
 ### E1 检查后操作竞态（Check-Then-Act）
 - [ ] **E1-1**: `credits-monitor.service.ts:69,158` — 先读 credits 再扣减，无锁（难度 ⭐⭐⭐ | 风险 🔴 高）
   - 高并发下积分可能超扣
-- [ ] **E1-2**: `machine.controller.ts:50` — `findById` → 无锁 → 更新状态（难度 ⭐⭐ | 风险 🟡 中）
-- [ ] **E1-3**: `user.controller.ts:24` — `findByUsername` → 创建 — TOCTOU（难度 ⭐⭐ | 风险 🟡 中）
-- [ ] **E1-4**: `connection-manager.ts:634-636` — `findById` → 检查 → 更新（难度 ⭐⭐ | 风险 🟡 中）
-- [ ] **E1-5**: `admin-machine.service.ts:61` — `findById` → 检查 → 删除（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **E1-2**: `machine.controller.ts:50` — `findById` → 无锁 → 更新状态（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-17 改为原子更新
+- [x] **E1-3**: `user.controller.ts:24` — `findByUsername` → 创建 — TOCTOU（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-17 捕获 Duplicate/UNIQUE 错误返回 409
+- [ ] **E1-4**: `connection-manager.ts:634-636` — `findById` → 检查 → 更新（难度 ⭐⭐ | 风险 🟡 中）— 验证后为安全模式（已删除机器跳过心跳）
+- [ ] **E1-5**: `admin-machine.service.ts:61` — `findById` → 检查 → 删除（难度 ⭐⭐ | 风险 🟡 中）— 验证后为安全模式（重启命令在 gRPC stream 失败）
 - [ ] **E1-6**: `db` 层面加乐观锁（version 字段）防止竞态（难度 ⭐⭐⭐ | 风险 🔴 高）
 
 ### E2 未处理的 Promise

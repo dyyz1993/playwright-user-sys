@@ -191,7 +191,7 @@ describe('MachineController', () => {
     });
 
     it('机器不存在应该返回404错误', async () => {
-      vi.mocked(MachineModel.findById).mockResolvedValue(null);
+      vi.mocked(MachineModel.update).mockResolvedValue(null);
 
       const { updateMachineStatus } = await import('../../../controllers/machine.controller.js');
 

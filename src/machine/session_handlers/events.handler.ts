@@ -1,6 +1,9 @@
 import { WebSocket, RawData } from 'ws';
 import { browserService, SessionConfig } from '../browser.service.js';
 import { Page, Frame, type Browser } from 'puppeteer-core';
+// KeyInput = Parameters<Page['keyboard']['press']>[0]
+// 用于将 WebSocket 传来的 string key 转为 Puppeteer 类型安全的 KeyInput
+// 注意：as KeyInput 断言是安全的，因为值来自远程 viewer 已验证的键盘事件
 type KeyInput = Parameters<Page['keyboard']['press']>[0];
 import { logger } from '@shared/utils/logger.js';
 import { sessionFocusEmitter } from '../utils.js';

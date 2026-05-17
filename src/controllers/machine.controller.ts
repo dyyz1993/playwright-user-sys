@@ -46,14 +46,11 @@ export async function updateMachineStatus(request: FastifyRequest<IdParamRoute>,
     const machineId = request.params.id;
     const statusData = updateMachineStatusRequestSchema.parse(request.body);
 
-    // 检查机器是否存在
-    const existingMachine = await MachineModel.findById(machineId);
-    if (!existingMachine) {
+    // 原子更新：直接更新，通过返回值判断是否存在
+    const updatedMachine = await MachineModel.update(machineId, statusData);
+    if (!updatedMachine) {
       return sendError(reply, '机器不存在', 404);
     }
-
-    // 更新机器状态
-    const updatedMachine = await MachineModel.update(machineId, statusData);
 
     return sendSuccess(reply, updatedMachine);
   } catch (error: unknown) {

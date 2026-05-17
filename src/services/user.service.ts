@@ -3,6 +3,7 @@ import { UserModel, CreateUserInput, UpdateUserInput, User } from '../models/use
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { SessionModel } from '../models/session.model.js';
 import { UserRole, UserStatus, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
+import { NotFoundError } from '../utils/errors.js';
 import { hashPassword } from '../utils/auth.js';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@shared/utils/logger.js';
@@ -111,7 +112,7 @@ export async function deleteUser(userId: number, adminId?: number): Promise<bool
 
   return await db.transaction(async (trx) => {
     const existing = await trx('users').where({ id: userId }).first();
-    if (!existing) throw new Error('用户不存在');
+    if (!existing) throw new NotFoundError('用户');
     if (existing.role === UserRole.ADMIN) throw new Error('不允许删除管理员账号');
 
     const deleted = await trx('users').where({ id: userId }).delete();
@@ -263,7 +264,7 @@ export async function resetApiKey(userId: number, adminId?: number): Promise<str
 
   await db.transaction(async (trx) => {
     const existing = await trx('users').where({ id: userId }).first();
-    if (!existing) throw new Error('用户不存在');
+    if (!existing) throw new NotFoundError('用户');
 
     await trx('users').where({ id: userId }).update({
       api_key: apiKey,

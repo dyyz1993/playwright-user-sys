@@ -1,6 +1,7 @@
 import { SessionStatus } from '@shared/types/index.js';
 import { logger } from '@shared/utils/logger.js';
 import { createBrowserSession, releaseSession } from './session.service.js';
+import { NotFoundError } from '../utils/errors.js';
 import { SessionModel } from '../models/session/index.js';
 import { UserModel } from '../models/user.model.js';
 import { db } from '../config/database.js';
@@ -57,13 +58,13 @@ export class DemoService {
 
         user = await UserModel.findByUsername(DEMO_USER_USERNAME);
         if (!user) {
-          throw new Error('Demo user creation failed: user not found after insert');
+          throw new NotFoundError('Demo用户');
         }
         logger.info(`Demo 用户已创建: id=${user.id}`);
       }
 
       if (!user) {
-        throw new Error('Demo user not found');
+        throw new NotFoundError('Demo用户');
       }
       this.demoUserId = user.id;
       this.demoApiKey = user.api_key;

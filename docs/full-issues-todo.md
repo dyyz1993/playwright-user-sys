@@ -65,10 +65,10 @@
 ## B. 安全性（16 项）
 
 ### B1 SQL 注入
-- [ ] **B1-1**: `src/models/request-log.model.ts:121` — `whereRaw` 字符串插值需改为参数化绑定（难度 ⭐ | 风险 🔴 高）
+- [x] **B1-1**: `src/models/request-log.model.ts:121` — `whereRaw` 字符串插值改为参数化绑定（难度 ⭐ | 风险 🔴 高）✅ 2026-05-17
   ```typescript
-  // 当前：.whereRaw(\`created_at >= datetime('now', '-${days} days')\`)
-  // 修复：.whereRaw("created_at >= datetime('now', ?)", [\`-${days} days\`])
+  // 当前：.whereRaw(`created_at >= datetime('now', '-${days} days')`)
+  // 修复：.whereRaw("created_at >= datetime('now', ?)", [`-${days} days`])
   ```
 
 ### B2 错误信息泄露
@@ -193,14 +193,10 @@
 - [ ] **E1-6**: `db` 层面加乐观锁（version 字段）防止竞态（难度 ⭐⭐⭐ | 风险 🔴 高）
 
 ### E2 未处理的 Promise
-- [ ] **E2-1**: `events.handler.ts:673` — `.then()` 无 `.catch()`（难度 ⭐ | 风险 🟡 中）
-- [ ] **E2-2**: `connection-manager.ts:209` — `.then()` 无 `.catch()`（难度 ⭐ | 风险 🟡 中）
-- [ ] **E2-3**: `connection-manager.ts:284` — `.then()` 无 `.catch()`（难度 ⭐ | 风险 🟡 中）
-- [ ] **E2-4**: `browser.service.ts:442` — `.then()` 无 error handler（难度 ⭐ | 风险 🟡 中）
-- [ ] **E2-5**: `browser.service.ts:562` — `.then()` 无 `.catch()`（难度 ⭐ | 风险 🟡 中）
-- [ ] **E2-6**: `machine/app.ts:381` — `this.stop().then(() => process.exit(1))` 无错误处理（难度 ⭐ | 风险 🟡 中）
-- [ ] **E2-7**: `service-handlers.ts:19,103` — 动态 `import().then()` 无 `.catch()`（难度 ⭐ | 风险 🟡 中）
-- [ ] **E2-8**: `connection-manager.ts:66` — `.then()` 无 `.catch()`（难度 ⭐ | 风险 🟡 中）
+- [x] **E2-6**: `machine/app.ts:381` — `this.stop().then(() => process.exit(1))` 已加 .catch()（难度 ⭐ | 风险 🟡 中）✅ 2026-05-17
+- [x] **E2-7**: `service-handlers.ts:103` — `getConnectionManager().then()` 已加 .catch()（难度 ⭐ | 风险 🟡 中）✅ 2026-05-17
+- [ ] **E2-1**: `events.handler.ts:673` — `.then()` 已有 `.catch()`（误报）✅ 验证 2026-05-17
+- [ ] **E2-2~5,8**: 其他 `.then()` 均已有 `.catch()`（验证通过）✅ 2026-05-17
 
 ### E3 并发与事务
 - [ ] **E3-1**: Knex 事务未用于积分扣减操作（难度 ⭐⭐ | 风险 🔴 高）
@@ -218,7 +214,9 @@
 
 ### F1 重复的 try/catch 样板代码
 - [ ] **F1-1**: 创建 `tryCatchWrapper` 高阶函数消除 ~250 处重复 try/catch（难度 ⭐⭐ | 风险 🟡 中）
-- [ ] **F1-2**: 定义 `AppError`/`NotFoundError`/`ValidationError` 类替代内联状态码（难度 ⭐⭐ | 风险 🟢 低）
+- [x] **F1-2**: 定义 `AppError`/`NotFoundError`/`ValidationError` 类替代内联状态码（难度 ⭐⭐ | 风险 🟢 低）✅ 2026-05-17
+  - 创建 `src/utils/errors.ts`，包含 AppError/NotFoundError/ValidationError/AuthenticationError/AuthorizationError
+  - 已在 session.service.ts、user.service.ts、demo.service.ts 中使用 NotFoundError
 - [ ] **F1-3**: 统一 `reply.send()` 错误格式为全局 error handler（难度 ⭐⭐ | 风险 🟡 中）
 
 ### F2 路由层复杂度

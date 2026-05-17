@@ -3,6 +3,7 @@ import { MachineModel } from '../models/machine.model.js';
 import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/types/index.js';
 import { logger } from '@shared/utils/logger.js';
 import { createWebhookEvent } from '../utils/webhook.js';
+import { NotFoundError } from '../utils/errors.js';
 import { env } from '../config/env.js';
 import { db } from '../config/database.js';
 import { calculateCreditsUsed } from '@shared/utils/credits-calculator.js';
@@ -37,7 +38,7 @@ export async function releaseSession(options: ReleaseSessionOptions): Promise<Re
   return db.transaction(async (trx) => {
     const session = await trx('sessions').where({ id: sessionId }).first();
     if (!session) {
-      throw new Error('会话不存在');
+      throw new NotFoundError('会话', sessionId);
     }
 
     if (TERMINAL_STATUSES.includes(session.status as SessionStatus)) {
@@ -91,7 +92,7 @@ export async function releaseSession(options: ReleaseSessionOptions): Promise<Re
 
       const userAfterSettlement = await trx('users').where({ id: userId }).first();
       if (!userAfterSettlement) {
-        throw new Error(`User ${userId} not found after settlement`);
+        throw new NotFoundError('用户', String(userId));
       }
       const balanceAfter = userAfterSettlement.credits;
 
@@ -163,7 +164,7 @@ export async function createBrowserSession(
   const { sessionId, createdAt } = await db.transaction(async (trx) => {
     const user = await trx('users').where({ id: userId }).first();
     if (!user) {
-      throw new Error('用户不存在');
+      throw new NotFoundError('用户', String(userId));
     }
 
     if (!isDemo) {

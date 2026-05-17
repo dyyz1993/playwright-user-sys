@@ -378,7 +378,12 @@ export class MachineServer {
     }
 
     // 对于其他严重错误，停止服务并退出
-    this.stop().then(() => process.exit(1));
+    this.stop()
+      .then(() => process.exit(1))
+      .catch((err: unknown) => {
+        logger.error('Error during graceful stop:', err);
+        process.exit(1);
+      });
   }
 
   /**

@@ -100,81 +100,86 @@ export const serviceImplementation = {
   },
 
   Connect: (call: grpc.ServerDuplexStream<MachineMessage, ManagerMessage>) => {
-    getConnectionManager().then((connectionManager) => {
-      try {
-        logger.info('收到新的 Connect 请求');
-
-        logger.debug(`call 对象类型: ${typeof call}`);
+    getConnectionManager()
+      .then((connectionManager) => {
         try {
-          logger.debug(`call 对象方法: ${Object.getOwnPropertyNames(Object.getPrototypeOf(call)).join(', ')}`);
-        } catch (error: unknown) {
-          logger.error(`获取 call 对象方法失败:`, error);
-        }
+          logger.info('收到新的 Connect 请求');
 
-        const dataHandler = async (message: MachineMessage) => {
-          logger.info('收到第一条消息:', message);
-
+          logger.debug(`call 对象类型: ${typeof call}`);
           try {
-            logger.debug(`消息类型: ${typeof message}, 字段: ${Object.keys(message).join(', ')}`);
+            logger.debug(`call 对象方法: ${Object.getOwnPropertyNames(Object.getPrototypeOf(call)).join(', ')}`);
           } catch (error: unknown) {
-            logger.error('解析消息字段失败:', error);
+            logger.error(`获取 call 对象方法失败:`, error);
           }
 
-          const machineId = message.machine_id;
-          logger.info(`提取的机器 ID: ${machineId}`);
+          const dataHandler = async (message: MachineMessage) => {
+            logger.info('收到第一条消息:', message);
 
-          if (!machineId) {
-            logger.warn('收到的消息中缺少机器 ID');
             try {
-              call.write({ error: { message: '缺少机器 ID' } });
-              logger.info('已发送错误响应');
-            } catch (writeError: unknown) {
-              logger.error('发送错误响应失败:', writeError);
+              logger.debug(`消息类型: ${typeof message}, 字段: ${Object.keys(message).join(', ')}`);
+            } catch (error: unknown) {
+              logger.error('解析消息字段失败:', error);
             }
-            call.end();
-            return;
-          }
 
-          try {
-            const machine = await MachineModel.findById(machineId);
-            if (!machine) {
-              logger.warn(`未注册的机器尝试连接，已拒绝: ${machineId}`);
+            const machineId = message.machine_id;
+            logger.info(`提取的机器 ID: ${machineId}`);
+
+            if (!machineId) {
+              logger.warn('收到的消息中缺少机器 ID');
               try {
-                call.write({ error: { message: `机器未注册: ${machineId}` } });
+                call.write({ error: { message: '缺少机器 ID' } });
+                logger.info('已发送错误响应');
               } catch (writeError: unknown) {
                 logger.error('发送错误响应失败:', writeError);
               }
               call.end();
               return;
             }
-            logger.info(`机器注册验证通过: ${machineId}`);
-          } catch (error: unknown) {
-            logger.error(`验证机器注册状态时出错 (${machineId}):`, error);
-            call.end();
-            return;
-          }
 
-          logger.info(`移除数据监听器，转由连接管理器处理 (machineId: ${machineId})`);
-          call.removeListener('data', dataHandler);
+            try {
+              const machine = await MachineModel.findById(machineId);
+              if (!machine) {
+                logger.warn(`未注册的机器尝试连接，已拒绝: ${machineId}`);
+                try {
+                  call.write({ error: { message: `机器未注册: ${machineId}` } });
+                } catch (writeError: unknown) {
+                  logger.error('发送错误响应失败:', writeError);
+                }
+                call.end();
+                return;
+              }
+              logger.info(`机器注册验证通过: ${machineId}`);
+            } catch (error: unknown) {
+              logger.error(`验证机器注册状态时出错 (${machineId}):`, error);
+              call.end();
+              return;
+            }
 
-          logger.info(`添加机器连接: ${machineId}`);
-          connectionManager.addConnection(machineId, call);
-        };
+            logger.info(`移除数据监听器，转由连接管理器处理 (machineId: ${machineId})`);
+            call.removeListener('data', dataHandler);
 
-        call.on('data', dataHandler);
+            logger.info(`添加机器连接: ${machineId}`);
+            connectionManager.addConnection(machineId, call);
+          };
 
-        call.on('error', (error: unknown) => {
-          logger.error('gRPC 连接错误:', error);
-        });
+          call.on('data', dataHandler);
 
-        call.on('end', () => {
-          logger.info('gRPC 连接结束');
-        });
-      } catch (error: unknown) {
-        logger.error('处理 Connect 请求失败:', error);
+          call.on('error', (error: unknown) => {
+            logger.error('gRPC 连接错误:', error);
+          });
+
+          call.on('end', () => {
+            logger.info('gRPC 连接结束');
+          });
+        } catch (error: unknown) {
+          logger.error('处理 Connect 请求失败:', error);
+          call.end();
+        }
+      })
+      .catch((error: unknown) => {
+        logger.error('Connect handler failed to get connection manager:', error);
         call.end();
-      }
-    });
+      });
   },
 
   LaunchBrowser: async (

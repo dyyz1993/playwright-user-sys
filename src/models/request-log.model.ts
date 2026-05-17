@@ -118,7 +118,7 @@ export class RequestLogModel {
     const dailyStats = await db('request_logs')
       .select(db.raw('date(created_at) as date'))
       .count('id as count')
-      .whereRaw(`created_at >= datetime('now', '-${days} days')`)
+      .whereRaw("created_at >= datetime('now', ?)", [`-${days} days`])
       .groupBy('date')
       .orderBy('date');
 

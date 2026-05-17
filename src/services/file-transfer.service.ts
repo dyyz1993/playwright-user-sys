@@ -1,4 +1,5 @@
 import { logger } from '@shared/utils/logger.js';
+import type { FileInjectResponse } from '@shared/types/grpc.js';
 
 export class FileTransferService {
   async transferToMachine(
@@ -30,7 +31,7 @@ export class FileTransferService {
     url: string,
     selector: string,
     options?: { frameSelector?: string; filename?: string; timeout?: number }
-  ): Promise<any> {
+  ): Promise<FileInjectResponse> {
     const { connectionManager } = await import('./machine-grpc/index.js');
     const result = await connectionManager.downloadAndInjectFile(machineId, {
       sessionId,
@@ -48,7 +49,7 @@ export class FileTransferService {
     machineFilePath: string,
     selector: string,
     frameSelector?: string
-  ): Promise<any> {
+  ): Promise<FileInjectResponse> {
     const { connectionManager } = await import('./machine-grpc/index.js');
     const result = await connectionManager.injectFile(machineId, {
       sessionId,

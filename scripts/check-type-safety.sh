@@ -26,10 +26,10 @@ echo ""
 # 统计各类型数量
 cd "$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
 
-COLON_ANY=$(grep -rnE ": any\b" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ')
-AS_ANY=$(grep -rnE "as any\b" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ')
-ANGLE_ANY=$(grep -rnE "<any>" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ')
-UNKNOWN=$(grep -rnE ": unknown\b" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ')
+COLON_ANY=$(grep -rnE ": any\b" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ' || true)
+AS_ANY=$(grep -rnE "as any\b" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ' || true)
+ANGLE_ANY=$(grep -rnE "<any>" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ' || true)
+UNKNOWN=$(grep -rnE ": unknown\b" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | wc -l | tr -d ' ' || true)
 
 TOTAL=$((COLON_ANY + AS_ANY + ANGLE_ANY + UNKNOWN))
 
@@ -45,9 +45,12 @@ echo ""
 
 # TOP 5 文件
 echo "  📊 TOP 5 文件:"
-grep -rnE "(: any\b|as any\b|: unknown\b|<any>)" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | sed 's/:.*//' | sort | uniq -c | sort -rn | head -5 | while read count file; do
-  echo -e "    ${RED}${count}${NC}  ${file}"
-done
+TOP5=$(grep -rnE "(: any\b|as any\b|: unknown\b|<any>)" src/ --include="*.ts" | grep -v node_modules | grep -v ".test." | sed 's/:.*//' | sort | uniq -c | sort -rn | head -5 || true)
+if [ -n "$TOP5" ]; then
+  echo "$TOP5" | while read count file; do
+    echo -e "    ${RED}${count}${NC}  ${file}"
+  done
+fi
 echo ""
 
 # 判定

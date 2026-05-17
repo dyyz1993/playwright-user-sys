@@ -239,7 +239,7 @@ function startScreenshotLoop(streamInfo: StreamInfo): void {
     if (!success && streamInfo.page) {
       try {
         const pages = await streamInfo.page.browser().pages();
-        const activePage = pages.find((p: any) => !p.isClosed()) || pages[0];
+        const activePage = pages.find((p: Page) => !p.isClosed()) || pages[0];
         if (activePage && activePage !== streamInfo.page) {
           streamInfo.page = activePage;
           logger.info(`Recovered page reference for ${sessionId}, switching to new page`);

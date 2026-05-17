@@ -1,9 +1,9 @@
 declare module '@grpc/proto-loader' {
   interface Options {
     keepCase?: boolean;
-    longs?: any;
-    enums?: any;
-    bytes?: any;
+    longs?: StringConstructor | NumberConstructor;
+    enums?: StringConstructor | NumberConstructor;
+    bytes?: StringConstructor | NumberConstructor;
     defaults?: boolean;
     arrays?: boolean;
     objects?: boolean;

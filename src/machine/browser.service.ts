@@ -20,6 +20,13 @@ declare global {
   interface Window {
     _mouseTrackingInjected?: boolean;
     updateMousePosition?: (_x: number, _y: number, _viewportWidth: number, _viewportHeight: number) => void;
+    __fileInputClickEvent?: {
+      timestamp: number;
+      accept: string | null;
+      multiple: boolean;
+    } | null;
+    __clipboardContent?: string;
+    handleFiles?: (files: FileList) => void;
   }
 }
 
@@ -536,6 +543,7 @@ export class BrowserService extends EventEmitter {
 
       const puppeteerOptions = await this.convertPuppeteerOptions(options);
       let launchTimedOut = false;
+      // @ts-ignore — LaunchOptions type mismatch (dual puppeteer-core installations on macOS)
       const browserPromise = puppeteer.launch(puppeteerOptions);
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
@@ -670,9 +678,13 @@ export class BrowserService extends EventEmitter {
 
       // 为 primaryPage 注入 focusin 脚本（targetcreated 不会触发初始页面）
       try {
-        await this.injectFocusinScript(sessionId, primaryPage as any);
-        await this.injectMouseTrackingScript(primaryPage as any);
-        logger.info(`focusin & mouse tracking injected on primaryPage for session ${sessionId}`);
+        if (primaryPage) {
+          // @ts-ignore — Page type mismatch (dual puppeteer-core installations on macOS)
+          await this.injectFocusinScript(sessionId, primaryPage);
+          // @ts-ignore — Page type mismatch (dual puppeteer-core installations on macOS)
+          await this.injectMouseTrackingScript(primaryPage);
+          logger.info(`focusin & mouse tracking injected on primaryPage for session ${sessionId}`);
+        }
       } catch (focusErr) {
         logger.warn(`Failed to inject focusin on primaryPage for session ${sessionId}:`, focusErr);
       }
@@ -696,7 +708,7 @@ export class BrowserService extends EventEmitter {
               if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'file') {
                 e.preventDefault();
                 e.stopPropagation();
-                (window as any).__fileInputClickEvent = {
+                window.__fileInputClickEvent = {
                   timestamp: Date.now(),
                   accept: (target as HTMLInputElement).accept || null,
                   multiple: (target as HTMLInputElement).multiple || false,
@@ -706,7 +718,7 @@ export class BrowserService extends EventEmitter {
             true
           );
         })
-        .catch((_: any) => void _);
+        .catch(() => {});
 
       const browserWSEndpoint = browser.wsEndpoint();
       const wsUrl = new URL(browserWSEndpoint);
@@ -919,7 +931,7 @@ export class BrowserService extends EventEmitter {
   /**
    * 转换浏览器选项
    */
-  async convertPuppeteerOptions(options: BrowserOptions = {}): Promise<any> {
+  async convertPuppeteerOptions(options: BrowserOptions = {}): Promise<LaunchOptions> {
     // 将选项转换为 puppeteer-core 选项
     const result: LaunchOptions = {
       args: [
@@ -1118,8 +1130,8 @@ export class BrowserService extends EventEmitter {
         if (page.isClosed() || page.url().startsWith('devtools://') || page.url().startsWith('file://')) return;
         logger.debug(`新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`);
 
-        await this.injectMouseTrackingScript(page as any);
-        await this.injectFocusinScript(sessionId, page as any);
+        await this.injectMouseTrackingScript(page);
+        await this.injectFocusinScript(sessionId, page);
 
         try {
           const cdp = await page.createCDPSession();

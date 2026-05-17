@@ -28,8 +28,7 @@ export default fp(async function (fastify: FastifyInstance) {
 
   // 注册 Rate Limit 插件（测试环境跳过，避免干扰安全测试）
   if (process.env.NODE_ENV !== 'test') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await fastify.register(rateLimit as any, {
+    await fastify.register(rateLimit, {
       max: 100,
       timeWindow: '1 minute',
       keyGenerator: (request: { ip: string }) => request.ip,

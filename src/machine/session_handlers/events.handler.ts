@@ -1,6 +1,7 @@
 import { WebSocket, RawData } from 'ws';
 import { browserService, SessionConfig } from '../browser.service.js';
-import { Page, Frame } from 'puppeteer-core';
+import { Page, Frame, type Browser } from 'puppeteer-core';
+type KeyInput = Parameters<Page['keyboard']['press']>[0];
 import { logger } from '@shared/utils/logger.js';
 import { sessionFocusEmitter } from '../utils.js';
 import fs from 'fs';
@@ -14,6 +15,8 @@ declare global {
     updateMousePosition?: (_x: number, _y: number, _viewportWidth: number, _viewportHeight: number) => void;
     _focusListenerAttached?: boolean;
     _emitFocusEvent?: () => void;
+    __fileInputClickEvent?: { timestamp: number; accept: string | null; multiple: boolean } | null | undefined;
+    __clipboardContent?: string;
   }
 }
 
@@ -28,9 +31,12 @@ interface EventConnectionInfo {
     pageCrashHandler?: () => void;
     frameNavigatedHandler?: (_frame: Frame) => void;
     configUpdateListener?: (_sessionId: string, _newConfig: SessionConfig) => void;
-    // 页面内 focus 监听器理论上随页面关闭，但保留引用以明确
     focusListenerAttached?: boolean;
   };
+  _clipboardPollInterval?: NodeJS.Timeout;
+}
+interface BrowserServiceInternal {
+  sessions: Map<string, { browser: Browser }>;
 }
 export const activeEventConnections = new Map<WebSocket, EventConnectionInfo>();
 
@@ -86,12 +92,12 @@ export async function handleEventsConnection(
       try {
         const result = await conn.page
           .evaluate(() => {
-            const fileEvent = (window as any).__fileInputClickEvent;
+            const fileEvent = window.__fileInputClickEvent;
             if (fileEvent && Date.now() - fileEvent.timestamp < 3000) {
-              (window as any).__fileInputClickEvent = null;
+              window.__fileInputClickEvent = null;
               return { filechooser: true, accept: fileEvent.accept, multiple: fileEvent.multiple };
             }
-            const clip = (window as any).__clipboardContent || '';
+            const clip = window.__clipboardContent || '';
             return { filechooser: false, clipboard: clip };
           })
           .catch(() => ({ filechooser: false, clipboard: '' }));
@@ -119,7 +125,7 @@ export async function handleEventsConnection(
         }
       }
     }, 2000);
-    (connectionInfo as any)._clipboardPollInterval = clipboardPollInterval;
+    connectionInfo._clipboardPollInterval = clipboardPollInterval;
     logger.info(
       `Stored '/events' connection for session ${sessionId} with initial config: ${JSON.stringify(currentConfig)}`
     );
@@ -683,8 +689,8 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
             // @ts-ignore - uploadFile requires ElementHandle<HTMLInputElement>
             await inputEl.uploadFile(filePath);
             sendNotification(ws, 'injectResult', { success: true });
-          } catch (err: any) {
-            sendNotification(ws, 'injectResult', { success: false, error: err.message });
+          } catch (err: unknown) {
+            sendNotification(ws, 'injectResult', { success: false, error: (err as Error).message });
           }
         }
         break;
@@ -694,7 +700,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
 
         if (tabAction === 'list') {
           try {
-            const session = (browserService as any).sessions.get(sessionId);
+            const session = (browserService as unknown as BrowserServiceInternal).sessions.get(sessionId);
             if (session?.browser) {
               const pages = await session.browser.pages();
               const currentPage = await browserService.getSessionPage(sessionId);
@@ -716,7 +722,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         } else if (tabAction === 'switch') {
           const targetUrl = eventData.tabId || eventData.data?.tabId;
           try {
-            const session = (browserService as any).sessions.get(sessionId);
+            const session = (browserService as unknown as BrowserServiceInternal).sessions.get(sessionId);
             if (session?.browser) {
               const pages = await session.browser.pages();
               const target = pages.find(
@@ -737,7 +743,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         } else if (tabAction === 'close') {
           const targetUrl = eventData.tabId || eventData.data?.tabId;
           try {
-            const session = (browserService as any).sessions.get(sessionId);
+            const session = (browserService as unknown as BrowserServiceInternal).sessions.get(sessionId);
             if (session?.browser) {
               const pages = await session.browser.pages();
               const target = pages.find(
@@ -1028,23 +1034,22 @@ async function handleMouseEvents(
                   if (data.shiftKey) parts.push('Shift');
                   if (data.altKey) parts.push('Alt');
                   parts.push(data.key);
-                  await page.keyboard.press(parts.join('+') as any);
+                  await page.keyboard.press(parts.join('+') as KeyInput);
                 } else {
-                  await page.keyboard.down(data.key as any);
+                  await page.keyboard.down(data.key as KeyInput);
                 }
               }
               break;
             case 'keyUp':
               if (data.key) {
-                // Only send up for non-modifier keys (modifier combos handled by press in keyDown)
                 const hasModifier = data.ctrlKey || data.metaKey || data.shiftKey || data.altKey;
                 if (!hasModifier) {
-                  await page.keyboard.up(data.key as any);
+                  await page.keyboard.up(data.key as KeyInput);
                 }
               }
               break;
             case 'keyPress':
-              if (data.key) await page.keyboard.press(data.key as any);
+              if (data.key) await page.keyboard.press(data.key as KeyInput);
               break;
             // Ignore touch events in touchpad mode?
             default:
@@ -1077,8 +1082,8 @@ function cleanupEventConnection(ws: WebSocket): void {
     const { page, sessionId, listeners } = connectionInfo;
     logger.info(`Cleaning up '/events' connection for session ${sessionId}`);
 
-    if ((connectionInfo as any)._clipboardPollInterval) {
-      clearInterval((connectionInfo as any)._clipboardPollInterval);
+    if (connectionInfo._clipboardPollInterval) {
+      clearInterval(connectionInfo._clipboardPollInterval);
     }
     const functionName = '_emitFocusEvent_' + sessionId.replace(/\W/g, '_');
 

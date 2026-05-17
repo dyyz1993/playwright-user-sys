@@ -67,7 +67,7 @@ export class ProxyService {
       } else if (res && typeof res.destroy === 'function') {
         res.destroy();
       }
-    }) as any);
+    }) as httpProxy.ErrorCallback);
   }
 
   /**

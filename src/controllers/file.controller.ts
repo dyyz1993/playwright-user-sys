@@ -189,9 +189,9 @@ export async function uploadFileForSession(request: FastifyRequest, reply: Fasti
     const sessionIdField = data.fields?.sessionId;
     let sessionId: string | undefined;
     if (Array.isArray(sessionIdField)) {
-      sessionId = (sessionIdField[0] as any)?.value;
+      sessionId = (sessionIdField[0] as { value: string })?.value;
     } else if (sessionIdField && typeof sessionIdField === 'object') {
-      sessionId = (sessionIdField as any).value;
+      sessionId = (sessionIdField as { value: string }).value;
     } else if (typeof sessionIdField === 'string') {
       sessionId = sessionIdField;
     }

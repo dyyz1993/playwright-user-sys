@@ -82,7 +82,7 @@ export class Session {
         'x-api-key': this.apiKey,
         ...form.getHeaders(),
       },
-      body: form as any,
+      body: form as unknown as NodeJS.ReadableStream,
     });
 
     if (!response.ok) {

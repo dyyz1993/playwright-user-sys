@@ -167,11 +167,91 @@ class BrowserViewer {
     this.kbBtn.textContent = '\u2328';
     var self = this;
     this.kbBtn.addEventListener('click', function() {
-      self.hiddenInput.focus();
-      setTimeout(function() { self.hiddenInput.focus(); }, 100);
+      // PC 端：直接 focus hidden input
+      if (self.cursorOffset === 0) {
+        self.hiddenInput.focus();
+        setTimeout(function() { self.hiddenInput.focus(); }, 100);
+      } else {
+        // 移动端：如果输入框已显示就隐藏，否则显示
+        if (self._inputBar && self._inputBar.style.display !== 'none') {
+          self._hideInputBar();
+        } else {
+          self._showInputBar('');
+        }
+      }
     });
     if (this.container) {
       this.container.appendChild(this.kbBtn);
+    }
+
+    // === 移动端可见输入框（初始隐藏）===
+    if (this.cursorOffset > 0) {
+      this._inputBar = document.createElement('div');
+      this._inputBar.style.cssText = 'position:absolute;bottom:60px;left:10px;right:60px;background:rgba(30,30,30,0.95);border-radius:12px;padding:8px 12px;display:none;z-index:10000;box-shadow:0 -2px 16px rgba(0,0,0,0.4);';
+
+      var inputRow = document.createElement('div');
+      inputRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+      var inputLabel = document.createElement('div');
+      inputLabel.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.5);white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis;';
+      inputLabel.textContent = '';
+
+      this._inputField = document.createElement('input');
+      this._inputField.type = 'text';
+      this._inputField.style.cssText = 'flex:1;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 10px;color:white;font-size:15px;outline:none;';
+      this._inputField.setAttribute('placeholder', '输入内容...');
+
+      var clearBtn = document.createElement('div');
+      clearBtn.style.cssText = 'width:32px;height:32px;border-radius:50%;background:rgba(255,59,48,0.7);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;';
+      clearBtn.textContent = '✕';
+      clearBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        self._inputField.value = '';
+        self._syncInputToRemote();
+        self._inputField.focus();
+      });
+
+      var sendBtn = document.createElement('div');
+      sendBtn.style.cssText = 'width:32px;height:32px;border-radius:50%;background:rgba(0,122,255,0.8);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;';
+      sendBtn.textContent = '↵';
+      sendBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        // 发送 Enter 键
+        self.send({ type: 'event', event: { type: 'keydown', data: { key: 'Enter', code: 'Enter' } } });
+        self.send({ type: 'event', event: { type: 'keyup', data: { key: 'Enter', code: 'Enter' } } });
+        self._hideInputBar();
+      });
+
+      inputRow.appendChild(inputLabel);
+      inputRow.appendChild(this._inputField);
+      inputRow.appendChild(clearBtn);
+      inputRow.appendChild(sendBtn);
+      this._inputBar.appendChild(inputRow);
+      this._inputLabel = inputLabel;
+
+      // 点击输入栏外部关闭
+      this._inputBar.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
+
+      // 输入事件：实时同步到远程
+      var inputComposing = false;
+      this._inputField.addEventListener('compositionstart', function() {
+        inputComposing = true;
+      });
+      this._inputField.addEventListener('compositionend', function(ce) {
+        inputComposing = false;
+        self._syncInputToRemote();
+      });
+      this._inputField.addEventListener('input', function() {
+        if (!inputComposing) {
+          self._syncInputToRemote();
+        }
+      });
+
+      if (this.container) {
+        this.container.appendChild(this._inputBar);
+      }
     }
 
     this.uploadBtn = document.createElement('div');
@@ -1135,10 +1215,10 @@ class BrowserViewer {
               self._cursorX = vpW / 2;
               self._cursorY = vpH / 2;
               self._cursorInitialized = true;
-            } else {
-              self._cursorX = Math.max(0, Math.min(vpW, self._cursorX));
-              self._cursorY = Math.max(0, Math.min(vpH, self._cursorY));
             }
+            // 始终 clamp 到 viewport 范围（处理 viewport resize）
+            self._cursorX = Math.max(0, Math.min(vpW, self._cursorX));
+            self._cursorY = Math.max(0, Math.min(vpH, self._cursorY));
             self.cursor.style.left = self._cursorX + 'px';
             self.cursor.style.top = self._cursorY + 'px';
             self.cursor.style.display = 'block';
@@ -1275,12 +1355,27 @@ class BrowserViewer {
             self._fmInjectCallback = null;
           }
         } else if (msg.type === 'form.field') {
-          // 保存服务端发来的焦点元素 selector，用于 input 事件回填
           var fieldData = msg.event || msg.data || {};
           self._focusedSelector = fieldData.selector || null;
           self._focusedFrameSelector = fieldData.frameSelector || null;
           self._focusedTag = fieldData.tag || null;
-          console.log('[BV] form.field:', self._focusedSelector, 'tag:', self._focusedTag);
+          console.log('[BV] form.field:', self._focusedSelector, 'tag:', self._focusedTag, 'value:', fieldData.value);
+
+          // 移动端：弹出可见输入框，填入远程当前值
+          if (self.cursorOffset > 0 && (fieldData.tag === 'input' || fieldData.tag === 'textarea')) {
+            // 不弹 file/password/reset/submit/button/hidden 类型的 input
+            var inputType = (fieldData.type || 'text').toLowerCase();
+            if (['file', 'password', 'reset', 'submit', 'button', 'hidden', 'checkbox', 'radio', 'range', 'color'].indexOf(inputType) === -1) {
+              var remoteVal = fieldData.value || '';
+              // 更新 placeholder
+              self._inputField.setAttribute('placeholder', fieldData.placeholder || '输入内容...');
+              self._showInputBar(remoteVal);
+            }
+          }
+          // PC 端：focus hidden input
+          if (self.cursorOffset === 0 && (fieldData.tag === 'input' || fieldData.tag === 'textarea')) {
+            self.hiddenInput.focus();
+          }
         } else if (msg.type === 'response' && msg.requestType === 'fileList') {
           if (self._fmListCallback) {
             self._fmListCallback(msg.data && msg.data.files ? msg.data.files : []);
@@ -1343,9 +1438,10 @@ class BrowserViewer {
     }
 
     var _pcMouseMoved = false;
+    var _isMobile = self.cursorOffset > 0;
 
     img.addEventListener('mousedown', function (e) {
-      if (self._touchActive && Date.now() - (self._touchLastTime || 0) < 500) return;
+      if (_isMobile) return;
       _pcMouseMoved = false;
       var c = getCoords(e);
       c.button = e.button;
@@ -1353,6 +1449,7 @@ class BrowserViewer {
     });
 
     img.addEventListener('mousemove', function (e) {
+      if (_isMobile) return;
       _pcMouseMoved = true;
       var c = getCoords(e);
       self.send({ type: 'event', event: { type: 'mousemove', data: c } });
@@ -1367,14 +1464,14 @@ class BrowserViewer {
     });
 
     img.addEventListener('mouseup', function (e) {
-      if (self._touchActive && Date.now() - (self._touchLastTime || 0) < 500) return;
+      if (_isMobile) return;
       var c = getCoords(e);
       c.button = e.button;
       self.send({ type: 'event', event: { type: 'mouseup', data: c } });
     });
 
     img.addEventListener('click', function (e) {
-      if (self._touchActive && Date.now() - (self._touchLastTime || 0) < 500) return;
+      if (_isMobile) return;
       // 如果 mousedown 后有 mousemove（拖拽选中文本），不发送 click，避免清除选中状态
       if (_pcMouseMoved) {
         _pcMouseMoved = false;
@@ -1423,9 +1520,6 @@ class BrowserViewer {
     var activeGestureMode = null;
     var touchStartX = 0;
     var touchStartY = 0;
-    var touchStartTime = 0;
-    var longPressTimer = null;
-    var isLongPress = false;
     var hasMoved = false;
     var lastTapTime = 0;
     var lastTouch1 = null;
@@ -1438,37 +1532,67 @@ class BrowserViewer {
     var touchTarget = self.cursorOffset > 0 ? self._wrapper : img;
     if (touchTarget) touchTarget.style.touchAction = 'none';
 
+    // === Touch events (增量光标模型) ===
+    var activeGestureMode = null;
+    var touchStartX = 0;
+    var touchStartY = 0;
+    var hasMoved = false;
+    var isLongPress = false;
+    var lastTapTime = 0;
+    var longPressTimer = null;
+
+    // 双指数据
+    var lastTouch1 = null;
+    var lastTouch2 = null;
+    var lastTouch1Time = 0;
+    var lastTouch2Time = 0;
+    var pinchSampleStart = 0;
+    var scrollAccumDist = 0;
+
+    // 单指增量数据（lastTouches）
+    var lastFingerX = 0;
+    var lastFingerY = 0;
+    var lastFingerTime = 0;
+
     touchTarget.addEventListener('touchstart', function (e) {
       e.preventDefault();
       self._touchActive = true;
       self._touchLastTime = Date.now();
-      var touch = e.touches[0];
-      touchStartTime = Date.now();
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-      hasMoved = false;
-      isLongPress = false;
-      lastFingerX = touch.clientX;
-      lastFingerY = touch.clientY;
-
-      activeGestureMode = null;
 
       if (e.touches.length >= 2) {
+        // 双指：记录数据，进入采样阶段
         lastTouch1 = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
         lastTouch2 = { clientX: e.touches[1].clientX, clientY: e.touches[1].clientY };
+        lastTouch1Time = Date.now();
+        lastTouch2Time = Date.now();
         pinchSampleStart = Date.now();
         scrollAccumDist = 0;
         if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
         return;
       }
 
+      // 单指按下
+      var touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      hasMoved = false;
+      isLongPress = false;
+      lastFingerX = touch.clientX;
+      lastFingerY = touch.clientY;
+      lastFingerTime = Date.now();
+
+      activeGestureMode = null;
+
+      // 光标位置不变！（增量模型：pointerdown 不修改 cursorX/Y）
+      // 只在完全未初始化时设到 viewport 中心
       if (self.cursorOffset > 0) {
-        // 将光标位置设为触摸点上方 cursorOffset 处，限制在 viewport 范围内
-        var vpr = self._viewport.getBoundingClientRect();
-        var vpW = self._viewport.offsetWidth || 1;
-        var vpH = self._viewport.offsetHeight || 1;
-        self._cursorX = Math.max(0, Math.min(vpW, e.touches[0].clientX - vpr.left));
-        self._cursorY = Math.max(0, Math.min(vpH, e.touches[0].clientY - vpr.top - self.cursorOffset));
+        if (!self._cursorInitialized) {
+          var vpW = self._viewport.offsetWidth || 1;
+          var vpH = self._viewport.offsetHeight || 1;
+          self._cursorX = vpW / 2;
+          self._cursorY = vpH / 2;
+          self._cursorInitialized = true;
+        }
         self.cursor.style.left = self._cursorX + 'px';
         self.cursor.style.top = self._cursorY + 'px';
         self.cursor.style.display = 'block';
@@ -1477,18 +1601,21 @@ class BrowserViewer {
         self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
       }
 
+      // 长按检测（800ms）
       longPressTimer = setTimeout(function () {
-        isLongPress = true;
-        activeGestureMode = 'drag';
-        if (self.cursorOffset > 0) {
-          self._cursorColor = 'longpress';
-          self.cursor.style.background = 'rgba(255,165,0,0.6)';
-          self.cursor.style.borderColor = 'rgba(255,140,0,0.9)';
+        if (!hasMoved) {
+          isLongPress = true;
+          activeGestureMode = 'drag';
+          if (self.cursorOffset > 0) {
+            self._cursorColor = 'longpress';
+            self.cursor.style.background = 'rgba(255,165,0,0.6)';
+            self.cursor.style.borderColor = 'rgba(255,140,0,0.9)';
+          }
+          var rc = getCoordsFromCursor(self);
+          rc.button = 0;
+          self.send({ type: 'event', event: { type: 'mousedown', data: rc } });
+          if (navigator.vibrate) navigator.vibrate(50);
         }
-        var rc = getCoordsFromCursor(self);
-        rc.button = 0;
-        self.send({ type: 'event', event: { type: 'mousedown', data: rc } });
-        if (navigator.vibrate) navigator.vibrate(50);
       }, 800);
     }, { passive: false });
 
@@ -1497,68 +1624,86 @@ class BrowserViewer {
       self._touchActive = true;
       self._touchLastTime = Date.now();
 
+      // === 双指处理 ===
       if (e.touches.length >= 2 && lastTouch1 && lastTouch2) {
         var t1 = e.touches[0];
         var t2 = e.touches[1];
+        var now = Date.now();
+
+        // 计算上一帧距离和当前帧距离
+        var prevDist = Math.hypot(lastTouch1.clientX - lastTouch2.clientX, lastTouch1.clientY - lastTouch2.clientY);
+        var currDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+
+        // 计算中心点位移（用于 scroll）
+        var prevMidX = (lastTouch1.clientX + lastTouch2.clientX) / 2;
+        var prevMidY = (lastTouch1.clientY + lastTouch2.clientY) / 2;
+        var currMidX = (t1.clientX + t2.clientX) / 2;
+        var currMidY = (t1.clientY + t2.clientY) / 2;
+        var midDx = currMidX - prevMidX;
+        var midDy = currMidY - prevMidY;
+
+        // 帧间时间差
+        var timeDelta = Math.max(1, now - lastTouch1Time);
 
         if (activeGestureMode === null) {
-          if (Date.now() - pinchSampleStart < 150) {
-            lastTouch1 = { clientX: t1.clientX, clientY: t1.clientY };
-            lastTouch2 = { clientX: t2.clientX, clientY: t2.clientY };
-            return;
+          // 累积 scroll 距离
+          scrollAccumDist += Math.hypot(midDx, midDy);
+
+          if (Date.now() - pinchSampleStart >= 150) {
+            // 150ms 后判断模式
+            var distDelta = Math.abs(currDist - prevDist);
+            var zoomSpeed = distDelta / timeDelta;
+
+            if (zoomSpeed > 0.3 && distDelta > 20) {
+              activeGestureMode = 'zoom';
+            } else if (scrollAccumDist > 50) {
+              activeGestureMode = 'scroll';
+            }
           }
 
-          var prevDist = Math.hypot(lastTouch1.clientX - lastTouch2.clientX, lastTouch1.clientY - lastTouch2.clientY);
-          var currDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-          var distDelta = Math.abs(currDist - prevDist);
-          var zoomSpeed = distDelta / Math.max(1, Date.now() - pinchSampleStart);
-
-          var prevMidX = (lastTouch1.clientX + lastTouch2.clientX) / 2;
-          var prevMidY = (lastTouch1.clientY + lastTouch2.clientY) / 2;
-          var currMidX = (t1.clientX + t2.clientX) / 2;
-          var currMidY = (t1.clientY + t2.clientY) / 2;
-          scrollAccumDist += Math.hypot(currMidX - prevMidX, currMidY - prevMidY);
-
-          if (zoomSpeed > 0.3 && distDelta > 20) {
-            activeGestureMode = 'zoom';
-          } else if (scrollAccumDist > 50) {
-            activeGestureMode = 'scroll';
+          // 150ms 采样阶段也执行滚动（给用户即时反馈）
+          if (activeGestureMode === null || activeGestureMode === 'scroll') {
+            var scrollSpeed = Math.hypot(midDx, midDy) / timeDelta;
+            var scrollAccel = 1.0 + Math.min(scrollSpeed * 0.3, 2.0);
+            self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: Math.round(midDx * scrollAccel), deltaY: Math.round(midDy * scrollAccel) } } });
           }
         }
 
         if (activeGestureMode === 'zoom') {
-          var prevD = Math.hypot(lastTouch1.clientX - lastTouch2.clientX, lastTouch1.clientY - lastTouch2.clientY);
-          var currD = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-          var zoomDelta = (prevD - currD) * 0.05;
+          var zoomDelta = (prevDist - currDist) * 0.05;
           self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: 0, deltaY: Math.round(zoomDelta * 20) } } });
         } else if (activeGestureMode === 'scroll') {
-          var pmx = (lastTouch1.clientX + lastTouch2.clientX) / 2;
-          var pmy = (lastTouch1.clientY + lastTouch2.clientY) / 2;
-          var cmx = (t1.clientX + t2.clientX) / 2;
-          var cmy = (t1.clientY + t2.clientY) / 2;
-          var dx = (cmx - pmx) * 2;
-          var dy = (cmy - pmy) * 2;
-          self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: Math.round(dx), deltaY: Math.round(dy) } } });
+          var scrollSpeed2 = Math.hypot(midDx, midDy) / timeDelta;
+          var scrollAccel2 = 1.0 + Math.min(scrollSpeed2 * 0.3, 2.0);
+          self.send({ type: 'event', event: { type: 'wheel', data: { deltaX: Math.round(midDx * scrollAccel2), deltaY: Math.round(midDy * scrollAccel2) } } });
         }
 
         lastTouch1 = { clientX: t1.clientX, clientY: t1.clientY };
         lastTouch2 = { clientX: t2.clientX, clientY: t2.clientY };
+        lastTouch1Time = now;
+        lastTouch2Time = now;
         return;
       }
 
+      // === 单指处理 ===
       var touch = e.touches[0];
+      var now = Date.now();
+
+      // delta = 当前帧 - 上一帧（不是 - 起始帧）
       var dx = touch.clientX - lastFingerX;
       var dy = touch.clientY - lastFingerY;
-      var totalMove = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+      var timeDelta = Math.max(1, now - lastFingerTime);
 
-      if (totalMove > 5) {
+      // 从按下点到现在的总距离（判断手势类型）
+      var totalMove = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+      if (totalMove > 10) {
         hasMoved = true;
         if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
       }
 
       if (isLongPress) {
+        // === Drag 模式：光标跟随手指（1:1，无加速）===
         activeGestureMode = 'drag';
-        // 更新本地光标位置（和 Move 一样的位移逻辑）
         var vp = self._viewport;
         var vpW = vp ? vp.offsetWidth : 1;
         var vpH = vp ? vp.offsetHeight : 1;
@@ -1568,14 +1713,13 @@ class BrowserViewer {
         self.cursor.style.top = self._cursorY + 'px';
         var c = getCoordsFromCursor(self);
         self.send({ type: 'event', event: { type: 'mousemove', data: c } });
-      } else if (hasMoved && activeGestureMode !== 'drag') {
+      } else if (hasMoved) {
+        // === Move 模式：光标增量 + 加速度 ===
         if (activeGestureMode === null) {
           activeGestureMode = 'move';
         }
         if (activeGestureMode === 'move') {
-          var now = Date.now();
-          var dt = Math.max(1, now - touchStartTime);
-          var speed = Math.hypot(dx, dy) / dt;
+          var speed = Math.hypot(dx, dy) / timeDelta;  // px/ms，帧间速度
           var accelerationFactor = 1.0 + Math.min(speed * 0.5, 3.0);
 
           var vp = self._viewport;
@@ -1592,11 +1736,17 @@ class BrowserViewer {
             self.cursor.style.background = 'rgba(255,0,0,0.5)';
             self.cursor.style.borderColor = 'rgba(255,0,0,0.8)';
           }
+
+          // 同步发送 mousemove 到远程
+          var mc = getCoordsFromCursor(self);
+          self.send({ type: 'event', event: { type: 'mousemove', data: mc } });
         }
       }
 
+      // 保存当前为"上一帧"
       lastFingerX = touch.clientX;
       lastFingerY = touch.clientY;
+      lastFingerTime = now;
     }, { passive: false });
 
     touchTarget.addEventListener('touchend', function (e) {
@@ -1606,7 +1756,9 @@ class BrowserViewer {
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 
       if (e.touches.length === 0) {
+        // 所有手指抬起
         if (activeGestureMode === null && !hasMoved) {
+          // Tap / Double Tap
           var now = Date.now();
           var c = getCoordsFromCursor(self);
           c.button = 0;
@@ -1621,11 +1773,13 @@ class BrowserViewer {
           lastTapTime = now;
 
         } else if (activeGestureMode === 'drag') {
+          // Drag 结束：发送 mouseup
           var c = getCoordsFromCursor(self);
           c.button = 0;
           self.send({ type: 'event', event: { type: 'mouseup', data: c } });
         }
 
+        // 重置手势状态（光标位置不变！）
         activeGestureMode = null;
         isLongPress = false;
         hasMoved = false;
@@ -1636,15 +1790,15 @@ class BrowserViewer {
         }
         lastTouch1 = null;
         lastTouch2 = null;
-      } else {
-        if (e.touches.length === 1) {
-          lastFingerX = e.touches[0].clientX;
-          lastFingerY = e.touches[0].clientY;
-          lastTouch1 = null;
-          lastTouch2 = null;
-          if (activeGestureMode === 'zoom' || activeGestureMode === 'scroll') {
-            activeGestureMode = null;
-          }
+      } else if (e.touches.length === 1) {
+        // 双指→单指
+        lastFingerX = e.touches[0].clientX;
+        lastFingerY = e.touches[0].clientY;
+        lastFingerTime = Date.now();
+        lastTouch1 = null;
+        lastTouch2 = null;
+        if (activeGestureMode === 'zoom' || activeGestureMode === 'scroll') {
+          activeGestureMode = null;
         }
       }
     }, { passive: false });
@@ -1661,7 +1815,60 @@ class BrowserViewer {
     }
     if (window.parent !== window) {
       window.parent.postMessage({ type: 'bv-stats', fps: this.currentFps, bandwidth: this.currentBandwidth }, '*');
+     }
+   }
+
+  _showInputBar(remoteValue) {
+    if (!this._inputBar) return;
+    this._inputBar.style.display = 'block';
+    if (typeof remoteValue === 'string') {
+      this._inputField.value = remoteValue;
     }
+    // 显示字段信息
+    if (this._focusedTag) {
+      var tagLabel = this._focusedTag.toUpperCase();
+      var placeholder = this._inputField.getAttribute('placeholder') || '';
+      this._inputLabel.textContent = tagLabel;
+      if (this._focusedSelector) {
+        this._inputLabel.textContent = tagLabel + ': ' + this._focusedSelector.substring(0, 30);
+      }
+    }
+    // 弹出键盘
+    this._inputField.focus();
+    // 光标移到末尾
+    var len = this._inputField.value.length;
+    this._inputField.setSelectionRange(len, len);
+    // 记录初始值，用于计算增量
+    this._inputBarLastValue = this._inputField.value;
+  }
+
+  _hideInputBar() {
+    if (!this._inputBar) return;
+    this._inputBar.style.display = 'none';
+    this._inputField.value = '';
+    this._inputBarLastValue = '';
+    this._inputField.blur();
+  }
+
+  _syncInputToRemote() {
+    var newValue = this._inputField.value;
+    var oldValue = this._inputBarLastValue || '';
+    this._inputBarLastValue = newValue;
+
+    if (newValue === oldValue) return;
+
+    // 计算差异，发送 input 事件到远程
+    var inputData = {};
+
+    // 发送完整的新值（让远程直接设置）
+    inputData.value = newValue;
+    inputData.replace = true; // 标记为全量替换
+
+    if (this._focusedSelector) {
+      inputData.selector = this._focusedSelector;
+      if (this._focusedFrameSelector) inputData.frameSelector = this._focusedFrameSelector;
+    }
+    this.send({ type: 'event', event: { type: 'input', data: inputData } });
   }
 
   send(msg) {

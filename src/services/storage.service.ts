@@ -79,7 +79,7 @@ export class StorageService {
           try {
             const stats = await stat(fullPath);
             totalSize += stats.size;
-          } catch (error) {
+          } catch (error: unknown) {
             // File might have been deleted, skip it
             logger.warn(`Failed to stat file ${fullPath}: ${error}`);
           }
@@ -87,7 +87,7 @@ export class StorageService {
       }
 
       return totalSize;
-    } catch (error) {
+    } catch (error: unknown) {
       // Directory doesn't exist or cannot be accessed
       logger.warn(`Failed to calculate directory size for ${dirPath}: ${error}`);
       return 0;
@@ -205,7 +205,7 @@ export class StorageService {
         await rm(sessionsBasePath, { recursive: true, force: true });
         logger.info(`Cleaned up all sessions for user ${userId}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to cleanup sessions for user ${userId}: ${error}`);
       throw error;
     }
@@ -226,7 +226,7 @@ export class StorageService {
     try {
       await rm(sharedPath, { recursive: true, force: true });
       logger.info(`Cleaned up shared data for user ${userId}`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to cleanup shared data for user ${userId}: ${error}`);
       throw error;
     }
@@ -267,7 +267,7 @@ export class StorageService {
             cleanedCount++;
             logger.info(`Cleaned up old shared data for user ${userId} (last modified: ${stats.mtime.toISOString()})`);
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`Failed to check/cleanup shared data for user ${userId}: ${error}`);
         }
       }
@@ -277,7 +277,7 @@ export class StorageService {
       } else {
         logger.info('No old shared data found to cleanup');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to cleanup old shared data: ${error}`);
       throw error;
     }
@@ -310,7 +310,7 @@ export class StorageService {
       }
 
       return userIds;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to get user IDs: ${error}`);
       return [];
     }
@@ -329,7 +329,7 @@ export class StorageService {
         try {
           const stats = await this.getUserStorageStats(userId);
           statsMap.set(userId, stats);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`Failed to get storage stats for user ${userId}: ${error}`);
         }
       })
@@ -388,7 +388,7 @@ export class StorageService {
             const entries = await readdir(sessionsPath, { withFileTypes: true });
             sessionsCount = entries.filter((e) => e.isDirectory()).length;
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`读取用户 ${user.id} sessions 目录失败:`, error);
         }
 
@@ -467,7 +467,7 @@ export class StorageService {
         try {
           await this.cleanupUserSessions(userId);
           freedSpace += statsBefore.sessionsSize;
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`Error cleaning up sessions for user ${userId}:`, error);
         }
       }
@@ -477,7 +477,7 @@ export class StorageService {
         try {
           await this.cleanupUserShared(userId);
           freedSpace += statsBefore.sharedSize;
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`Error cleaning up shared data for user ${userId}:`, error);
         }
       }
@@ -541,7 +541,7 @@ export class StorageService {
             freedSpace += size;
             logger.info(`Cleaned up old shared data for user ${userId} (size: ${this.formatBytes(size)})`);
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`Failed to check/cleanup shared data for user ${userId}: ${error}`);
         }
       }
@@ -549,7 +549,7 @@ export class StorageService {
       logger.info(
         `Admin cleanup completed: ${deletedCount} directories removed, ${this.formatBytes(freedSpace)} freed`
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to cleanup old shared data: ${error}`);
       throw error;
     }

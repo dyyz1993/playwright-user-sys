@@ -167,7 +167,7 @@ const CLIPBOARD_INTERCEPTOR_SCRIPT = `
             (window).__clipboardContent = text;
           }
         }
-      } catch (_) { /* ignore */ }
+      } catch (_: unknown) { /* ignore */ }
       return origWrite(items);
     };
   }
@@ -273,7 +273,7 @@ export class BrowserService extends EventEmitter {
       }
 
       this.cleanLockFiles(userDataDir);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`创建用户数据目录失败 (${userDataDir}):`, error);
       throw error;
     }
@@ -299,7 +299,7 @@ export class BrowserService extends EventEmitter {
             fsSync.unlinkSync(lockPath);
             logger.info(`已清理残留锁文件: ${lockPath}`);
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`清理锁文件失败 (${lockPath}):`, error);
         }
       }
@@ -328,7 +328,7 @@ export class BrowserService extends EventEmitter {
         await fs.rm(session.userDataDir, { recursive: true, force: true });
         logger.info(`已清理独立会话的用户数据目录 (sessionId: ${sessionId}): ${session.userDataDir}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`清理用户数据目录失败 (sessionId: ${sessionId}):`, error);
     }
   }
@@ -440,7 +440,7 @@ export class BrowserService extends EventEmitter {
       logger.info(`会话连接超时，准备关闭浏览器 (sessionId: ${sessionId})`);
       this.closeBrowser(sessionId)
         .then((success) => logger.info(`超时会话浏览器关闭 ${success ? '成功' : '失败'} (sessionId: ${sessionId})`))
-        .catch((error) => logger.error(`关闭超时会话浏览器出错 (sessionId: ${sessionId}):`, error));
+        .catch((error: unknown) => logger.error(`关闭超时会话浏览器出错 (sessionId: ${sessionId}):`, error));
       this.disconnectionTimers.delete(sessionId);
     }, CONFIG.disconnectionTimeout);
     this.disconnectionTimers.set(sessionId, timer);
@@ -469,7 +469,7 @@ export class BrowserService extends EventEmitter {
       logger.info(`成功生成浏览器指纹: ${fingerprint.fingerprint.navigator.userAgent}`);
 
       return fingerprint;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('生成浏览器指纹失败:', error);
       return null;
     }
@@ -543,8 +543,7 @@ export class BrowserService extends EventEmitter {
 
       const puppeteerOptions = await this.convertPuppeteerOptions(options);
       let launchTimedOut = false;
-      // @ts-ignore — LaunchOptions type mismatch (dual puppeteer-core installations on macOS)
-      const browserPromise = puppeteer.launch(puppeteerOptions);
+      const browserPromise = puppeteer.launch(puppeteerOptions as Parameters<typeof puppeteer.launch>[0]);
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
           launchTimedOut = true;
@@ -555,7 +554,7 @@ export class BrowserService extends EventEmitter {
       let browser: import('puppeteer').Browser;
       try {
         browser = await Promise.race([browserPromise, timeoutPromise]);
-      } catch (launchError) {
+      } catch (launchError: unknown) {
         // 如果超时了，后台的 browserPromise 仍会完成，产生孤儿进程
         // 主动 catch 并 kill 它
         if (launchTimedOut) {
@@ -567,10 +566,10 @@ export class BrowserService extends EventEmitter {
                   process.kill(proc.pid, 'SIGKILL');
                   logger.warn(`已清理超时启动的孤儿浏览器进程 (PID: ${proc.pid}, sessionId: ${sessionId})`);
                 }
-                await orphanedBrowser.close().catch((e) => {
+                await orphanedBrowser.close().catch((e: unknown) => {
                   logger.debug('Error closing orphaned browser:', (e as Error)?.message);
                 });
-              } catch (killErr) {
+              } catch (killErr: unknown) {
                 logger.warn(`清理超时孤儿浏览器进程失败 (sessionId: ${sessionId}):`, killErr);
               }
             })
@@ -588,7 +587,7 @@ export class BrowserService extends EventEmitter {
         try {
           await primaryPage.setViewport(options.viewport);
           logger.info(`✅ Viewport 已设置: ${options.viewport.width}x${options.viewport.height}`);
-        } catch (viewportError) {
+        } catch (viewportError: unknown) {
           logger.warn('设置 Viewport 失败:', viewportError);
         }
       }
@@ -598,7 +597,7 @@ export class BrowserService extends EventEmitter {
         try {
           await primaryPage.emulateTimezone(options.timezone);
           logger.info(`✅ 时区已设置: ${options.timezone}`);
-        } catch (timezoneError) {
+        } catch (timezoneError: unknown) {
           logger.warn('设置时区失败:', timezoneError);
         }
       }
@@ -621,7 +620,7 @@ export class BrowserService extends EventEmitter {
             try {
               await primaryPage.setCookie(...storageState.cookies);
               logger.info('✅ Cookies 设置成功');
-            } catch (cookieError) {
+            } catch (cookieError: unknown) {
               logger.warn('设置 Cookies 失败:', cookieError);
             }
           }
@@ -642,12 +641,12 @@ export class BrowserService extends EventEmitter {
                 }, origin.localStorage);
 
                 logger.info(`✅ localStorage 设置成功: ${origin.origin}`);
-              } catch (originError) {
+              } catch (originError: unknown) {
                 logger.warn(`设置 localStorage 失败 (${origin.origin}):`, originError);
               }
             }
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('处理 storageState 时出错:', error);
         }
       }
@@ -655,39 +654,40 @@ export class BrowserService extends EventEmitter {
       // 设置事件监听 (只保留必要的)
       if (fingerprint) {
         try {
-          // @ts-ignore — puppeteer-core Handler<> type mismatch (dual installations on macOS)
-          browser.on('targetcreated', this.createTargetHandler(sessionId, fingerprint));
-          // @ts-ignore — puppeteer-core Handler<> type mismatch (dual installations on macOS)
-          browser.on('targetchanged', this.handleTargetChangeHandler(sessionId));
+          browser.on(
+            'targetcreated',
+            this.createTargetHandler(sessionId, fingerprint) as unknown as Parameters<typeof browser.on>[1]
+          );
+          browser.on(
+            'targetchanged',
+            this.handleTargetChangeHandler(sessionId) as unknown as Parameters<typeof browser.on>[1]
+          );
           browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy ?? ''));
           logger.info(`已设置浏览器事件监听 (sessionId: ${sessionId})`);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`设置指纹事件监听失败 (sessionId: ${sessionId}):`, error);
         }
       } else {
         browser.on('disconnected', this.createDisconnectHandler(sessionId, options.proxy ?? ''));
       }
-      // @ts-ignore — puppeteer-core Handler<> type mismatch (dual installations on macOS)
-      browser.on('targetcreated', async (target: Target) => {
+      browser.on('targetcreated', (async (target: Target) => {
         if (target.type() === 'page') {
           const newPage = await target.page();
           if (newPage && !newPage.url().startsWith('devtools://')) {
             this.emit('tabCreated', sessionId, newPage);
           }
         }
-      });
+      }) as unknown as Parameters<typeof browser.on>[1]);
       logger.info('primaryPage', primaryPage);
 
       // 为 primaryPage 注入 focusin 脚本（targetcreated 不会触发初始页面）
       try {
         if (primaryPage) {
-          // @ts-ignore — Page type mismatch (dual puppeteer-core installations on macOS)
-          await this.injectFocusinScript(sessionId, primaryPage);
-          // @ts-ignore — Page type mismatch (dual puppeteer-core installations on macOS)
-          await this.injectMouseTrackingScript(primaryPage);
+          await this.injectFocusinScript(sessionId, primaryPage as unknown as Page);
+          await this.injectMouseTrackingScript(primaryPage as unknown as Page);
           logger.info(`focusin & mouse tracking injected on primaryPage for session ${sessionId}`);
         }
-      } catch (focusErr) {
+      } catch (focusErr: unknown) {
         logger.warn(`Failed to inject focusin on primaryPage for session ${sessionId}:`, focusErr);
       }
 
@@ -696,7 +696,7 @@ export class BrowserService extends EventEmitter {
         await primaryPage.evaluateOnNewDocument(CLIPBOARD_INTERCEPTOR_SCRIPT);
         // 2. Also inject immediately for current page
         await primaryPage.evaluate(CLIPBOARD_INTERCEPTOR_SCRIPT);
-      } catch (primaryClipErr) {
+      } catch (primaryClipErr: unknown) {
         logger.warn(`Failed to inject clipboard on primary page (session: ${sessionId}):`, primaryClipErr);
       }
 
@@ -720,7 +720,7 @@ export class BrowserService extends EventEmitter {
             true
           );
         })
-        .catch((e) => {
+        .catch((e: unknown) => {
           logger.debug('Error injecting file input interceptor:', (e as Error)?.message);
         });
 
@@ -731,8 +731,7 @@ export class BrowserService extends EventEmitter {
       const now = Date.now();
       this.sessions.set(sessionId, {
         port,
-        // @ts-ignore — Browser type mismatch (dual puppeteer-core installations on macOS)
-        browser,
+        browser: browser as unknown as Browser,
         path,
         lastActivity: now,
         startTime: now,
@@ -757,7 +756,7 @@ export class BrowserService extends EventEmitter {
 
       const screenshotUrl = await this.takeScreenshot(sessionId); // 生成初始截图 URL
       return { browserWSEndpoint, port, path, screenshotUrl };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`启动浏览器失败 (sessionId: ${sessionId}):`, error);
       await this.cleanupFailedLaunch(sessionId);
       throw error;
@@ -777,7 +776,7 @@ export class BrowserService extends EventEmitter {
           await session.browser.close();
           logger.info(`Cleaned up potentially dangling browser process for failed launch (sessionId: ${sessionId})`);
         }
-      } catch (closeError) {
+      } catch (closeError: unknown) {
         logger.warn(`清理失败启动的浏览器时出错 (sessionId: ${sessionId}):`, closeError);
       }
     }
@@ -825,7 +824,7 @@ export class BrowserService extends EventEmitter {
 
       try {
         await sessionRef.browser.close();
-      } catch (closeErr) {
+      } catch (closeErr: unknown) {
         logger.error(`关闭浏览器进程失败 (sessionId: ${sessionId}):`, closeErr);
         // browser.close() 失败时，强制 kill 子进程防止僵尸
         try {
@@ -834,7 +833,7 @@ export class BrowserService extends EventEmitter {
             process.kill(proc.pid, 'SIGKILL');
             logger.warn(`已强制终止浏览器进程 (PID: ${proc.pid}, sessionId: ${sessionId})`);
           }
-        } catch (killErr) {
+        } catch (killErr: unknown) {
           logger.warn(`强制终止浏览器进程失败 (sessionId: ${sessionId}):`, killErr);
         }
       }
@@ -849,7 +848,7 @@ export class BrowserService extends EventEmitter {
             fsSync.rmSync(userDataDir, { recursive: true, force: true });
             logger.info(`已清理独立会话的用户数据目录 (sessionId: ${sessionId}): ${userDataDir}`);
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`清理用户数据目录失败 (sessionId: ${sessionId}):`, error);
         }
       }
@@ -865,7 +864,7 @@ export class BrowserService extends EventEmitter {
       try {
         const { fileService } = await import('./services/file.service.js');
         await fileService.cleanupSessionFiles(sessionId);
-      } catch (cleanupError) {
+      } catch (cleanupError: unknown) {
         logger.warn(`清理会话临时文件失败 (${sessionId}):`, cleanupError);
       }
 
@@ -873,7 +872,7 @@ export class BrowserService extends EventEmitter {
       this.emit('sessionClosed', sessionId, totalConnectedTime);
       logger.info(`浏览器已关闭 (sessionId: ${sessionId}, 总连接时长: ${totalConnectedTime}秒)`);
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`关闭浏览器失败 (sessionId: ${sessionId}):`, error);
 
       // ===== 清理共享浏览器记录（使用 try 之前捕获的字段）=====
@@ -1100,10 +1099,10 @@ export class BrowserService extends EventEmitter {
             cursor.style.display = 'block';
           });
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           logger.error('injectMouseTrackingScript error:', error);
         });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to inject mouse tracking script for :`, error);
     }
   }
@@ -1144,7 +1143,7 @@ export class BrowserService extends EventEmitter {
             permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'],
           });
           logger.info(`Clipboard permissions granted for session ${sessionId}`);
-        } catch (permErr) {
+        } catch (permErr: unknown) {
           logger.warn(`Failed to grant clipboard permissions for session ${sessionId}:`, permErr);
         }
 
@@ -1153,7 +1152,7 @@ export class BrowserService extends EventEmitter {
 
         try {
           await page.evaluate(CLIPBOARD_INTERCEPTOR_SCRIPT);
-        } catch (clipEvalErr) {
+        } catch (clipEvalErr: unknown) {
           logger.warn(`Failed to inject clipboard on current page for session ${sessionId}:`, clipEvalErr);
         }
 
@@ -1182,8 +1181,10 @@ export class BrowserService extends EventEmitter {
         // !! 移除页面监听器添加和截图逻辑 !!
 
         const fingerprintInjector = new FingerprintInjector();
-        // @ts-ignore — Page type mismatch (dual puppeteer-core installations on macOS)
-        await fingerprintInjector.attachFingerprintToPuppeteer(page, fingerprint);
+        await fingerprintInjector.attachFingerprintToPuppeteer(
+          page as unknown as Parameters<typeof fingerprintInjector.attachFingerprintToPuppeteer>[0],
+          fingerprint
+        );
         const currentViewport = await page.viewport();
         if (!currentViewport) return;
 
@@ -1202,7 +1203,7 @@ export class BrowserService extends EventEmitter {
               : { angle: 90, type: 'landscapePrimary' },
           deviceScaleFactor: fingerprint.fingerprint.screen.devicePixelRatio,
         });
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`处理新页面目标失败 (sessionId: ${sessionId}):`, error);
       }
     };
@@ -1215,11 +1216,11 @@ export class BrowserService extends EventEmitter {
     return () => {
       logger.warn(`浏览器实例已断开连接，将关闭会话 (sessionId: ${sessionId})`);
       if (proxy) {
-        ProxyChain.closeAnonymizedProxy(proxy, true).catch((error) =>
+        ProxyChain.closeAnonymizedProxy(proxy, true).catch((error: unknown) =>
           logger.error(`关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`, error)
         );
       }
-      this.closeBrowser(sessionId).catch((error) =>
+      this.closeBrowser(sessionId).catch((error: unknown) =>
         logger.error(`关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`, error)
       );
     };
@@ -1257,7 +1258,7 @@ export class BrowserService extends EventEmitter {
       }
       this.emit('sessionScreenshot', sessionId, screenshotUrl);
       return screenshotUrl;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`截图失败 (sessionId: ${sessionId}):`, error);
       return undefined;
     }
@@ -1291,7 +1292,7 @@ export class BrowserService extends EventEmitter {
         return pages.find((p) => !p.isClosed()) || null;
       }
       return mainPage || null;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`获取页面失败 (sessionId: ${sessionId}):`, error);
       await this.closeBrowser(sessionId);
       return null;

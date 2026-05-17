@@ -72,8 +72,7 @@ export class BrowserInjectService {
         uploadPath = linkPath;
       }
 
-      // @ts-ignore — uploadFile requires ElementHandle<HTMLInputElement>
-      await fileInput.uploadFile(uploadPath);
+      await (fileInput as unknown as import('puppeteer-core').ElementHandle<HTMLInputElement>).uploadFile(uploadPath);
 
       await target.evaluate((sel: string) => {
         const input = document.querySelector(sel) as HTMLInputElement;

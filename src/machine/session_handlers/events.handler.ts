@@ -120,7 +120,7 @@ export async function handleEventsConnection(
             const conn = activeEventConnections.get(ws);
             if (conn) conn.page = freshPage;
           }
-        } catch (_recoverErr) {
+        } catch (_recoverErr: unknown) {
           logger.debug('Failed to recover page for clipboard polling:', (_recoverErr as Error)?.message);
         }
       }
@@ -184,7 +184,7 @@ export async function handleEventsConnection(
       logger.error(`'/events' WebSocket error for session ${sessionId}:`, error);
       cleanupEventConnection(ws);
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Error setting up '/events' connection for session ${sessionId}:`, error);
     ws.close(1011, 'Internal server error during event setup');
     if (connectionInfo) {
@@ -276,7 +276,7 @@ async function handleFileUploadStart(ws: WebSocket, sessionId: string, data: Fil
       filename: data.filename,
       size: data.size,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Failed to start file upload for session ${sessionId}:`, error);
     sendResponse(ws, 'fileUploadStart', {
       success: false,
@@ -327,7 +327,7 @@ async function handleFileUploadChunk(ws: WebSocket, sessionId: string, data: Fil
       success: true,
       chunkIndex: data.chunkIndex,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Failed to handle file chunk for session ${sessionId}:`, error);
     sendResponse(ws, 'fileUploadChunk', {
       success: false,
@@ -411,7 +411,7 @@ async function handleRawFocusEvent(page: Page, ws: WebSocket, sessionId: string)
     } else if (ws.readyState === WebSocket.OPEN) {
       logger.info(`No suitable element focused when evaluating for ${sessionId}.`);
     }
-  } catch (evalError) {
+  } catch (evalError: unknown) {
     if (!page.isClosed() && ws.readyState === WebSocket.OPEN) {
       logger.error(`Error evaluating focus state for session ${sessionId} after raw event:`, evalError);
     }
@@ -491,7 +491,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
           }
           files.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
           sendResponse(ws, 'fileList', { success: true, files });
-        } catch (err) {
+        } catch (err: unknown) {
           logger.error('Failed to list files:', err);
           sendResponse(ws, 'fileList', { success: false, files: [], error: String(err) });
         }
@@ -551,7 +551,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
             parentPath: path.dirname(resolvedPath),
             items: validItems,
           });
-        } catch (err) {
+        } catch (err: unknown) {
           sendResponse(ws, requestType, {
             success: false,
             error: (err as Error).message,
@@ -605,7 +605,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
             size: stat.size,
             name: resolvedPath2.split('/').pop(),
           });
-        } catch (err) {
+        } catch (err: unknown) {
           sendResponse(ws, requestType, { success: false, error: (err as Error).message });
         }
         break;
@@ -652,7 +652,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
             if (page && !page.isClosed()) {
               await page.keyboard.type(String(data.text), { delay: 10 });
             }
-          } catch (err) {
+          } catch (err: unknown) {
             logger.error('Paste failed:', err);
           }
         }
@@ -686,8 +686,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
               sendNotification(ws, 'injectResult', { success: false, error: 'No file input found' });
               return;
             }
-            // @ts-ignore - uploadFile requires ElementHandle<HTMLInputElement>
-            await inputEl.uploadFile(filePath);
+            await (inputEl as unknown as import('puppeteer-core').ElementHandle<HTMLInputElement>).uploadFile(filePath);
             sendNotification(ws, 'injectResult', { success: true });
           } catch (err: unknown) {
             sendNotification(ws, 'injectResult', { success: false, error: (err as Error).message });
@@ -716,7 +715,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
               );
               ws.send(JSON.stringify({ type: 'tabList', tabs }));
             }
-          } catch (tabError) {
+          } catch (tabError: unknown) {
             logger.error(`Failed to list tabs for session ${sessionId}:`, tabError);
           }
         } else if (tabAction === 'switch') {
@@ -736,7 +735,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
                 sendResponse(ws, 'tab', { success: false, error: 'Target tab not found' });
               }
             }
-          } catch (switchError) {
+          } catch (switchError: unknown) {
             logger.error(`Failed to switch tab for session ${sessionId}:`, switchError);
             sendResponse(ws, 'tab', { success: false, error: (switchError as Error).message });
           }
@@ -756,7 +755,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
                 sendResponse(ws, 'tab', { success: false, error: 'Cannot close the only tab' });
               }
             }
-          } catch (closeTabError) {
+          } catch (closeTabError: unknown) {
             logger.error(`Failed to close tab for session ${sessionId}:`, closeTabError);
             sendResponse(ws, 'tab', { success: false, error: (closeTabError as Error).message });
           }
@@ -789,7 +788,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
             });
           }
           sendResponse(ws, requestType, { success: true });
-        } catch (gotoError) {
+        } catch (gotoError: unknown) {
           logger.error(`Failed navigate for ${sessionId}:`, gotoError);
           sendResponse(ws, requestType, {
             success: false,
@@ -802,7 +801,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         try {
           await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 });
           sendResponse(ws, requestType, { success: true });
-        } catch (backError) {
+        } catch (backError: unknown) {
           sendResponse(ws, requestType, { success: false, error: (backError as Error).message });
         }
         break;
@@ -811,7 +810,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         try {
           await page.goForward({ waitUntil: 'domcontentloaded', timeout: 15000 });
           sendResponse(ws, requestType, { success: true });
-        } catch (fwdError) {
+        } catch (fwdError: unknown) {
           sendResponse(ws, requestType, { success: false, error: (fwdError as Error).message });
         }
         break;
@@ -820,7 +819,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         try {
           await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
           sendResponse(ws, requestType, { success: true });
-        } catch (reloadError) {
+        } catch (reloadError: unknown) {
           sendResponse(ws, requestType, { success: false, error: (reloadError as Error).message });
         }
         break;
@@ -853,7 +852,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
           error: `Unhandled event type: ${eventType}`,
         });
     }
-  } catch (error) {
+  } catch (error: unknown) {
     // Outer catch for JSON parsing or unexpected errors
     logger.error(
       `Failed to parse or handle incoming message for session ${sessionId} (event type: ${eventType}):`,
@@ -894,7 +893,7 @@ async function handleMouseEvents(
         if (frameSelector) {
           const iframeHandle = await page
             .waitForSelector(frameSelector, { visible: true, timeout: 5000 })
-            .catch((error) => {
+            .catch((error: unknown) => {
               logger.error(`Failed to find iframe for session ${sessionId}:`, error);
               return null;
             });
@@ -953,7 +952,7 @@ async function handleMouseEvents(
 
           logger.info(`Successfully filled input for session ${sessionId}`);
           sendResponse(ws, requestType, { success: true });
-        } catch (fillError) {
+        } catch (fillError: unknown) {
           logger.error(`Failed to fill input for session ${sessionId} (${selector}):`, fillError);
           sendResponse(ws, requestType, {
             success: false,
@@ -1018,7 +1017,7 @@ async function handleMouseEvents(
                   clickCount: data.clickCount || 1,
                   // delay: 30 + Math.random() * 40,
                 })
-                .catch((error) => {
+                .catch((error: unknown) => {
                   logger.error(`Failed to click for session ${sessionId}:`, error);
                 });
               break;
@@ -1058,7 +1057,7 @@ async function handleMouseEvents(
           }
           // If simulation succeeded
           sendResponse(ws, requestType, { success: true });
-        } catch (simError) {
+        } catch (simError: unknown) {
           logger.error(`Failed to handle event ${eventType} for session ${sessionId}:`, simError);
           sendResponse(ws, requestType, {
             success: false,
@@ -1066,7 +1065,7 @@ async function handleMouseEvents(
           });
         }
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Failed to handle mouse event for session ${sessionId}:`, error);
     sendResponse(ws, requestType, {
       success: false,
@@ -1106,7 +1105,7 @@ function cleanupEventConnection(ws: WebSocket): void {
             logger.info('Focus listener removed from page context.');
           }
         }, functionName)
-        .catch((e) => {
+        .catch((e: unknown) => {
           logger.debug('Error removing focus listener during cleanup:', (e as Error)?.message);
         });
       // !! 如何安全地移除 exposeFunction 绑定的函数是 Puppeteer 的一个挑战 !!

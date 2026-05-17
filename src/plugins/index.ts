@@ -74,7 +74,7 @@ export default fp(async function (fastify: FastifyInstance) {
     ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
     : defaultOrigins;
 
-  // @ts-ignore — cors origin callback type mismatch with fastify-cors typings
+  // @ts-expect-error — cors origin callback: 3rd param not in types, callback 2nd param type differs
   await fastify.register(cors, {
     origin: (
       origin: string | undefined,
@@ -158,18 +158,17 @@ export default fp(async function (fastify: FastifyInstance) {
   // 不设置 secret，因为 JWT token 本身已经签名了
   await fastify.register(cookie);
 
-  // @ts-ignore — @fastify/session option type mismatch
   await fastify.register(session, {
     cookieName: 'sessionId',
     secret: config.jwt.secret,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     },
-  });
+  } as unknown as Parameters<typeof session>[1]);
 
   // 注册 Flash 插件
   await fastify.register(flash);

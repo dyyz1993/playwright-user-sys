@@ -47,7 +47,7 @@ export class MachineConnectionManager extends EventEmitter {
     call.on('data', (message: MachineMessage) => {
       try {
         this.handleMachineMessage(machineId, message);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`处理机器消息时出错 (${machineId}):`, error);
       }
     });
@@ -66,7 +66,7 @@ export class MachineConnectionManager extends EventEmitter {
       .then(() => {
         logger.info(`机器状态已更新为在线: ${machineId}`);
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         logger.error(`更新机器状态失败 (${machineId}):`, error);
       });
 
@@ -78,7 +78,7 @@ export class MachineConnectionManager extends EventEmitter {
     if (call) {
       try {
         call.end();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`结束机器连接时出错 (${machineId}):`, error);
       }
     }
@@ -91,7 +91,7 @@ export class MachineConnectionManager extends EventEmitter {
       try {
         // MachineServiceClient 继承自 grpc Client，运行时有 close() 方法
         (client as unknown as { close: () => void }).close();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`关闭机器 gRPC 客户端时出错 (${machineId}):`, error);
       }
       this.clients.delete(machineId);
@@ -107,10 +107,10 @@ export class MachineConnectionManager extends EventEmitter {
         const { memoryStore } = await import('../memory-store.service.js');
         memoryStore.markMachineOffline(machineId);
         logger.info(`内存存储中的机器状态已更新为离线: ${machineId}`);
-      } catch (memoryError) {
+      } catch (memoryError: unknown) {
         logger.error(`更新内存存储中的机器状态失败 (${machineId}):`, memoryError);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`更新机器状态失败 (${machineId}):`, error);
     }
   }
@@ -162,7 +162,7 @@ export class MachineConnectionManager extends EventEmitter {
       this.clients.set(machineId, client);
 
       return client;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`创建 gRPC 客户端失败 (${machineId}):`, error);
       return null;
     }
@@ -184,7 +184,7 @@ export class MachineConnectionManager extends EventEmitter {
 
       call.write(message);
       logger.info(`已发送关闭浏览器命令 (${machineId}, ${sessionId})`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`发送关闭浏览器命令失败 (${machineId}, ${sessionId}):`, error);
     }
   }
@@ -205,7 +205,7 @@ export class MachineConnectionManager extends EventEmitter {
 
       call.write(message);
       logger.info(`重启命令已发送 (${machineId})`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`发送重启命令失败 (${machineId}):`, error);
     }
   }
@@ -227,7 +227,7 @@ export class MachineConnectionManager extends EventEmitter {
 
       call.write(message);
       logger.info(`永久关闭命令已发送 (${machineId})`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`发送永久关闭命令失败 (${machineId}):`, error);
     }
   }
@@ -248,7 +248,7 @@ export class MachineConnectionManager extends EventEmitter {
 
       call.write(message);
       logger.debug(`心跳请求已发送 (${machineId})`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`发送心跳请求失败 (${machineId}):`, error);
     }
   }
@@ -620,7 +620,7 @@ export class MachineConnectionManager extends EventEmitter {
       } else {
         logger.warn(`收到未知类型的消息 (${machineId}): ${JSON.stringify(message)}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`处理机器消息时出错 (${machineId}):`, error);
     }
   }
@@ -663,7 +663,7 @@ export class MachineConnectionManager extends EventEmitter {
       });
 
       logger.debug(`机器状态已更新 (${machineId})`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`处理心跳时出错 (${machineId}):`, error);
     }
   }
@@ -685,7 +685,7 @@ export class MachineConnectionManager extends EventEmitter {
       });
 
       logger.info(`会话截图已更新 (${session_id}): ${screenshot_url}`);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`处理会话截图更新时出错 (${machineId}, ${session_id}):`, error);
     }
   }
@@ -853,7 +853,7 @@ export class MachineConnectionManager extends EventEmitter {
           logger.info(`会话出错，计费完成 (${session_id}): ${duration}秒, ${errorMinutes}点`);
           break;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`处理会话状态更新时出错 (${machineId}, ${status.session_id}):`, error);
     }
   }

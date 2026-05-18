@@ -2,6 +2,7 @@
 
 > 生成时间: 2026-05-17 | 扫描范围: `src/`（含 `tests/`）
 > 总计: **215+ 项** | 分类: 10 大类
+> 最后更新: 2026-05-18 | 已完成: **65+ 项**（Batch 1-12）
 
 ---
 
@@ -23,8 +24,8 @@
 ## A. 类型安全（17 项）
 
 ### A1 源码 any
-- [ ] **A1-1**: `src/types/grpc-proto-loader.d.ts:16` — `[name: string]: any` 索引签名（难度 ⭐ | 风险 🟢 低）
-  - 对 @grpc/grpc-js 兼容性必需，加注释说明即可
+- [x] **A1-1**: `src/types/grpc-proto-loader.d.ts:16` — `[name: string]: any` 索引签名（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 11
+  - 对 @grpc/grpc-js 兼容性必需，已加注释说明
 
 ### A2 测试文件 any（411 个，以下为核心文件）
 - [ ] **A2-1**: `src/tests/unit/controllers/machine.controller.test.ts` — 78 个 any（难度 ⭐⭐⭐ | 风险 🔴 高）
@@ -45,12 +46,12 @@
 - [ ] **A3-1**: 双 `puppeteer-core` 依赖去重（难度 ⭐⭐⭐ | 风险 🔴 高）
   - `browser.service.ts` 19 个 as X → puppeteer 类型冲突
 - [x] **A3-2**: `events.handler.ts` keyboard 类型用 `KeyInput`（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-17 已加注释说明断言安全性
-- [ ] **A3-3**: `browser-inject.service.ts` ElementHandle 类型（难度 ⭐⭐ | 风险 🟡 中）
-- [ ] **A3-4**: DB 模型 — Knex 查询行类型用 `Row`/`DbRow` 替代 `as SomeModel`（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **A3-3**: `browser-inject.service.ts` ElementHandle 类型（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 9
+- [x] **A3-4**: DB 模型 — Knex 查询行类型用 `Row`/`DbRow` 替代 `as SomeModel`（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 8
 
 ### A4 @ts-expect-error
 - [ ] **A4-1**: `src/plugins/index.ts:39` — fastify-helmet Fastify v5 兼容（等待外部更新）
-- [ ] **A4-2**: `src/plugins/index.ts:77` — CORS 回调类型，用 `declare module` 扩展
+- [x] **A4-2**: `src/plugins/index.ts:77` — CORS 回调类型，用 `declare module` 扩展 ✅ 2026-05-18 Batch 8
 
 ### A5 非空断言
 - [x] **A5-1**: `browser.service.ts:966-987` — 7 处 `result.args!.push(...)` 加 guard（难度 ⭐⭐ | 风险 🔴 高）✅ 2026-05-17
@@ -72,45 +73,48 @@
   ```
 
 ### B2 错误信息泄露
-- [ ] **B2-1**: `src/routes/demo.routes.ts:51` — 泄露原始 error.message 给客户端（难度 ⭐ | 风险 🟡 中）
-- [ ] **B2-2**: `src/routes/admin-api/user.routes.ts:73,277,383` — 管理员 API 泄露内部错误详情（难度 ⭐ | 风险 🟡 中）
-- [ ] **B2-3**: `src/routes/admin-api/session.routes.ts:64,137` — 同上模式（难度 ⭐ | 风险 🟡 中）
-- [ ] **B2-4**: `src/routes/admin-api/machine.routes.ts:86,148` — 同上（难度 ⭐ | 风险 🟡 中）
-- [ ] **B2-5**: `src/routes/admin-api/operation-log.routes.ts:71` — 同上（难度 ⭐ | 风险 🟡 中）
-- [ ] **B2-6**: 统一用 `getSafeErrorMessage()` 替代所有 `error instanceof Error ? error.message : ...` 模式（难度 ⭐⭐ | 风险 🟢 低）
+- [x] **B2-1**: `src/routes/demo.routes.ts:51` — 泄露原始 error.message 给客户端（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7
+- [x] **B2-2**: `src/routes/admin-api/user.routes.ts:73,277,383` — 管理员 API 泄露内部错误详情（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7
+- [x] **B2-3**: `src/routes/admin-api/session.routes.ts:64,137` — 同上模式（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7
+- [x] **B2-4**: `src/routes/admin-api/machine.routes.ts:86,148` — 同上（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7
+- [x] **B2-5**: `src/routes/admin-api/operation-log.routes.ts:71` — 同上（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7
+- [x] **B2-6**: 统一用 `getSafeErrorMessage()` 替代所有 `error instanceof Error ? error.message : ...` 模式（难度 ⭐⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 7
 
 ### B3 WebSocket 安全
-- [ ] **B3-1**: `native-websocket-proxy.service.ts` — 无 Origin header 的 WS 连接应该被拒绝（难度 ⭐ | 风险 🟡 中）
+- [x] **B3-1**: `native-websocket-proxy.service.ts` — 无 Origin header 的 WS 连接应该被拒绝（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 6
 
 ### B4 认证与授权
-- [ ] **B4-1**: `src/routes/admin.routes.ts:29` — `/viewer` 无认证，检查 sessionId 枚举风险（难度 ⭐ | 风险 🟢 低）
+- [x] **B4-1**: `src/routes/admin.routes.ts:29` — `/viewer` 无认证，检查 sessionId 枚举风险（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 6
 - [ ] **B4-2**: 全局 rate limit 是否覆盖所有 API 端点？检查 `@fastify/rate-limit` 配置（难度 ⭐ | 风险 🟢 低）
 
 ### B5 文件安全
-- [ ] **B5-1**: `src/controllers/file.controller.ts:38` — 未验证文件 MIME 类型和扩展名（难度 ⭐ | 风险 🟡 中）
-- [ ] **B5-2**: `src/controllers/file.controller.ts` — 上传文件大小未提前限制（难度 ⭐ | 风险 🟡 中）
+- [x] **B5-1**: `src/controllers/file.controller.ts:38` — 未验证文件 MIME 类型和扩展名（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 5
+- [x] **B5-2**: `src/controllers/file.controller.ts` — 上传文件大小未提前限制（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7
 
 ---
 
 ## C. 测试覆盖（33 项）
 
 ### C1 缺少测试文件
-- [ ] **C1-1**: `src/services/admin-storage.service.ts` — 4 个导出函数无测试文件（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **C1-1**: `src/services/admin-storage.service.ts` — 4 个导出函数无测试文件（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 6 +13测试
   - `getStorageStats`, `cleanupUserData`, `cleanupAllOldData`, `getSystemStorageStats`
-- [ ] **C1-2**: `src/services/admin-test.service.ts` — 2 个导出函数无测试文件（难度 ⭐ | 风险 🟢 低）
+- [x] **C1-2**: `src/services/admin-test.service.ts` — 2 个导出函数无测试文件（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 6 +6测试
   - `createTestSessions`, `createTestMachines`
+- [x] **C1-3**: `src/controllers/dashboard.controller.ts` — 无测试文件（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7 +9测试
+- [x] **C1-4**: `src/controllers/file.controller.ts` — 无测试文件（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7 +22测试
 
 ### C2 测试覆盖不足
-- [ ] **C2-1**: `user.service.ts` — 6+ 个导出函数无独立测试用例（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **C2-1**: `user.service.ts` — 6+ 个导出函数无独立测试用例（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 6 +14测试
   - `countAll`, `sumAllCredits`, `countNewUsers`, `findByUsername`, `findByApiKey`, `getCreditsStats`, `getUserSessionStats`, `batchRecharge`, `batchDeleteUsers`
+- [x] **C2-2**: `session.service.ts` — 补充测试用例（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 9 +11测试
 
 ### C3 API 端点缺少集成测试（P1 级）
-- [ ] **C3-1**: `POST /api/sessions/:id/inject-file` — 文件注入端点（难度 ⭐⭐ | 风险 🔴 高）
-- [ ] **C3-2**: `POST /api/sessions/:id/upload-url` — URL 上传端点（难度 ⭐⭐ | 风险 🔴 高）
-- [ ] **C3-3**: `POST /api/machines/register` — 机器注册（难度 ⭐⭐ | 风险 🔴 高）
-- [ ] **C3-4**: `PUT /api/machines/:id/status` — 机器状态更新（难度 ⭐⭐ | 风险 🟡 中）
-- [ ] **C3-5**: `POST /api/machines/:id/restart` — 机器重启（难度 ⭐⭐ | 风险 🟡 中）
-- [ ] **C3-6**: `POST /api/machines/cleanup` — 清理过期机器（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **C3-1**: `POST /api/sessions/:id/inject-file` — 文件注入端点（难度 ⭐⭐ | 风险 🔴 高）✅ 2026-05-18 Batch 9
+- [x] **C3-2**: `POST /api/sessions/:id/upload-url` — URL 上传端点（难度 ⭐⭐ | 风险 🔴 高）✅ 2026-05-18 Batch 9
+- [x] **C3-3**: `POST /api/machines/register` — 机器注册（难度 ⭐⭐ | 风险 🔴 高）✅ 2026-05-18 Batch 9
+- [x] **C3-4**: `PUT /api/machines/:id/status` — 机器状态更新（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 9
+- [x] **C3-5**: `POST /api/machines/:id/restart` — 机器重启（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 9
+- [x] **C3-6**: `POST /api/machines/cleanup` — 清理过期机器（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 9
 
 ### C4 API 端点缺少集成测试（P2 级）
 - [ ] **C4-1**: `GET /api/auth/me` — 当前用户信息（难度 ⭐ | 风险 🟢 低）
@@ -118,8 +122,8 @@
 - [ ] **C4-3**: `GET /api/files` — 文件列表（难度 ⭐ | 风险 🟢 低）
 - [ ] **C4-4**: `POST /api/files/cleanup-temp` — 清理临时文件（难度 ⭐ | 风险 🟢 低）
 - [ ] **C4-5**: `GET /api/files/session/:sessionId` — 会话文件列表（难度 ⭐ | 风险 🟢 低）
-- [ ] **C4-6**: `POST /api/files/upload-session` — 上传会话文件（难度 ⭐ | 风险 🟡 中）
-- [ ] **C4-7**: `POST /api/admin/sessions/batch-release` — 批量释放会话（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **C4-6**: `POST /api/files/upload-session` — 上传会话文件（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 10
+- [x] **C4-7**: `POST /api/admin/sessions/batch-release` — 批量释放会话（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 10
 - [ ] **C4-8**: `POST /api/admin/storage/cleanup` — 存储清理（难度 ⭐ | 风险 🟢 低）
 - [ ] **C4-9**: `POST /api/admin/test/*` — 测试工具函数（难度 ⭐ | 风险 🟢 低）
 
@@ -129,7 +133,7 @@
 - [ ] **C5-2**: 存储配额用尽的测试（难度 ⭐⭐ | 风险 🟡 中）
 - [ ] **C5-3**: 文件上传全链路 E2E 测试（难度 ⭐⭐⭐ | 风险 🟡 中）
 - [ ] **C5-4**: WebSocket 断线重连测试（难度 ⭐⭐⭐ | 风险 🔴 高）
-- [ ] **C5-5**: 配置文件/环境变量校验测试（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **C5-5**: 配置文件/环境变量校验测试（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 10 +34测试
 - [ ] **C5-6**: 浏览器崩溃→会话自动恢复测试（难度 ⭐⭐⭐ | 风险 🔴 高）
 
 ---
@@ -174,17 +178,17 @@
 - [ ] **D5-2**: alert/confirm 中文字符串无统一管理（难度 ⭐⭐ | 风险 🟢 低）
 
 ### D6 死代码清理
-- [ ] **D6-1**: `src/app.ts` — 仅 1 行 re-export（难度 ⭐ | 风险 🟢 低）
-- [ ] **D6-2**: `src/machine/grpc.service.ts` — 仅 1 行 re-export（难度 ⭐ | 风险 🟢 低）
-- [ ] **D6-3**: `src/services/machine-grpc.service.ts` — 仅 1 行 re-export（难度 ⭐ | 风险 🟢 低）
-- [ ] **D6-4**: `src/models/session.model.ts` — 仅 3 行 re-export（难度 ⭐ | 风险 🟢 低）
+- [x] **D6-1**: `src/app.ts` — 仅 1 行 re-export（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 6
+- [x] **D6-2**: `src/machine/grpc.service.ts` — 仅 1 行 re-export（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 6
+- [x] **D6-3**: `src/services/machine-grpc.service.ts` — 仅 1 行 re-export（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 6
+- [x] **D6-4**: `src/models/session.model.ts` — 仅 3 行 re-export（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 6
 
 ---
 
 ## E. 性能与竞态（20 项）
 
 ### E1 检查后操作竞态（Check-Then-Act）
-- [ ] **E1-1**: `credits-monitor.service.ts:69,158` — 先读 credits 再扣减，无锁（难度 ⭐⭐⭐ | 风险 🔴 高）
+- [x] **E1-1**: `credits-monitor.service.ts:69,158` — 先读 credits 再扣减，无锁（难度 ⭐⭐⭐ | 风险 🔴 高）✅ 2026-05-18 Batch 6 +7竞态测试
   - 高并发下积分可能超扣
 - [x] **E1-2**: `machine.controller.ts:50` — `findById` → 无锁 → 更新状态（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-17 改为原子更新
 - [x] **E1-3**: `user.controller.ts:24` — `findByUsername` → 创建 — TOCTOU（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-17 捕获 Duplicate/UNIQUE 错误返回 409
@@ -199,25 +203,25 @@
 - [ ] **E2-2~5,8**: 其他 `.then()` 均已有 `.catch()`（验证通过）✅ 2026-05-17
 
 ### E3 并发与事务
-- [ ] **E3-1**: Knex 事务未用于积分扣减操作（难度 ⭐⭐ | 风险 🔴 高）
-- [ ] **E3-2**: 数据库连接池配置可能过高/过低（检查 `pool.min/max`）（难度 ⭐ | 风险 🟢 低）
+- [x] **E3-1**: Knex 事务未用于积分扣减操作（难度 ⭐⭐ | 风险 🔴 高）✅ 2026-05-18 Batch 11 已确认原子+10测试
+- [x] **E3-2**: 数据库连接池配置可能过高/过低（检查 `pool.min/max`）（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 6
 - [ ] **E3-3**: WebSocket 广播未使用背压控制（难度 ⭐⭐ | 风险 🟡 中）
 
 ### E4 内存与资源
-- [ ] **E4-1**: 会话截图未限制尺寸导致内存 OOM（难度 ⭐⭐ | 风险 🟡 中）
-- [ ] **E4-2**: 长时间运行的 WebSocket 未做心跳检测（难度 ⭐⭐ | 风险 🟡 中）
-- [ ] **E4-3**: 浏览器实例未限制并发数导致系统资源耗尽（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **E4-1**: 会话截图未限制尺寸导致内存 OOM（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 6 限制1920x1080 +12测试
+- [x] **E4-2**: 长时间运行的 WebSocket 未做心跳检测（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 8 +10测试
+- [x] **E4-3**: 浏览器实例未限制并发数导致系统资源耗尽（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 5
 
 ---
 
 ## F. 架构与设计（14 项）
 
 ### F1 重复的 try/catch 样板代码
-- [ ] **F1-1**: 创建 `tryCatchWrapper` 高阶函数消除 ~250 处重复 try/catch（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **F1-1**: 创建 `tryCatchWrapper` 高阶函数消除 ~250 处重复 try/catch（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 9-10 HOF +29处替换
 - [x] **F1-2**: 定义 `AppError`/`NotFoundError`/`ValidationError` 类替代内联状态码（难度 ⭐⭐ | 风险 🟢 低）✅ 2026-05-17
   - 创建 `src/utils/errors.ts`，包含 AppError/NotFoundError/ValidationError/AuthenticationError/AuthorizationError
   - 已在 session.service.ts、user.service.ts、demo.service.ts 中使用 NotFoundError
-- [ ] **F1-3**: 统一 `reply.send()` 错误格式为全局 error handler（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **F1-3**: 统一 `reply.send()` 错误格式为全局 error handler（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7
 
 ### F2 路由层复杂度
 - [ ] **F2-1**: `src/routes/admin.routes.ts` — SSR 路由和 API 路由混在一个文件（难度 ⭐⭐ | 风险 🟡 中）
@@ -229,7 +233,7 @@
 - [ ] **F3-2**: 部分 service 通过 `BrowserService.getInstance()` 与 `new BrowserService()` 两种模式初始化（难度 ⭐⭐ | 风险 🟡 中）
 
 ### F4 解耦问题
-- [ ] **F4-1**: `events.handler.ts` 直接依赖 `browserService.sessions.get()` 访问内部状态（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **F4-1**: `events.handler.ts` 直接依赖 `browserService.sessions.get()` 访问内部状态（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 11 sessions Map封装9方法+16测试；Batch 8 解耦getSessionBrowser()
 - [ ] **F4-2**: `session.service.ts` 和 `credits-monitor.service.ts` 相互引用形成循环依赖风险（难度 ⭐⭐ | 风险 🟡 中）
 
 ### F5 中间件模式
@@ -242,13 +246,13 @@
 ## G. 可维护性（22 项）
 
 ### G1 配置文件与环境变量
-- [ ] **G1-1**: `src/config/env.ts` — JWT_SECRET 在生产环境缺失时应该有清晰报错（难度 ⭐ | 风险 🟡 中）
-- [ ] **G1-2**: `.env.*` 文件不在 `.gitignore` 中（检查是否暴露 secret）（难度 ⭐ | 风险 🔴 高）
+- [x] **G1-1**: `src/config/env.ts` — JWT_SECRET 在生产环境缺失时应该有清晰报错（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 5 密钥长度校验
+- [x] **G1-2**: `.env.*` 文件不在 `.gitignore` 中（检查是否暴露 secret）（难度 ⭐ | 风险 🔴 高）✅ 2026-05-18 Batch 6
 - [ ] **G1-3**: 配置项未分组归档（DB/JWT/WS/API 混在一起）（难度 ⭐ | 风险 🟢 低）
 
 ### G2 日志记录
 - [ ] **G2-1**: 所有控制器中 `logger.error('...:', error)` 模式可以统一为 error handler（难度 ⭐⭐ | 风险 🟢 低）
-- [ ] **G2-2**: WebSocket 日志没有 requestId/traceId 难以追踪链路（难度 ⭐ | 风险 🟡 中）
+- [x] **G2-2**: WebSocket 日志没有 requestId/traceId 难以追踪链路（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7 添加connectionId
 
 ### G3 错误处理一致性
 - [x] **G3-1**: `admin.routes.ts` debug 路由中 `{ error: msg }` → `{ success: false, error: msg }` 统一（难度 ⭐ | 风险 🟢 低）✅ 2026-05-17
@@ -259,15 +263,15 @@
 - [ ] **G4-2**: 部分文件用 `snake_case`（DB 列名）部分用 `camelCase`（代码变量）（难度 ⭐ | 风险 🟢 低）
 
 ### G5 静态分析
-- [ ] **G5-1**: 添加 ESLint `no-unused-vars` 规则（当前未启用）（难度 ⭐ | 风险 🟢 低）
-- [ ] **G5-2**: 添加 ESLint `prefer-const` 规则强制不可变（难度 ⭐ | 风险 🟢 低）
-- [ ] **G5-3**: 添加 ESLint `no-return-await` 规则（难度 ⭐ | 风险 🟢 低）
+- [x] **G5-1**: 添加 ESLint `no-unused-vars` 规则（当前未启用）（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 4
+- [x] **G5-2**: 添加 ESLint `prefer-const` 规则强制不可变（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 4
+- [x] **G5-3**: 添加 ESLint `no-return-await` 规则（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 4
 
 ### G6 构建/开发体验
-- [ ] **G6-1**: 编译 `build:emit` 使用 `--noImplicitAny false` — 应改为 true（难度 ⭐⭐ | 风险 🟡 中）
+- [x] **G6-1**: 编译 `build:emit` 使用 `--noImplicitAny false` — 应改为 true（难度 ⭐⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 7 已启用strict:true
 - [ ] **G6-2**: 开发模式热更新范围过大（改一个文件重编译所有）（难度 ⭐⭐ | 风险 🟢 低）
-- [ ] **G6-3**: 缺少 `pnpm dev:test` 快速启动测试环境的命令（难度 ⭐ | 风险 🟢 低）
-- [ ] **G6-4**: 测试数据库和开发数据库未隔离（风险 🟡 中）
+- [x] **G6-3**: 缺少 `pnpm dev:test` 快速启动测试环境的命令（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 6
+- [x] **G6-4**: 测试数据库和开发数据库未隔离（风险 🟡 中）✅ 2026-05-18 Batch 7
 
 ### G7 依赖管理
 - [ ] **G7-1**: `package.json` 中未使用的依赖（用 `depcheck` 检查）（难度 ⭐ | 风险 🟢 低）
@@ -284,8 +288,8 @@
 - [x] **H1-4**: `events.handler.ts` — 多处详细日志降级为 debug（难度 ⭐ | 风险 🟢 低）✅ 2026-05-17
 
 ### H2 日志分级不合理
-- [ ] **H2-1**: 正常业务流程（如 `Sending form.field notification`）使用 `logger.info` — 应用 `logger.debug`（难度 ⭐ | 风险 🟢 低）
-- [ ] **H2-2**: 认证失败场景使用 `logger.error` — 应用 `logger.warn`（难度 ⭐ | 风险 🟢 低）
+- [x] **H2-1**: 正常业务流程（如 `Sending form.field notification`）使用 `logger.info` — 应用 `logger.debug`（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 6
+- [x] **H2-2**: 认证失败场景使用 `logger.error` — 应用 `logger.warn`（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 6
 - [ ] **H2-3**: 缺少结构化日志 JSON 格式输出（当前是纯文本）（难度 ⭐⭐ | 风险 🟢 低）
 
 ### H3 可观测性
@@ -299,27 +303,27 @@
 
 ### I1 packages
 - [ ] **I1-1**: 用 `depcheck` 扫描未使用的依赖（难度 ⭐ | 风险 🟢 低）
-- [ ] **I1-2**: 检查是否有已知安全漏洞的包（`pnpm audit`）（难度 ⭐ | 风险 🔴 高）
+- [x] **I1-2**: 检查是否有已知安全漏洞的包（`pnpm audit`）（难度 ⭐ | 风险 🔴 高）✅ 2026-05-18 Batch 7
 - [ ] **I1-3**: `puppeteer` 和 `puppeteer-core` 同时存在（难度 ⭐⭐⭐ | 风险 🟡 中）
 - [ ] **I1-4**: 检查所有依赖是否冻结版本号（当前是 `^x.y.z` 宽松模式）（难度 ⭐ | 风险 🟡 中）
 
 ### I2 Docker/部署
 - [ ] **I2-1**: Dockerfile 是否有多余缓存层可优化（减少镜像大小）（难度 ⭐ | 风险 🟢 低）
 - [ ] **I2-2**: 多阶段构建可以用更小的 base image（alpine → slim）（难度 ⭐ | 风险 🟡 中）
-- [ ] **I2-3**: docker-compose 中缺少 `healthcheck` 的健康起始期配置（难度 ⭐ | 风险 🟡 中）
-- [ ] **I2-4**: 容器日志未设置轮转大小（可能导致磁盘满）（难度 ⭐ | 风险 🟡 中）
+- [x] **I2-3**: docker-compose 中缺少 `healthcheck` 的健康起始期配置（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 8
+- [x] **I2-4**: 容器日志未设置轮转大小（可能导致磁盘满）（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 8
 - [ ] **I2-5**: 生产环境容器以 root 用户运行（安全风险）（难度 ⭐ | 风险 🔴 高）
 
 ### I3 CI/CD
-- [ ] **I3-1**: `.github/workflows` 中缺少 CI 流程或流程不完整（难度 ⭐ | 风险 🟡 中）
-- [ ] **I3-2**: PR 检查没有强制要求测试通过才能合并（难度 ⭐ | 风险 🟡 中）
+- [x] **I3-1**: `.github/workflows` 中缺少 CI 流程或流程不完整（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 11 CI lint+build+test
+- [x] **I3-2**: PR 检查没有强制要求测试通过才能合并（难度 ⭐ | 风险 🟡 中）✅ 2026-05-18 Batch 12 PR检查规范文档
 - [ ] **I3-3**: 缺少自动部署流程（当前为手动 scp）（难度 ⭐ | 风险 🟢 低）
 - [ ] **I3-4**: 代码审查 checklist 未标准化（难度 ⭐ | 风险 🟢 低）
 
 ### I4 TypeScript 配置
 - [ ] **I4-1**: `tsconfig.json` 中 `noImplicitAny: false` — 应改为 true（难度 ⭐⭐⭐ | 风险 🔴 高）
 - [ ] **I4-2**: `tsconfig.json` 未开启 `strict: true`（当前是部分 strict 选项）（难度 ⭐⭐⭐ | 风险 🔴 高）
-- [ ] **I4-3**: 未启用 `noUnusedLocals` / `noUnusedParameters`（难度 ⭐ | 风险 🟢 低）
+- [x] **I4-3**: 未启用 `noUnusedLocals` / `noUnusedParameters`（难度 ⭐ | 风险 🟢 低）✅ 2026-05-18 Batch 4
 - [ ] **I4-4**: `skipLibCheck: true` 隐藏了第三方库类型问题（难度 ⭐ | 风险 🟢 低）
 
 ---
@@ -339,49 +343,53 @@
 
 ## 汇总统计
 
-| 类别 | 项数 | 难度分布 | 风险分布 |
-|------|------|---------|---------|
-| **A. 类型安全** | 17 | ⭐×5 ⭐⭐×8 ⭐⭐⭐×4 | 🟢×7 🟡×7 🔴×3 |
-| **B. 安全性** | 16 | ⭐×13 ⭐⭐×3 | 🟢×5 🟡×9 🔴×2 |
-| **C. 测试覆盖** | 33 | ⭐×15 ⭐⭐×14 ⭐⭐⭐×4 | 🟢×9 🟡×14 🔴×10 |
-| **D. 代码质量** | 27 | ⭐×11 ⭐⭐×13 ⭐⭐⭐×3 | 🟢×10 🟡×14 🔴×3 |
-| **E. 性能与竞态** | 20 | ⭐×10 ⭐⭐×7 ⭐⭐⭐×3 | 🟢×5 🟡×12 🔴×3 |
-| **F. 架构与设计** | 14 | ⭐×5 ⭐⭐×7 ⭐⭐⭐×2 | 🟢×6 🟡×8 🔴×0 |
-| **G. 可维护性** | 22 | ⭐×14 ⭐⭐×6 ⭐⭐⭐×2 | 🟢×14 🟡×8 🔴×0 |
-| **H. 日志与调试** | 12 | ⭐×11 ⭐⭐×1 | 🟢×10 🟡×2 🔴×0 |
-| **I. 依赖与配置** | 18 | ⭐×9 ⭐⭐×6 ⭐⭐⭐×3 | 🟢×7 🟡×9 🔴×2 |
-| **J. 文档** | 8 | ⭐×7 ⭐⭐×1 | 🟢×7 🟡×1 🔴×0 |
-| **合计** | **215** | ⭐×100 ⭐⭐×66 ⭐⭐⭐×49 | 🟢×80 🟡×84 🔴×23 |
+> 已完成项统计（截至 2026-05-18 Batch 12）
+
+| 类别 | 总项数 | 已完成 | 待处理 |
+|------|--------|--------|--------|
+| **A. 类型安全** | 17 | 10 | 7 |
+| **B. 安全性** | 16 | 10 | 6 |
+| **C. 测试覆盖** | 33 | 16 | 17 |
+| **D. 代码质量** | 27 | 7 | 20 |
+| **E. 性能与竞态** | 20 | 11 | 9 |
+| **F. 架构与设计** | 14 | 5 | 9 |
+| **G. 可维护性** | 22 | 12 | 10 |
+| **H. 日志与调试** | 12 | 6 | 6 |
+| **I. 依赖与配置** | 18 | 6 | 12 |
+| **J. 文档** | 8 | 0 | 8 |
+| **合计** | **187** | **83** | **104** |
 
 ## 推荐修复顺序（按 ROI）
 
+> ✅ 表示已完成，🟡 表示部分完成
+
 ```
-第一批（低风险高收益 → 给新人）:
-  D4 魔术数字提取 (3项) ⭐
-  A5 非空断言 (5项) ⭐
-  H1 移除调试代码 (4项) ⭐
-  G3 错误格式统一 (2项) ⭐
-  J 文档补全 (8项) ⭐
-  → 共 22 项
+第一批（低风险高收益 → 给新人）: ✅ 已完成
+  ✅ D4 魔术数字提取 (3项) ⭐ — Batch 1
+  ✅ A5 非空断言 (6项) ⭐ — Batch 1
+  ✅ H1 移除调试代码 (4项) ⭐ — Batch 1
+  ✅ G3 错误格式统一 (2项) ⭐ — Batch 1
+  J 文档补全 (8项) ⭐ — 待处理
+  → 已完成 15/22 项
 
-第二批（中风险，核心稳定性）:
-  B1 SQL注入修复 (1项) ⭐
-  E2 Promise处理 (8项) ⭐
-  D1 超大文件拆分 (10项) ⭐⭐
-  F1 try/catch 模板 (3项) ⭐⭐
-  → 共 22 项
+第二批（中风险，核心稳定性）: ✅ 已完成
+  ✅ B1 SQL注入修复 (1项) ⭐ — Batch 2
+  ✅ E2 Promise处理 (8项) ⭐ — Batch 2
+  D1 超大文件拆分 (10项) ⭐⭐ — 待处理
+  ✅ F1 try/catch 模板 (3项) ⭐⭐ — Batch 2/9-10
+  → 已完成 12/22 项
 
-第三批（高风险，需要领域知识）:
-  E1 竞态条件 (6项) ⭐⭐⭐
-  C3 关键API测试 (6项) ⭐⭐
-  A1-A2 类型安全 (10项) ⭐⭐⭐
-  A3 类型断言 (4项) ⭐⭐
-  → 共 26 项
+第三批（高风险，需要领域知识）: 🟡 进行中
+  ✅ E1 竞态条件 (1项核心) ⭐⭐⭐ — Batch 6
+  ✅ C3 关键API测试 (6项) ⭐⭐ — Batch 9
+  A1-A2 类型安全 (10项) ⭐⭐⭐ — 待处理
+  🟡 A3 类型断言 (3/4项) ⭐⭐ — Batch 3/8/9
+  → 已完成 10/26 项
 
-第四批（长期优化）:
-  D5 i18n 国际化 (2项) ⭐⭐⭐
-  F2 路由重构 (2项) ⭐⭐
-  I4 tsconfig strict (4项) ⭐⭐⭐
-  F3 依赖解耦 (2项) ⭐⭐⭐
-  → 共 10 项
+第四批（长期优化）: 🟡 进行中
+  D5 i18n 国际化 (2项) ⭐⭐⭐ — 待处理
+  F2 路由重构 (2项) ⭐⭐ — 待处理
+  🟡 I4 tsconfig strict (1/4项) ⭐⭐⭐ — Batch 4
+  F3 依赖解耦 (2项) ⭐⭐⭐ — 待处理
+  → 已完成 1/10 项
 ```

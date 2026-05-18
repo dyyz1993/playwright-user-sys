@@ -8,7 +8,6 @@ import { FingerprintInjector } from 'fingerprint-injector';
 import { BrowserFingerprintWithHeaders, FingerprintGenerator } from 'fingerprint-generator';
 import { CONFIG } from './config.js';
 import { logger } from '@shared/utils/logger.js';
-import { sessionFocusEmitter } from './utils.js';
 import puppeteerStealth from 'puppeteer-extra';
 import ProxyChain from 'proxy-chain';
 import type {
@@ -22,6 +21,7 @@ import type {
 import { takeScreenshot as takeScreenshotFn } from './session_handlers/screenshot.js';
 import { convertPuppeteerOptions as convertPuppeteerOptionsFn } from './session_handlers/puppeteer-config.js';
 import { CLIPBOARD_INTERCEPTOR_SCRIPT } from './session_handlers/clipboard-constants.js';
+import { injectFocusinScript, injectMouseTrackingScript } from './session_handlers/page-inject.js';
 const puppeteer = puppeteerStealth.default;
 
 export type { SessionConfig, BrowserOptions, BrowserLaunchOptions, BrowserInstance } from './types.js';
@@ -501,8 +501,8 @@ export class BrowserService extends EventEmitter {
       // 为 primaryPage 注入 focusin 脚本（targetcreated 不会触发初始页面）
       try {
         if (primaryPage) {
-          await this.injectFocusinScript(sessionId, primaryPage as unknown as Page);
-          await this.injectMouseTrackingScript(primaryPage as unknown as Page);
+          await injectFocusinScript(sessionId, primaryPage as unknown as Page);
+          await injectMouseTrackingScript(primaryPage as unknown as Page);
           logger.info(`focusin & mouse tracking injected on primaryPage for session ${sessionId}`);
         }
       } catch (focusErr: unknown) {
@@ -749,101 +749,6 @@ export class BrowserService extends EventEmitter {
     return this.sessions.size;
   }
 
-  /**
-   * 转换浏览器选项
-   */
-  async injectFocusinScript(sessionId: string, page: Page): Promise<void> {
-    // --- BEGIN: Injection and Expose Logic ---
-    const dynamicFunctionName = `_focusHandler_${sessionId.replace(/\W/g, '_')}`;
-
-    // 1. Inject persistent listener via evaluateOnNewDocument
-
-    await page.evaluateOnNewDocument((fnName) => {
-      // document.removeEventListener('focusin', handleFocusin);
-      document.addEventListener('focusin', function (_event) {
-        if (typeof (window as unknown as Record<string, unknown>)[fnName] === 'function') {
-          (window as unknown as Record<string, () => void>)[fnName](); // Call the dynamic function
-        }
-      });
-    }, dynamicFunctionName);
-    logger.info(`Persistent focus listener script injected for session ${sessionId}.`);
-
-    // 2. Expose the bridge function *once* for this page/browser context
-    try {
-      await page.exposeFunction(dynamicFunctionName, () => {
-        // Node.js callback - ONLY emits the raw event with sessionId
-        // Ensure page/browser isn't closed during async handling if needed
-        logger.info(`Raw focus event triggered via bridge for session ${sessionId}`);
-        sessionFocusEmitter.emit(`rawFocusEvent:${sessionId}`);
-      });
-      logger.info(`Dynamic focus bridge '${dynamicFunctionName}' exposed for session ${sessionId}.`);
-    } catch (exposeError: unknown) {
-      const msg = exposeError instanceof Error ? exposeError.message : String(exposeError);
-      if (msg.includes('already exists')) {
-        logger.warn(
-          `Dynamic bridge function '${dynamicFunctionName}' likely already exposed for session ${sessionId}.`
-        );
-      } else {
-        throw exposeError; // Rethrow other errors
-      }
-    }
-  }
-
-  // 注入鼠标跟踪脚本
-  async injectMouseTrackingScript(page: Page): Promise<void> {
-    try {
-      // 为页面注入鼠标指针脚本
-      await page
-        .evaluateOnNewDocument(() => {
-          const existingCursor = document.getElementById('remote-cursor-pointer');
-          if (existingCursor) {
-            existingCursor.remove();
-          }
-
-          // 创建鼠标指针元素
-          const cursor = document.createElement('div');
-          cursor.id = 'remote-cursor-pointer';
-          cursor.style.position = 'fixed';
-          cursor.style.width = '10px';
-          cursor.style.height = '10px';
-          cursor.style.borderRadius = '50%';
-          cursor.style.border = '2px solid rgba(0,120,255,0.8)';
-          cursor.style.backgroundColor = 'rgba(0,120,255,0.3)';
-          cursor.style.transform = 'translate(-50%, -50%)';
-          cursor.style.zIndex = '9999999';
-          cursor.style.pointerEvents = 'none';
-          cursor.style.display = 'none';
-
-          // 当DOM加载完成后添加到body
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-              document.body.appendChild(cursor);
-            });
-          } else {
-            document.body.appendChild(cursor);
-          }
-
-          // 创建新的mousemove事件监听器
-          // 添加新的事件监听器
-          document.addEventListener('mousemove', function (e: MouseEvent) {
-            // 使用原始坐标，无需缩放转换
-            const cssX = e.clientX;
-            const cssY = e.clientY;
-
-            // 更新光标位置
-            cursor.style.left = `${cssX}px`;
-            cursor.style.top = `${cssY}px`;
-            cursor.style.display = 'block';
-          });
-        })
-        .catch((error: unknown) => {
-          logger.error('injectMouseTrackingScript error:', error);
-        });
-    } catch (error: unknown) {
-      logger.error(`Failed to inject mouse tracking script for :`, error);
-    }
-  }
-
   private handleTargetChangeHandler(_sessionId: string) {
     return async (target: Target) => {
       logger.info(`Target changed:  ${target.type()}`, target.url());
@@ -870,8 +775,8 @@ export class BrowserService extends EventEmitter {
         if (page.isClosed() || page.url().startsWith('devtools://') || page.url().startsWith('file://')) return;
         logger.debug(`新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`);
 
-        await this.injectMouseTrackingScript(page);
-        await this.injectFocusinScript(sessionId, page);
+        await injectMouseTrackingScript(page);
+        await injectFocusinScript(sessionId, page);
 
         try {
           const cdp = await page.createCDPSession();

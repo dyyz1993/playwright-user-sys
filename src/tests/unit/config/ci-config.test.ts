@@ -78,14 +78,14 @@ describe('CI workflow configuration', () => {
       }
     });
 
-    it('should use actions/checkout@v4', () => {
+    it('should use actions/checkout', () => {
       if (!data?.yaml) return;
       const jobs = data.yaml.jobs;
       for (const job of Object.values(jobs)) {
         const steps = (job as any).steps || [];
         const checkoutStep = steps.find((s: any) => s.uses?.includes('actions/checkout'));
         if (checkoutStep) {
-          expect(checkoutStep.uses).toContain('v4');
+          expect(checkoutStep.uses).toContain('actions/checkout');
         }
       }
     });

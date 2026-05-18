@@ -17,7 +17,7 @@ process.on('exit', () => {
     try {
       unlinkSync(dbPath);
     } catch (_e) {
-      // ignore cleanup errors
+      void _e;
     }
   }
 });

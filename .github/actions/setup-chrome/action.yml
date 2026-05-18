@@ -1,0 +1,13 @@
+name: 'Setup Chrome'
+description: 'Install Chrome/Chromium for integration tests'
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: browser-actions/setup-chrome@v1
+      id: setup-chrome
+
+    - run: |
+        echo "Chrome installed: ${{ steps.setup-chrome.outputs.chrome-path }}"
+        chrome --version
+      shell: bash

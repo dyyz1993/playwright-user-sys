@@ -25,17 +25,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup project
+        uses: ./.github/actions/setup-project
 
       - name: 1. ESLint 检查
         run: |
@@ -65,7 +56,7 @@ jobs:
           echo "═══════════════════════════════════════"
           bash scripts/check-type-safety.sh
 
-      - name: 5. 单元测试
+      - name: 5. 单元测试 + 覆盖率
         env:
           NODE_ENV: test
           DB_TYPE: sqlite
@@ -74,9 +65,17 @@ jobs:
           ADMIN_PASSWORD: test-admin-password-for-github-ci
         run: |
           echo "═══════════════════════════════════════"
-          echo "  单元测试"
+          echo "  单元测试 + 覆盖率"
           echo "═══════════════════════════════════════"
-          pnpm test:unit
+          pnpm vitest run --coverage --config vitest.unit.config.ts
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
 
   feishu-notify:
     name: Feishu Notification

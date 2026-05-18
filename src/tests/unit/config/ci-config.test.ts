@@ -53,7 +53,7 @@ describe('CI workflow configuration', () => {
 
     it('should contain test:unit step', () => {
       if (!data?.content) return;
-      expect(data.content).toContain('pnpm test:unit');
+      expect(data.content).toMatch(/pnpm (test:unit|vitest run)/);
     });
 
     it('should use pnpm for package management', () => {

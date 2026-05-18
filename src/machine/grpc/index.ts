@@ -268,14 +268,13 @@ export class GrpcClient extends EventEmitter {
       let finalDuration = duration;
 
       if (finalDuration === 0 && status === 'closed') {
-        const sessions = browserService['sessions'];
-        const session = sessions.get(sessionId);
+        const startTime = browserService.getSessionStartTime(sessionId);
 
-        if (session && session.startTime) {
+        if (startTime) {
           const now = Date.now();
-          finalDuration = Math.floor((now - session.startTime) / 1000);
+          finalDuration = Math.floor((now - startTime) / 1000);
           logger.info(
-            `发送会话状态更新时计算持续时间 (sessionId: ${sessionId}): 开始时间=${new Date(session.startTime).toISOString()}, 当前时间=${new Date(now).toISOString()}, 持续时间=${finalDuration}秒`
+            `发送会话状态更新时计算持续时间 (sessionId: ${sessionId}): 开始时间=${new Date(startTime).toISOString()}, 当前时间=${new Date(now).toISOString()}, 持续时间=${finalDuration}秒`
           );
         }
       }

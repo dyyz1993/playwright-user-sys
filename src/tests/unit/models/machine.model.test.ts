@@ -5,12 +5,11 @@
  * 注意: 此测试使用 MySQL 数据库
  * better-sqlite3 需要编译原生模块，在某些环境下可能无法工作
  */
-import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
 import { db, initDatabase } from '../../../config/database.js';
 import { MachineModel } from '../../../models/machine.model.js';
 import { clearAllTables } from '../../helpers/database.js';
 
-// Mock connectionManager for findAvailable test
 vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: {
     getAllConnectedMachines: vi.fn(() => []),
@@ -20,10 +19,6 @@ vi.mock('../../../services/machine-grpc/index.js', () => ({
 describe('MachineModel', () => {
   beforeAll(async () => {
     await initDatabase();
-  });
-
-  afterAll(async () => {
-    await db.destroy();
   });
 
   beforeEach(async () => {

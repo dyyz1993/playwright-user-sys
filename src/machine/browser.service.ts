@@ -1358,6 +1358,44 @@ export class BrowserService extends EventEmitter {
     return this.sessions.get(sessionId)?.browser;
   }
 
+  // ===== Session Manager Public API =====
+
+  getSession(sessionId: string): SessionInfo | undefined {
+    return this.sessions.get(sessionId);
+  }
+
+  setSession(sessionId: string, ctx: SessionInfo): void {
+    this.sessions.set(sessionId, ctx);
+  }
+
+  deleteSession(sessionId: string): boolean {
+    return this.sessions.delete(sessionId);
+  }
+
+  hasSession(sessionId: string): boolean {
+    return this.sessions.has(sessionId);
+  }
+
+  sessionCount(): number {
+    return this.sessions.size;
+  }
+
+  sessionKeys(): string[] {
+    return Array.from(this.sessions.keys());
+  }
+
+  sessionValues(): SessionInfo[] {
+    return Array.from(this.sessions.values());
+  }
+
+  forEachSession(callback: (ctx: SessionInfo, id: string) => void): void {
+    this.sessions.forEach((ctx, id) => callback(ctx, id));
+  }
+
+  getSessionStartTime(sessionId: string): number | undefined {
+    return this.sessions.get(sessionId)?.startTime;
+  }
+
   /**
    * 获取相对于页面左上角的转换后坐标
    */

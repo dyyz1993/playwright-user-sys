@@ -1,7 +1,11 @@
-/**
- * Vitest setup file
- * This runs before all tests to ensure environment variables are set
- */
+import { config } from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.resolve(__dirname, '../..');
+
+config({ path: path.join(rootDir, '.env.dev') });
 
 process.env.NODE_ENV = 'test';
 process.env.DB_TYPE = 'mysql';

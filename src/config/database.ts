@@ -74,52 +74,70 @@ const createDatabaseConfig = () => {
 
 // 数据库实例
 let dbInstance: Knex;
+let dbInitializing: Promise<Knex> | null = null;
 
 // 初始化数据库
-export async function initDatabase(dbName?: string) {
-  try {
-    logger.info('正在初始化数据库...');
-    const config = createDatabaseConfig();
+export async function initDatabase(dbName?: string): Promise<Knex> {
+  if (dbInitializing) {
+    return dbInitializing;
+  }
 
-    // 如果已经存在连接，先销毁
-    if (dbInstance) {
-      logger.info('销毁旧的数据库连接...');
+  if (dbInstance) {
+    try {
+      await dbInstance.raw('SELECT 1');
+      return dbInstance;
+    } catch {
+      logger.warn('数据库连接已失效，重新创建...');
+      const oldInstance = dbInstance;
+      dbInstance = undefined as unknown as Knex;
       try {
-        await dbInstance.destroy();
-        logger.info('旧数据库连接已销毁');
-      } catch (e: unknown) {
-        logger.error('销毁旧连接时出错:', e);
-        throw e;
+        await oldInstance.destroy();
+      } catch (_e) {
+        // ignore destroy errors on stale connection
       }
     }
-
-    // 如果是测试环境且使用内存数据库
-    if (process.env.NODE_ENV === 'test' && process.env.DATABASE_PATH === ':memory:') {
-      logger.info('使用内存数据库进行测试');
-      config.connection = { filename: ':memory:' };
-    }
-
-    // 如果提供了数据库名称覆盖（用于测试环境）
-    if (dbName && config.client === 'mysql2') {
-      (config.connection as Record<string, unknown>).database = dbName;
-      logger.info(`使用测试数据库: ${dbName}`);
-    }
-
-    // 创建数据库连接
-    logger.info('创建新的数据库连接...');
-    dbInstance = knex(config);
-    logger.info('knex 实例已创建');
-
-    // 测试连接
-    logger.info('测试数据库连接 (SELECT 1)...');
-    await dbInstance.raw('SELECT 1');
-    logger.info('数据库连接创建成功');
-
-    return dbInstance;
-  } catch (error: unknown) {
-    logger.error('创建数据库连接失败:', error);
-    throw error;
   }
+
+  dbInitializing = (async () => {
+    try {
+      logger.info('正在初始化数据库...');
+      const config = createDatabaseConfig();
+
+      if (dbInstance) {
+        const oldInstance = dbInstance;
+        dbInstance = undefined as unknown as Knex;
+        try {
+          await oldInstance.destroy();
+          logger.info('旧数据库连接已销毁');
+        } catch (e: unknown) {
+          logger.warn('销毁旧连接时出错（可能已销毁）:', e instanceof Error ? e.message : e);
+        }
+      }
+
+      if (dbName && config.client === 'mysql2') {
+        (config.connection as Record<string, unknown>).database = dbName;
+        logger.info(`使用测试数据库: ${dbName}`);
+      }
+
+      logger.info('创建新的数据库连接...');
+      dbInstance = knex(config);
+      logger.info('knex 实例已创建');
+
+      logger.info('测试数据库连接 (SELECT 1)...');
+      await dbInstance.raw('SELECT 1');
+      logger.info('数据库连接创建成功');
+
+      return dbInstance;
+    } catch (error: unknown) {
+      logger.error('创建数据库连接失败:', error);
+      dbInitializing = null;
+      throw error;
+    } finally {
+      dbInitializing = null;
+    }
+  })();
+
+  return dbInitializing;
 }
 
 // 创建初始数据库连接（非测试环境）

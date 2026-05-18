@@ -17,10 +17,10 @@ describe('Database Isolation Guard', () => {
     const dbType = process.env.DB_TYPE;
     expect(['sqlite', 'mysql']).toContain(dbType);
 
-    if (dbType === 'sqlite') {
-      expect(process.env.DB_PATH).toBe(':memory:');
-    } else {
+    if (dbType === 'mysql') {
       expect(process.env.DB_NAME).toBe('playwright_test_user_sys');
+    } else if (dbType === 'sqlite') {
+      expect(process.env.DB_PATH).toBe(':memory:');
     }
   });
 });

@@ -2,9 +2,13 @@ import knex from 'knex';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
+import { config } from 'dotenv';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '../..');
+
+config({ path: path.join(rootDir, '.env.dev') });
 
 const TEST_DB_NAME = 'playwright_test_user_sys';
 

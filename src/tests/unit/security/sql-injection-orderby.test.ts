@@ -22,7 +22,7 @@
  * 2. They are passed directly to the database engine, causing a DB-level error
  *    rather than an application-level validation error
  */
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { db, initDatabase } from '../../../config/database.js';
 import { UserModel } from '../../../models/user.model.js';
 import { MachineModel } from '../../../models/machine.model.js';
@@ -33,10 +33,6 @@ import { clearAllTables } from '../../helpers/database.js';
 describe('SQL Injection Vulnerability: orderBy parameter', () => {
   beforeAll(async () => {
     await initDatabase();
-  });
-
-  afterAll(async () => {
-    await db.destroy();
   });
 
   beforeEach(async () => {
@@ -171,15 +167,20 @@ describe('SQL Injection Vulnerability: orderBy parameter', () => {
 
     beforeEach(async () => {
       const admin = await UserModel.create({
-        username: 'admin_sqli',
+        username: `admin_sqli_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         password: await hashPassword('password123'),
       });
       const target = await UserModel.create({
-        username: 'target_sqli',
+        username: `target_sqli_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         password: await hashPassword('password123'),
       });
-      adminId = (admin as { id: number }).id;
-      targetUserId = (target as { id: number }).id;
+
+      if (!admin || !target) {
+        throw new Error('Failed to create admin/target users for SQLi test');
+      }
+
+      adminId = admin.id;
+      targetUserId = target.id;
 
       await OperationLogModel.create({
         admin_id: adminId,

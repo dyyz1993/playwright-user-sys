@@ -75,6 +75,8 @@ COPY --from=build --chown=nodejs:nodejs /app/public ./public
 # Create necessary directories
 RUN mkdir -p /app/data \
     /app/dist/data/screenshots \
+    /app/dist/data/uploads \
+    /app/dist/data/temp \
     /app/dist/src/shared/protos \
     /app/files && \
     chown -R nodejs:nodejs /app

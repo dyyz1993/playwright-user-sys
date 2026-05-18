@@ -325,6 +325,14 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
   }, 60000);
 
   beforeEach(async () => {
+    // 关闭机器上所有残留的浏览器实例，防止 maxSessions 耗尽
+    try {
+      const { browserService } = await import('../../src/machine/browser.service.js');
+      await browserService.closeAllBrowsers();
+    } catch {
+      // 非关键：如果关闭失败继续执行
+    }
+
     // 清理会话表
     await testDb.db('sessions').del();
     await testDb.db('credit_history').del();
@@ -341,7 +349,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
     for (const machine of machineServers) {
       await testDb.db('machines').where({ id: machine.machineId }).update({ instance_count: 0 });
     }
-  }, 10000);
+  }, 15000);
 
   // ========================================
   // 测试用例：认证与授权漏洞

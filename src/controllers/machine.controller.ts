@@ -3,7 +3,14 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { MachineModel } from '../models/machine.model.js';
 import { SessionModel } from '../models/session/index.js';
-import { sendSuccess, sendError, sendCreated, sendPaginated, getSafeErrorMessage } from '../utils/response.js';
+import {
+  sendSuccess,
+  sendError,
+  sendCreated,
+  sendPaginated,
+  getSafeErrorMessage,
+  logAndSendError,
+} from '../utils/response.js';
 import { PaginationQuery } from '@shared/types/index.js';
 import {
   registerMachineRequestSchema,
@@ -35,8 +42,7 @@ export async function registerMachine(request: FastifyRequest, reply: FastifyRep
       return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
-    request.log.error(error);
-    return sendError(reply, '注册机器失败', 500);
+    return logAndSendError(request, reply, error, '注册机器失败');
   }
 }
 
@@ -58,8 +64,7 @@ export async function updateMachineStatus(request: FastifyRequest<IdParamRoute>,
       return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
-    request.log.error(error);
-    return sendError(reply, '更新机器状态失败', 500);
+    return logAndSendError(request, reply, error, '更新机器状态失败');
   }
 }
 
@@ -130,8 +135,7 @@ export async function getAllMachines(request: FastifyRequest, reply: FastifyRepl
       return sendError(reply, '无效的查询参数: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
-    request.log.error(error);
-    return sendError(reply, '获取机器列表失败', 500);
+    return logAndSendError(request, reply, error, '获取机器列表失败');
   }
 }
 
@@ -159,8 +163,7 @@ export async function getMachineById(request: FastifyRequest<IdParamRoute>, repl
       return sendSuccess(reply, machine);
     }
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '获取机器信息失败', 500);
+    return logAndSendError(request, reply, error, '获取机器信息失败');
   }
 }
 
@@ -197,8 +200,7 @@ export async function getMachineSessions(request: FastifyRequest<IdParamRoute>, 
       return sendSuccess(reply, sessions);
     }
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '获取机器会话列表失败', 500);
+    return logAndSendError(request, reply, error, '获取机器会话列表失败');
   }
 }
 
@@ -224,8 +226,7 @@ export async function markMachineOffline(request: FastifyRequest<IdParamRoute>, 
 
     return sendSuccess(reply, { id: machineId, status: 'offline' });
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '标记机器离线失败', 500);
+    return logAndSendError(request, reply, error, '标记机器离线失败');
   }
 }
 
@@ -250,8 +251,7 @@ export async function refreshMachineStatus(request: FastifyRequest, reply: Fasti
       updated: onlineMachines,
     });
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '强制刷新机器状态失败', 500);
+    return logAndSendError(request, reply, error, '强制刷新机器状态失败');
   }
 }
 
@@ -276,8 +276,7 @@ export async function cleanupOldMachines(request: FastifyRequest<CleanupOldMachi
       deleted: 0, // 这里暂时无法知道实际删除数量
     });
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '清理旧机器记录失败', 500);
+    return logAndSendError(request, reply, error, '清理旧机器记录失败');
   }
 }
 
@@ -404,8 +403,7 @@ export async function healthCheck(request: FastifyRequest<IdParamRoute>, reply: 
     const result = await MachineModel.healthCheck(machineId);
     return sendSuccess(reply, result);
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '健康检查失败', 500);
+    return logAndSendError(request, reply, error, '健康检查失败');
   }
 }
 
@@ -430,8 +428,7 @@ export async function batchHealthCheck(request: FastifyRequest, reply: FastifyRe
       results,
     });
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '批量健康检查失败', 500);
+    return logAndSendError(request, reply, error, '批量健康检查失败');
   }
 }
 
@@ -471,8 +468,7 @@ export async function updateMachineConfig(request: FastifyRequest<IdParamRoute>,
 
     return sendSuccess(reply, updatedMachine);
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '更新机器失败', 500);
+    return logAndSendError(request, reply, error, '更新机器失败');
   }
 }
 

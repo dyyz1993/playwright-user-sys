@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 import http from 'http';
 import { SessionModel } from '../models/session/index.js';
 import { UserModel } from '../models/user.model.js';
-import { sendSuccess, sendError, sendCreated, getSafeErrorMessage } from '../utils/response.js';
+import { sendSuccess, sendError, sendCreated, getSafeErrorMessage, logAndSendError } from '../utils/response.js';
 import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { createSessionRequestSchema, injectFileRequestSchema, uploadUrlRequestSchema } from '../schemas/index.js';
@@ -98,8 +98,7 @@ export async function createSession(request: FastifyRequest, reply: FastifyReply
       return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
-    request.log.error(error);
-    return sendError(reply, '创建会话失败', 500);
+    return logAndSendError(request, reply, error, '创建会话失败');
   }
 }
 
@@ -126,8 +125,7 @@ export async function getSession(request: FastifyRequest<IdParamRoute>, reply: F
 
     return sendSuccess(reply, toSessionDetail(session));
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '获取会话信息失败', 500);
+    return logAndSendError(request, reply, error, '获取会话信息失败');
   }
 }
 
@@ -203,8 +201,7 @@ export async function releaseSession(request: FastifyRequest<IdParamRoute>, repl
       '会话已释放'
     );
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '释放会话失败', 500);
+    return logAndSendError(request, reply, error, '释放会话失败');
   }
 }
 
@@ -235,8 +232,7 @@ export async function getAllSessions(request: FastifyRequest<PaginationQueryRout
       return sendError(reply, '无效的查询参数: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
-    request.log.error(error);
-    return sendError(reply, '获取会话列表失败', 500);
+    return logAndSendError(request, reply, error, '获取会话列表失败');
   }
 }
 
@@ -285,8 +281,7 @@ export async function closeSession(request: FastifyRequest<IdParamRoute>, reply:
       '会话已关闭'
     );
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '关闭会话失败', 500);
+    return logAndSendError(request, reply, error, '关闭会话失败');
   }
 }
 
@@ -378,8 +373,7 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
       screenshot_url: screenshotUrl,
     });
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '获取会话截图失败', 500);
+    return logAndSendError(request, reply, error, '获取会话截图失败');
   }
 }
 

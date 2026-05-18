@@ -19,6 +19,7 @@ import { BatchRechargeBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
 import * as UserService from '../../services/user.service.js';
 import { sendSuccess, sendError, sendCreated, getSafeErrorMessage } from '../../utils/response.js';
+import { tryCatchWrapper } from '../../utils/try-catch-wrapper.js';
 
 export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);
@@ -147,36 +148,31 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const params = request.params as { id: string };
-        const userId = parseInt(params.id, 10);
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const params = request.params as { id: string };
+      const userId = parseInt(params.id, 10);
 
-        if (isNaN(userId)) {
-          return sendError(reply, '无效的用户 ID', 400);
-        }
-
-        const user = await UserService.getUserById(userId);
-        if (!user) {
-          return sendError(reply, '用户不存在', 404);
-        }
-
-        return sendSuccess(reply, {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          status: user.status,
-          credits: user.credits,
-          webhook_url: user.webhook_url,
-          api_key: user.api_key,
-          created_at: user.created_at,
-        });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '获取用户信息失败');
-        return sendError(reply, '获取用户信息失败: ' + getSafeErrorMessage(error), 500);
+      if (isNaN(userId)) {
+        return sendError(reply, '无效的用户 ID', 400);
       }
-    }
+
+      const user = await UserService.getUserById(userId);
+      if (!user) {
+        return sendError(reply, '用户不存在', 404);
+      }
+
+      return sendSuccess(reply, {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        credits: user.credits,
+        webhook_url: user.webhook_url,
+        api_key: user.api_key,
+        created_at: user.created_at,
+      });
+    })
   );
 
   fastify.put(
@@ -196,51 +192,46 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const adminId = request.user?.id;
-        const params = request.params as { id: string };
-        const userId = parseInt(params.id, 10);
-        const body = request.body as z.infer<typeof adminUpdateUserRequestSchema>;
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const adminId = request.user?.id;
+      const params = request.params as { id: string };
+      const userId = parseInt(params.id, 10);
+      const body = request.body as z.infer<typeof adminUpdateUserRequestSchema>;
 
-        if (isNaN(userId)) {
-          return sendError(reply, '无效的用户 ID', 400);
-        }
-
-        const updatedUser = await UserService.updateUser(
-          userId,
-          {
-            email: body.email,
-            role: body.role,
-            status: body.status,
-            webhook_url: body.webhook_url,
-            password: body.password,
-          },
-          adminId
-        );
-
-        if (!updatedUser) {
-          return sendError(reply, '用户不存在', 404);
-        }
-
-        return sendSuccess(
-          reply,
-          {
-            id: updatedUser.id,
-            username: updatedUser.username,
-            email: updatedUser.email,
-            role: updatedUser.role,
-            status: updatedUser.status,
-            credits: updatedUser.credits,
-            webhook_url: updatedUser.webhook_url,
-          },
-          '用户更新成功'
-        );
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '更新用户失败');
-        return sendError(reply, '更新用户失败: ' + getSafeErrorMessage(error), 500);
+      if (isNaN(userId)) {
+        return sendError(reply, '无效的用户 ID', 400);
       }
-    }
+
+      const updatedUser = await UserService.updateUser(
+        userId,
+        {
+          email: body.email,
+          role: body.role,
+          status: body.status,
+          webhook_url: body.webhook_url,
+          password: body.password,
+        },
+        adminId
+      );
+
+      if (!updatedUser) {
+        return sendError(reply, '用户不存在', 404);
+      }
+
+      return sendSuccess(
+        reply,
+        {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          status: updatedUser.status,
+          credits: updatedUser.credits,
+          webhook_url: updatedUser.webhook_url,
+        },
+        '用户更新成功'
+      );
+    })
   );
 
   fastify.delete(
@@ -303,41 +294,36 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const adminId = request.user?.id;
-        const params = request.params as { id: string };
-        const userId = parseInt(params.id, 10);
-        const body = request.body as z.infer<typeof adminAddCreditsRequestSchema>;
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const adminId = request.user?.id;
+      const params = request.params as { id: string };
+      const userId = parseInt(params.id, 10);
+      const body = request.body as z.infer<typeof adminAddCreditsRequestSchema>;
 
-        if (isNaN(userId)) {
-          return sendError(reply, '无效的用户 ID', 400);
-        }
-
-        const amount = body.amount;
-        if (!amount || amount <= 0) {
-          return sendError(reply, '无效的点数金额', 400);
-        }
-
-        const updatedUser = await UserService.addCredits(userId, amount, adminId, body.reason);
-        if (!updatedUser) {
-          return sendError(reply, '用户不存在', 404);
-        }
-
-        return sendSuccess(
-          reply,
-          {
-            id: updatedUser.id,
-            username: updatedUser.username,
-            credits: updatedUser.credits,
-          },
-          '点数添加成功'
-        );
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '添加点数失败');
-        return sendError(reply, '添加点数失败: ' + getSafeErrorMessage(error), 500);
+      if (isNaN(userId)) {
+        return sendError(reply, '无效的用户 ID', 400);
       }
-    }
+
+      const amount = body.amount;
+      if (!amount || amount <= 0) {
+        return sendError(reply, '无效的点数金额', 400);
+      }
+
+      const updatedUser = await UserService.addCredits(userId, amount, adminId, body.reason);
+      if (!updatedUser) {
+        return sendError(reply, '用户不存在', 404);
+      }
+
+      return sendSuccess(
+        reply,
+        {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          credits: updatedUser.credits,
+        },
+        '点数添加成功'
+      );
+    })
   );
 
   fastify.post(
@@ -405,24 +391,19 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const query = request.query as { search?: string; role?: string; status?: string };
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const query = request.query as { search?: string; role?: string; status?: string };
 
-        const csvContent = await UserService.exportUsersCsv(query);
+      const csvContent = await UserService.exportUsersCsv(query);
 
-        const date = new Date().toISOString().split('T')[0];
-        const filename = `users_${date}.csv`;
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `users_${date}.csv`;
 
-        return reply
-          .header('Content-Type', 'text/csv; charset=utf-8')
-          .header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`)
-          .send(csvContent);
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '导出用户列表失败');
-        return sendError(reply, '导出用户列表失败: ' + getSafeErrorMessage(error), 500);
-      }
-    }
+      return reply
+        .header('Content-Type', 'text/csv; charset=utf-8')
+        .header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`)
+        .send(csvContent);
+    })
   );
 
   fastify.get(
@@ -450,27 +431,22 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const params = request.params as { id: string };
-        const userId = parseInt(params.id, 10);
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const params = request.params as { id: string };
+      const userId = parseInt(params.id, 10);
 
-        if (isNaN(userId)) {
-          return sendError(reply, '无效的用户 ID', 400);
-        }
-
-        const user = await UserService.getUserById(userId);
-        if (!user) {
-          return sendError(reply, '用户不存在', 404);
-        }
-
-        const stats = await UserService.getUserSessionStats(userId);
-        return sendSuccess(reply, stats);
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '获取用户会话消耗统计失败');
-        return sendError(reply, '获取用户会话消耗统计失败: ' + getSafeErrorMessage(error), 500);
+      if (isNaN(userId)) {
+        return sendError(reply, '无效的用户 ID', 400);
       }
-    }
+
+      const user = await UserService.getUserById(userId);
+      if (!user) {
+        return sendError(reply, '用户不存在', 404);
+      }
+
+      const stats = await UserService.getUserSessionStats(userId);
+      return sendSuccess(reply, stats);
+    })
   );
 
   fastify.post(
@@ -508,27 +484,22 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const adminId = request.user?.id;
-        const body = request.body as { userIds: number[] };
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const adminId = request.user?.id;
+      const body = request.body as { userIds: number[] };
 
-        if (!body.userIds || !Array.isArray(body.userIds) || body.userIds.length === 0) {
-          return sendError(reply, '请提供要删除的用户 ID 列表', 400);
-        }
-
-        const result = await UserService.batchDeleteUsers(body.userIds, adminId);
-
-        return sendSuccess(
-          reply,
-          result,
-          `成功删除 ${result.deleted.length} 个用户${result.failed.length > 0 ? `，${result.failed.length} 个失败` : ''}`
-        );
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '批量删除用户失败');
-        return sendError(reply, '批量删除用户失败: ' + getSafeErrorMessage(error), 500);
+      if (!body.userIds || !Array.isArray(body.userIds) || body.userIds.length === 0) {
+        return sendError(reply, '请提供要删除的用户 ID 列表', 400);
       }
-    }
+
+      const result = await UserService.batchDeleteUsers(body.userIds, adminId);
+
+      return sendSuccess(
+        reply,
+        result,
+        `成功删除 ${result.deleted.length} 个用户${result.failed.length > 0 ? `，${result.failed.length} 个失败` : ''}`
+      );
+    })
   );
 
   fastify.post(
@@ -568,31 +539,26 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest<BatchRechargeBodyRoute>, reply: FastifyReply) => {
-      try {
-        const adminId = request.user?.id;
-        const body = request.body;
+    tryCatchWrapper(async (request: FastifyRequest<BatchRechargeBodyRoute>, reply: FastifyReply) => {
+      const adminId = request.user?.id;
+      const body = request.body;
 
-        if (!body.userIds || !Array.isArray(body.userIds) || body.userIds.length === 0) {
-          return sendError(reply, '请提供要充值的用户 ID 列表', 400);
-        }
-
-        const amount = body.credits;
-        if (isNaN(amount) || amount <= 0) {
-          return sendError(reply, '无效的点数金额', 400);
-        }
-
-        const result = await UserService.batchRecharge(body.userIds, amount, adminId, body.reason);
-
-        return sendSuccess(
-          reply,
-          result,
-          `成功为 ${result.recharged.length} 个用户充值${result.failed.length > 0 ? `，${result.failed.length} 个失败` : ''}`
-        );
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '批量充值失败');
-        return sendError(reply, '批量充值失败: ' + getSafeErrorMessage(error), 500);
+      if (!body.userIds || !Array.isArray(body.userIds) || body.userIds.length === 0) {
+        return sendError(reply, '请提供要充值的用户 ID 列表', 400);
       }
-    }
+
+      const amount = body.credits;
+      if (isNaN(amount) || amount <= 0) {
+        return sendError(reply, '无效的点数金额', 400);
+      }
+
+      const result = await UserService.batchRecharge(body.userIds, amount, adminId, body.reason);
+
+      return sendSuccess(
+        reply,
+        result,
+        `成功为 ${result.recharged.length} 个用户充值${result.failed.length > 0 ? `，${result.failed.length} 个失败` : ''}`
+      );
+    })
   );
 }

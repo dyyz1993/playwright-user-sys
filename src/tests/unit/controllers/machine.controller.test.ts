@@ -71,6 +71,12 @@ vi.mock('../../../utils/response.js', () => ({
     reply.send = vi.fn().mockReturnValue(reply);
     return reply;
   }),
+  getSafeErrorMessage: vi.fn((_error) => 'test error message'),
+  logAndSendError: vi.fn((_request, reply, _error, _message, _statusCode) => {
+    reply.status = vi.fn().mockReturnValue(reply);
+    reply.send = vi.fn().mockReturnValue(reply);
+    return reply;
+  }),
 }));
 
 describe('MachineController', () => {
@@ -84,6 +90,7 @@ describe('MachineController', () => {
   let sendPaginated: any;
   let forceCheckAllMachines: any;
   let cleanupOldMachines: any;
+  let logAndSendError: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -105,6 +112,7 @@ describe('MachineController', () => {
     sendError = responseModule.sendError;
     sendCreated = responseModule.sendCreated;
     sendPaginated = responseModule.sendPaginated;
+    logAndSendError = responseModule.logAndSendError;
 
     const monitorModule = await import('../../../services/machine-monitor.service.js');
     forceCheckAllMachines = monitorModule.forceCheckAllMachines;
@@ -164,7 +172,7 @@ describe('MachineController', () => {
 
       await registerMachine(request, reply);
 
-      expect(sendError).toHaveBeenCalledWith(reply, '注册机器失败', 500);
+      expect(logAndSendError).toHaveBeenCalledWith(request, reply, expect.any(Error), '注册机器失败');
     });
   });
 
@@ -454,7 +462,7 @@ describe('MachineController', () => {
 
       await healthCheck(request, reply);
 
-      expect(sendError).toHaveBeenCalledWith(reply, '健康检查失败', 500);
+      expect(logAndSendError).toHaveBeenCalledWith(request, reply, expect.any(Error), '健康检查失败');
     });
   });
 
@@ -719,7 +727,7 @@ describe('MachineController', () => {
 
       await refreshMachineStatus(request, reply);
 
-      expect(sendError).toHaveBeenCalledWith(reply, '强制刷新机器状态失败', 500);
+      expect(logAndSendError).toHaveBeenCalledWith(request, reply, expect.any(Error), '强制刷新机器状态失败');
     });
   });
 
@@ -778,7 +786,7 @@ describe('MachineController', () => {
 
       await controllerCleanup(request, reply);
 
-      expect(sendError).toHaveBeenCalledWith(reply, '清理旧机器记录失败', 500);
+      expect(logAndSendError).toHaveBeenCalledWith(request, reply, expect.any(Error), '清理旧机器记录失败');
     });
   });
 

@@ -5,6 +5,7 @@ import { errorResponseSchema } from '../../schemas/index.js';
 import { AddMachineBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
 import * as AdminMachineService from '../../services/admin-machine.service.js';
+import { tryCatchWrapper } from '../../utils/try-catch-wrapper.js';
 
 export async function adminApiMachineRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);
@@ -125,27 +126,21 @@ export async function adminApiMachineRoutes(fastify: FastifyInstance): Promise<v
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const adminId = request.user?.id;
-        const body = request.body as { machineIds: string[] };
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const adminId = request.user?.id;
+      const body = request.body as { machineIds: string[] };
 
-        if (!body.machineIds || !Array.isArray(body.machineIds) || body.machineIds.length === 0) {
-          return reply.status(400).send({ success: false, error: '请提供要重启的机器 ID 列表' });
-        }
-
-        const { restarted, failed } = await AdminMachineService.batchRestartMachines(body.machineIds, adminId || 0);
-
-        return reply.send({
-          success: true,
-          message: `成功重启 ${restarted.length} 台机器${failed.length > 0 ? `，${failed.length} 台失败` : ''}`,
-          data: { restarted, failed },
-        });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '批量重启机器失败');
-        const message = error instanceof Error ? error.message : '未知错误';
-        return reply.status(500).send({ success: false, error: '批量重启机器失败: ' + message });
+      if (!body.machineIds || !Array.isArray(body.machineIds) || body.machineIds.length === 0) {
+        return reply.status(400).send({ success: false, error: '请提供要重启的机器 ID 列表' });
       }
-    }
+
+      const { restarted, failed } = await AdminMachineService.batchRestartMachines(body.machineIds, adminId || 0);
+
+      return reply.send({
+        success: true,
+        message: `成功重启 ${restarted.length} 台机器${failed.length > 0 ? `，${failed.length} 台失败` : ''}`,
+        data: { restarted, failed },
+      });
+    })
   );
 }

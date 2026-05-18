@@ -3,7 +3,14 @@ import { z } from 'zod';
 import { UserModel, CreateUserInput, UpdateUserInput } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { SessionModel } from '../models/session/index.js';
-import { sendSuccess, sendError, sendCreated, sendNoContent, sendPaginated } from '../utils/response.js';
+import {
+  sendSuccess,
+  sendError,
+  sendCreated,
+  sendNoContent,
+  sendPaginated,
+  logAndSendError,
+} from '../utils/response.js';
 import {
   UserRole,
   PaginationQuery,
@@ -62,8 +69,7 @@ export async function createUser(request: AuthenticatedRequest, reply: FastifyRe
       return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
-    request.log.error(error);
-    return sendError(reply, '创建用户失败', 500);
+    return logAndSendError(request, reply, error, '创建用户失败');
   }
 }
 
@@ -85,8 +91,7 @@ export async function getAllUsers(request: AuthenticatedRequest, reply: FastifyR
       return sendError(reply, '无效的查询参数: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
-    request.log.error(error);
-    return sendError(reply, '获取用户列表失败', 500);
+    return logAndSendError(request, reply, error, '获取用户列表失败');
   }
 }
 
@@ -105,8 +110,7 @@ export async function getUserById(request: AuthenticatedRequestWithParams<IdPara
 
     return sendSuccess(reply, toUserResponse(user));
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '获取用户信息失败', 500);
+    return logAndSendError(request, reply, error, '获取用户信息失败');
   }
 }
 
@@ -151,8 +155,7 @@ export async function updateUser(request: AuthenticatedRequestWithParams<IdParam
       return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
-    request.log.error(error);
-    return sendError(reply, '更新用户失败', 500);
+    return logAndSendError(request, reply, error, '更新用户失败');
   }
 }
 
@@ -185,8 +188,7 @@ export async function resetApiKey(request: AuthenticatedRequestWithParams<IdPara
 
     return sendSuccess(reply, { api_key: apiKey });
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '重置 API Key 失败', 500);
+    return logAndSendError(request, reply, error, '重置 API Key 失败');
   }
 }
 
@@ -197,8 +199,7 @@ export async function addCredits(request: AuthenticatedRequestWithParams<IdParam
     // 重定向到管理员API路由
     return sendError(reply, '此功能已移至管理员API路由', 404);
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '添加点数失败', 500);
+    return logAndSendError(request, reply, error, '添加点数失败');
   }
 }
 
@@ -242,8 +243,7 @@ export async function deleteUser(request: AuthenticatedRequestWithParams<IdParam
 
     return sendNoContent(reply);
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '删除用户失败', 500);
+    return logAndSendError(request, reply, error, '删除用户失败');
   }
 }
 
@@ -267,8 +267,7 @@ export async function getUserSessionStats(request: AuthenticatedRequestWithParam
 
     return sendSuccess(reply, stats);
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '获取用户会话消耗统计失败', 500);
+    return logAndSendError(request, reply, error, '获取用户会话消耗统计失败');
   }
 }
 

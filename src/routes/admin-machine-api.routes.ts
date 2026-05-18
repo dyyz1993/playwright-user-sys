@@ -1,11 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { getSafeErrorMessage } from '../utils/response.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import { errorResponseSchema, idParamSchema } from '../schemas/index.js';
 import { UpdateMachineBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './admin-api/authenticate.js';
 import * as AdminMachineService from '../services/admin-machine.service.js';
+import { tryCatchWrapper } from '../utils/try-catch-wrapper.js';
 
 export default async function adminMachineApiRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);
@@ -46,23 +46,18 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         tags: ['admin', 'machines'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const params = request.params as { id: string };
-        const machineId = params.id;
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const params = request.params as { id: string };
+      const machineId = params.id;
 
-        const machine = await AdminMachineService.getMachineDetail(machineId);
+      const machine = await AdminMachineService.getMachineDetail(machineId);
 
-        if (!machine) {
-          return reply.status(404).send({ success: false, error: '机器不存在' });
-        }
-
-        return reply.send({ success: true, data: machine });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '获取机器详情失败');
-        return reply.status(500).send({ success: false, error: '获取机器详情失败: ' + getSafeErrorMessage(error) });
+      if (!machine) {
+        return reply.status(404).send({ success: false, error: '机器不存在' });
       }
-    }
+
+      return reply.send({ success: true, data: machine });
+    })
   );
 
   fastify.put(
@@ -180,19 +175,14 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         tags: ['admin', 'machines'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const params = request.params as { id: string };
-        const machineId = params.id;
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const params = request.params as { id: string };
+      const machineId = params.id;
 
-        const result = await AdminMachineService.healthCheckMachine(machineId);
+      const result = await AdminMachineService.healthCheckMachine(machineId);
 
-        return reply.send({ success: true, data: result });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '健康检查失败');
-        return reply.status(500).send({ success: false, error: '健康检查失败: ' + getSafeErrorMessage(error) });
-      }
-    }
+      return reply.send({ success: true, data: result });
+    })
   );
 
   fastify.post(
@@ -232,32 +222,27 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
         tags: ['admin', 'machines'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const body = request.body as { machineIds: string[] };
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const body = request.body as { machineIds: string[] };
 
-        if (!body.machineIds || !Array.isArray(body.machineIds) || body.machineIds.length === 0) {
-          return reply.status(400).send({ success: false, error: '请提供要检查的机器 ID 列表' });
-        }
-
-        const results = await AdminMachineService.batchHealthCheck(body.machineIds);
-
-        const healthy = results.filter((r) => r.status === 'healthy').length;
-        const unhealthy = results.filter((r) => r.status === 'unhealthy').length;
-
-        return reply.send({
-          success: true,
-          data: {
-            total: results.length,
-            healthy,
-            unhealthy,
-            results,
-          },
-        });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '批量健康检查失败');
-        return reply.status(500).send({ success: false, error: '批量健康检查失败: ' + getSafeErrorMessage(error) });
+      if (!body.machineIds || !Array.isArray(body.machineIds) || body.machineIds.length === 0) {
+        return reply.status(400).send({ success: false, error: '请提供要检查的机器 ID 列表' });
       }
-    }
+
+      const results = await AdminMachineService.batchHealthCheck(body.machineIds);
+
+      const healthy = results.filter((r) => r.status === 'healthy').length;
+      const unhealthy = results.filter((r) => r.status === 'unhealthy').length;
+
+      return reply.send({
+        success: true,
+        data: {
+          total: results.length,
+          healthy,
+          unhealthy,
+          results,
+        },
+      });
+    })
   );
 }

@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { UserModel, UpdateUserInput } from '../models/user.model.js';
 import { generateToken, verifyPasswordWithMigration, hashPassword } from '../utils/auth.js';
-import { sendSuccess, sendError } from '../utils/response.js';
+import { sendSuccess, sendError, logAndSendError } from '../utils/response.js';
 import { UserStatus } from '@shared/types/index.js';
 import { adminLoginRequestSchema } from '../schemas/admin.schema.js';
 import { toLoginUser, toCurrentUserResponse } from '@shared/mappers/index.js';
@@ -55,8 +55,7 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
       return sendError(reply, '无效的请求数据: ' + error.errors.map((e) => e.message).join(', '), 400);
     }
 
-    request.log.error(error);
-    return sendError(reply, '登录失败', 500);
+    return logAndSendError(request, reply, error, '登录失败');
   }
 }
 
@@ -78,8 +77,7 @@ export async function getCurrentUser(request: FastifyRequest, reply: FastifyRepl
       user: toCurrentUserResponse(user),
     });
   } catch (error: unknown) {
-    request.log.error(error);
-    return sendError(reply, '获取用户信息失败', 500);
+    return logAndSendError(request, reply, error, '获取用户信息失败');
   }
 }
 

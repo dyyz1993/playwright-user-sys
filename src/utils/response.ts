@@ -43,6 +43,17 @@ export function sendNoContent(reply: FastifyReply): FastifyReply {
   return reply.status(204).send();
 }
 
+export function logAndSendError(
+  request: { log: { error: (_err: unknown) => void } },
+  reply: FastifyReply,
+  error: unknown,
+  message: string,
+  statusCode: number = 500
+): FastifyReply {
+  request.log.error(error);
+  return sendError(reply, message, statusCode);
+}
+
 export function getSafeErrorMessage(error: unknown): string {
   if (process.env.NODE_ENV === 'production') {
     return '服务器内部错误';
@@ -58,5 +69,6 @@ export default {
   sendPaginated,
   sendCreated,
   sendNoContent,
+  logAndSendError,
   getSafeErrorMessage,
 };

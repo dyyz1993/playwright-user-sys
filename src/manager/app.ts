@@ -5,6 +5,7 @@ import { runMigrations } from '../models/migrations.js';
 import routes from '../routes/index.js';
 import plugins from '../plugins/index.js';
 import { logger } from '@shared/utils/logger.js';
+import { createFastifyLoggerConfig } from '@shared/utils/pino-config.js';
 import { NativeWebSocketProxyService } from '../services/native-websocket-proxy.service.js';
 
 /**
@@ -30,19 +31,7 @@ let wsProxyService: NativeWebSocketProxyService;
 export async function buildManager(): Promise<FastifyInstance> {
   const app = Fastify({
     bodyLimit: 1048576,
-    logger:
-      process.env.NODE_ENV !== 'test'
-        ? {
-            level: 'info',
-            transport: {
-              target: 'pino-pretty',
-              options: {
-                translateTime: 'HH:MM:ss Z',
-                ignore: 'pid,hostname',
-              },
-            },
-          }
-        : false,
+    logger: createFastifyLoggerConfig(),
   });
 
   // 在注册任何路由之前，初始化原生WebSocket代理服务

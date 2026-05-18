@@ -44,13 +44,13 @@ export function sendNoContent(reply: FastifyReply): FastifyReply {
 }
 
 export function logAndSendError(
-  request: { log: { error: (_err: unknown) => void } },
+  request: { log: { error: (_obj: Record<string, unknown>, _msg: string) => void } },
   reply: FastifyReply,
   error: unknown,
   message: string,
   statusCode: number = 500
 ): FastifyReply {
-  request.log.error(error);
+  request.log.error({ err: error }, message);
   return sendError(reply, message, statusCode);
 }
 

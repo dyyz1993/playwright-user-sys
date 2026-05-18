@@ -98,13 +98,13 @@ COPY --from=build --chown=nodejs:nodejs /app/package.json ./
 # Create directories (including X11 socket dir for Xvfb as non-root)
 RUN mkdir -p /app/data \
     /app/dist/data/screenshots \
-    /app/dist/src/shared/protos \
+    /app/dist/shared/protos \
     /tmp/.X11-unix && \
     chmod 1777 /tmp/.X11-unix && \
     chown -R nodejs:nodejs /app
 
 # Copy proto files
-COPY --chown=nodejs:nodejs src/shared/protos ./dist/src/shared/protos
+COPY --chown=nodejs:nodejs src/shared/protos ./dist/shared/protos
 
 # Create startup script
 RUN printf "#!/bin/sh\n\
@@ -144,7 +144,7 @@ dbus-daemon --session --address=unix:path=/tmp/dbus-session-bus --fork\n\
 \n\
 # Start the machine service with auto-retry\n\
 echo \"Starting machine server...\"\n\
-until node dist/src/machine/server.js; do\n\
+until node dist/machine/server.js; do\n\
   echo \"Machine server crashed with exit code \$?. Respawning in 5s...\"\n\
   sleep 5\n\
 done\n\
@@ -162,7 +162,7 @@ ENV NODE_ENV=production \
     DB_TYPE=mysql
 
 # Setup path aliases (before switching to non-root user)
-RUN node -e "const fs = require('fs'); const path = require('path'); const aliases = {'@shared': 'dist/src/shared', '@controllers': 'dist/src/controllers', '@models': 'dist/src/models', '@services': 'dist/src/services', '@routes': 'dist/src/routes', '@middlewares': 'dist/src/middlewares', '@utils': 'dist/src/utils', '@schemas': 'dist/src/schemas', '@plugins': 'dist/src/plugins', '@config': 'dist/src/config', '@machine': 'dist/src/machine', '@manager': 'dist/src/manager'}; for (const [alias, target] of Object.entries(aliases)) { const linkPath = path.join('/app/dist/node_modules', alias); const resolvedPath = path.join('/app', target); if (!fs.existsSync(linkPath)) { fs.mkdirSync(path.dirname(linkPath), { recursive: true }); fs.symlinkSync(resolvedPath, linkPath, 'dir'); console.log('Created symlink:', alias, '->', resolvedPath); } console.log('Symlink exists:', linkPath); }" || true
+RUN node -e "const fs = require('fs'); const path = require('path'); const aliases = {'@shared': 'dist/shared', '@controllers': 'dist/controllers', '@models': 'dist/models', '@services': 'dist/services', '@routes': 'dist/routes', '@middlewares': 'dist/middlewares', '@utils': 'dist/utils', '@schemas': 'dist/schemas', '@plugins': 'dist/plugins', '@config': 'dist/config', '@machine': 'dist/machine', '@manager': 'dist/manager'}; for (const [alias, target] of Object.entries(aliases)) { const linkPath = path.join('/app/dist/node_modules', alias); const resolvedPath = path.join('/app', target); if (!fs.existsSync(linkPath)) { fs.mkdirSync(path.dirname(linkPath), { recursive: true }); fs.symlinkSync(resolvedPath, linkPath, 'dir'); console.log('Created symlink:', alias, '->', resolvedPath); } console.log('Symlink exists:', linkPath); }" || true
 
 # Switch to non-root user
 USER nodejs

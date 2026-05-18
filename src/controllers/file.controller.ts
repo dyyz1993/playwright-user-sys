@@ -3,6 +3,7 @@ import { sendSuccess, sendError, getSafeErrorMessage } from '../utils/response.j
 import { CleanupTempFilesQueryRoute } from '@shared/types/routes.js';
 import { SessionModel } from '../models/session.model.js';
 import { logger } from '@shared/utils/logger.js';
+import { validateFileUpload } from '../utils/file-validation.js';
 import fs from 'fs';
 import { pipeline } from 'stream/promises';
 import path from 'path';
@@ -32,6 +33,15 @@ export async function uploadFile(request: FastifyRequest, reply: FastifyReply) {
 
     if (!file) {
       return sendError(reply, '没有上传文件', 400);
+    }
+
+    // Validate file security
+    try {
+      const contentLength = request.headers['content-length'];
+      const fileSize = contentLength ? parseInt(contentLength, 10) : 0;
+      validateFileUpload(file.filename, file.mimetype, fileSize);
+    } catch (validationError: unknown) {
+      return sendError(reply, validationError instanceof Error ? validationError.message : '文件验证失败', 400);
     }
 
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);

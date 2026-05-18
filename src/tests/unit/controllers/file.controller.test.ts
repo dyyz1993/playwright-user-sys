@@ -129,6 +129,7 @@ describe('FileController', () => {
       const request = {
         user: { role: 'admin', id: 1 },
         file: mockFile,
+        headers: { 'content-length': '1024' },
         log: { error: vi.fn() },
       } as any;
 

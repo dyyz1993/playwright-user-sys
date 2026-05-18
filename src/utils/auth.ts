@@ -21,7 +21,10 @@ export function getJwtSecret(): string {
       console.warn('\x1b[33m[WARN] Using default development JWT secret. Set JWT_SECRET in production!\x1b[0m');
       return 'dev-only-secret-key';
     }
-    throw new Error('JWT_SECRET environment variable is required in production');
+    throw new Error('JWT_SECRET 必须在生产环境中设置至少 32 个字符的安全密钥');
+  }
+  if (process.env.NODE_ENV === 'production' && secret.length < 32) {
+    throw new Error('JWT_SECRET 必须在生产环境中设置至少 32 个字符的安全密钥');
   }
   return secret;
 }

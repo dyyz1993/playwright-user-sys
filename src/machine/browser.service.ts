@@ -453,6 +453,15 @@ export class BrowserService extends EventEmitter {
    */
   async launchBrowser(sessionId: string, options: BrowserLaunchOptions = {}): Promise<BrowserInstance> {
     try {
+      // ===== 检查并发数上限 =====
+      if (this.sessions.size >= CONFIG.maxSessions) {
+        const error = new Error(`已达到最大并发会话数上限 (${CONFIG.maxSessions})，请稍后再试`) as Error & {
+          code?: string;
+        };
+        (error as unknown as Record<string, unknown>).code = 'MAX_SESSIONS_REACHED';
+        throw error;
+      }
+
       logger.info(`开始启动浏览器 (sessionId: ${sessionId})`);
       const timeout = 120000;
 

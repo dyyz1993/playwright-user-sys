@@ -1,57 +1,69 @@
 import { describe, it, expect } from 'vitest';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { parse as parseYaml } from 'yaml';
 
-const CI_YML_PATH = join(process.cwd(), '.github', 'workflows', 'ci.yml');
+const WORKFLOWS_DIR = join(process.cwd(), '.github', 'workflows');
+const CODE_QUALITY_PATH = join(WORKFLOWS_DIR, 'code-quality.yml');
+
+function readYaml(filePath: string) {
+  if (!existsSync(filePath)) return null;
+  const content = readFileSync(filePath, 'utf-8');
+  return { content, yaml: parseYaml(content) };
+}
 
 describe('CI workflow configuration', () => {
-  it('should have ci.yml file', () => {
-    expect(existsSync(CI_YML_PATH)).toBe(true);
+  it('should have code-quality.yml file', () => {
+    expect(existsSync(CODE_QUALITY_PATH)).toBe(true);
   });
 
-  describe('when ci.yml exists', () => {
-    let content: string;
-    let yaml: any;
+  it('should have at least 3 workflow files', () => {
+    const files = readdirSync(WORKFLOWS_DIR).filter((f) => f.endsWith('.yml'));
+    expect(files.length).toBeGreaterThanOrEqual(3);
+  });
+
+  describe('code-quality.yml', () => {
+    let data: ReturnType<typeof readYaml>;
 
     beforeAll(() => {
-      if (!existsSync(CI_YML_PATH)) return;
-      content = readFileSync(CI_YML_PATH, 'utf-8');
-      yaml = parseYaml(content);
+      data = readYaml(CODE_QUALITY_PATH);
     });
 
     it('should have workflow name', () => {
-      if (!yaml) return;
-      expect(yaml.name).toBeDefined();
+      if (!data?.yaml) return;
+      expect(data.yaml.name).toBeDefined();
     });
 
     it('should trigger on push to main and develop', () => {
-      if (!yaml) return;
-      expect(yaml.on?.push?.branches).toContain('main');
-      expect(yaml.on?.push?.branches).toContain('develop');
+      if (!data?.yaml) return;
+      expect(data.yaml.on?.push?.branches).toContain('main');
+      expect(data.yaml.on?.push?.branches).toContain('develop');
     });
 
     it('should trigger on pull_request to main and develop', () => {
-      if (!yaml) return;
-      expect(yaml.on?.pull_request?.branches).toContain('main');
-      expect(yaml.on?.pull_request?.branches).toContain('develop');
+      if (!data?.yaml) return;
+      expect(data.yaml.on?.pull_request?.branches).toContain('main');
+      expect(data.yaml.on?.pull_request?.branches).toContain('develop');
     });
 
     it('should contain build step', () => {
-      expect(content).toContain('pnpm build');
+      if (!data?.content) return;
+      expect(data.content).toContain('pnpm build');
     });
 
     it('should contain test:unit step', () => {
-      expect(content).toContain('pnpm test:unit');
+      if (!data?.content) return;
+      expect(data.content).toContain('pnpm test:unit');
     });
 
     it('should use pnpm for package management', () => {
-      expect(content).toMatch(/pnpm/);
+      if (!data?.content) return;
+      expect(data.content).toMatch(/pnpm/);
     });
 
     it('should use Node.js 20', () => {
-      if (!yaml) return;
-      const jobs = yaml.jobs;
+      if (!data?.yaml) return;
+      const jobs = data.yaml.jobs;
       for (const job of Object.values(jobs)) {
         const strategy = (job as any).strategy;
         if (strategy?.matrix?.['node-version']) {
@@ -67,8 +79,8 @@ describe('CI workflow configuration', () => {
     });
 
     it('should use actions/checkout@v4', () => {
-      if (!yaml) return;
-      const jobs = yaml.jobs;
+      if (!data?.yaml) return;
+      const jobs = data.yaml.jobs;
       for (const job of Object.values(jobs)) {
         const steps = (job as any).steps || [];
         const checkoutStep = steps.find((s: any) => s.uses?.includes('actions/checkout'));

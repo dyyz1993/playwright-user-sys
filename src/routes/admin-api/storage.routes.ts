@@ -12,7 +12,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
   fastify.get(
     '/api/admin/storage/stats',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         querystring: {
           type: 'object',
@@ -76,7 +76,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
   fastify.post(
     '/api/admin/storage/cleanup',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         body: {
           type: 'object',
@@ -137,7 +137,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
   fastify.post(
     '/api/admin/storage/cleanup-all',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         body: {
           type: 'object',
@@ -178,7 +178,7 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
   fastify.get(
     '/api/admin/storage/system-stats',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         response: {
           200: zodToJsonSchema(

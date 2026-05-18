@@ -13,7 +13,7 @@ export async function adminApiMachineRoutes(fastify: FastifyInstance): Promise<v
   fastify.post(
     '/api/admin/machines',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         body: {
           type: 'object',
@@ -94,7 +94,7 @@ export async function adminApiMachineRoutes(fastify: FastifyInstance): Promise<v
   fastify.post(
     '/api/admin/machines/batch-restart',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         body: {
           type: 'object',

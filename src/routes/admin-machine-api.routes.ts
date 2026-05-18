@@ -13,7 +13,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
   fastify.get(
     '/api/admin/machines/:id',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         response: {
@@ -63,7 +63,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
   fastify.put(
     '/api/admin/machines/:id',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         body: {
@@ -141,7 +141,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
   fastify.post(
     '/api/admin/machines/:id/health-check',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         response: {
@@ -188,7 +188,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
   fastify.post(
     '/api/admin/machines/health-check/batch',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         body: {
           type: 'object',

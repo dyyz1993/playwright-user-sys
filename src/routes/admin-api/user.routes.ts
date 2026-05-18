@@ -14,6 +14,7 @@ import {
   adminAddCreditsResponseSchema,
   errorResponseSchema,
   idParamSchema,
+  numericIdParamSchema,
 } from '../../schemas/index.js';
 import { BatchRechargeBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
@@ -27,7 +28,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.post(
     '/api/admin/users',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         body: zodToJsonSchema(adminCreateUserRequestSchema),
         response: {
@@ -82,7 +83,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.get(
     '/api/admin/users',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         querystring: zodToJsonSchema(userListQuerySchema),
         response: {
@@ -135,7 +136,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.get(
     '/api/admin/users/:id',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         response: {
@@ -149,12 +150,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
-      const params = request.params as { id: string };
-      const userId = parseInt(params.id, 10);
-
-      if (isNaN(userId)) {
-        return sendError(reply, '无效的用户 ID', 400);
-      }
+      const { id: userId } = numericIdParamSchema.parse(request.params);
 
       const user = await UserService.getUserById(userId);
       if (!user) {
@@ -178,7 +174,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.put(
     '/api/admin/users/:id',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         body: zodToJsonSchema(adminUpdateUserRequestSchema),
@@ -194,13 +190,8 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
     },
     tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
       const adminId = request.user?.id;
-      const params = request.params as { id: string };
-      const userId = parseInt(params.id, 10);
+      const { id: userId } = numericIdParamSchema.parse(request.params);
       const body = request.body as z.infer<typeof adminUpdateUserRequestSchema>;
-
-      if (isNaN(userId)) {
-        return sendError(reply, '无效的用户 ID', 400);
-      }
 
       const updatedUser = await UserService.updateUser(
         userId,
@@ -237,7 +228,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.delete(
     '/api/admin/users/:id',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         response: {
@@ -253,17 +244,15 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const adminId = request.user?.id;
-        const params = request.params as { id: string };
-        const userId = parseInt(params.id, 10);
-
-        if (isNaN(userId)) {
-          return sendError(reply, '无效的用户 ID', 400);
-        }
+        const { id: userId } = numericIdParamSchema.parse(request.params);
 
         await UserService.deleteUser(userId, adminId);
 
         return sendSuccess(reply, null, '用户删除成功');
       } catch (error: unknown) {
+        if (error instanceof z.ZodError) {
+          return sendError(reply, '无效的用户 ID', 400);
+        }
         request.log.error({ err: error }, '删除用户失败');
         const message = error instanceof Error ? error.message : '未知错误';
         if (message.includes('不允许删除管理员')) {
@@ -280,7 +269,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.post(
     '/api/admin/users/:id/credits',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         body: zodToJsonSchema(adminAddCreditsRequestSchema),
@@ -296,13 +285,8 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
     },
     tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
       const adminId = request.user?.id;
-      const params = request.params as { id: string };
-      const userId = parseInt(params.id, 10);
+      const { id: userId } = numericIdParamSchema.parse(request.params);
       const body = request.body as z.infer<typeof adminAddCreditsRequestSchema>;
-
-      if (isNaN(userId)) {
-        return sendError(reply, '无效的用户 ID', 400);
-      }
 
       const amount = body.amount;
       if (!amount || amount <= 0) {
@@ -329,7 +313,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.post(
     '/api/admin/users/:id/reset-api-key',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         response: {
@@ -354,17 +338,15 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const adminId = request.user?.id;
-        const params = request.params as { id: string };
-        const userId = parseInt(params.id, 10);
-
-        if (isNaN(userId)) {
-          return sendError(reply, '无效的用户 ID', 400);
-        }
+        const { id: userId } = numericIdParamSchema.parse(request.params);
 
         const newApiKey = await UserService.resetApiKey(userId, adminId);
 
         return sendSuccess(reply, { id: userId, api_key: newApiKey }, 'API Key 重置成功');
       } catch (error: unknown) {
+        if (error instanceof z.ZodError) {
+          return sendError(reply, '无效的用户 ID', 400);
+        }
         request.log.error({ err: error }, '重置 API Key 失败');
         const message = error instanceof Error ? error.message : '未知错误';
         if (message.includes('不存在')) {
@@ -378,7 +360,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.get(
     '/api/admin/users/export',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         querystring: {
           type: 'object',
@@ -409,7 +391,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.get(
     '/api/admin/users/:id/session-stats',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         response: {
@@ -432,12 +414,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
       },
     },
     tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
-      const params = request.params as { id: string };
-      const userId = parseInt(params.id, 10);
-
-      if (isNaN(userId)) {
-        return sendError(reply, '无效的用户 ID', 400);
-      }
+      const { id: userId } = numericIdParamSchema.parse(request.params);
 
       const user = await UserService.getUserById(userId);
       if (!user) {
@@ -452,7 +429,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.post(
     '/api/admin/users/batch-delete',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         body: {
           type: 'object',
@@ -505,7 +482,7 @@ export async function adminApiUserRoutes(fastify: FastifyInstance): Promise<void
   fastify.post(
     '/api/admin/users/batch-recharge',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         body: {
           type: 'object',

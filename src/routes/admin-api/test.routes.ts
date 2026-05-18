@@ -14,7 +14,7 @@ export async function adminApiTestRoutes(fastify: FastifyInstance): Promise<void
   fastify.post(
     '/api/admin/test/sessions',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
     },
     tryCatchWrapper(async (request: FastifyRequest<TestSessionBodyRoute>, reply: FastifyReply) => {
       const body = request.body;
@@ -34,7 +34,7 @@ export async function adminApiTestRoutes(fastify: FastifyInstance): Promise<void
   fastify.post(
     '/api/admin/test/machines',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
     },
     tryCatchWrapper(async (request: FastifyRequest<TestMachineBodyRoute>, reply: FastifyReply) => {
       const body = request.body;

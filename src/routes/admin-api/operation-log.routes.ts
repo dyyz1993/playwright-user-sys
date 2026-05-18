@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
-import { errorResponseSchema, idParamSchema } from '../../schemas/index.js';
+import { errorResponseSchema, idParamSchema, numericIdParamSchema } from '../../schemas/index.js';
 import { OperationLogQueryRoute, OperationLogStatsQueryRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
 import { getSafeErrorMessage } from '../../utils/response.js';
@@ -14,7 +14,7 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
   fastify.get(
     '/api/admin/users/:id/logs',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         response: {
@@ -50,13 +50,8 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const params = request.params as { id: string };
-        const userId = parseInt(params.id, 10);
+        const { id: userId } = numericIdParamSchema.parse(request.params);
         const query = request.query as { page?: string; limit?: string };
-
-        if (isNaN(userId)) {
-          return reply.status(400).send({ success: false, error: '无效的用户 ID' });
-        }
 
         const result = await AdminOpLogService.getUserOperationLogs(userId, {
           page: query.page || '1',
@@ -68,6 +63,9 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
           data: result,
         });
       } catch (error: unknown) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({ success: false, error: '无效的用户 ID' });
+        }
         request.log.error({ err: error }, '获取用户操作日志失败');
         if (error instanceof Error && error.message === '用户不存在') {
           return reply.status(404).send({ success: false, error: '用户不存在' });
@@ -80,7 +78,7 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
   fastify.get(
     '/api/admin/operation-logs',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         querystring: {
           type: 'object',
@@ -169,7 +167,7 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
   fastify.get(
     '/api/admin/operation-logs/stats',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         querystring: {
           type: 'object',

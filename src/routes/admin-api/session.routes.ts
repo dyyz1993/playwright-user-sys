@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
-import { errorResponseSchema, idParamSchema } from '../../schemas/index.js';
+import { errorResponseSchema, idParamSchema, numericIdParamSchema } from '../../schemas/index.js';
 import { createAuthenticate } from './authenticate.js';
 import { tryCatchWrapper } from '../../utils/try-catch-wrapper.js';
 import * as AdminSessionService from '../../services/admin-session.service.js';
@@ -12,7 +12,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
   fastify.post(
     '/api/admin/sessions/batch-release',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         body: {
           type: 'object',
@@ -64,7 +64,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
   fastify.get(
     '/api/admin/users/:id/sessions',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         response: {
@@ -103,13 +103,8 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
       },
     },
     tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
-      const params = request.params as { id: string };
-      const userId = parseInt(params.id, 10);
+      const { id: userId } = numericIdParamSchema.parse(request.params);
       const query = request.query as { page?: string; limit?: string };
-
-      if (isNaN(userId)) {
-        return reply.status(400).send({ success: false, error: '无效的用户 ID' });
-      }
 
       const existingUser = await AdminSessionService.findUserById(userId);
       if (!existingUser) {
@@ -131,7 +126,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
   fastify.get(
     '/api/admin/sessions',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         querystring: {
           type: 'object',
@@ -202,7 +197,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
   fastify.get(
     '/api/admin/sessions/stats',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         querystring: {
           type: 'object',
@@ -261,7 +256,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
   fastify.get(
     '/api/admin/sessions/:id',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         params: zodToJsonSchema(idParamSchema),
         response: {
@@ -317,7 +312,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
   fastify.post(
     '/api/admin/sessions/refresh-status',
     {
-      preHandler: [authenticate],
+      onRequest: [authenticate],
       schema: {
         body: {
           type: 'object',

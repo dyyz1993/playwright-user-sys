@@ -69,7 +69,7 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
         },
         tags: ['admin'],
       },
-      preHandler: [
+      onRequest: [
         async (request, reply) => {
           try {
             await fastify.verifyJWT(request, reply);

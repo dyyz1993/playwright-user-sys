@@ -16,6 +16,7 @@ import { getLogsPageData } from '../controllers/admin/logs-page.controller.js';
 import { getProfilePageData } from '../controllers/admin/profile-page.controller.js';
 import { getSafeErrorMessage } from '../utils/response.js';
 import { env } from '../config/env.js';
+import { numericIdParamSchema } from '../schemas/index.js';
 
 function requireAdmin(request: FastifyRequest, _reply: FastifyReply): boolean {
   if (request.user?.role !== 'admin') {
@@ -163,10 +164,10 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
       try {
         if (!requireAdmin(request, reply)) return reply.redirect('/admin');
 
-        const params = request.params as { id: string };
-        const userId = parseInt(params.id, 10);
-
-        if (isNaN(userId)) {
+        let userId: number;
+        try {
+          ({ id: userId } = numericIdParamSchema.parse(request.params));
+        } catch {
           request.flash('error', '无效的用户 ID');
           return reply.redirect('/admin/users');
         }
@@ -391,7 +392,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
 
     fastify.get(
       '/admin/debug/cookies',
-      { preHandler: [fastify.verifyJWT] },
+      { onRequest: [fastify.verifyJWT] },
       async (request: FastifyRequest, _reply: FastifyReply) => {
         return {
           cookies: request.cookies,

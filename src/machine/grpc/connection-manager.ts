@@ -208,7 +208,7 @@ export class ConnectionManager {
           .then((success) => {
             logger.info(`应管理端要求关闭浏览器${success ? '成功' : '失败'} (sessionId: ${session_id})`);
           })
-          .catch((error) => {
+          .catch((error: unknown) => {
             logger.error(`应管理端要求关闭浏览器出错 (sessionId: ${session_id}):`, error);
           });
         return;
@@ -283,7 +283,7 @@ export class ConnectionManager {
           .then((url) => {
             logger.info(`截图完成 (sessionId: ${session_id}): ${url}`);
           })
-          .catch((error) => {
+          .catch((error: unknown) => {
             logger.error(`截图失败 (sessionId: ${session_id}):`, error);
           });
         return;

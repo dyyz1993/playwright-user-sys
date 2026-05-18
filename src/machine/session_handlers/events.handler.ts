@@ -319,7 +319,12 @@ async function handleFileUploadChunk(ws: WebSocket, sessionId: string, data: Fil
 
     // 将块数据追加到文件
     const chunkBuffer = Buffer.from(data.chunk, 'base64');
-    fs.appendFileSync(uploadState.filePath, chunkBuffer);
+    try {
+      fs.appendFileSync(uploadState.filePath, chunkBuffer);
+    } catch (writeError: unknown) {
+      logger.error('Failed to append file chunk', { error: writeError, filepath: uploadState.filePath });
+      throw writeError;
+    }
 
     uploadState.receivedChunks++;
 

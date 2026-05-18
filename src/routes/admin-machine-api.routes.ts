@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
-import { errorResponseSchema, idParamSchema } from '../schemas/index.js';
+import { errorResponseSchema, idParamSchema, numericIdParamSchema } from '../schemas/index.js';
 import { UpdateMachineBodyRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './admin-api/authenticate.js';
 import * as AdminMachineService from '../services/admin-machine.service.js';
@@ -47,10 +47,9 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
       },
     },
     tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
-      const params = request.params as { id: string };
-      const machineId = params.id;
+      const { id: machineId } = numericIdParamSchema.parse(request.params);
 
-      const machine = await AdminMachineService.getMachineDetail(machineId);
+      const machine = await AdminMachineService.getMachineDetail(String(machineId));
 
       if (!machine) {
         return reply.status(404).send({ success: false, error: '机器不存在' });
@@ -103,7 +102,8 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
     async (request: FastifyRequest<UpdateMachineBodyRoute>, reply: FastifyReply) => {
       try {
         const adminId = request.user?.id;
-        const machineId = request.params.id;
+        const { id: machineIdNum } = numericIdParamSchema.parse(request.params);
+        const machineId = String(machineIdNum);
         const body = request.body;
 
         if (body.ip) {
@@ -128,6 +128,10 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
           data: updatedMachine,
         });
       } catch (error: unknown) {
+        if (error instanceof z.ZodError) {
+          const message = error.issues[0]?.message || '参数验证失败';
+          return reply.status(400).send({ success: false, error: message });
+        }
         request.log.error({ err: error }, '更新机器配置失败');
         const message = error instanceof Error ? error.message : '未知错误';
         if (message === '机器不存在') {
@@ -176,10 +180,9 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
       },
     },
     tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
-      const params = request.params as { id: string };
-      const machineId = params.id;
+      const { id: machineId } = numericIdParamSchema.parse(request.params);
 
-      const result = await AdminMachineService.healthCheckMachine(machineId);
+      const result = await AdminMachineService.healthCheckMachine(String(machineId));
 
       return reply.send({ success: true, data: result });
     })

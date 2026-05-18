@@ -15,6 +15,7 @@ vi.mock('../../../../machine/browser.service.js', () => ({
     getActiveSessions: vi.fn().mockReturnValue(3),
     closeBrowser: vi.fn().mockResolvedValue(true),
     closeAllBrowsers: vi.fn().mockResolvedValue(undefined),
+    takeScreenshot: vi.fn().mockResolvedValue('http://example.com/screenshot.png'),
   },
 }));
 
@@ -180,5 +181,79 @@ describe('machine/grpc ConnectionManager', () => {
     }
 
     expect(browserService.closeBrowser).toHaveBeenCalledWith('session-123');
+  });
+
+  it('should handle close_browser errors with unknown type', async () => {
+    const { browserService } = await import('../../../../machine/browser.service.js');
+    const { logger } = await import('@shared/utils/logger.js');
+
+    vi.mocked(browserService.closeBrowser).mockRejectedValueOnce(new Error('close failed'));
+
+    const cm = new ConnectionManager('machine-001', onDisconnected, onReconnectNeeded);
+    cm.setConnected(true);
+
+    const mockCall = {
+      on: vi.fn(),
+      write: vi.fn().mockReturnValue(true),
+      end: vi.fn(),
+    };
+
+    const handlers: Record<string, Function> = {};
+    mockCall.on = vi.fn((event: string, handler: Function) => {
+      handlers[event] = handler;
+    });
+
+    cm.setupStreamHandlers(mockCall as any);
+
+    const message = {
+      close_browser: {
+        session_id: 'session-err',
+      },
+    };
+
+    if (handlers['data']) {
+      await handlers['data'](message);
+    }
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('应管理端要求关闭浏览器出错'), expect.any(Error));
+  });
+
+  it('should handle screenshot errors with unknown type', async () => {
+    const { browserService } = await import('../../../../machine/browser.service.js');
+    const { logger } = await import('@shared/utils/logger.js');
+
+    vi.mocked(browserService.takeScreenshot).mockRejectedValueOnce(new Error('screenshot failed'));
+
+    const cm = new ConnectionManager('machine-001', onDisconnected, onReconnectNeeded);
+    cm.setConnected(true);
+
+    const mockCall = {
+      on: vi.fn(),
+      write: vi.fn().mockReturnValue(true),
+      end: vi.fn(),
+    };
+
+    const handlers: Record<string, Function> = {};
+    mockCall.on = vi.fn((event: string, handler: Function) => {
+      handlers[event] = handler;
+    });
+
+    cm.setupStreamHandlers(mockCall as any);
+
+    const message = {
+      request_screenshot: {
+        session_id: 'session-ss-err',
+      },
+    };
+
+    if (handlers['data']) {
+      await handlers['data'](message);
+    }
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('截图失败'), expect.any(Error));
   });
 });

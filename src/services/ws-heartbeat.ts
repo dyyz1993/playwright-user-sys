@@ -50,7 +50,7 @@ export function startHeartbeat(
   const check = () => {
     if (stopped) return;
 
-    if ((socket as any).destroyed) {
+    if (socket.destroyed) {
       logger.warn(`WebSocket heartbeat: socket destroyed (${connectionId})`);
       cleanup();
       onTimeout(connectionId);

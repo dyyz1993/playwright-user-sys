@@ -10,7 +10,12 @@ vi.mock('@shared/utils/logger.js', () => ({
   },
 }));
 
-import { startHeartbeat, WS_HEARTBEAT_INTERVAL_MS, WS_HEARTBEAT_TIMEOUT_MS } from '../../../services/ws-heartbeat.js';
+import {
+  startHeartbeat,
+  WS_HEARTBEAT_INTERVAL_MS,
+  WS_HEARTBEAT_TIMEOUT_MS,
+  HeartbeatSocket,
+} from '../../../services/ws-heartbeat.js';
 
 function createMockSocket() {
   const socket = new EventEmitter() as any;
@@ -135,5 +140,34 @@ describe('ws-heartbeat', () => {
 
     vi.advanceTimersByTime(WS_HEARTBEAT_TIMEOUT_MS);
     expect(onTimeout).toHaveBeenCalledTimes(1);
+  });
+
+  it('HB-11: 应接受符合 HeartbeatSocket 接口的对象（无 as any）', () => {
+    const typedSocket: HeartbeatSocket = {
+      on: vi.fn(),
+      removeListener: vi.fn(),
+      setKeepAlive: vi.fn(),
+      destroyed: false,
+    };
+
+    const handle = startHeartbeat(typedSocket, 'conn-011', onTimeout);
+
+    expect(typedSocket.on).toHaveBeenCalledWith('data', expect.any(Function));
+    expect(typedSocket.setKeepAlive).toHaveBeenCalledWith(true, WS_HEARTBEAT_INTERVAL_MS);
+
+    handle.stop();
+  });
+
+  it('HB-12: destroyed 为 undefined 时不应触发 onTimeout', () => {
+    const typedSocket: HeartbeatSocket = {
+      on: vi.fn(),
+      removeListener: vi.fn(),
+    };
+
+    startHeartbeat(typedSocket, 'conn-012', onTimeout);
+
+    vi.advanceTimersByTime(WS_HEARTBEAT_INTERVAL_MS);
+
+    expect(onTimeout).not.toHaveBeenCalled();
   });
 });

@@ -95,6 +95,10 @@ export class DemoService {
       throw new Error('Demo 服务未初始化');
     }
 
+    if (!this.demoApiKey) {
+      throw new Error('Demo 服务未初始化');
+    }
+
     const session = await createBrowserSession(
       this.demoUserId,
       {
@@ -127,7 +131,7 @@ export class DemoService {
     logger.info(`Demo 会话已创建: ${session.sessionId}, IP: ${ip}, 空闲超时: ${DEMO_IDLE_TIMEOUT}s`);
     return {
       sessionId: session.sessionId,
-      demoApiKey: this.demoApiKey!,
+      demoApiKey: this.demoApiKey,
       expiresAt,
       maxDuration: DEMO_IDLE_TIMEOUT,
     };
@@ -143,9 +147,13 @@ export class DemoService {
     try {
       const session = await SessionModel.findById(sessionId);
       if (session && (session.status === SessionStatus.CREATED || session.status === SessionStatus.CONNECTED)) {
+        if (!this.demoUserId) {
+          logger.warn(`Demo 会话释放跳过: 服务未初始化, sessionId=${sessionId}`);
+          return;
+        }
         await releaseSession({
           sessionId,
-          userId: this.demoUserId!,
+          userId: this.demoUserId,
           machineId: session.machine_id ?? undefined,
         });
         logger.info(`Demo 会话已释放: ${sessionId}`);

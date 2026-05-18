@@ -209,8 +209,8 @@ export async function uploadFileForSession(request: FastifyRequest, reply: Fasti
       try {
         const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
         sessionId = url.searchParams.get('sessionId') || undefined;
-      } catch {
-        // URL parsing failed, ignore
+      } catch (urlParseError: unknown) {
+        logger.debug('URL parsing failed while extracting sessionId', urlParseError);
       }
     }
 
@@ -236,12 +236,16 @@ export async function uploadFileForSession(request: FastifyRequest, reply: Fasti
       return sendError(reply, '文件大小超过限制 (100MB)', 400);
     }
 
+    if (!session.machine_id) {
+      return sendError(reply, '会话未关联机器', 400);
+    }
+
     const { fileTransferService } = await import('../services/file-transfer.service.js');
     const result = await fileTransferService.transferToMachine(
       fileBuffer,
       data.filename,
       sessionId,
-      session.machine_id!
+      session.machine_id
     );
 
     if (!result.success) {
@@ -343,8 +347,8 @@ export async function cleanupExpiredUploads(): Promise<void> {
         }
       }
     }
-  } catch {
-    // 静默失败
+  } catch (error: unknown) {
+    logger.debug('Failed to cleanup expired uploads', error);
   }
 }
 

@@ -384,6 +384,40 @@ describe('DemoService', () => {
   // ========================================
   // DEMO-16: 绝对超时自动释放
   // ========================================
+  it('demoApiKey 为 null 时 createSession 不应返回 undefined apiKey', async () => {
+    vi.mocked(UserModel.findByUsername).mockResolvedValue({
+      id: 1,
+      api_key: null as any,
+    });
+
+    const service = new DemoService();
+    await service.initialize();
+
+    vi.mocked(createBrowserSession).mockResolvedValue({
+      sessionId: 'demo-session-null',
+      status: 'created',
+    });
+
+    await expect(service.createSession('127.0.0.1')).rejects.toThrow('Demo 服务未初始化');
+
+    service.destroy();
+  });
+
+  // ========================================
+  // DEMO-18: releaseSession demoUserId null guard
+  // ========================================
+  it('服务未初始化时 releaseSession 不应因 userId! 崩溃', async () => {
+    const service = new DemoService();
+
+    vi.mocked(SessionModel.findById).mockResolvedValue({
+      id: 'session-x',
+      status: 'created',
+      machine_id: null,
+    });
+
+    await expect(service.releaseSession('session-x')).resolves.toBeUndefined();
+  });
+  // ========================================
   it('绝对超时后应该自动释放会话', async () => {
     vi.mocked(UserModel.findByUsername).mockResolvedValue({
       id: 1,
@@ -418,5 +452,42 @@ describe('DemoService', () => {
     expect(service.getActiveCount()).toBe(0);
 
     service.destroy();
+  });
+
+  // ========================================
+  // DEMO-17: createSession demoApiKey null guard
+  // ========================================
+  it('demoApiKey 为 null 时 createSession 应抛出错误', async () => {
+    vi.mocked(UserModel.findByUsername).mockResolvedValue({
+      id: 1,
+      api_key: null as any,
+    });
+
+    const service = new DemoService();
+    await service.initialize();
+
+    vi.mocked(createBrowserSession).mockResolvedValue({
+      sessionId: 'demo-session-null',
+      status: 'created',
+    });
+
+    await expect(service.createSession('127.0.0.1')).rejects.toThrow('Demo 服务未初始化');
+
+    service.destroy();
+  });
+
+  // ========================================
+  // DEMO-18: releaseSession demoUserId null guard
+  // ========================================
+  it('服务未初始化时 releaseSession 不应因 userId 崩溃', async () => {
+    const service = new DemoService();
+
+    vi.mocked(SessionModel.findById).mockResolvedValue({
+      id: 'session-x',
+      status: 'created',
+      machine_id: null,
+    });
+
+    await expect(service.releaseSession('session-x')).resolves.toBeUndefined();
   });
 });

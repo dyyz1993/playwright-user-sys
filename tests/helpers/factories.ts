@@ -5,7 +5,7 @@
 
 import { UserModel } from '../../src/models/user.model.js';
 import { MachineModel } from '../../src/models/machine.model.js';
-import { SessionModel } from '../../src/models/session.model.js';
+import { SessionModel } from '../../src/models/session/index.js';
 import { CreditHistoryModel } from '../../src/models/credit-history.model.js';
 import { SessionStatus, UserRole } from '../../src/shared/types/index.js';
 import { getFreePort } from './ports.js';

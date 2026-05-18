@@ -127,12 +127,7 @@ jobs:
       - name: 5. 单元测试
         env:
           NODE_ENV: test
-          DB_TYPE: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: playwright_test_user_sys
-          DB_USER: root
-          DB_PASSWORD: test_password
+          DB_TYPE: sqlite
           JWT_SECRET: test_secret_key_for_testing_only_do_not_use_in_production
           JWT_EXPIRES_IN: 24h
           ADMIN_PASSWORD: test-admin-password-for-github-ci

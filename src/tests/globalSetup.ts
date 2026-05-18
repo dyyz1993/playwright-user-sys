@@ -45,9 +45,6 @@ async function ensureTestDatabase(): Promise<void> {
 }
 
 async function runMigrations(): Promise<void> {
-  // 计算迁移目录的绝对路径
-  // __dirname = /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/tests
-  // 项目根目录 = ../.. (向上两级)
   const projectRoot = path.resolve(__dirname, '../..');
   const migrationsDir = path.join(projectRoot, 'migrations');
 
@@ -97,8 +94,17 @@ export default async function setup() {
   console.log('========================================');
 
   process.env.NODE_ENV = 'test';
-  process.env.DB_TYPE = 'mysql';
+
+  const dbType = process.env.DB_TYPE || 'mysql';
   process.env.DB_NAME = TEST_DB_NAME;
+
+  if (dbType !== 'mysql') {
+    console.log(`[全局初始化] DB_TYPE=${dbType}, 跳过 MySQL 初始化`);
+    console.log('========================================\n');
+    return;
+  }
+
+  process.env.DB_TYPE = 'mysql';
 
   try {
     await ensureTestDatabase();

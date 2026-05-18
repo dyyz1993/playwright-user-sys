@@ -45,7 +45,7 @@ describe('真实Chrome浏览器集成测试', () => {
     // Dynamic imports (run-ui-tests requirement: 动态导入以支持数据隔离)
     const puppeteerModule = await import('puppeteer-core');
     const browserServiceModule = await import('../../src/machine/browser.service.js');
-    const sessionModelModule = await import('../../src/models/session.model.js');
+    const sessionModelModule = await import('../../src/models/session/index.js');
     const userModelModule = await import('../../src/models/user.model.js');
     const creditHistoryModelModule = await import('../../src/models/credit-history.model.js');
     const factoriesModule = await import('../helpers/factories.js');

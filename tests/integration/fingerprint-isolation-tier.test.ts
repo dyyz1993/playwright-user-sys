@@ -37,7 +37,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
-import { SessionModel } from '../../src/models/session.model.js';
+import { SessionModel } from '../../src/models/session/index.js';
 import {
   createIsolatedTestDatabase,
   dropIsolatedTestDatabase,
@@ -124,8 +124,8 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
   // ========================================
   // 全局变量
   // ========================================
-  let testUsers: Array<{ id: number; username: string; token: string; apiKey: string }> = [];
-  let machineServers: MachineServer[] = [];
+  const testUsers: Array<{ id: number; username: string; token: string; apiKey: string }> = [];
+  const machineServers: MachineServer[] = [];
   let managerApp: any;
   let managerHttpPort: number;
   let managerGrpcPort: number;

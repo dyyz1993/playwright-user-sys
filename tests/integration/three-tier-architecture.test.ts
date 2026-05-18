@@ -35,7 +35,7 @@ import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
 import { MachineModel } from '../../src/models/machine.model.js';
-import { SessionModel } from '../../src/models/session.model.js';
+import { SessionModel } from '../../src/models/session/index.js';
 import { CreditHistoryModel } from '../../src/models/credit-history.model.js';
 import { getFreePort } from '../helpers/ports.js';
 import { createTestUser } from '../helpers/factories.js';
@@ -59,8 +59,8 @@ describe('完整三端架构集成测试', () => {
   let managerApp: FastifyInstance;
   let managerHttpPort: number;
   let managerGrpcPort: number;
-  let machineServers: Array<{ server: MachineServer; grpcPort: number; proxyPort: number; machineId: string }> = [];
-  let testUsers: Array<{ id: number; username: string; token: string; apiKey: string }> = [];
+  const machineServers: Array<{ server: MachineServer; grpcPort: number; proxyPort: number; machineId: string }> = [];
+  const testUsers: Array<{ id: number; username: string; token: string; apiKey: string }> = [];
 
   /**
    * beforeAll: 环境准备

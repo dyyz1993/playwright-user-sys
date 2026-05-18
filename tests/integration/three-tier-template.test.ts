@@ -32,7 +32,7 @@ import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
 import { MachineModel } from '../../src/models/machine.model.js';
-import { SessionModel } from '../../src/models/session.model.js';
+import { SessionModel } from '../../src/models/session/index.js';
 import { CreditHistoryModel } from '../../src/models/credit-history.model.js';
 import { db, initDatabase } from '../../src/config/database.js';
 import { runMigrations } from '../../src/models/migrations.js';
@@ -58,13 +58,13 @@ describe('三端架构集成测试模板', () => {
   let managerApp: FastifyInstance;
   let managerHttpPort: number;
   let managerGrpcPort: number;
-  let machineServers: Array<{
+  const machineServers: Array<{
     server: MachineServer;
     grpcPort: number;
     proxyPort: number;
     machineId: string;
   }> = [];
-  let testUsers: Array<{
+  const testUsers: Array<{
     id: number;
     username: string;
     token: string;

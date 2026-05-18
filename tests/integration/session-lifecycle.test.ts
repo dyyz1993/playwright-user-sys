@@ -36,7 +36,7 @@ describe('会话生命周期集成测试', () => {
 
   beforeAll(async () => {
     // Dynamic imports to avoid premature dependency loading
-    const sessionModule = await import('../../src/models/session.model.js');
+    const sessionModule = await import('../../src/models/session/index.js');
     SessionModel = sessionModule.SessionModel;
 
     const typesModule = await import('../../src/shared/types/index.js');

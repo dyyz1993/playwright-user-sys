@@ -51,7 +51,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
-import { SessionModel } from '../../src/models/session.model.js';
+import { SessionModel } from '../../src/models/session/index.js';
 import { UserRole } from '../../src/shared/types/index.js';
 import { getFreePort } from '../helpers/ports.js';
 import {
@@ -76,8 +76,8 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
   // ========================================
 
   let testDb: IsolatedTestDatabase;
-  let testUsers: Array<{ id: number; username: string; token: string; apiKey: string }> = [];
-  let machineServers: MachineServer[] = [];
+  const testUsers: Array<{ id: number; username: string; token: string; apiKey: string }> = [];
+  const machineServers: MachineServer[] = [];
   let managerApp: any;
   let managerHttpPort: number;
   let managerGrpcPort: number;

@@ -41,4 +41,9 @@ jobs:
         run: pnpm build
 
       - name: Unit tests
+        env:
+          NODE_ENV: test
+          DB_TYPE: sqlite
+          JWT_SECRET: test-secret-key-for-testing-only-32chars
+          JWT_EXPIRES_IN: 24h
         run: pnpm test:unit

@@ -30,7 +30,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
-import { SessionModel } from '../../src/models/session.model.js';
+import { SessionModel } from '../../src/models/session/index.js';
 import { UserRole } from '../../src/shared/types/index.js';
 import { getFreePort } from '../helpers/ports.js';
 import { createTestUser } from '../helpers/factories.js';
@@ -60,13 +60,13 @@ describe('浏览器启动参数集成测试', () => {
   let managerApp: FastifyInstance;
   let managerHttpPort: number;
   let managerGrpcPort: number;
-  let machineServers: Array<{
+  const machineServers: Array<{
     server: MachineServer;
     grpcPort: number;
     proxyPort: number;
     machineId: string;
   }> = [];
-  let testUsers: Array<{
+  const testUsers: Array<{
     id: number;
     username: string;
     token: string;

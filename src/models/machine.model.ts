@@ -1,6 +1,25 @@
 import { db } from '../config/database.js';
 import { MachineInfo, PaginationQuery, PaginatedResponse, SessionStatus } from '@shared/types/index.js';
+import type { MachineRow } from '@shared/types/tables.js';
 import { logger } from '@shared/utils/logger.js';
+
+function mapMachineRow(machine: MachineRow): MachineInfo {
+  return {
+    id: machine.id,
+    hostname: machine.hostname,
+    ip: machine.ip,
+    grpcPort: machine.grpc_port ?? undefined,
+    proxyPort: machine.proxy_port ?? undefined,
+    cpuUsage: machine.cpu_usage,
+    memoryUsage: machine.memory_usage,
+    diskUsage: machine.disk_usage,
+    instanceCount: machine.instance_count,
+    maxInstances: machine.max_instances,
+    status: machine.status as MachineInfo['status'],
+    lastSeen: new Date(machine.last_seen),
+  };
+}
+
 export interface CreateMachineInput {
   id: string;
   hostname: string;
@@ -66,21 +85,7 @@ export class MachineModel {
   static async findById(id: string): Promise<MachineInfo | null> {
     const machine = await db('machines').where({ id }).first();
     if (!machine) return null;
-
-    return {
-      id: machine.id,
-      hostname: machine.hostname,
-      ip: machine.ip,
-      grpcPort: machine.grpc_port,
-      proxyPort: machine.proxy_port,
-      cpuUsage: machine.cpu_usage,
-      memoryUsage: machine.memory_usage,
-      diskUsage: machine.disk_usage,
-      instanceCount: machine.instance_count,
-      maxInstances: machine.max_instances,
-      status: machine.status,
-      lastSeen: machine.last_seen,
-    };
+    return mapMachineRow(machine);
   }
 
   // 更新机器状态
@@ -163,20 +168,7 @@ export class MachineModel {
       logger.info(`找到 ${machines.length} 台机器，总数 ${total ? total.count : 0}`);
 
       return {
-        items: machines.map((machine) => ({
-          id: machine.id,
-          hostname: machine.hostname,
-          ip: machine.ip,
-          grpcPort: machine.grpc_port,
-          proxyPort: machine.proxy_port,
-          cpuUsage: machine.cpu_usage,
-          memoryUsage: machine.memory_usage,
-          diskUsage: machine.disk_usage,
-          instanceCount: machine.instance_count,
-          maxInstances: machine.max_instances,
-          status: machine.status,
-          lastSeen: machine.last_seen,
-        })),
+        items: machines.map(mapMachineRow),
         total: total ? Number(total.count) : 0,
         page,
         limit,
@@ -217,24 +209,10 @@ export class MachineModel {
         return null;
       }
 
-      // 选择实例数量最少的机器
       const machine = machines[0];
       logger.info(`选择机器: ${machine.id}, 当前实例数: ${machine.instance_count}/${machine.max_instances}`);
 
-      return {
-        id: machine.id,
-        hostname: machine.hostname,
-        ip: machine.ip,
-        grpcPort: machine.grpc_port,
-        proxyPort: machine.proxy_port,
-        cpuUsage: machine.cpu_usage,
-        memoryUsage: machine.memory_usage,
-        diskUsage: machine.disk_usage,
-        instanceCount: machine.instance_count,
-        maxInstances: machine.max_instances,
-        status: machine.status,
-        lastSeen: machine.last_seen,
-      };
+      return mapMachineRow(machine);
     } catch (error: unknown) {
       logger.error('查找可用机器失败:', error);
       return null;
@@ -280,20 +258,7 @@ export class MachineModel {
       const machines = await db('machines').where({ status });
 
       return {
-        items: machines.map((machine) => ({
-          id: machine.id,
-          hostname: machine.hostname,
-          ip: machine.ip,
-          grpcPort: machine.grpc_port,
-          proxyPort: machine.proxy_port,
-          cpuUsage: machine.cpu_usage,
-          memoryUsage: machine.memory_usage,
-          diskUsage: machine.disk_usage,
-          instanceCount: machine.instance_count,
-          maxInstances: machine.max_instances,
-          status: machine.status,
-          lastSeen: machine.last_seen,
-        })),
+        items: machines.map(mapMachineRow),
         total: machines.length,
         page: 1,
         limit: machines.length,
@@ -364,20 +329,7 @@ export class MachineModel {
     try {
       const machines = await db('machines').orderBy('last_seen', 'desc');
 
-      return machines.map((machine) => ({
-        id: machine.id,
-        hostname: machine.hostname,
-        ip: machine.ip,
-        grpcPort: machine.grpc_port,
-        proxyPort: machine.proxy_port,
-        cpuUsage: machine.cpu_usage,
-        memoryUsage: machine.memory_usage,
-        diskUsage: machine.disk_usage,
-        instanceCount: machine.instance_count,
-        maxInstances: machine.max_instances,
-        status: machine.status,
-        lastSeen: machine.last_seen,
-      }));
+      return machines.map(mapMachineRow);
     } catch (error: unknown) {
       logger.error('获取所有机器失败:', error);
       return [];

@@ -12,6 +12,7 @@ import { logger } from '@shared/utils/logger.js';
 import { createBrowserSession, handleSessionDisconnect } from './session.service.js';
 import { memoryStore } from './memory-store.service.js';
 import { SessionStatus } from '@shared/types/index.js';
+import { startHeartbeat, type HeartbeatHandle } from './ws-heartbeat.js';
 
 function shortId(): string {
   return crypto.randomUUID().slice(0, 8);
@@ -41,6 +42,7 @@ export class NativeWebSocketProxyService {
   private activeConnections: Set<string> = new Set();
   private maxConnections: number = 1000;
   private connectionTimestamps: Map<string, number> = new Map();
+  private heartbeatHandles: Map<string, HeartbeatHandle> = new Map();
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private upgradeHandler: ((request: http.IncomingMessage, socket: stream.Duplex, head: Buffer) => void) | null = null;
 
@@ -303,7 +305,14 @@ export class NativeWebSocketProxyService {
       this.activeConnections.add(sessionId);
       this.connectionTimestamps.set(sessionId, Date.now());
 
+      const hbHandle = startHeartbeat(socket, sessionId, () => {
+        this.cleanupConnection(sessionId, connId);
+      });
+      this.heartbeatHandles.set(sessionId, hbHandle);
+
       const cleanupHandler = () => {
+        hbHandle.stop();
+        this.heartbeatHandles.delete(sessionId);
         this.cleanupConnection(sessionId, connId);
       };
 
@@ -409,8 +418,16 @@ export class NativeWebSocketProxyService {
       logger.info(`修正后的WebSocket端点: ${targetUrl}`, cid());
       logger.info(`使用代理转发到目标WebSocket: ${targetUrl}`, cid());
 
+      const hbHandle = startHeartbeat(socket, sessionId, () => {
+        if (!sessionId) return;
+        this.cleanupConnection(sessionId, connId);
+      });
+      this.heartbeatHandles.set(sessionId, hbHandle);
+
       const cleanupHandler = () => {
         if (!sessionId) return;
+        hbHandle.stop();
+        this.heartbeatHandles.delete(sessionId);
         this.cleanupConnection(sessionId, connId);
       };
 
@@ -652,6 +669,12 @@ export class NativeWebSocketProxyService {
     logger.info(`清理WebSocket连接`, { connectionId: connId || 'unknown', sessionId });
     this.activeConnections.delete(sessionId);
     this.connectionTimestamps.delete(sessionId);
+
+    const hbHandle = this.heartbeatHandles.get(sessionId);
+    if (hbHandle) {
+      hbHandle.stop();
+      this.heartbeatHandles.delete(sessionId);
+    }
 
     this.handleCleanupDisconnect(sessionId, connId).catch((error) => {
       logger.error(`清理会话资源失败:`, {

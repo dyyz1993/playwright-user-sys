@@ -43,49 +43,69 @@ export interface SessionFilterOptions {
   endDate?: Date;
 }
 
-export function parseSessionOptions(raw: SessionRow & Record<string, unknown>): Session {
-  try {
-    return {
-      ...raw,
-      options: raw.options
-        ? typeof raw.options === 'string'
-          ? (JSON.parse(raw.options) as SessionCreateOptions)
-          : (raw.options as SessionCreateOptions)
-        : null,
-    } as unknown as Session;
-  } catch {
-    return { ...raw, options: null } as unknown as Session;
+type SessionDbRow = SessionRow & Record<string, unknown>;
+
+function parseOptionsField(raw: SessionDbRow): SessionCreateOptions | null {
+  if (!raw.options) return null;
+  if (typeof raw.options === 'string') {
+    try {
+      return JSON.parse(raw.options) as SessionCreateOptions;
+    } catch {
+      return null;
+    }
   }
+  return raw.options as SessionCreateOptions;
 }
 
-export function parseSessionRowWithDates(raw: SessionRow & Record<string, unknown>): Session {
-  try {
-    return {
-      ...raw,
-      options: raw.options
-        ? typeof raw.options === 'string'
-          ? (JSON.parse(raw.options) as SessionCreateOptions)
-          : (raw.options as SessionCreateOptions)
-        : null,
-      start_time: raw.start_time ? new Date(raw.start_time) : null,
-      end_time: raw.end_time ? new Date(raw.end_time) : null,
-      disconnected_at: raw.disconnected_at ? new Date(raw.disconnected_at) : null,
-      last_activity: raw.last_activity ? new Date(raw.last_activity) : null,
-      created_at: raw.created_at ? new Date(raw.created_at) : new Date(),
-      updated_at: raw.updated_at ? new Date(raw.updated_at) : new Date(),
-    } as unknown as Session;
-  } catch {
-    return {
-      ...raw,
-      options: null,
-      start_time: raw.start_time ? new Date(raw.start_time) : null,
-      end_time: raw.end_time ? new Date(raw.end_time) : null,
-      disconnected_at: raw.disconnected_at ? new Date(raw.disconnected_at) : null,
-      last_activity: raw.last_activity ? new Date(raw.last_activity) : null,
-      created_at: raw.created_at ? new Date(raw.created_at) : new Date(),
-      updated_at: raw.updated_at ? new Date(raw.updated_at) : new Date(),
-    } as unknown as Session;
-  }
+function toDate(v: unknown): Date | null {
+  if (!v) return null;
+  return new Date(v as string | Date);
+}
+
+function toRequiredDate(v: unknown): Date {
+  return v ? new Date(v as string | Date) : new Date();
+}
+
+export function parseSessionOptions(raw: SessionDbRow): Session {
+  return {
+    id: raw.id,
+    user_id: raw.user_id,
+    machine_id: raw.machine_id,
+    port: raw.port,
+    status: raw.status,
+    options: parseOptionsField(raw),
+    start_time: toDate(raw.start_time),
+    end_time: toDate(raw.end_time),
+    disconnected_at: toDate(raw.disconnected_at),
+    duration: raw.duration,
+    credits_used: raw.credits_used,
+    screenshot_url: raw.screenshot_url,
+    last_activity: toDate(raw.last_activity),
+    error_message: raw.error_message,
+    created_at: toRequiredDate(raw.created_at),
+    updated_at: toRequiredDate(raw.updated_at),
+  };
+}
+
+export function parseSessionRowWithDates(raw: SessionDbRow): Session {
+  return {
+    id: raw.id,
+    user_id: raw.user_id,
+    machine_id: raw.machine_id,
+    port: raw.port,
+    status: raw.status,
+    options: parseOptionsField(raw),
+    start_time: toDate(raw.start_time),
+    end_time: toDate(raw.end_time),
+    disconnected_at: toDate(raw.disconnected_at),
+    duration: raw.duration,
+    credits_used: raw.credits_used,
+    screenshot_url: raw.screenshot_url,
+    last_activity: toDate(raw.last_activity),
+    error_message: raw.error_message,
+    created_at: toRequiredDate(raw.created_at),
+    updated_at: toRequiredDate(raw.updated_at),
+  };
 }
 
 export type { Knex };

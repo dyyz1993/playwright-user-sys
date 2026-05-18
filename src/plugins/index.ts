@@ -74,34 +74,26 @@ export default fp(async function (fastify: FastifyInstance) {
     ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
     : defaultOrigins;
 
-  // @ts-expect-error — cors origin callback: 3rd param not in types, callback 2nd param type differs
   await fastify.register(cors, {
-    origin: (
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
-      request?: { host?: string }
-    ) => {
-      if (!origin) return callback(null, true);
+    origin: (origin: string | undefined): Promise<string | boolean> => {
+      if (!origin) return Promise.resolve(true);
       try {
         const originUrl = new URL(origin);
         if (originUrl.origin === 'null' || originUrl.protocol === 'file:') {
-          return callback(new Error('Origin not allowed'), false);
-        }
-        if (request?.host && originUrl.host === request.host) {
-          return callback(null, true);
+          return Promise.resolve(false);
         }
       } catch {
-        /* ignore invalid origin */
+        return Promise.resolve(false);
       }
       if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+        return Promise.resolve(true);
       }
       try {
         const originHost = new URL(origin).host;
         for (const allowed of allowedOrigins) {
           try {
             if (new URL(allowed).host === originHost) {
-              return callback(null, true);
+              return Promise.resolve(true);
             }
           } catch {
             /* skip invalid URL */
@@ -110,7 +102,7 @@ export default fp(async function (fastify: FastifyInstance) {
       } catch {
         /* skip invalid origin */
       }
-      callback(new Error('Not allowed by CORS'), false);
+      return Promise.resolve(false);
     },
     credentials: true,
   });

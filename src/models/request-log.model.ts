@@ -38,7 +38,9 @@ export class RequestLogModel {
       updated_at: new Date(),
     });
 
-    return (await this.findById(id)) ?? (undefined as unknown as RequestLog);
+    const log = await this.findById(id);
+    if (!log) throw new Error('Failed to create request log');
+    return log;
   }
 
   // 通过 ID 查找请求日志

@@ -71,6 +71,9 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.post(
     '/me/apikey/regenerate',
     {
+      config: {
+        rateLimit: { max: 5, timeWindow: '1 minute' },
+      },
       onRequest: [fastify.verifyJWT],
       schema: {
         response: {
@@ -160,6 +163,9 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.put(
     '/me/password',
     {
+      config: {
+        rateLimit: { max: 5, timeWindow: '1 minute' },
+      },
       onRequest: [fastify.verifyJWT],
       schema: {
         body: {

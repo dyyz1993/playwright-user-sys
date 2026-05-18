@@ -34,7 +34,12 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
-      start_period: 15s
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   machine:
     image: playwright-machine:e2e
@@ -69,3 +74,8 @@ services:
       timeout: 3s
       retries: 30
       start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

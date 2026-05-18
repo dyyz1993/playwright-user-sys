@@ -28,7 +28,12 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - playwright-network
 
@@ -46,6 +51,17 @@ services:
       - MACHINE_ID=machine-1
       - MANAGEMENT_SERVER_URL=http://app:3000
       - STATUS_REPORT_INTERVAL=60000
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - playwright-network
 
@@ -63,6 +79,17 @@ services:
       - MACHINE_ID=machine-2
       - MANAGEMENT_SERVER_URL=http://app:3000
       - STATUS_REPORT_INTERVAL=60000
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - playwright-network
 

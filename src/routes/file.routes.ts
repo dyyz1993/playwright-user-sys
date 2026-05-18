@@ -8,6 +8,9 @@ export default async function fileRoutes(fastify: FastifyInstance): Promise<void
   fastify.post(
     '/api/files/upload',
     {
+      config: {
+        rateLimit: { max: 10, timeWindow: '1 minute' },
+      },
       onRequest: [fastify.verifyJWT, fastify.verifyAdmin],
       schema: {
         response: {
@@ -43,6 +46,9 @@ export default async function fileRoutes(fastify: FastifyInstance): Promise<void
   fastify.post(
     '/api/files/upload-temp',
     {
+      config: {
+        rateLimit: { max: 10, timeWindow: '1 minute' },
+      },
       onRequest: [fastify.verifyJWT],
       schema: {
         response: {
@@ -190,6 +196,9 @@ export default async function fileRoutes(fastify: FastifyInstance): Promise<void
   fastify.post(
     '/api/files/upload-session',
     {
+      config: {
+        rateLimit: { max: 10, timeWindow: '1 minute' },
+      },
       onRequest: [fastify.verifyJWTOrApiKey],
       schema: {
         response: {

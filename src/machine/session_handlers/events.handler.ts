@@ -1,6 +1,6 @@
 import { WebSocket, RawData } from 'ws';
 import { browserService, SessionConfig } from '../browser.service.js';
-import { Page, Frame, type Browser } from 'puppeteer-core';
+import { Page, Frame } from 'puppeteer-core';
 // KeyInput = Parameters<Page['keyboard']['press']>[0]
 // 用于将 WebSocket 传来的 string key 转为 Puppeteer 类型安全的 KeyInput
 // 注意：as KeyInput 断言是安全的，因为值来自远程 viewer 已验证的键盘事件
@@ -41,9 +41,6 @@ interface EventConnectionInfo {
     focusListenerAttached?: boolean;
   };
   _clipboardPollInterval?: NodeJS.Timeout;
-}
-interface BrowserServiceInternal {
-  sessions: Map<string, { browser: Browser }>;
 }
 export const activeEventConnections = new Map<WebSocket, EventConnectionInfo>();
 
@@ -710,9 +707,9 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
 
         if (tabAction === 'list') {
           try {
-            const session = (browserService as unknown as BrowserServiceInternal).sessions.get(sessionId);
-            if (session?.browser) {
-              const pages = await session.browser.pages();
+            const browser = browserService.getSessionBrowser(sessionId);
+            if (browser) {
+              const pages = await browser.pages();
               const currentPage = await browserService.getSessionPage(sessionId);
               const tabs = await Promise.all(
                 pages
@@ -732,9 +729,9 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         } else if (tabAction === 'switch') {
           const targetUrl = eventData.tabId || eventData.data?.tabId;
           try {
-            const session = (browserService as unknown as BrowserServiceInternal).sessions.get(sessionId);
-            if (session?.browser) {
-              const pages = await session.browser.pages();
+            const browser = browserService.getSessionBrowser(sessionId);
+            if (browser) {
+              const pages = await browser.pages();
               const target = pages.find(
                 (p: Page) => !p.isClosed() && (p.url() === targetUrl || p.target().url() === targetUrl)
               );
@@ -753,9 +750,9 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
         } else if (tabAction === 'close') {
           const targetUrl = eventData.tabId || eventData.data?.tabId;
           try {
-            const session = (browserService as unknown as BrowserServiceInternal).sessions.get(sessionId);
-            if (session?.browser) {
-              const pages = await session.browser.pages();
+            const browser = browserService.getSessionBrowser(sessionId);
+            if (browser) {
+              const pages = await browser.pages();
               const target = pages.find(
                 (p: Page) => !p.isClosed() && (p.url() === targetUrl || p.target().url() === targetUrl)
               );

@@ -18,6 +18,9 @@ export default async function sessionRoutes(fastify: FastifyInstance): Promise<v
   fastify.post(
     '/',
     {
+      config: {
+        rateLimit: { max: 20, timeWindow: '1 minute' },
+      },
       onRequest: [fastify.verifyJWTOrApiKey],
       schema: {
         body: zodToJsonSchema(createSessionRequestSchema),

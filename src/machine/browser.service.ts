@@ -1352,6 +1352,13 @@ export class BrowserService extends EventEmitter {
   }
 
   /**
+   * 获取会话的 Browser 对象
+   */
+  getSessionBrowser(sessionId: string): Browser | undefined {
+    return this.sessions.get(sessionId)?.browser;
+  }
+
+  /**
    * 获取相对于页面左上角的转换后坐标
    */
   getTransformedCoordinates(sessionId: string, x: number, y: number): { tx: number; ty: number } | null {

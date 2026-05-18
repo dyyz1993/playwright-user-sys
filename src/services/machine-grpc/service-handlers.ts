@@ -16,7 +16,12 @@ import type {
 import type { ServerUnaryCall, sendUnaryData } from '@grpc/grpc-js';
 
 function getConnectionManager() {
-  return import('./index.js').then((m) => m.connectionManager);
+  return import('./index.js')
+    .then((m) => m.connectionManager)
+    .catch((error: unknown) => {
+      logger.error('Failed to load connection manager module:', error);
+      throw error;
+    });
 }
 
 export const serviceImplementation = {

@@ -1,6 +1,18 @@
 import { db } from '../config/database.js';
+import { logger } from '@shared/utils/logger.js';
 import { WebhookEventType, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
 import { WebhookEventRow } from '@shared/types/tables.js';
+
+type WebhookPayload = Record<string, unknown>;
+
+function safeParsePayload(raw: string): WebhookPayload {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    logger.warn('Invalid JSON in webhook payload: %s', raw);
+    return { raw };
+  }
+}
 
 export interface WebhookEvent extends Omit<WebhookEventRow, 'payload' | 'last_attempt' | 'created_at' | 'updated_at'> {
   payload: Record<string, unknown>;
@@ -38,7 +50,7 @@ export class WebhookEventModel {
 
     return {
       ...event,
-      payload: JSON.parse(event.payload),
+      payload: safeParsePayload(event.payload),
     };
   }
 
@@ -87,7 +99,7 @@ export class WebhookEventModel {
     return {
       items: events.map((event) => ({
         ...event,
-        payload: JSON.parse(event.payload),
+        payload: safeParsePayload(event.payload),
       })),
       total: total ? Number(total.count) : 0,
       page,
@@ -106,7 +118,7 @@ export class WebhookEventModel {
 
     return events.map((event) => ({
       ...event,
-      payload: JSON.parse(event.payload),
+      payload: safeParsePayload(event.payload),
     }));
   }
 
@@ -126,7 +138,7 @@ export class WebhookEventModel {
     return {
       items: events.map((event) => ({
         ...event,
-        payload: JSON.parse(event.payload),
+        payload: safeParsePayload(event.payload),
       })),
       total: total ? Number(total.count) : 0,
       page,

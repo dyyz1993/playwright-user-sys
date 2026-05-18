@@ -11,6 +11,7 @@ import { sessionFocusEmitter } from '../utils.js';
 import fs from 'fs';
 import path from 'path';
 import { CONFIG } from '../config.js';
+import { WS_EVENT_SESSION_ENDED } from './ws-events.constants.js';
 
 // !! 导航相关超时常量（毫秒） !!
 const NAVIGATION_TIMEOUT = 15_000; // goBack/goForward/reload
@@ -39,6 +40,7 @@ interface EventConnectionInfo {
     pageCrashHandler?: () => void;
     frameNavigatedHandler?: (_frame: Frame) => void;
     configUpdateListener?: (_sessionId: string, _newConfig: SessionConfig) => void;
+    rawFocusHandler?: () => void;
     focusListenerAttached?: boolean;
   };
   _clipboardPollInterval?: NodeJS.Timeout;
@@ -157,8 +159,10 @@ export async function handleEventsConnection(
     logger.info(`Attached page listeners for ${sessionId}`);
 
     // 添加 focusin 监听 (确保幂等性)
-    sessionFocusEmitter.off(`rawFocusEvent:${sessionId}`, handleRawFocusEvent.bind(null, page, ws, sessionId));
-    sessionFocusEmitter.on(`rawFocusEvent:${sessionId}`, handleRawFocusEvent.bind(null, page, ws, sessionId));
+    const boundFocusHandler = handleRawFocusEvent.bind(null, page, ws, sessionId) as () => void;
+    sessionFocusEmitter.off(`rawFocusEvent:${sessionId}`, boundFocusHandler);
+    sessionFocusEmitter.on(`rawFocusEvent:${sessionId}`, boundFocusHandler);
+    connectionInfo.listeners.rawFocusHandler = boundFocusHandler;
     logger.info(`Subscribed to raw focus events for session ${sessionId}`);
     // --- 添加 browserService 事件监听 ---
     connectionInfo.listeners.configUpdateListener = (updatedSessionId: string, newConfig: SessionConfig) => {
@@ -1129,6 +1133,12 @@ function cleanupEventConnection(ws: WebSocket): void {
       logger.info(`Removed browserService 'configUpdated' listener for ${sessionId}`);
     }
 
+    // 移除 rawFocusEvent 监听器
+    if (listeners.rawFocusHandler) {
+      sessionFocusEmitter.off(`rawFocusEvent:${sessionId}`, listeners.rawFocusHandler);
+      logger.info(`Removed rawFocusEvent listener for ${sessionId}`);
+    }
+
     activeEventConnections.delete(ws);
     logger.info(`'/events' connection removed for session ${sessionId}. Remaining: ${activeEventConnections.size}`);
   } else {
@@ -1188,8 +1198,8 @@ function sendResponse(
 
 function sendSessionEndedMessage(ws: WebSocket, reason: string): void {
   if (ws.readyState === WebSocket.OPEN) {
-    safeSendWithCallback(ws, JSON.stringify({ type: 'session_ended', data: { reason } }), {}, (err) => {
-      if (err) logger.error('Failed to send session_ended message:', err);
+    safeSendWithCallback(ws, JSON.stringify({ type: WS_EVENT_SESSION_ENDED, data: { reason } }), {}, (err) => {
+      if (err) logger.error(`Failed to send ${WS_EVENT_SESSION_ENDED} message:`, err);
     });
   }
 }

@@ -5,6 +5,7 @@ import { Page, CDPSession } from 'puppeteer-core';
 import { logger } from '@shared/utils/logger.js';
 import { clampScreenshotSize } from '../utils/screenshot-size.js';
 import { safeSend, safeSendWithCallback } from '../../utils/ws-backpressure.js';
+import { WS_EVENT_SESSION_ENDED } from './ws-events.constants.js';
 
 function shortId(): string {
   return crypto.randomUUID().slice(0, 8);
@@ -476,8 +477,8 @@ async function cleanupStreamConnection(ws: WebSocket): Promise<void> {
 
 function sendSessionEndedMessage(ws: WebSocket, reason: string): void {
   if (ws.readyState === WebSocket.OPEN) {
-    safeSendWithCallback(ws, JSON.stringify({ type: 'session_ended', data: { reason } }), {}, (err) => {
-      if (err) logger.error('Failed to send session_ended:', err);
+    safeSendWithCallback(ws, JSON.stringify({ type: WS_EVENT_SESSION_ENDED, data: { reason } }), {}, (err) => {
+      if (err) logger.error(`Failed to send ${WS_EVENT_SESSION_ENDED}:`, err);
     });
   }
 }

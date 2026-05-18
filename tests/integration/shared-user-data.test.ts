@@ -30,7 +30,7 @@ describe('SharedUserData Integration Tests', () => {
   beforeAll(async () => {
     // 动态导入 BrowserService，避免模块加载时的依赖问题
     const { BrowserService: BrowserServiceClass } = await import('../../src/machine/browser.service.js');
-    browserService = new BrowserServiceClass() as unknown as BrowserService;
+    browserService = BrowserServiceClass.getInstance() as unknown as BrowserService;
   });
 
   afterAll(async () => {

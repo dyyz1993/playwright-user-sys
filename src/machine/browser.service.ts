@@ -38,6 +38,7 @@ const DEFAULT_SESSION_CONFIG: SessionConfig = {
  * 浏览器服务类 - 专注于核心浏览器管理和能力提供
  */
 export class BrowserService extends EventEmitter {
+  private static instance: BrowserService | null = null;
   private sessions: Map<string, SessionInfo> = new Map();
   private connections: Map<string, ConnectionInfo> = new Map();
   private disconnectionTimers: Map<string, NodeJS.Timeout> = new Map();
@@ -47,9 +48,16 @@ export class BrowserService extends EventEmitter {
   // Map<userId, sessionId>
   private userSharedBrowsers: Map<number, string> = new Map();
 
-  constructor() {
+  private constructor() {
     super();
     this.startActivityReporting();
+  }
+
+  static getInstance(): BrowserService {
+    if (!BrowserService.instance) {
+      BrowserService.instance = new BrowserService();
+    }
+    return BrowserService.instance;
   }
 
   /**
@@ -1026,8 +1034,8 @@ export class BrowserService extends EventEmitter {
   }
 }
 
-// 创建浏览器服务实例
-export const browserService = new BrowserService();
+// 创建浏览器服务单例
+export const browserService = BrowserService.getInstance();
 export const sessionManager = browserService; // 兼容性别名
 
 export default browserService;

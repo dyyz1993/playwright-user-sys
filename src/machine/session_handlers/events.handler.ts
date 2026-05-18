@@ -6,6 +6,7 @@ import { Page, Frame } from 'puppeteer-core';
 // 注意：as KeyInput 断言是安全的，因为值来自远程 viewer 已验证的键盘事件
 type KeyInput = Parameters<Page['keyboard']['press']>[0];
 import { logger } from '@shared/utils/logger.js';
+import { safeSendWithCallback } from '../../utils/ws-backpressure.js';
 import { sessionFocusEmitter } from '../utils.js';
 import fs from 'fs';
 import path from 'path';
@@ -721,7 +722,9 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
                     active: p === currentPage,
                   }))
               );
-              ws.send(JSON.stringify({ type: 'tabList', tabs }));
+              safeSendWithCallback(ws, JSON.stringify({ type: 'tabList', tabs }), {}, (err) => {
+                if (err) logger.error('Failed to send tabList:', err);
+              });
             }
           } catch (tabError: unknown) {
             logger.error(`Failed to list tabs for session ${sessionId}:`, tabError);
@@ -1139,11 +1142,13 @@ function cleanupEventConnection(ws: WebSocket): void {
 // --- 辅助发送函数 ---
 function sendNotification(ws: WebSocket, eventType: string, data: Record<string, unknown> | null): void {
   if (ws.readyState === WebSocket.OPEN) {
-    ws.send(
+    safeSendWithCallback(
+      ws,
       JSON.stringify({
         type: eventType || 'notification',
         event: { type: eventType, ...data },
       }),
+      {},
       (err) => {
         if (err) logger.error(`Failed to send notification (${eventType}):`, err);
       }
@@ -1153,7 +1158,7 @@ function sendNotification(ws: WebSocket, eventType: string, data: Record<string,
 
 function sendConfigSync(ws: WebSocket, config: SessionConfig): void {
   if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'configSync', config }), (err) => {
+    safeSendWithCallback(ws, JSON.stringify({ type: 'configSync', config }), {}, (err) => {
       if (err) logger.error('Failed to send configSync:', err);
       else logger.info('Sent configSync:', config);
     });
@@ -1166,12 +1171,14 @@ function sendResponse(
   data: { success: boolean; error?: string; [key: string]: unknown }
 ): void {
   if (ws.readyState === WebSocket.OPEN) {
-    ws.send(
+    safeSendWithCallback(
+      ws,
       JSON.stringify({
         type: 'response',
         requestType: requestType,
         data: data,
       }),
+      {},
       (err) => {
         if (err) logger.error(`Failed to send response for ${requestType}:`, err);
       }
@@ -1181,7 +1188,7 @@ function sendResponse(
 
 function sendSessionEndedMessage(ws: WebSocket, reason: string): void {
   if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'session_ended', data: { reason } }), (err) => {
+    safeSendWithCallback(ws, JSON.stringify({ type: 'session_ended', data: { reason } }), {}, (err) => {
       if (err) logger.error('Failed to send session_ended message:', err);
     });
   }

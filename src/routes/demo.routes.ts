@@ -76,7 +76,7 @@ export default async function demoRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ success: false, error: '缺少 sessionId' });
     }
     const refreshed = demoService.refreshActivity(sessionId);
-    return reply.send({ success: refreshed });
+    return reply.send({ success: true, data: { refreshed } });
   });
 
   fastify.get('/api/demo/stats', async (_request, reply) => {

@@ -42,7 +42,7 @@ export default async function adminRoutes(fastify: FastifyInstance): Promise<voi
 
     if (!fs.existsSync(htmlPath)) {
       logger.error('remote-control.html not found:', htmlPath);
-      return reply.status(404).send('File not found');
+      return reply.status(404).send({ success: false, error: 'File not found' });
     }
 
     const htmlContent = fs.readFileSync(htmlPath, 'utf-8');

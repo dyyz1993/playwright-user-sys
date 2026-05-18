@@ -1,33 +1,44 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BrowserService } from '@machine/browser.service.js';
 
 describe('BrowserService Session Manager API', () => {
   let service: BrowserService;
+  const createdSessionIds: string[] = [];
 
   beforeEach(() => {
-    service = new BrowserService();
+    service = BrowserService.getInstance();
     service.stopActivityReporting();
   });
+
+  afterEach(() => {
+    for (const id of createdSessionIds) {
+      service.deleteSession(id);
+    }
+    createdSessionIds.length = 0;
+  });
+
+  function trackSetSession(id: string, ctx: Parameters<BrowserService['setSession']>[1]) {
+    createdSessionIds.push(id);
+    service.setSession(id, ctx);
+  }
 
   describe('getSession', () => {
     it('should return undefined for non-existent session', () => {
       expect(service.getSession('non-existent')).toBeUndefined();
     });
 
-    it('should return session info after launchBrowser sets it', async () => {
-      const mockBrowser = {
-        wsEndpoint: () => 'ws://127.0.0.1:9222/devtools/browser/abc',
-        pages: () => Promise.resolve([]),
-        on: vi.fn(),
-        process: () => null,
-        close: vi.fn().mockResolvedValue(undefined),
-      } as unknown as Parameters<typeof service.launchBrowser>[0] extends infer _ ? never : never;
-
-      // launchBrowser is complex; test getSession directly by checking internal state
-      // Instead, we verify the getSession method returns what setSession stores
-      const sessionInfo = { port: 9222, wsEndpoint: 'ws://127.0.0.1:9222/devtools/browser/abc' };
-      // Use the public API to set and get
-      expect(service.getSession('test-id')).toBeUndefined();
+    it('should return session info after setSession', async () => {
+      const ctx = {
+        port: 9222,
+        browser: {} as any,
+        path: '/devtools/browser/abc',
+        lastActivity: Date.now(),
+        startTime: Date.now(),
+        wsEndpoint: 'ws://127.0.0.1:9222/devtools/browser/abc',
+        config: {},
+      };
+      trackSetSession('test-id', ctx);
+      expect(service.getSession('test-id')).toEqual(ctx);
     });
   });
 
@@ -37,7 +48,7 @@ describe('BrowserService Session Manager API', () => {
     });
 
     it('should return true after setSession', () => {
-      service.setSession('test-id', {
+      trackSetSession('test-id', {
         port: 9222,
         browser: {} as any,
         path: '/devtools/browser/abc',
@@ -62,7 +73,7 @@ describe('BrowserService Session Manager API', () => {
         config: { fps: 15 },
       };
 
-      service.setSession('s1', ctx);
+      trackSetSession('s1', ctx);
       expect(service.getSession('s1')).toEqual(ctx);
       expect(service.hasSession('s1')).toBe(true);
 
@@ -78,10 +89,6 @@ describe('BrowserService Session Manager API', () => {
   });
 
   describe('sessionCount', () => {
-    it('should return 0 initially', () => {
-      expect(service.sessionCount()).toBe(0);
-    });
-
     it('should reflect added and removed sessions', () => {
       const ctx = {
         port: 9222,
@@ -93,21 +100,18 @@ describe('BrowserService Session Manager API', () => {
         config: {},
       };
 
-      service.setSession('a', ctx);
-      service.setSession('b', ctx);
-      expect(service.sessionCount()).toBe(2);
+      const countBefore = service.sessionCount();
+      trackSetSession('a', ctx);
+      trackSetSession('b', ctx);
+      expect(service.sessionCount()).toBe(countBefore + 2);
 
       service.deleteSession('a');
-      expect(service.sessionCount()).toBe(1);
+      expect(service.sessionCount()).toBe(countBefore + 1);
     });
   });
 
   describe('sessionKeys', () => {
-    it('should return empty array when no sessions', () => {
-      expect(service.sessionKeys()).toEqual([]);
-    });
-
-    it('should return all session IDs', () => {
+    it('should return all session IDs after adding', () => {
       const ctx = {
         port: 9222,
         browser: {} as any,
@@ -118,20 +122,15 @@ describe('BrowserService Session Manager API', () => {
         config: {},
       };
 
-      service.setSession('x', ctx);
-      service.setSession('y', ctx);
+      trackSetSession('x', ctx);
+      trackSetSession('y', ctx);
       const keys = service.sessionKeys();
       expect(keys).toContain('x');
       expect(keys).toContain('y');
-      expect(keys).toHaveLength(2);
     });
   });
 
   describe('sessionValues', () => {
-    it('should return empty array when no sessions', () => {
-      expect(service.sessionValues()).toEqual([]);
-    });
-
     it('should return all session contexts', () => {
       const ctx1 = {
         port: 9222,
@@ -152,16 +151,15 @@ describe('BrowserService Session Manager API', () => {
         config: { fps: 30 },
       };
 
-      service.setSession('a', ctx1);
-      service.setSession('b', ctx2);
+      trackSetSession('a', ctx1);
+      trackSetSession('b', ctx2);
       const values = service.sessionValues();
-      expect(values).toHaveLength(2);
       expect(values.map((v) => v.port)).toEqual(expect.arrayContaining([9222, 9223]));
     });
   });
 
   describe('forEachSession', () => {
-    it('should iterate over all sessions', () => {
+    it('should iterate over added sessions', () => {
       const ctx = {
         port: 9222,
         browser: {} as any,
@@ -172,22 +170,18 @@ describe('BrowserService Session Manager API', () => {
         config: {},
       };
 
-      service.setSession('a', ctx);
-      service.setSession('b', ctx);
+      trackSetSession('a', ctx);
+      trackSetSession('b', ctx);
 
       const collected: Array<{ id: string; port: number }> = [];
       service.forEachSession((session, id) => {
-        collected.push({ id, port: session.port });
+        if (id === 'a' || id === 'b') {
+          collected.push({ id, port: session.port });
+        }
       });
 
       expect(collected).toHaveLength(2);
       expect(collected.map((c) => c.id)).toEqual(expect.arrayContaining(['a', 'b']));
-    });
-
-    it('should not call callback for empty sessions', () => {
-      const callback = vi.fn();
-      service.forEachSession(callback);
-      expect(callback).not.toHaveBeenCalled();
     });
   });
 
@@ -198,7 +192,7 @@ describe('BrowserService Session Manager API', () => {
 
     it('should return startTime from session', () => {
       const now = Date.now();
-      service.setSession('s1', {
+      trackSetSession('s1', {
         port: 9222,
         browser: {} as any,
         path: '/devtools/browser/abc',

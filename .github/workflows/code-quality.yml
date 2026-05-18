@@ -79,7 +79,7 @@ jobs:
 
   feishu-notify:
     name: Feishu Notification
-    if: ${{ always() && secrets.FEISHU_WEBHOOK_URL != '' }}
+    if: ${{ always() }}
     needs: [quality-check]
     uses: dyyz1993/ci-tools/.github/workflows/feishu-notify.yml@main
     with:

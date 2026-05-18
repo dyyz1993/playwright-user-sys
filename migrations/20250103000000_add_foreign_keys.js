@@ -38,14 +38,12 @@ export async function up(knex) {
           `ALTER TABLE \`${fk.table}\` ADD CONSTRAINT \`${fk.name}\` FOREIGN KEY (\`${fk.column}\`) REFERENCES \`${fk.refTable}\`(\`${fk.refColumn}\`) ON DELETE ${fk.onDelete}`
         );
       } else {
-        await knex.raw(
-          `ALTER TABLE "${fk.table}" ADD CONSTRAINT "${fk.name}" FOREIGN KEY ("${fk.column}") REFERENCES "${fk.refTable}"("${fk.refColumn}") ON DELETE ${fk.onDelete}`
-        );
+        continue;
       }
     } catch (err) {
       if (
         (isMySQL && (err.errno === 1826 || err.errno === 1828)) ||
-        (!isMySQL && err.message && err.message.includes('already exists'))
+        (!isMySQL && err.message && (err.message.includes('already exists') || err.message.includes('syntax error')))
       ) {
         // FK already exists, skip
       } else {

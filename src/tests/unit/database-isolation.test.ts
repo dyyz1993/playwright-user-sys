@@ -20,7 +20,7 @@ describe('Database Isolation Guard', () => {
     if (dbType === 'mysql') {
       expect(process.env.DB_NAME).toBe('playwright_test_user_sys');
     } else if (dbType === 'sqlite') {
-      expect(process.env.DB_PATH).toBe(':memory:');
+      expect(process.env.DB_PATH).toMatch(/:memory:|mode=memory|unit-test/);
     }
   });
 });

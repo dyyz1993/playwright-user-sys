@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as stream from 'stream';
 import * as http from 'http';
 import * as net from 'net';
@@ -11,6 +12,10 @@ import { logger } from '@shared/utils/logger.js';
 import { createBrowserSession, handleSessionDisconnect } from './session.service.js';
 import { memoryStore } from './memory-store.service.js';
 import { SessionStatus } from '@shared/types/index.js';
+
+function shortId(): string {
+  return crypto.randomUUID().slice(0, 8);
+}
 
 const wsConnectQuerySchema = z.object({
   apiKey: z.string().min(1),
@@ -48,15 +53,13 @@ export class NativeWebSocketProxyService {
     this.server = server;
     logger.info('正在初始化原生WebSocket代理服务...');
 
-    // 初始化HTTP代理，添加超时设置
     this.proxy = httpProxy.createProxyServer({
       ws: true,
-      timeout: 60000, // 60秒超时
+      timeout: 60000,
       proxyTimeout: 60000,
       ignorePath: true,
     });
 
-    // 代理错误处理
     this.proxy.on('error', (err: Error, req: http.IncomingMessage, socket: unknown) => {
       const sessionId = (req as { sessionId?: string }).sessionId || '未知';
       logger.error(`WebSocket代理错误 (sessionId: ${sessionId}):`, err);
@@ -77,16 +80,13 @@ export class NativeWebSocketProxyService {
 
     logger.info('HTTP代理实例已创建');
 
-    // 保存 upgrade 监听器引用，以便后续精确移除
     this.upgradeHandler = (request, socket, head) => {
       if (process.env.NODE_ENV !== 'production') {
         logger.info(`收到HTTP升级请求: ${request.url}`);
       }
 
-      // Origin 校验：防止跨站 WebSocket 劫持（CSWSH）
       const origin = request.headers.origin;
 
-      // 生产环境：无 Origin 的连接应被拒绝（浏览器总会发送 Origin）
       if (process.env.NODE_ENV === 'production' && !origin) {
         logger.warn('WebSocket 连接被拒绝: 生产环境缺少 Origin header');
         socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
@@ -100,7 +100,6 @@ export class NativeWebSocketProxyService {
           const originHost = new URL(origin).hostname;
           const isAllowed =
             allowedHosts.includes(originHost) ||
-            // 允许生产域名（非 localhost 的 Origin 在生产中放行）
             (process.env.NODE_ENV === 'production' && !allowedHosts.includes(originHost));
           if (!isAllowed) {
             logger.warn(`WebSocket Origin 不被允许: ${origin}`);
@@ -109,7 +108,6 @@ export class NativeWebSocketProxyService {
             return;
           }
         } catch {
-          // URL 解析失败，拒绝连接
           socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
           socket.destroy();
           return;
@@ -167,7 +165,6 @@ export class NativeWebSocketProxyService {
       }
     };
 
-    // 注册 upgrade 监听器
     server.on('upgrade', this.upgradeHandler);
 
     this.heartbeatInterval = setInterval(() => {
@@ -190,19 +187,19 @@ export class NativeWebSocketProxyService {
     socket: stream.Duplex,
     head: Buffer
   ): Promise<void> {
+    const connId = shortId();
     const parsedUrl = url.parse(request.url || '', true);
     const queryParams = parsedUrl.query;
     const sessionIdParam = queryParams.sessionId as string | undefined;
-    // 优先从 Authorization header 获取 API Key，fallback 到 query 参数
     const headerApiKey = request.headers['x-api-key'] as string | undefined;
     const apiKeyParam = headerApiKey || (queryParams.apiKey as string | undefined);
 
     if (sessionIdParam) {
-      await this.handleExistingSessionProxy(request, socket, head, sessionIdParam, queryParams);
+      await this.handleExistingSessionProxy(request, socket, head, sessionIdParam, queryParams, connId);
     } else if (apiKeyParam) {
-      await this.handleNewSessionProxy(request, socket, head, queryParams);
+      await this.handleNewSessionProxy(request, socket, head, queryParams, connId);
     } else {
-      logger.error('WebSocket连接缺少 sessionId 或 apiKey 参数');
+      logger.error('WebSocket连接缺少 sessionId 或 apiKey 参数', { connectionId: connId });
       socket.write('HTTP/1.1 400 Bad Request\r\n\r\nMissing sessionId or apiKey');
       socket.destroy();
     }
@@ -213,8 +210,10 @@ export class NativeWebSocketProxyService {
     socket: stream.Duplex,
     head: Buffer,
     sessionId: string,
-    queryParams: Record<string, unknown>
+    queryParams: Record<string, unknown>,
+    connId: string
   ): Promise<void> {
+    const cid = { connectionId: connId, sessionId };
     try {
       existingSessionQuerySchema.parse(queryParams);
 
@@ -230,7 +229,7 @@ export class NativeWebSocketProxyService {
           : null);
 
       if (!token) {
-        logger.error(`已有会话代理缺少认证信息 (sessionId: ${sessionId})`);
+        logger.error(`已有会话代理缺少认证信息`, cid);
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nMissing authentication');
         socket.destroy();
         return;
@@ -244,7 +243,7 @@ export class NativeWebSocketProxyService {
       try {
         decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
       } catch {
-        logger.error(`已有会话代理JWT验证失败 (sessionId: ${sessionId})`);
+        logger.error(`已有会话代理JWT验证失败`, cid);
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nInvalid token');
         socket.destroy();
         return;
@@ -259,14 +258,14 @@ export class NativeWebSocketProxyService {
 
       const session = await SessionModel.findById(sessionId);
       if (!session) {
-        logger.error(`已有会话代理：会话不存在 (sessionId: ${sessionId})`);
+        logger.error(`已有会话代理：会话不存在`, cid);
         socket.write('HTTP/1.1 404 Not Found\r\n\r\nSession not found');
         socket.destroy();
         return;
       }
 
       if (session.status !== SessionStatus.CREATED && session.status !== SessionStatus.CONNECTED) {
-        logger.error(`已有会话代理：会话状态无效 (sessionId: ${sessionId}, status: ${session.status})`);
+        logger.error(`已有会话代理：会话状态无效 (status: ${session.status})`, cid);
         socket.write('HTTP/1.1 410 Gone\r\n\r\nSession is not active');
         socket.destroy();
         return;
@@ -290,12 +289,12 @@ export class NativeWebSocketProxyService {
       const proxyPort = machineInfo.proxy_port;
       const targetUrl = `ws://${machineIp}:${proxyPort}?sessionId=${sessionId}`;
 
-      logger.info(`已有会话代理: sessionId=${sessionId}, machineId=${machineId}, target=${targetUrl}`);
+      logger.info(`已有会话代理: machineId=${machineId}, target=${targetUrl}`, cid);
 
       (request as { sessionId?: string }).sessionId = sessionId;
 
       if (this.activeConnections.size >= this.maxConnections) {
-        logger.error(`WebSocket连接数已达上限 (${this.activeConnections.size}/${this.maxConnections})`);
+        logger.error(`WebSocket连接数已达上限 (${this.activeConnections.size}/${this.maxConnections})`, cid);
         socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nMax connections reached');
         socket.destroy();
         return;
@@ -305,28 +304,28 @@ export class NativeWebSocketProxyService {
       this.connectionTimestamps.set(sessionId, Date.now());
 
       const cleanupHandler = () => {
-        this.cleanupConnection(sessionId);
+        this.cleanupConnection(sessionId, connId);
       };
 
       socket.on('close', () => {
-        logger.info(`客户端WebSocket连接关闭 (sessionId: ${sessionId})`);
+        logger.info(`客户端WebSocket连接关闭`, cid);
         cleanupHandler();
       });
 
       socket.on('error', (err: Error) => {
-        logger.error(`客户端WebSocket连接错误 (sessionId: ${sessionId}):`, err);
+        logger.error(`客户端WebSocket连接错误:`, { ...cid, error: err.message });
       });
 
       this.proxy.ws(request, socket, head, { target: targetUrl }, (err: Error) => {
         if (err) {
-          logger.error(`代理WebSocket连接失败 (sessionId: ${sessionId}):`, err);
+          logger.error(`代理WebSocket连接失败:`, { ...cid, error: err.message });
           cleanupHandler();
         } else {
-          logger.info(`WebSocket代理连接成功 (sessionId: ${sessionId})`);
+          logger.info(`WebSocket代理连接成功`, cid);
         }
       });
     } catch (error: unknown) {
-      logger.error(`已有会话代理失败 (sessionId: ${sessionId}):`, error);
+      logger.error(`已有会话代理失败:`, { ...cid, error: (error as Error).message });
       if (!socket.destroyed && socket.writable) {
         socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
         socket.destroy();
@@ -338,24 +337,24 @@ export class NativeWebSocketProxyService {
     request: http.IncomingMessage,
     socket: stream.Duplex,
     head: Buffer,
-    queryParams: Record<string, unknown>
+    queryParams: Record<string, unknown>,
+    connId: string
   ): Promise<void> {
     let sessionId: string | null = null;
+    const cid = () => ({ connectionId: connId, sessionId: sessionId || 'pending' });
 
     try {
-      // 优先从 header 获取 apiKey，fallback 到 query 参数
       const headerApiKey = request.headers['x-api-key'] as string | undefined;
       if (headerApiKey) {
         (queryParams as Record<string, unknown>).apiKey = headerApiKey;
       }
       const validatedParams = wsConnectQuerySchema.parse(queryParams);
-      // 避免在日志中记录完整的 API Key
       const safeParams = { ...validatedParams, apiKey: '***REDACTED***' };
-      logger.info(`WebSocket连接参数: ${JSON.stringify(safeParams)}`);
+      logger.info(`WebSocket连接参数: ${JSON.stringify(safeParams)}`, cid());
 
       const user = await UserModel.findByApiKey(validatedParams.apiKey as string);
       if (!user) {
-        logger.error('无效的API密钥');
+        logger.error('无效的API密钥', cid());
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
         socket.destroy();
         return;
@@ -377,16 +376,16 @@ export class NativeWebSocketProxyService {
         timezone: validatedParams.timezone,
       };
 
-      logger.info(`为用户 ${userId} 创建浏览器会话`);
+      logger.info(`为用户 ${userId} 创建浏览器会话`, cid());
       const sessionResult = await createBrowserSession(userId, sessionOptions, true);
       sessionId = sessionResult.sessionId;
       const machineId = sessionResult.machineId;
-      logger.info(`会话创建成功: ${sessionId}`);
+      logger.info(`会话创建成功`, cid());
 
       (request as { sessionId?: string }).sessionId = sessionId;
 
       if (this.activeConnections.size >= this.maxConnections) {
-        logger.error(`WebSocket连接数已达上限 (${this.activeConnections.size}/${this.maxConnections})`);
+        logger.error(`WebSocket连接数已达上限 (${this.activeConnections.size}/${this.maxConnections})`, cid());
         socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nMax connections reached');
         socket.destroy();
         return;
@@ -402,43 +401,43 @@ export class NativeWebSocketProxyService {
         throw new Error(`无法获取机器信息: ${machineId}`);
       }
 
-      logger.info(`获取到机器真实IP: ${machineInfo.ip} (machineId: ${machineId})`);
+      logger.info(`获取到机器真实IP: ${machineInfo.ip} (machineId: ${machineId})`, cid());
 
       const targetUrl = (sessionResult as { internalTargetUrl?: string }).internalTargetUrl || sessionResult.directUrl;
 
-      logger.info(`原始WebSocket端点: ${originalWsEndpoint}`);
-      logger.info(`修正后的WebSocket端点: ${targetUrl}`);
-      logger.info(`使用代理转发到目标WebSocket: ${targetUrl} (sessionId: ${sessionId})`);
+      logger.info(`原始WebSocket端点: ${originalWsEndpoint}`, cid());
+      logger.info(`修正后的WebSocket端点: ${targetUrl}`, cid());
+      logger.info(`使用代理转发到目标WebSocket: ${targetUrl}`, cid());
 
       const cleanupHandler = () => {
         if (!sessionId) return;
-        this.cleanupConnection(sessionId);
+        this.cleanupConnection(sessionId, connId);
       };
 
       socket.on('close', () => {
-        logger.info(`客户端WebSocket连接关闭 (sessionId: ${sessionId})`);
+        logger.info(`客户端WebSocket连接关闭`, cid());
         cleanupHandler();
       });
 
       socket.on('error', (err: Error) => {
-        logger.error(`客户端WebSocket连接错误 (sessionId: ${sessionId}):`, err);
+        logger.error(`客户端WebSocket连接错误:`, { ...cid(), error: err.message });
       });
 
       this.proxy.ws(request, socket, head, { target: targetUrl }, (err: Error) => {
         if (err) {
-          logger.error(`代理WebSocket连接失败 (sessionId: ${sessionId}):`, err);
+          logger.error(`代理WebSocket连接失败:`, { ...cid(), error: err.message });
           cleanupHandler();
         } else {
-          logger.info(`WebSocket代理连接成功 (sessionId: ${sessionId})`);
+          logger.info(`WebSocket代理连接成功`, cid());
         }
       });
 
-      logger.info(`WebSocket代理转发已设置 (sessionId: ${sessionId})`);
+      logger.info(`WebSocket代理转发已设置`, cid());
     } catch (error: unknown) {
-      logger.error('处理WebSocket连接失败:', error);
+      logger.error('处理WebSocket连接失败:', { ...cid(), error: (error as Error).message });
 
       if (sessionId) {
-        this.cleanupConnection(sessionId);
+        this.cleanupConnection(sessionId, connId);
       }
 
       if (!socket.destroyed && socket.writable) {
@@ -455,6 +454,8 @@ export class NativeWebSocketProxyService {
     sessionId: string,
     pathname: string
   ): Promise<void> {
+    const connId = shortId();
+    const cid = { connectionId: connId, sessionId };
     try {
       const parsedUrl = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
       const queryToken = parsedUrl.searchParams.get('token');
@@ -471,7 +472,7 @@ export class NativeWebSocketProxyService {
           : null);
 
       if (!token) {
-        logger.error(`Viewer WebSocket代理缺少认证信息 (sessionId: ${sessionId})`);
+        logger.error(`Viewer WebSocket代理缺少认证信息`, cid);
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nMissing authentication');
         socket.destroy();
         return;
@@ -487,7 +488,7 @@ export class NativeWebSocketProxyService {
       } catch {
         const userByKey = await UserModel.findByApiKey(token);
         if (!userByKey) {
-          logger.error(`Viewer WebSocket代理认证失败 (sessionId: ${sessionId})`);
+          logger.error(`Viewer WebSocket代理认证失败`, cid);
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nInvalid token');
           socket.destroy();
           return;
@@ -504,21 +505,21 @@ export class NativeWebSocketProxyService {
 
       const session = await SessionModel.findById(sessionId);
       if (!session) {
-        logger.error(`Viewer WebSocket代理：会话不存在 (sessionId: ${sessionId})`);
+        logger.error(`Viewer WebSocket代理：会话不存在`, cid);
         socket.write('HTTP/1.1 404 Not Found\r\n\r\nSession not found');
         socket.destroy();
         return;
       }
 
       if (session.status !== SessionStatus.CREATED && session.status !== SessionStatus.CONNECTED) {
-        logger.error(`Viewer WebSocket代理：会话状态无效 (sessionId: ${sessionId}, status: ${session.status})`);
+        logger.error(`Viewer WebSocket代理：会话状态无效 (status: ${session.status})`, cid);
         socket.write('HTTP/1.1 410 Gone\r\n\r\nSession is not active');
         socket.destroy();
         return;
       }
 
       if (session.user_id !== decoded.id && decoded.role !== 'admin') {
-        logger.error(`Viewer WebSocket代理：无权访问会话 (sessionId: ${sessionId}, userId: ${decoded.id})`);
+        logger.error(`Viewer WebSocket代理：无权访问会话 (userId: ${decoded.id})`, cid);
         socket.write('HTTP/1.1 403 Forbidden\r\n\r\nAccess denied');
         socket.destroy();
         return;
@@ -542,17 +543,13 @@ export class NativeWebSocketProxyService {
       const proxyPort = machineInfo.proxy_port;
       const targetUrl = `ws://${machineIp}:${proxyPort}${pathname}?sessionId=${sessionId}`;
 
-      logger.info(`Viewer WS Bridge: sessionId=${sessionId}, target=${targetUrl}`);
+      logger.info(`Viewer WS Bridge: target=${targetUrl}`, cid);
 
       (request as { sessionId?: string }).sessionId = sessionId;
 
-      // Raw TCP bridge: forward WS upgrade to machine, then pipe raw bytes
-      // This avoids http-proxy's binary WS frame dropping issue
       const netSocket = net.connect(proxyPort, machineIp, () => {
-        logger.info(`Viewer WS bridge TCP connected to ${machineIp}:${proxyPort} (sessionId: ${sessionId})`);
+        logger.info(`Viewer WS bridge TCP connected to ${machineIp}:${proxyPort}`, cid);
 
-        // Forward client's HTTP upgrade request to machine
-        // Include all relevant headers for proper WS negotiation
         const reqHeaders = [
           `${request.method} ${request.url} HTTP/1.1`,
           `Host: ${machineIp}:${proxyPort}`,
@@ -562,13 +559,9 @@ export class NativeWebSocketProxyService {
           `Sec-WebSocket-Version: ${request.headers['sec-websocket-version'] || '13'}`,
         ];
 
-        // Intentionally skip Sec-WebSocket-Extensions to avoid permessage-deflate
-        // compression negotiation that breaks the raw TCP bridge
-
         reqHeaders.push('\r\n');
         netSocket.write(reqHeaders.join('\r\n'));
 
-        // Forward any data the client already sent (head buffer)
         if (head && head.length > 0) {
           netSocket.write(head);
         }
@@ -580,10 +573,8 @@ export class NativeWebSocketProxyService {
       function startBridging() {
         if (bridged) return;
         bridged = true;
-        logger.info(`Viewer WS bridge active - piping raw bytes (sessionId: ${sessionId})`);
+        logger.info(`Viewer WS bridge active - piping raw bytes`, cid);
 
-        // Pipe: client → machine only (raw WS frames)
-        // machine → client is already handled by the existing on('data') handler below
         socket.on('data', (chunk: Buffer) => {
           if (!netSocket.destroyed && netSocket.writable) {
             netSocket.write(chunk);
@@ -591,71 +582,61 @@ export class NativeWebSocketProxyService {
         });
       }
 
-      // Handle machine response (should be 101 Switching Protocols)
-      // Also pipes machine → client WS frames after handshake
       let machineRespBuffer = Buffer.alloc(0);
       netSocket.on('data', (chunk: Buffer) => {
         if (!machineHeaderReceived) {
           machineRespBuffer = Buffer.concat([machineRespBuffer, chunk]);
           const headerEnd = machineRespBuffer.indexOf('\r\n\r\n');
           if (headerEnd !== -1) {
-            // Found complete HTTP response headers from machine
             const headers = machineRespBuffer.slice(0, headerEnd).toString();
             const remaining = machineRespBuffer.slice(headerEnd + 4);
 
-            logger.info(`Machine 101 response received (sessionId: ${sessionId}): ${headers.split('\r\n')[0]}`);
+            logger.info(`Machine 101 response received: ${headers.split('\r\n')[0]}`, cid);
 
-            // Strip Sec-WebSocket-Extensions from machine's 101 response
-            // to prevent compression/RSV framing issues in the bridge
             const cleanHeaders = headers
               .split('\r\n')
               .filter((line) => !line.toLowerCase().startsWith('sec-websocket-extensions'))
               .join('\r\n');
 
-            // Forward cleaned 101 response to client
             socket.write(Buffer.from(cleanHeaders + '\r\n\r\n'));
             machineHeaderReceived = true;
 
-            // If there's body data after headers, write it
             if (remaining.length > 0) {
               socket.write(remaining);
             }
 
             startBridging();
           }
-          // else: wait for more data to complete headers
-        }
-        // If headers already processed, data goes through bridge
-        else if (machineHeaderReceived && !socket.destroyed && socket.writable) {
+        } else if (machineHeaderReceived && !socket.destroyed && socket.writable) {
           socket.write(chunk);
         }
       });
 
       netSocket.on('error', (err: Error) => {
-        logger.error(`Viewer WS TCP error (sessionId: ${sessionId}):`, err.message);
+        logger.error(`Viewer WS TCP error:`, { ...cid, error: err.message });
         if (!socket.destroyed && socket.writable) {
           socket.end();
         }
       });
 
       netSocket.on('close', () => {
-        logger.info(`Viewer WS machine TCP closed (sessionId: ${sessionId})`);
+        logger.info(`Viewer WS machine TCP closed`, cid);
         if (!socket.destroyed && socket.writable) {
           socket.end();
         }
       });
 
       socket.on('close', () => {
-        logger.info(`Viewer WebSocket连接关闭 (sessionId: ${sessionId}, path: ${pathname})`);
+        logger.info(`Viewer WebSocket连接关闭 (path: ${pathname})`, cid);
         netSocket.destroy();
       });
 
       socket.on('error', (err: Error) => {
-        logger.error(`Viewer WebSocket连接错误 (sessionId: ${sessionId}):`, err.message);
+        logger.error(`Viewer WebSocket连接错误:`, { ...cid, error: err.message });
         netSocket.destroy();
       });
     } catch (error: unknown) {
-      logger.error(`Viewer WebSocket代理失败 (sessionId: ${sessionId}):`, error);
+      logger.error(`Viewer WebSocket代理失败:`, { ...cid, error: (error as Error).message });
       if (!socket.destroyed && socket.writable) {
         socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
         socket.destroy();
@@ -663,37 +644,38 @@ export class NativeWebSocketProxyService {
     }
   }
 
-  // 清理连接的辅助方法
-
-  private cleanupConnection(sessionId: string): void {
+  private cleanupConnection(sessionId: string, connId?: string): void {
     if (!sessionId || !this.activeConnections.has(sessionId)) {
       return;
     }
 
-    logger.info(`清理WebSocket连接 (sessionId: ${sessionId})`);
+    logger.info(`清理WebSocket连接`, { connectionId: connId || 'unknown', sessionId });
     this.activeConnections.delete(sessionId);
     this.connectionTimestamps.delete(sessionId);
 
-    // 异步清理会话资源（带 catch 防止 unhandled rejection）
-    this.handleCleanupDisconnect(sessionId).catch((error) => {
-      logger.error(`清理会话资源失败 (sessionId: ${sessionId}):`, error);
+    this.handleCleanupDisconnect(sessionId, connId).catch((error) => {
+      logger.error(`清理会话资源失败:`, {
+        connectionId: connId || 'unknown',
+        sessionId,
+        error: (error as Error).message,
+      });
     });
   }
 
-  private async handleCleanupDisconnect(sessionId: string): Promise<void> {
+  private async handleCleanupDisconnect(sessionId: string, connId?: string): Promise<void> {
+    const cid = { connectionId: connId || 'unknown', sessionId };
     try {
       const session = await SessionModel.findById(sessionId);
 
       if (session && session.user_id && session.machine_id) {
         await handleSessionDisconnect(sessionId, session.user_id, session.machine_id);
-        logger.info(`会话资源已清理 (sessionId: ${sessionId})`);
+        logger.info(`会话资源已清理`, cid);
       }
     } catch (error: unknown) {
-      logger.error(`清理会话资源失败 (sessionId: ${sessionId}):`, error);
+      logger.error(`清理会话资源失败:`, { ...cid, error: (error as Error).message });
     }
   }
 
-  // 关闭服务，释放所有资源
   shutdown(): void {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
@@ -704,18 +686,14 @@ export class NativeWebSocketProxyService {
   public close(): void {
     logger.info('关闭WebSocket代理服务...');
 
-    // 复制一份活动连接列表，避免在迭代过程中修改原集合
     const activeSessionIds = [...this.activeConnections];
 
-    // 清理所有活动连接
     for (const sessionId of activeSessionIds) {
       this.cleanupConnection(sessionId);
     }
 
-    // 关闭代理
     this.proxy.close();
 
-    // 移除 upgrade 事件监听器（仅移除自己注册的）
     if (this.upgradeHandler) {
       this.server.removeListener('upgrade', this.upgradeHandler);
       this.upgradeHandler = null;

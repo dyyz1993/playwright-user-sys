@@ -1,8 +1,13 @@
+import * as crypto from 'crypto';
 import { WebSocket } from 'ws';
 import { browserService, SessionConfig } from '../browser.service.js';
 import { Page, CDPSession } from 'puppeteer-core';
 import { logger } from '@shared/utils/logger.js';
 import { clampScreenshotSize } from '../utils/screenshot-size.js';
+
+function shortId(): string {
+  return crypto.randomUUID().slice(0, 8);
+}
 
 interface StartScreencastParams {
   format?: 'jpeg' | 'png';
@@ -16,6 +21,7 @@ interface StreamInfo {
   ws: WebSocket;
   page: Page;
   sessionId: string;
+  connectionId: string;
   cdpSession: CDPSession | null;
   isActive: boolean;
   useCdpScreencast: boolean;
@@ -184,7 +190,8 @@ async function restartCdpScreencast(streamInfo: StreamInfo): Promise<void> {
 }
 
 // --- page.screenshot 回退方案 ---
-async function captureAndSend(ws: WebSocket, page: Page, sessionId: string): Promise<boolean> {
+async function captureAndSend(ws: WebSocket, page: Page, sessionId: string, connId: string): Promise<boolean> {
+  const cid = { connectionId: connId, sessionId };
   if (ws.readyState !== WebSocket.OPEN) {
     return false;
   }
@@ -210,7 +217,7 @@ async function captureAndSend(ws: WebSocket, page: Page, sessionId: string): Pro
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(screenshotBuffer, { binary: true }, (err) => {
         if (err) {
-          logger.error(`Screenshot send failed for session ${sessionId}:`, err);
+          logger.error(`Screenshot send failed:`, { ...cid, error: err.message });
         }
       });
     }
@@ -218,24 +225,25 @@ async function captureAndSend(ws: WebSocket, page: Page, sessionId: string): Pro
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     if (msg.includes('Target closed') || msg.includes('Session closed')) {
-      logger.warn(`Page/session closed for ${sessionId}. Stopping.`);
+      logger.warn(`Page/session closed. Stopping.`, cid);
       sendSessionEndedMessage(ws, 'browser_closed');
     } else if (msg.includes('WebSocket is not open')) {
-      logger.warn(`WebSocket closed for ${sessionId}.`);
+      logger.warn(`WebSocket closed.`, cid);
     } else if (msg.includes('Not attached') || msg.includes('Target closed')) {
-      logger.warn(`Page not attached for ${sessionId}, attempting recovery`);
+      logger.warn(`Page not attached, attempting recovery`, cid);
     } else {
-      logger.error(`Screenshot error for ${sessionId}:`, error);
+      logger.error(`Screenshot error:`, { ...cid, error: msg });
     }
     return false;
   }
 }
 
 function startScreenshotLoop(streamInfo: StreamInfo): void {
-  const { ws, sessionId, currentFps } = streamInfo;
+  const { ws, sessionId, connectionId, currentFps } = streamInfo;
   const intervalMs = 1000 / currentFps;
+  const cid = { connectionId, sessionId };
 
-  logger.info(`Starting screenshot loop fallback for ${sessionId} at ${currentFps} FPS`);
+  logger.info(`Starting screenshot loop fallback at ${currentFps} FPS`, cid);
 
   if (streamInfo.timerId) {
     clearTimeout(streamInfo.timerId);
@@ -245,7 +253,7 @@ function startScreenshotLoop(streamInfo: StreamInfo): void {
   const scheduleNextCapture = async () => {
     if (!activeStreams.has(ws)) return;
 
-    const success = await captureAndSend(ws, streamInfo.page, sessionId);
+    const success = await captureAndSend(ws, streamInfo.page, sessionId, connectionId);
 
     if (!success && streamInfo.page) {
       try {
@@ -253,10 +261,10 @@ function startScreenshotLoop(streamInfo: StreamInfo): void {
         const activePage = pages.find((p: Page) => !p.isClosed()) || pages[0];
         if (activePage && activePage !== streamInfo.page) {
           streamInfo.page = activePage;
-          logger.info(`Recovered page reference for ${sessionId}, switching to new page`);
+          logger.info(`Recovered page reference, switching to new page`, cid);
         }
       } catch (recoveryErr: unknown) {
-        logger.error(`Failed to recover page for ${sessionId}: ${recoveryErr}`);
+        logger.error(`Failed to recover page: ${recoveryErr}`, cid);
       }
     }
 
@@ -297,7 +305,9 @@ async function waitForPageReady(page: Page, _sessionId: string): Promise<void> {
 
 // --- 主入口 ---
 export async function handleStreamConnection(ws: WebSocket, sessionId: string): Promise<void> {
-  logger.info(`Handling '/stream' WebSocket connection for session ${sessionId}`);
+  const connId = shortId();
+  const cid = { connectionId: connId, sessionId };
+  logger.info(`Handling '/stream' WebSocket connection`, cid);
 
   let page: Page | null;
   let initialConfig: SessionConfig | null;
@@ -307,7 +317,7 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
     initialConfig = browserService.getSessionConfig(sessionId);
 
     if (!page || !initialConfig) {
-      logger.warn(`Session ${sessionId} not found or config missing.`);
+      logger.warn(`Session not found or config missing.`, cid);
       ws.close(1011, 'Session invalid or prerequisites missing');
       return;
     }
@@ -318,6 +328,7 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
       ws,
       page,
       sessionId,
+      connectionId: connId,
       cdpSession: null,
       isActive: false,
       useCdpScreencast: true,
@@ -331,16 +342,13 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
     };
     activeStreams.set(ws, streamInfo);
 
-    // 优先使用 CDP Screencast
     await startCdpScreencast(streamInfo);
 
-    // Page 事件监听
-    const pageCloseHandler = () => handlePageCloseOrCrash(ws, sessionId, 'browser_closed');
-    const pageCrashHandler = () => handlePageCloseOrCrash(ws, sessionId, 'browser_crashed');
+    const pageCloseHandler = () => handlePageCloseOrCrash(ws, sessionId, connId, 'browser_closed');
+    const pageCrashHandler = () => handlePageCloseOrCrash(ws, sessionId, connId, 'browser_crashed');
     page.once('close', pageCloseHandler);
     page.once('crash', pageCrashHandler);
 
-    // 配置更新监听
     const configUpdateListener = (updatedSessionId: string, updatedConfig: SessionConfig) => {
       if (updatedSessionId !== sessionId) return;
 
@@ -352,7 +360,7 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
       currentStreamInfo.config = newStreamConfig;
 
       if (currentStreamInfo.currentFps !== newFps) {
-        logger.info(`FPS changed for ${sessionId}: ${currentStreamInfo.currentFps} -> ${newFps}`);
+        logger.info(`FPS changed: ${currentStreamInfo.currentFps} -> ${newFps}`, cid);
         currentStreamInfo.currentFps = newFps;
 
         if (currentStreamInfo.useCdpScreencast && currentStreamInfo.cdpSession) {
@@ -369,7 +377,7 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
       const currentStreamInfo = activeStreams.get(ws);
       if (!currentStreamInfo || currentStreamInfo.page === newPage) return;
 
-      logger.info(`Tab switched for stream ${sessionId}, switching page`);
+      logger.info(`Tab switched for stream, switching page`, cid);
 
       if (currentStreamInfo.cdpSession) {
         try {
@@ -400,7 +408,7 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
     browserService.on('tabSwitched', tabSwitchedListener);
 
     ws.on('close', (code, _reason) => {
-      logger.info(`'/stream' WebSocket closed for ${sessionId}. Code: ${code}`);
+      logger.info(`'/stream' WebSocket closed. Code: ${code}`, cid);
       page?.off('close', pageCloseHandler);
       page?.off('crash', pageCrashHandler);
       browserService.off('configUpdated', configUpdateListener);
@@ -408,7 +416,7 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
       cleanupStreamConnection(ws);
     });
     ws.on('error', (error) => {
-      logger.error(`'/stream' WebSocket error for ${sessionId}:`, error);
+      logger.error(`'/stream' WebSocket error:`, { ...cid, error: (error as Error).message });
       page?.off('close', pageCloseHandler);
       page?.off('crash', pageCrashHandler);
       browserService.off('configUpdated', configUpdateListener);
@@ -416,14 +424,14 @@ export async function handleStreamConnection(ws: WebSocket, sessionId: string): 
       cleanupStreamConnection(ws);
     });
   } catch (error: unknown) {
-    logger.error(`Error handling '/stream' for ${sessionId}:`, error);
+    logger.error(`Error handling '/stream':`, { ...cid, error: (error as Error).message });
     ws.close(1011, 'Internal server error during stream setup');
     cleanupStreamConnection(ws);
   }
 }
 
-function handlePageCloseOrCrash(ws: WebSocket, sessionId: string, reason: string): void {
-  logger.warn(`Page closed/crashed for ${sessionId}. Reason: ${reason}`);
+function handlePageCloseOrCrash(ws: WebSocket, sessionId: string, connId: string, reason: string): void {
+  logger.warn(`Page closed/crashed. Reason: ${reason}`, { connectionId: connId, sessionId });
   sendSessionEndedMessage(ws, reason);
   cleanupStreamConnection(ws);
 }
@@ -431,6 +439,7 @@ function handlePageCloseOrCrash(ws: WebSocket, sessionId: string, reason: string
 async function cleanupStreamConnection(ws: WebSocket): Promise<void> {
   const streamInfo = activeStreams.get(ws);
   if (streamInfo) {
+    const cid = { connectionId: streamInfo.connectionId, sessionId: streamInfo.sessionId };
     streamInfo.isActive = false;
 
     if (streamInfo.cdpSession) {
@@ -457,7 +466,7 @@ async function cleanupStreamConnection(ws: WebSocket): Promise<void> {
     }
 
     activeStreams.delete(ws);
-    logger.debug(`Cleaned up '/stream' for ${streamInfo.sessionId}.`);
+    logger.debug(`Cleaned up '/stream'.`, cid);
   }
   if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
     ws.close(1000, 'Stream cleanup');

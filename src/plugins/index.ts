@@ -36,7 +36,6 @@ export default fp(async function (fastify: FastifyInstance) {
   }
 
   // 注册安全响应头插件
-  // @ts-expect-error — fastify-helmet compatible with Fastify v5
   await fastify.register(helmet, {
     contentSecurityPolicy: {
       directives: {
@@ -58,12 +57,12 @@ export default fp(async function (fastify: FastifyInstance) {
       },
     },
     xFrameOptions: { action: 'deny' },
-    xContentTypeOptions: { action: 'nosniff' },
+    xContentTypeOptions: true,
     strictTransportSecurity: {
       maxAge: 31536000,
       includeSubDomains: true,
     },
-    xXssProtection: { mode: '0' },
+    xXssProtection: true,
     crossOriginEmbedderPolicy: false,
   });
 

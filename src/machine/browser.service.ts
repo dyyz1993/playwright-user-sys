@@ -1,143 +1,30 @@
-import { Page, Browser, LaunchOptions, Target } from 'puppeteer-core';
+import { Page, Browser, Target } from 'puppeteer-core';
 import fsSync from 'fs';
 
 import { EventEmitter } from 'events';
 import fs from 'fs/promises';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import { FingerprintInjector } from 'fingerprint-injector';
 import { BrowserFingerprintWithHeaders, FingerprintGenerator } from 'fingerprint-generator';
 import { CONFIG } from './config.js';
 import { logger } from '@shared/utils/logger.js';
 import { sessionFocusEmitter } from './utils.js';
-import { clampScreenshotSize } from './utils/screenshot-size.js';
 import puppeteerStealth from 'puppeteer-extra';
 import ProxyChain from 'proxy-chain';
+import type {
+  SessionConfig,
+  BrowserOptions,
+  BrowserLaunchOptions,
+  BrowserInstance,
+  SessionInfo,
+  ConnectionInfo,
+} from './types.js';
+import { takeScreenshot as takeScreenshotFn } from './session_handlers/screenshot.js';
+import { convertPuppeteerOptions as convertPuppeteerOptionsFn } from './session_handlers/puppeteer-config.js';
+import { CLIPBOARD_INTERCEPTOR_SCRIPT } from './session_handlers/clipboard-constants.js';
 const puppeteer = puppeteerStealth.default;
-// puppeteer.use(StealthPlugin());
-// puppeteer.use(AdblockerPlugin.default({ blockTrackers: true }));
 
-declare global {
-  interface Window {
-    _mouseTrackingInjected?: boolean;
-    updateMousePosition?: (_x: number, _y: number, _viewportWidth: number, _viewportHeight: number) => void;
-    __fileInputClickEvent?: {
-      timestamp: number;
-      accept: string | null;
-      multiple: boolean;
-    } | null;
-    __clipboardContent?: string;
-    handleFiles?: (files: FileList) => void;
-  }
-}
-
-// !! 更新：会话配置接口 !!
-export interface SessionConfig {
-  fps?: number;
-  clip?: { x: number; y: number; width: number; height: number };
-  interactionMode?: 'general_navigation' | 'captcha_slider' | 'form_input' | string;
-  touchMode?: 'touchpad' | 'touch';
-
-  // 文件上传状态
-  uploadStates?: {
-    [filename: string]: {
-      filePath: string;
-      fileName: string;
-      totalChunks: number;
-      receivedChunks: number;
-      fileSize: number;
-    };
-  };
-}
-
-// 浏览器选项接口
-export interface BrowserOptions {
-  userAgent?: string;
-  proxy?: string;
-  proxyBypass?: string;
-  viewport?: { width: number; height: number };
-  args?: string[];
-  defaultViewport?: { width: number; height: number };
-  headless?: boolean;
-  timezone?: string;
-  // 指纹相关选项
-  fingerprintOptions?: {
-    enabled?: boolean; // 是否启用指纹注入
-    devices?: ('desktop' | 'mobile')[];
-    operatingSystems?: ('windows' | 'macos' | 'linux' | 'android' | 'ios')[];
-    browsers?: ('chrome' | 'firefox' | 'safari' | 'edge')[];
-  };
-
-  // 状态持久化参数
-  storageStatePath?: string; // 从文件加载存储状态
-
-  storageState?: {
-    // 直接传递存储状态对象
-    cookies?: Array<{
-      name: string;
-      value: string;
-      domain: string;
-      path: string;
-      expires?: number;
-      httpOnly?: boolean;
-      secure?: boolean;
-      sameSite?: 'Strict' | 'Lax' | 'None';
-    }>;
-    origins?: Array<{
-      origin: string;
-      localStorage: Array<{ name: string; value: string }>;
-    }>;
-  };
-
-  // 共享用户数据目录
-  // 当 sharedUserData 为 true 时，所有会话共享同一个用户数据目录
-  // 当 sharedUserData 为 false 或未设置时，每个会话有独立的用户数据目录
-  sharedUserData?: boolean;
-
-  // @deprecated 出于安全考虑，不再允许客户端指定任意路径
-  userDataDir?: string; // 用户数据目录路径
-}
-
-// 浏览器选项接口
-export interface BrowserLaunchOptions extends BrowserOptions {
-  // 重命名以区分
-  // 增加 sessionConfig 选项，用于传递初始配置
-  sessionConfig?: Partial<SessionConfig>;
-}
-
-// 浏览器实例接口 (返回给 API 调用者)
-export interface BrowserInstance {
-  browserWSEndpoint: string;
-  port: number;
-  path: string;
-  screenshotUrl?: string;
-}
-
-// 会话信息接口 (内部存储)
-interface SessionInfo {
-  port: number;
-  browser: Browser;
-  path: string;
-  lastActivity: number;
-  startTime: number;
-  screenshotUrl?: string;
-  fingerprint?: BrowserFingerprintWithHeaders;
-  wsEndpoint: string;
-  // !! 新增：存储当前会话配置 !!
-  config: SessionConfig;
-  // !! 新增：存储用户ID和会话ID用于计算userDataDir !!
-  userId?: number;
-  sessionId?: string;
-  sharedUserData?: boolean;
-  userDataDir?: string;
-}
-
-// 连接信息接口
-interface ConnectionInfo {
-  connectedAt: number;
-  lastActivity: number;
-  totalConnectedTime: number;
-}
+export type { SessionConfig, BrowserOptions, BrowserLaunchOptions, BrowserInstance } from './types.js';
 
 // 默认会话配置
 const DEFAULT_SESSION_CONFIG: SessionConfig = {
@@ -146,58 +33,6 @@ const DEFAULT_SESSION_CONFIG: SessionConfig = {
   touchMode: 'touchpad', // 默认模式
   // clip 默认为 undefined (全屏)
 };
-
-const CLIPBOARD_INTERCEPTOR_SCRIPT = `
-  (window).__clipboardContent = '';
-  var origWriteText = (navigator.clipboard)?.writeText?.bind(navigator.clipboard);
-  if (origWriteText) {
-    navigator.clipboard.writeText = async function (text) {
-      (window).__clipboardContent = text;
-      return origWriteText(text);
-    };
-  }
-  var origWrite = (navigator.clipboard)?.write?.bind(navigator.clipboard);
-  if (origWrite) {
-    navigator.clipboard.write = async function (items) {
-      try {
-        for (var i = 0; i < items.length; i++) {
-          var item = items[i];
-          if (item.types && item.types.includes && item.types.includes('text/plain')) {
-            var blob = await item.getType('text/plain');
-            var text = await blob.text();
-            (window).__clipboardContent = text;
-          }
-        }
-      } catch (_: unknown) { /* ignore */ }
-      return origWrite(items);
-    };
-  }
-  var origExecCommand = document.execCommand.bind(document);
-  document.execCommand = function (command, ui, value) {
-    if (command === 'copy') {
-      var sel = window.getSelection()?.toString();
-      if (sel) (window).__clipboardContent = sel;
-    }
-    return origExecCommand(command, ui, value);
-  };
-  document.addEventListener('copy', function () {
-    var selection = window.getSelection ? (window.getSelection()?.toString() || '') : '';
-    if (selection) {
-      (window).__clipboardContent = selection;
-    }
-  }, true);
-  var origFileInputClick = HTMLInputElement.prototype.click;
-  HTMLInputElement.prototype.click = function () {
-    if (this.type === 'file') {
-      (window).__fileInputClickEvent = {
-        accept: this.accept || '',
-        multiple: this.multiple || false,
-        timestamp: Date.now(),
-      };
-    }
-    return origFileInputClick.apply(this, arguments);
-  };
-`;
 
 /**
  * 浏览器服务类 - 专注于核心浏览器管理和能力提供
@@ -524,7 +359,7 @@ export class BrowserService extends EventEmitter {
         options.proxy = newProxyUrl;
       }
 
-      const puppeteerOptions = await this.convertPuppeteerOptions(options);
+      const puppeteerOptions = await convertPuppeteerOptionsFn(options);
       let launchTimedOut = false;
       const browserPromise = puppeteer.launch(puppeteerOptions as Parameters<typeof puppeteer.launch>[0]);
       const timeoutPromise = new Promise<never>((_, reject) => {
@@ -917,85 +752,6 @@ export class BrowserService extends EventEmitter {
   /**
    * 转换浏览器选项
    */
-  async convertPuppeteerOptions(options: BrowserOptions = {}): Promise<LaunchOptions> {
-    // 将选项转换为 puppeteer-core 选项
-    const result: LaunchOptions = {
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--remote-allow-origins=localhost',
-        '--remote-debugging-port=0',
-        '--disable-dev-shm-usage',
-        '--disable-responsive-ui',
-        '--force-device-scale-factor=1',
-        // 已移除 --disable-gpu 以支持 WebGL (反机器人检测需要)
-        '--headless=new',
-        // "--disable-web-security",
-        '--disable-setuid-sandbox',
-        // 已移除 --use-angle=disabled 以支持 WebGL (反机器人检测需要)
-        '--disable-blink-features=AutomationControlled',
-        '--webrtc-ip-handling-policy=disable_non_proxied_udp',
-        '--force-webrtc-ip-handling-policy',
-        '--remote-debugging-address=127.0.0.1',
-      ],
-      // headless: false,
-      headless: true,
-      executablePath: CONFIG.chromePath,
-      protocolTimeout: 60000,
-    };
-
-    // 确保 args 数组存在
-    if (!result.args) {
-      result.args = [];
-    }
-
-    // 处理 userDataDir - 必须在启动时传递
-    if (options.userDataDir) {
-      result.args.push(`--user-data-dir=${options.userDataDir}`);
-      logger.info(`设置 userDataDir: ${options.userDataDir}`);
-    }
-
-    if (options.args && Array.isArray(options.args)) {
-      result.args.push(...options.args);
-    }
-
-    if (options.userAgent) {
-      result.args.push(`--user-agent=${options.userAgent}`);
-    }
-
-    if (options.proxy) {
-      result.args.push(`--proxy-server=${options.proxy}`);
-    }
-
-    if (options.proxyBypass) {
-      result.args.push(`--proxy-bypass-list=${options.proxyBypass}`);
-    }
-
-    if (options.viewport) {
-      result.args.push(`--window-size=${options.viewport.width},${options.viewport.height}`);
-    }
-
-    if (options.defaultViewport) {
-      result.defaultViewport = options.defaultViewport;
-    } else if (options.viewport) {
-      result.defaultViewport = {
-        width: options.viewport.width || 1280,
-        height: options.viewport.height || 800,
-        deviceScaleFactor: 1,
-      };
-    } else {
-      result.defaultViewport = {
-        width: 1280,
-        height: 800,
-        deviceScaleFactor: 1,
-      };
-    }
-
-    logger.info('result', result);
-
-    return result;
-  }
-
   async injectFocusinScript(sessionId: string, page: Page): Promise<void> {
     // --- BEGIN: Injection and Expose Logic ---
     const dynamicFunctionName = `_focusHandler_${sessionId.replace(/\W/g, '_')}`;
@@ -1211,58 +967,12 @@ export class BrowserService extends EventEmitter {
    * 截取浏览器屏幕截图 (生成初始 URL, 文件可能后续生成)
    */
   async takeScreenshot(sessionId: string): Promise<string | undefined> {
-    try {
-      const screenshotDir = path.join(CONFIG.dataDir, 'screenshots');
-      await fs.mkdir(screenshotDir, { recursive: true });
-      const filename = `${sessionId}-${uuidv4()}.jpeg`;
-      const filePath = path.join(screenshotDir, filename);
-      const screenshotUrl = `/screenshots/${filename}`;
-
-      const page = await this.getSessionPage(sessionId);
-      if (page) {
-        const viewport = page.viewport();
-        const screenshotOptions: {
-          type: 'jpeg';
-          quality: number;
-          clip?: { x: number; y: number; width: number; height: number };
-        } = {
-          type: 'jpeg',
-          quality: 80,
-        };
-
-        if (viewport) {
-          const clamped = clampScreenshotSize(viewport.width, viewport.height);
-          if (clamped.width !== viewport.width || clamped.height !== viewport.height) {
-            screenshotOptions.clip = { x: 0, y: 0, width: clamped.width, height: clamped.height };
-            logger.info(
-              `截图尺寸已限制 (sessionId: ${sessionId}): ${viewport.width}x${viewport.height} -> ${clamped.width}x${clamped.height}`
-            );
-          }
-        }
-
-        const buffer = await page.screenshot(screenshotOptions);
-        await fs.writeFile(filePath, buffer);
-        logger.info(`截图已保存 (sessionId: ${sessionId}): ${filePath} (${(buffer.length / 1024).toFixed(1)}KB)`);
-      } else {
-        const placeholder = Buffer.from([
-          0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x80, 0x00, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
-          0x00, 0x21, 0xf9, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
-          0x00, 0x02, 0x02, 0x44, 0x01, 0x00, 0x3b,
-        ]);
-        await fs.writeFile(filePath, placeholder);
-        logger.warn(`页面未就绪，写入占位图 (sessionId: ${sessionId})`);
-      }
-
+    return takeScreenshotFn(this, sessionId, (screenshotUrl) => {
       const session = this.sessions.get(sessionId);
       if (session) {
         session.screenshotUrl = screenshotUrl;
       }
-      this.emit('sessionScreenshot', sessionId, screenshotUrl);
-      return screenshotUrl;
-    } catch (error: unknown) {
-      logger.error(`截图失败 (sessionId: ${sessionId}):`, error);
-      return undefined;
-    }
+    });
   }
 
   /** 获取 WebSocket 端点 */

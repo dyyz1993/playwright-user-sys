@@ -315,7 +315,7 @@ jobs:
 
   feishu-notify:
     name: Feishu Notification
-    if: always()
+    if: ${{ always() && secrets.FEISHU_WEBHOOK_URL != '' }}
     needs: [build-manager, build-machine, test-manager, test-machine, docker-summary]
     uses: dyyz1993/ci-tools/.github/workflows/feishu-notify.yml@main
     with:

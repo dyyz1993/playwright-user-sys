@@ -38,7 +38,7 @@ jobs:
   feishu-notify:
     name: Feishu Notification
     needs: [acceptance]
-    if: always()
+    if: ${{ always() && secrets.FEISHU_WEBHOOK_URL != '' }}
     uses: dyyz1993/ci-tools/.github/workflows/feishu-notify.yml@main
     with:
       jobs: '{"acceptance":"${{ needs.acceptance.result }}"}'

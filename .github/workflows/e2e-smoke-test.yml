@@ -117,7 +117,7 @@ jobs:
   feishu-notify:
     name: Feishu Notification
     needs: [e2e-test]
-    if: always()
+    if: ${{ always() && secrets.FEISHU_WEBHOOK_URL != '' }}
     uses: dyyz1993/ci-tools/.github/workflows/feishu-notify.yml@main
     with:
       jobs: '{"e2e-test":"${{ needs.e2e-test.result }}"}'

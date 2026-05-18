@@ -31,6 +31,7 @@ function buildHealthResponse() {
 
 export function startHealthServer(port?: number): void {
   const healthPort = port || parseInt(process.env.MACHINE_HEALTH_PORT || '9100', 10);
+  const healthHost = process.env.MACHINE_HEALTH_HOST || '0.0.0.0';
 
   if (server) {
     logger.warn(`Health server already running on port ${healthPort}`);
@@ -74,8 +75,8 @@ export function startHealthServer(port?: number): void {
     }
   });
 
-  server.listen(healthPort, '127.0.0.1', () => {
-    logger.info(`Health server listening on 127.0.0.1:${healthPort}`);
+  server.listen(healthPort, healthHost, () => {
+    logger.info(`Health server listening on ${healthHost}:${healthPort}`);
   });
 }
 

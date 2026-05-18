@@ -1,5 +1,9 @@
 # Playwright 用户管理系统
 
+[![Code Quality](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/code-quality.yml/badge.svg)](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/code-quality.yml)
+[![Integration Tests](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/test-integration.yml/badge.svg)](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/test-integration.yml)
+[![E2E Tests](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/e2e-smoke-test.yml/badge.svg)](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/e2e-smoke-test.yml)
+[![Docker Build](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/docker-build.yml/badge.svg)](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/docker-build.yml)
 [![License: Apache 2.0 with Commons Clause](https://img.shields.io/badge/License-Apache%202.0%20with%20Commons%20Clause-red.svg)](LICENSE)
 
 一个用于管理 Playwright 实例的系统，包含用户管理、点数计费和实例集群管理功能。

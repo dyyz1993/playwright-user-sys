@@ -27,13 +27,57 @@ export default async function routes(fastify: FastifyInstance) {
 
   // 健康检查路由
   fastify.get('/health', async () => {
+    const { getHealthStatus } = await import('../services/health.service.js');
     const { getSqliteClient } = await import('../config/db-driver.js');
-    return {
-      status: 'ok',
-      timestamp: new Date(),
-      dbDriver: getSqliteClient(),
-      dbType: process.env.DB_TYPE || 'sqlite',
-    };
+
+    let wsConnectionCount = 0;
+    try {
+      const { getWsProxyService } = await import('@manager/app.js');
+      const wsProxy = getWsProxyService();
+      if (wsProxy) {
+        wsConnectionCount = wsProxy.getActiveConnectionCount();
+      }
+    } catch {
+      // manager app not available in machine service context
+    }
+
+    let grpcActiveConnections: () => string[] = () => [];
+    let registeredMachineCount: () => Promise<number> = async () => 0;
+    try {
+      const { connectionManager } = await import('../services/machine-grpc/index.js');
+      const { MachineModel } = await import('../models/machine.model.js');
+      grpcActiveConnections = () => connectionManager.getActiveConnections();
+      registeredMachineCount = () => MachineModel.countAll();
+    } catch {
+      // gRPC not available
+    }
+
+    return getHealthStatus({
+      getActiveWsConnections: () => wsConnectionCount,
+      getGrpcActiveConnections: grpcActiveConnections,
+      getRegisteredMachineCount: registeredMachineCount,
+      getSqliteClient,
+    });
+  });
+
+  // Metrics 端点（需要管理员认证）
+  fastify.get('/api/health/metrics', { onRequest: [fastify.verifyJWT] }, async () => {
+    const { getMetrics } = await import('../services/health.service.js');
+
+    let wsConnectionCount = 0;
+    try {
+      const { getWsProxyService } = await import('@manager/app.js');
+      const wsProxy = getWsProxyService();
+      if (wsProxy) {
+        wsConnectionCount = wsProxy.getActiveConnectionCount();
+      }
+    } catch {
+      // manager app not available
+    }
+
+    return getMetrics({
+      getActiveWsConnections: () => wsConnectionCount,
+    });
   });
 
   // API 根路由

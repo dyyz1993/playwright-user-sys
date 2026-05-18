@@ -706,6 +706,10 @@ export class NativeWebSocketProxyService {
     }
   }
 
+  public getActiveConnectionCount(): number {
+    return this.activeConnections.size;
+  }
+
   public close(): void {
     logger.info('关闭WebSocket代理服务...');
 

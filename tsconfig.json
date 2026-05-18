@@ -9,7 +9,7 @@
     "sourceMap": true,
     "declaration": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true,
+    "skipLibCheck": true, // 必须保留: @grpc/grpc-js 与 @grpc/proto-loader 版本不兼容导致 22 个 .d.ts 错误 (外部问题)
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

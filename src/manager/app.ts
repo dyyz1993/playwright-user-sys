@@ -151,4 +151,8 @@ export async function startManager() {
   }
 }
 
+export function getWsProxyService(): NativeWebSocketProxyService | null {
+  return wsProxyService ?? null;
+}
+
 export default buildManager;

@@ -2,11 +2,12 @@ name: Docker Build & Test
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
     paths-ignore:
       - '*.md'
       - 'docs/**'
       - '.gitignore'
+      - 'LICENSE'
   workflow_dispatch:
 
 env:

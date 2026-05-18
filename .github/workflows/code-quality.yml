@@ -2,57 +2,42 @@ name: Code Quality Gate
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, develop ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, develop ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
 
 jobs:
   quality-check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: test_password
-          MYSQL_DATABASE: playwright_test_user_sys
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install pnpm
-        run: npm install -g pnpm@10.8.0
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-quality
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-quality-
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: 1. ESLint 检查
         run: |
@@ -81,48 +66,6 @@ jobs:
           echo "  any/unknown 类型数量限制检查"
           echo "═══════════════════════════════════════"
           bash scripts/check-type-safety.sh
-
-      - name: Wait for MySQL
-        run: |
-          for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -ptest_password --silent; then
-              echo "MySQL is ready"
-              exit 0
-            fi
-            echo "Waiting for MySQL... ($i/30)"
-            sleep 2
-          done
-          echo "MySQL failed to start"
-          exit 1
-
-      - name: Setup test database
-        env:
-          MYSQL_PWD: test_password
-        run: |
-          mysql -h 127.0.0.1 -P 3306 -u root -e "CREATE DATABASE IF NOT EXISTS playwright_test_user_sys;"
-
-      - name: Run database migrations
-        env:
-          NODE_ENV: test
-          DB_TYPE: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_NAME: playwright_test_user_sys
-          DB_USER: root
-          DB_PASSWORD: test_password
-          JWT_SECRET: test_secret_key_for_testing_only_do_not_use_in_production
-          JWT_EXPIRES_IN: 24h
-          ADMIN_PASSWORD: test-admin-password-for-github-ci
-        run: |
-          node -e "
-          import('knex').then(async ({ default: knex }) => {
-            const { default: config } = await import('./knexfile.js');
-            const db = knex({ ...config.development, connection: { host: '127.0.0.1', port: 3306, user: 'root', password: 'test_password', database: 'playwright_test_user_sys' } });
-            await db.migrate.latest();
-            await db.destroy();
-            console.log('Migrations completed');
-          });
-          "
 
       - name: 5. 单元测试
         env:

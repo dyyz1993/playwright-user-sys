@@ -2,9 +2,19 @@ name: Integration Tests
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, develop ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, develop ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
   workflow_dispatch:
 
 jobs:
@@ -29,52 +39,44 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - name: "Browser Parameters"
-            file: "tests/integration/browser-parameters.test.ts"
-          - name: "Multi-User Concurrency"
-            file: "tests/integration/multi-user-concurrency.test.ts"
-          - name: "Three-Tier Architecture"
-            file: "tests/integration/three-tier-architecture.test.ts"
-          - name: "Billing Flow"
-            file: "tests/integration/billing-flow.test.ts"
-          - name: "Session Lifecycle"
-            file: "tests/integration/session-lifecycle.test.ts"
-          - name: "User Data Persistence"
-            file: "tests/integration/user-data-persistence.test.ts"
+        include:
+          - test-name: session-lifecycle
+            test-file: tests/integration/session-lifecycle.test.ts
+          - test-name: billing-flow
+            test-file: tests/integration/billing-flow.test.ts
+          - test-name: three-tier
+            test-file: tests/integration/three-tier-architecture.test.ts
+          - test-name: browser-params
+            test-file: tests/integration/browser-parameters.test.ts
+          - test-name: user-data
+            test-file: tests/integration/user-data-persistence.test.ts
+          - test-name: multi-user
+            test-file: tests/integration/multi-user-concurrency.test.ts
+          - test-name: security
+            test-file: tests/integration/security-vulnerabilities.test.ts
+          - test-name: fingerprint
+            test-file: tests/integration/fingerprint-isolation-tier.test.ts
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install pnpm
-        run: npm install -g pnpm@10.8.0
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Install Chrome
         run: |
-          # 检查是否已安装 Chrome
           if ! command -v google-chrome-stable &> /dev/null; then
             echo "Installing Google Chrome..."
             wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
@@ -109,35 +111,28 @@ jobs:
       - name: Build project
         run: pnpm build
 
-      - name: Run ${{ matrix.test.name }}
+      - name: Run ${{ matrix.test-name }}
         env:
           TZ: UTC
           NODE_ENV: test
           PORT: 3000
           HOST: 127.0.0.1
-          # 数据库配置
           DB_TYPE: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
           DB_NAME: playwright_test_user_sys
           DB_USER: root
           DB_PASSWORD: test_password
-          # JWT 配置（与本地 .env.test 完全相同）
           JWT_SECRET: test_secret_key_for_testing_only_do_not_use_in_production
           JWT_EXPIRES_IN: 24h
-          # 管理员配置
           ADMIN_USERNAME: admin
           ADMIN_PASSWORD: REDACTED_ADMIN_PASS
-          # 实例配置
           INSTANCE_TIMEOUT: 60000
-          # gRPC 服务器配置
           GRPC_PORT: 50051
-          # 代理服务器配置
           PROXY_PORT: 8082
-          # 机器监控配置
           MACHINE_MONITOR_INTERVAL: 30000
         run: |
-          NODE_OPTIONS="--max-old-space-size=4096" npx vitest run ${{ matrix.test.file }} --reporter=verbose --no-coverage
+          NODE_OPTIONS="--max-old-space-size=4096" npx vitest run ${{ matrix.test-file }} --reporter=verbose --no-coverage
 
   test-summary:
     needs: test-integration

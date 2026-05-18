@@ -155,7 +155,7 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
 
     managerApp = await buildManager();
 
-    const { startGrpcServer } = await import('../../src/services/machine-grpc.service.js');
+    const { startGrpcServer } = await import('../../src/services/machine-grpc/index.js');
     startGrpcServer(managerGrpcPort);
 
     await managerApp.listen({ port: managerHttpPort, host: '0.0.0.0' });

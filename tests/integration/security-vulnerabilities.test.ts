@@ -211,7 +211,7 @@ describe('安全测试 (TIER-041 ~ TIER-050)', () => {
     process.env.HOST = '127.0.0.1';
 
     // 启动 gRPC 服务器
-    const { startGrpcServer } = await import('../../src/services/machine-grpc.service.js');
+    const { startGrpcServer } = await import('../../src/services/machine-grpc/index.js');
     startGrpcServer(managerGrpcPort);
     console.log(`✅ 管理端gRPC服务器: 127.0.0.1:${managerGrpcPort}`);
 

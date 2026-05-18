@@ -65,13 +65,13 @@ describe('反机器人检测验证测试', () => {
   let managerApp: FastifyInstance;
   let managerHttpPort: number;
   let managerGrpcPort: number;
-  let machineServers: Array<{
+  const machineServers: Array<{
     server: MachineServer;
     grpcPort: number;
     proxyPort: number;
     machineId: string;
   }> = [];
-  let testUsers: Array<{
+  const testUsers: Array<{
     id: number;
     username: string;
     token: string;
@@ -154,7 +154,7 @@ describe('反机器人检测验证测试', () => {
     process.env.GRPC_PORT = managerGrpcPort.toString();
     process.env.HOST = '127.0.0.1';
 
-    const { startGrpcServer } = await import('../../src/services/machine-grpc.service.js');
+    const { startGrpcServer } = await import('../../src/services/machine-grpc/index.js');
     startGrpcServer(managerGrpcPort);
     console.log(`   管理端gRPC服务器: 127.0.0.1:${managerGrpcPort}`);
 

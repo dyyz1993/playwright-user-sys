@@ -116,7 +116,7 @@ describe('反机器人检测验证测试 (TIER-041 ~ TIER-095)', () => {
     managerApp = await buildManager();
 
     // 启动 gRPC 服务器
-    const { startGrpcServer } = await import('../../src/services/machine-grpc.service.js');
+    const { startGrpcServer } = await import('../../src/services/machine-grpc/index.js');
     await new Promise<void>((resolve, reject) => {
       const server = startGrpcServer(managerGrpcPort);
       // 等待一小段时间让 gRPC 服务器完全绑定

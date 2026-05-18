@@ -167,7 +167,7 @@ describe('用户数据持久化集成测试', () => {
     process.env.HOST = '127.0.0.1';
 
     // 启动 gRPC 服务器
-    const { startGrpcServer } = await import('../../src/services/machine-grpc.service.js');
+    const { startGrpcServer } = await import('../../src/services/machine-grpc/index.js');
     startGrpcServer(managerGrpcPort);
     console.log(`   ✅ 管理端 gRPC 端口: ${managerGrpcPort}`);
 
@@ -307,7 +307,7 @@ describe('用户数据持久化集成测试', () => {
         // 如果会话有关联的机器，尝试关闭浏览器
         if (session.machine_id) {
           try {
-            const { connectionManager } = await import('../../src/services/machine-grpc.service.js');
+            const { connectionManager } = await import('../../src/services/machine-grpc/index.js');
             await connectionManager.closeBrowser(session.machine_id, session.id);
           } catch (error) {
             // 忽略关闭失败，继续清理数据库记录

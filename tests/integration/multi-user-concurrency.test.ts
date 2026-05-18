@@ -143,7 +143,7 @@ describe('多用户并发集成测试 (TIER-031 ~ TIER-040)', () => {
     process.env.GRPC_PORT = managerGrpcPort.toString();
     process.env.HOST = '127.0.0.1';
 
-    const { startGrpcServer } = await import('../../src/services/machine-grpc.service.js');
+    const { startGrpcServer } = await import('../../src/services/machine-grpc/index.js');
     startGrpcServer(managerGrpcPort);
     console.log(`✅ 管理端gRPC服务器: 127.0.0.1:${managerGrpcPort}`);
 

@@ -73,27 +73,27 @@ COPY --from=build --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=build --chown=nodejs:nodejs /app/package.json ./
 
 # Create necessary directories
-RUN mkdir -p /app/data \
-    /app/dist/data/screenshots \
-    /app/dist/data/uploads \
-    /app/dist/data/temp \
-    /app/dist/src/shared/protos \
+# rootDir at runtime is /app (derived from __dirname=/app/dist/plugins/ -> ../.. -> /app)
+RUN mkdir -p /app/data/screenshots \
+    /app/data/uploads \
+    /app/data/temp \
+    /app/dist/shared/protos \
     /app/files && \
     chown -R nodejs:nodejs /app
 
-# Copy proto files
-COPY --chown=nodejs:nodejs src/shared/protos ./dist/src/shared/protos
+# Copy proto files (tsc doesn't copy .proto files)
+COPY --chown=nodejs:nodejs src/shared/protos ./dist/shared/protos
 
-# Copy static files (views and public)
-COPY --chown=nodejs:nodejs src/views ./dist/src/views
-COPY --chown=nodejs:nodejs src/public ./dist/src/public
+# Copy static files (views and public) - referenced at runtime as /app/src/views, /app/src/public
+COPY --chown=nodejs:nodejs src/views ./src/views
+COPY --chown=nodejs:nodejs src/public ./src/public
 
-# Copy browser-viewer standalone component
-COPY --chown=nodejs:nodejs public/browser-viewer ./dist/public/browser-viewer
-COPY --chown=nodejs:nodejs public/test-interactive.html ./dist/src/public/test-interactive.html
-COPY --chown=nodejs:nodejs public/slider-test.html ./dist/src/public/slider-test.html
-COPY --chown=nodejs:nodejs public/accept-test.html ./dist/src/public/accept-test.html
-COPY --chown=nodejs:nodejs public/coords-test.html ./dist/src/public/coords-test.html
+# Copy browser-viewer standalone component - referenced at runtime as /app/public/browser-viewer
+COPY --chown=nodejs:nodejs public/browser-viewer ./public/browser-viewer
+COPY --chown=nodejs:nodejs public/test-interactive.html ./src/public/test-interactive.html
+COPY --chown=nodejs:nodejs public/slider-test.html ./src/public/slider-test.html
+COPY --chown=nodejs:nodejs public/accept-test.html ./src/public/accept-test.html
+COPY --chown=nodejs:nodejs public/coords-test.html ./src/public/coords-test.html
 
 # Set environment variables
 ENV NODE_ENV=production \
@@ -102,8 +102,8 @@ ENV NODE_ENV=production \
     DB_TYPE=mysql
 
 # Setup path aliases (before switching to non-root user)
-# We need to create symlinks in /app/dist/node_modules pointing to /app/dist/src
-RUN node -e "const fs = require('fs'); const path = require('path'); const aliases = {'@shared': 'dist/src/shared', '@controllers': 'dist/src/controllers', '@models': 'dist/src/models', '@services': 'dist/src/services', '@routes': 'dist/src/routes', '@middlewares': 'dist/src/middlewares', '@utils': 'dist/src/utils', '@schemas': 'dist/src/schemas', '@plugins': 'dist/src/plugins', '@config': 'dist/src/config', '@machine': 'dist/src/machine', '@manager': 'dist/src/manager'}; for (const [alias, target] of Object.entries(aliases)) { const linkPath = path.join('/app/dist/node_modules', alias); const resolvedPath = path.join('/app', target); if (!fs.existsSync(linkPath)) { fs.mkdirSync(path.dirname(linkPath), { recursive: true }); fs.symlinkSync(resolvedPath, linkPath, 'dir'); console.log('Created symlink:', alias, '->', resolvedPath); } console.log('Symlink exists:', linkPath); }" || true
+# tsc rootDir=src -> output in dist/ (not dist/src/), so symlinks point to dist/
+RUN node -e "const fs = require('fs'); const path = require('path'); const aliases = {'@shared': 'dist/shared', '@controllers': 'dist/controllers', '@models': 'dist/models', '@services': 'dist/services', '@routes': 'dist/routes', '@middlewares': 'dist/middlewares', '@utils': 'dist/utils', '@schemas': 'dist/schemas', '@plugins': 'dist/plugins', '@config': 'dist/config', '@machine': 'dist/machine', '@manager': 'dist/manager'}; for (const [alias, target] of Object.entries(aliases)) { const linkPath = path.join('/app/dist/node_modules', alias); const resolvedPath = path.join('/app', target); if (!fs.existsSync(linkPath)) { fs.mkdirSync(path.dirname(linkPath), { recursive: true }); fs.symlinkSync(resolvedPath, linkPath, 'dir'); console.log('Created symlink:', alias, '->', resolvedPath); } console.log('Symlink exists:', linkPath); }" || true
 
 # Switch to non-root user
 USER nodejs
@@ -118,4 +118,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start the application
-CMD ["node", "dist/src/manager/server.js"]
+CMD ["node", "dist/manager/server.js"]

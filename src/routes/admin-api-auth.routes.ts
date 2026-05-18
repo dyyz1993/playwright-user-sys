@@ -11,6 +11,7 @@ import {
 import { authenticateUser } from '../services/auth.service.js';
 import * as UserService from '../services/user.service.js';
 import { sendSuccess, sendError, getSafeErrorMessage } from '../utils/response.js';
+import { tryCatchWrapper } from '../utils/try-catch-wrapper.js';
 
 export default async function adminApiAuthRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
@@ -87,58 +88,52 @@ export default async function adminApiAuthRoutes(fastify: FastifyInstance): Prom
         },
       ],
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const { memoryStore } = await import('../services/memory-store.service.js');
+    tryCatchWrapper(async (_request: FastifyRequest, reply: FastifyReply) => {
+      const { memoryStore } = await import('../services/memory-store.service.js');
 
-        const usersData = await UserService.getUserStats();
-        const totalUsers = usersData.total || 0;
-        const activeUsers = usersData.active || 0;
+      const usersData = await UserService.getUserStats();
+      const totalUsers = usersData.total || 0;
+      const activeUsers = usersData.active || 0;
 
-        const machineStats = memoryStore.getMachineStats();
-        const sessionStats = memoryStore.getSessionStats();
+      const machineStats = memoryStore.getMachineStats();
+      const sessionStats = memoryStore.getSessionStats();
 
-        if (machineStats.total === 0 && sessionStats.total === 0) {
-          await memoryStore.loadInitialData();
-        }
-
-        logger.info('开始强制刷新内存数据...');
+      if (machineStats.total === 0 && sessionStats.total === 0) {
         await memoryStore.loadInitialData();
-        logger.info('内存数据刷新完成');
-
-        const allMachines = memoryStore.getAllMachines();
-        logger.info('内存中的机器详细状态:');
-        for (const machine of allMachines) {
-          logger.info(
-            `- 机器 ${machine.machine_id}: 状态=${machine.online ? '在线' : '离线'}, 活跃会话=${machine.active_sessions}`
-          );
-        }
-
-        const updatedMachineStats = memoryStore.getMachineStats();
-        const updatedSessionStats = memoryStore.getSessionStats();
-
-        logger.info(`当前在线机器数量: ${updatedMachineStats.online}/${updatedMachineStats.total}`);
-        logger.info(`当前活跃会话数量: ${updatedSessionStats.active}/${updatedSessionStats.total}`);
-
-        const creditsData = await UserService.getCreditsStats();
-        const totalCredits = creditsData.total || 0;
-        const usedCredits = creditsData.used || 0;
-
-        return sendSuccess(reply, {
-          totalUsers,
-          activeUsers,
-          totalMachines: updatedMachineStats.total,
-          onlineMachines: updatedMachineStats.online,
-          totalSessions: updatedSessionStats.total,
-          activeSessions: updatedSessionStats.active,
-          totalCredits,
-          usedCredits,
-        });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '获取仪表盘统计数据失败');
-        const msg = getSafeErrorMessage(error);
-        return sendError(reply, '获取仪表盘统计数据失败: ' + msg, 500);
       }
-    }
+
+      logger.info('开始强制刷新内存数据...');
+      await memoryStore.loadInitialData();
+      logger.info('内存数据刷新完成');
+
+      const allMachines = memoryStore.getAllMachines();
+      logger.info('内存中的机器详细状态:');
+      for (const machine of allMachines) {
+        logger.info(
+          `- 机器 ${machine.machine_id}: 状态=${machine.online ? '在线' : '离线'}, 活跃会话=${machine.active_sessions}`
+        );
+      }
+
+      const updatedMachineStats = memoryStore.getMachineStats();
+      const updatedSessionStats = memoryStore.getSessionStats();
+
+      logger.info(`当前在线机器数量: ${updatedMachineStats.online}/${updatedMachineStats.total}`);
+      logger.info(`当前活跃会话数量: ${updatedSessionStats.active}/${updatedSessionStats.total}`);
+
+      const creditsData = await UserService.getCreditsStats();
+      const totalCredits = creditsData.total || 0;
+      const usedCredits = creditsData.used || 0;
+
+      return sendSuccess(reply, {
+        totalUsers,
+        activeUsers,
+        totalMachines: updatedMachineStats.total,
+        onlineMachines: updatedMachineStats.online,
+        totalSessions: updatedSessionStats.total,
+        activeSessions: updatedSessionStats.active,
+        totalCredits,
+        usedCredits,
+      });
+    })
   );
 }

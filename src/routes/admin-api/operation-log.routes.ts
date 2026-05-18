@@ -5,6 +5,7 @@ import { errorResponseSchema, idParamSchema } from '../../schemas/index.js';
 import { OperationLogQueryRoute, OperationLogStatsQueryRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
 import { getSafeErrorMessage } from '../../utils/response.js';
+import { tryCatchWrapper } from '../../utils/try-catch-wrapper.js';
 import * as AdminOpLogService from '../../services/admin-operation-log.service.js';
 
 export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Promise<void> {
@@ -193,34 +194,29 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
         tags: ['admin'],
       },
     },
-    async (request: FastifyRequest<OperationLogStatsQueryRoute>, reply: FastifyReply) => {
-      try {
-        const query = request.query;
-        const filters: Record<string, unknown> = {};
+    tryCatchWrapper(async (request: FastifyRequest<OperationLogStatsQueryRoute>, reply: FastifyReply) => {
+      const query = request.query;
+      const filters: Record<string, unknown> = {};
 
-        if (query.dateRange && query.dateRange !== 'all') {
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (query.dateRange && query.dateRange !== 'all') {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-          if (query.dateRange === 'today') {
-            filters.startDate = today;
-          } else if (query.dateRange === 'week') {
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
-            filters.startDate = startOfWeek;
-          } else if (query.dateRange === 'month') {
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            filters.startDate = startOfMonth;
-          }
+        if (query.dateRange === 'today') {
+          filters.startDate = today;
+        } else if (query.dateRange === 'week') {
+          const startOfWeek = new Date(today);
+          startOfWeek.setDate(today.getDate() - today.getDay());
+          filters.startDate = startOfWeek;
+        } else if (query.dateRange === 'month') {
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          filters.startDate = startOfMonth;
         }
-
-        const stats = await AdminOpLogService.getOperationLogStats(filters);
-
-        return reply.send({ success: true, data: stats });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '获取操作统计失败');
-        return reply.status(500).send({ success: false, error: '获取操作统计失败' });
       }
-    }
+
+      const stats = await AdminOpLogService.getOperationLogStats(filters);
+
+      return reply.send({ success: true, data: stats });
+    })
   );
 }

@@ -13,13 +13,13 @@ import { db } from '../../config/database.js';
  * 用于在测试之间清理数据
  */
 export async function clearAllTables() {
-  await db('users').delete();
   await db('sessions').delete();
-  await db('machines').delete();
   await db('credit_history').delete();
   await db('operation_logs').delete();
   await db('request_logs').delete();
   await db('webhook_events').delete();
+  await db('machines').delete();
+  await db('users').delete();
 }
 
 /**

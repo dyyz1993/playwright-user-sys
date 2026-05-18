@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs/promises';
+import type { Page, Frame, ElementHandle } from 'puppeteer-core';
 import { logger } from '@shared/utils/logger.js';
 import { fileService } from './file.service.js';
 
@@ -36,7 +37,7 @@ export class BrowserInjectService {
         throw new Error(`会话页面不可用: ${sessionId}`);
       }
 
-      let target: import('puppeteer-core').Page | import('puppeteer-core').Frame = page;
+      let target: Page | Frame = page;
 
       if (frameSelector) {
         const iframeHandle = await page.waitForSelector(frameSelector, { timeout: 5000 });
@@ -72,7 +73,7 @@ export class BrowserInjectService {
         uploadPath = linkPath;
       }
 
-      await (fileInput as unknown as import('puppeteer-core').ElementHandle<HTMLInputElement>).uploadFile(uploadPath);
+      await (fileInput as ElementHandle<HTMLInputElement>).uploadFile(uploadPath);
 
       await target.evaluate((sel: string) => {
         const input = document.querySelector(sel) as HTMLInputElement;
@@ -88,9 +89,9 @@ export class BrowserInjectService {
       logger.info(`文件注入成功: ${path.basename(filePath)} → ${selector} (session: ${sessionId})`);
       return { success: true };
     } catch (error: unknown) {
-      const err = error as Error;
+      const message = error instanceof Error ? error.message : String(error);
       logger.error(`文件注入失败 (session: ${sessionId}):`, error);
-      return { success: false, error: err.message };
+      return { success: false, error: message };
     }
   }
 }

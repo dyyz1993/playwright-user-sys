@@ -1,6 +1,7 @@
 import { FastifyInstance, RouteHandlerMethod } from 'fastify';
 import userController from '../controllers/user.controller.js';
 import { sendSuccess, sendError } from '../utils/response.js';
+import { tryCatchWrapper } from '../utils/try-catch-wrapper.js';
 import { userDetailSchema } from '../schemas/index.js';
 import {
   createUserRequestSchema,
@@ -39,33 +40,28 @@ export default async function userRoutes(fastify: FastifyInstance) {
         tags: ['users'],
       },
     },
-    async (request, reply) => {
-      try {
-        const userId = request.user?.id;
-        if (!userId) {
-          return sendError(reply, '用户未认证', 401);
-        }
-
-        const user = await UserService.getUserById(userId);
-        if (!user) {
-          return sendError(reply, '用户不存在', 404);
-        }
-
-        return sendSuccess(reply, {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          credits: user.credits,
-          webhook_url: user.webhook_url,
-          api_key: user.api_key,
-          created_at: toISO(user.created_at),
-        });
-      } catch (error: unknown) {
-        request.log.error(error);
-        return sendError(reply, '获取用户信息失败', 500);
+    tryCatchWrapper(async (request, reply) => {
+      const userId = request.user?.id;
+      if (!userId) {
+        return sendError(reply, '用户未认证', 401);
       }
-    }
+
+      const user = await UserService.getUserById(userId);
+      if (!user) {
+        return sendError(reply, '用户不存在', 404);
+      }
+
+      return sendSuccess(reply, {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        credits: user.credits,
+        webhook_url: user.webhook_url,
+        api_key: user.api_key,
+        created_at: toISO(user.created_at),
+      });
+    })
   );
 
   fastify.post(
@@ -84,26 +80,21 @@ export default async function userRoutes(fastify: FastifyInstance) {
         tags: ['users'],
       },
     },
-    async (request, reply) => {
-      try {
-        const userId = request.user?.id;
-        if (!userId) {
-          return sendError(reply, '用户未认证', 401);
-        }
-
-        const user = await UserService.getUserById(userId);
-        if (!user) {
-          return sendError(reply, '用户不存在', 404);
-        }
-
-        const apiKey = await UserService.resetApiKey(userId);
-
-        return sendSuccess(reply, { api_key: apiKey });
-      } catch (error: unknown) {
-        request.log.error(error);
-        return sendError(reply, '重新生成 API Key 失败', 500);
+    tryCatchWrapper(async (request, reply) => {
+      const userId = request.user?.id;
+      if (!userId) {
+        return sendError(reply, '用户未认证', 401);
       }
-    }
+
+      const user = await UserService.getUserById(userId);
+      if (!user) {
+        return sendError(reply, '用户不存在', 404);
+      }
+
+      const apiKey = await UserService.resetApiKey(userId);
+
+      return sendSuccess(reply, { api_key: apiKey });
+    })
   );
 
   fastify.put(
@@ -125,39 +116,34 @@ export default async function userRoutes(fastify: FastifyInstance) {
         tags: ['users'],
       },
     },
-    async (request, reply) => {
-      try {
-        const userId = request.user?.id;
-        if (!userId) {
-          return sendError(reply, '用户未认证', 401);
-        }
+    tryCatchWrapper(async (request, reply) => {
+      const userId = request.user?.id;
+      if (!userId) {
+        return sendError(reply, '用户未认证', 401);
+      }
 
-        const body = request.body as { email?: string; webhook_url?: string };
+      const body = request.body as { email?: string; webhook_url?: string };
 
-        const updateData: Record<string, unknown> = {};
-        if (body.email !== undefined) updateData.email = body.email;
-        if (body.webhook_url !== undefined) updateData.webhook_url = body.webhook_url;
+      const updateData: Record<string, unknown> = {};
+      if (body.email !== undefined) updateData.email = body.email;
+      if (body.webhook_url !== undefined) updateData.webhook_url = body.webhook_url;
 
-        const updatedUser = await UserService.updateUser(userId, updateData);
-        if (!updatedUser) {
-          return sendError(reply, '更新用户信息失败', 500);
-        }
-
-        return sendSuccess(reply, {
-          id: updatedUser.id,
-          username: updatedUser.username,
-          email: updatedUser.email,
-          role: updatedUser.role,
-          credits: updatedUser.credits,
-          webhook_url: updatedUser.webhook_url,
-          api_key: updatedUser.api_key,
-          created_at: toISO(updatedUser.created_at),
-        });
-      } catch (error: unknown) {
-        request.log.error(error);
+      const updatedUser = await UserService.updateUser(userId, updateData);
+      if (!updatedUser) {
         return sendError(reply, '更新用户信息失败', 500);
       }
-    }
+
+      return sendSuccess(reply, {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        credits: updatedUser.credits,
+        webhook_url: updatedUser.webhook_url,
+        api_key: updatedUser.api_key,
+        created_at: toISO(updatedUser.created_at),
+      });
+    })
   );
 
   fastify.put(
@@ -183,43 +169,38 @@ export default async function userRoutes(fastify: FastifyInstance) {
         tags: ['users'],
       },
     },
-    async (request, reply) => {
-      try {
-        const userId = request.user?.id;
-        if (!userId) {
-          return sendError(reply, '用户未认证', 401);
-        }
-
-        const body = request.body as { current_password: string; new_password: string };
-
-        const user = await UserService.getUserById(userId);
-        if (!user) {
-          return sendError(reply, '用户不存在', 404);
-        }
-
-        const { valid: isPasswordValid, needsMigration } = await verifyPasswordWithMigration(
-          body.current_password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          return sendError(reply, '当前密码错误', 401);
-        }
-
-        if (needsMigration) {
-          request.log.info({ userId: user.id }, 'Password migrated from SHA-256 to bcrypt during password change');
-        }
-
-        const hashedPassword = await hashPassword(body.new_password);
-
-        await UserService.updateUser(userId, { password: hashedPassword });
-
-        return sendSuccess(reply, { message: '密码修改成功' });
-      } catch (error: unknown) {
-        request.log.error(error);
-        return sendError(reply, '修改密码失败', 500);
+    tryCatchWrapper(async (request, reply) => {
+      const userId = request.user?.id;
+      if (!userId) {
+        return sendError(reply, '用户未认证', 401);
       }
-    }
+
+      const body = request.body as { current_password: string; new_password: string };
+
+      const user = await UserService.getUserById(userId);
+      if (!user) {
+        return sendError(reply, '用户不存在', 404);
+      }
+
+      const { valid: isPasswordValid, needsMigration } = await verifyPasswordWithMigration(
+        body.current_password,
+        user.password
+      );
+
+      if (!isPasswordValid) {
+        return sendError(reply, '当前密码错误', 401);
+      }
+
+      if (needsMigration) {
+        request.log.info({ userId: user.id }, 'Password migrated from SHA-256 to bcrypt during password change');
+      }
+
+      const hashedPassword = await hashPassword(body.new_password);
+
+      await UserService.updateUser(userId, { password: hashedPassword });
+
+      return sendSuccess(reply, { message: '密码修改成功' });
+    })
   );
 
   fastify.post(

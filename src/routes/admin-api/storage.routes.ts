@@ -3,7 +3,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 import { errorResponseSchema } from '../../schemas/index.js';
 import { createAuthenticate } from './authenticate.js';
-import { getSafeErrorMessage } from '../../utils/response.js';
+import { tryCatchWrapper } from '../../utils/try-catch-wrapper.js';
 import * as AdminStorageService from '../../services/admin-storage.service.js';
 
 export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<void> {
@@ -54,31 +54,23 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
         tags: ['admin', 'storage'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const query = request.query as {
-          userId?: number;
-          page?: number;
-          limit?: number;
-          search?: string;
-          sortBy?: 'totalSize' | 'username' | 'sessionsSize' | 'sharedSize';
-          sortOrder?: 'asc' | 'desc';
-        };
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const query = request.query as {
+        userId?: number;
+        page?: number;
+        limit?: number;
+        search?: string;
+        sortBy?: 'totalSize' | 'username' | 'sessionsSize' | 'sharedSize';
+        sortOrder?: 'asc' | 'desc';
+      };
 
-        const result = await AdminStorageService.getStorageStats(query);
+      const result = await AdminStorageService.getStorageStats(query);
 
-        return reply.send({
-          success: true,
-          data: result,
-        });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '获取存储统计失败');
-        if (error instanceof Error && error.message === '用户不存在') {
-          return reply.status(404).send({ success: false, error: '用户不存在' });
-        }
-        return reply.status(500).send({ success: false, error: '获取存储统计失败: ' + getSafeErrorMessage(error) });
-      }
-    }
+      return reply.send({
+        success: true,
+        data: result,
+      });
+    })
   );
 
   fastify.post(
@@ -118,33 +110,28 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
         tags: ['admin', 'storage'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const adminId = request.user?.id;
-        const body = request.body as {
-          userIds: number[];
-          type: 'sessions' | 'shared' | 'all';
-        };
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const adminId = request.user?.id;
+      const body = request.body as {
+        userIds: number[];
+        type: 'sessions' | 'shared' | 'all';
+      };
 
-        if (!body.userIds || !Array.isArray(body.userIds) || body.userIds.length === 0) {
-          return reply.status(400).send({ success: false, error: '请提供要清理的用户 ID 列表' });
-        }
-
-        if (!['sessions', 'shared', 'all'].includes(body.type)) {
-          return reply.status(400).send({ success: false, error: '无效的清理类型' });
-        }
-
-        const result = await AdminStorageService.cleanupUserData(body.userIds, body.type, adminId || 0);
-
-        return reply.send({
-          success: true,
-          data: result,
-        });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '清理用户数据失败');
-        return reply.status(500).send({ success: false, error: '清理用户数据失败: ' + getSafeErrorMessage(error) });
+      if (!body.userIds || !Array.isArray(body.userIds) || body.userIds.length === 0) {
+        return reply.status(400).send({ success: false, error: '请提供要清理的用户 ID 列表' });
       }
-    }
+
+      if (!['sessions', 'shared', 'all'].includes(body.type)) {
+        return reply.status(400).send({ success: false, error: '无效的清理类型' });
+      }
+
+      const result = await AdminStorageService.cleanupUserData(body.userIds, body.type, adminId || 0);
+
+      return reply.send({
+        success: true,
+        data: result,
+      });
+    })
   );
 
   fastify.post(
@@ -175,22 +162,17 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
         tags: ['admin', 'storage'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const adminId = request.user?.id;
-        const body = request.body as { days?: number };
+    tryCatchWrapper(async (request: FastifyRequest, reply: FastifyReply) => {
+      const adminId = request.user?.id;
+      const body = request.body as { days?: number };
 
-        const result = await AdminStorageService.cleanupAllOldData(body.days, adminId || 0);
+      const result = await AdminStorageService.cleanupAllOldData(body.days, adminId || 0);
 
-        return reply.send({
-          success: true,
-          data: result,
-        });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '清理旧数据失败');
-        return reply.status(500).send({ success: false, error: '清理旧数据失败: ' + getSafeErrorMessage(error) });
-      }
-    }
+      return reply.send({
+        success: true,
+        data: result,
+      });
+    })
   );
 
   fastify.get(
@@ -218,18 +200,13 @@ export async function adminApiStorageRoutes(fastify: FastifyInstance): Promise<v
         tags: ['admin', 'storage'],
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const stats = await AdminStorageService.getSystemStorageStats();
+    tryCatchWrapper(async (_request: FastifyRequest, reply: FastifyReply) => {
+      const stats = await AdminStorageService.getSystemStorageStats();
 
-        return reply.send({
-          success: true,
-          data: stats,
-        });
-      } catch (error: unknown) {
-        request.log.error({ err: error }, '获取系统存储统计失败');
-        return reply.status(500).send({ success: false, error: '获取系统存储统计失败: ' + getSafeErrorMessage(error) });
-      }
-    }
+      return reply.send({
+        success: true,
+        data: stats,
+      });
+    })
   );
 }

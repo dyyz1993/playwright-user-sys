@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { sendSuccess, sendError, getSafeErrorMessage } from '../utils/response.js';
 import { CleanupTempFilesQueryRoute } from '@shared/types/routes.js';
-import { SessionModel } from '../models/session.model.js';
+import { SessionModel } from '../models/session/index.js';
 import { logger } from '@shared/utils/logger.js';
 import { validateFileUpload } from '../utils/file-validation.js';
 import fs from 'fs';

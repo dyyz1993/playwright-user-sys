@@ -9,7 +9,7 @@ import { build } from '../helpers/app.js';
 import { initDatabase } from '../../config/database.js';
 import { clearAllTables } from '../helpers/database.js';
 import { UserModel } from '../../models/user.model.js';
-import { SessionModel } from '../../models/session.model.js';
+import { SessionModel } from '../../models/session/index.js';
 import { MachineModel } from '../../models/machine.model.js';
 import { generateToken, hashPassword } from '../../utils/auth.js';
 import { UserRole, UserStatus } from '@shared/types/index.js';

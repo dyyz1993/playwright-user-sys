@@ -23,13 +23,13 @@ vi.mock('../../../models/machine.model.js', () => ({
   },
 }));
 
-vi.mock('../../../models/session.model.js', () => ({
+vi.mock('../../../models/session/index.js', () => ({
   SessionModel: {
     findActiveSessions: vi.fn(),
   },
 }));
 
-vi.mock('../../../services/machine-grpc.service.js', () => ({
+vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: {
     getActiveConnections: vi.fn(() => []),
     getAllConnectedMachines: vi.fn(() => []),
@@ -369,7 +369,7 @@ describe('MemoryStoreService', () => {
   // ========================================
   it('应该加载初始数据', async () => {
     const { MachineModel } = await import('../../../models/machine.model.js');
-    const { SessionModel } = await import('../../../models/session.model.js');
+    const { SessionModel } = await import('../../../models/session/index.js');
 
     vi.mocked(MachineModel.findAll).mockResolvedValue({
       items: [
@@ -407,11 +407,11 @@ describe('MemoryStoreService', () => {
   // MS-15: 数据一致性检查
   // ========================================
   it('应该检查数据一致性', async () => {
-    const { connectionManager } = await import('../../../services/machine-grpc.service.js');
+    const { connectionManager } = await import('../../../services/machine-grpc/index.js');
 
     vi.mocked(connectionManager.getActiveConnections).mockReturnValue([]);
 
-    const { SessionModel } = await import('../../../models/session.model.js');
+    const { SessionModel } = await import('../../../models/session/index.js');
     vi.mocked(SessionModel.findActiveSessions).mockResolvedValue([]);
 
     await service.checkDataConsistency();

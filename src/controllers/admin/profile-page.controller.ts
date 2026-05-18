@@ -1,6 +1,6 @@
 import * as UserService from '../../services/user.service.js';
 import { CreditHistoryModel } from '../../models/credit-history.model.js';
-import { SessionModel } from '../../models/session.model.js';
+import { SessionModel } from '../../models/session/index.js';
 import { env } from '../../config/env.js';
 
 export async function getProfilePageData(userId: number) {

@@ -1,5 +1,5 @@
 import { MachineModel } from '../../models/machine.model.js';
-import { SessionModel } from '../../models/session.model.js';
+import { SessionModel } from '../../models/session/index.js';
 
 function generateMockHistoryData(type: string) {
   const now = Date.now();

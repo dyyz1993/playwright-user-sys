@@ -33,7 +33,7 @@ vi.mock('../../../models/user.model.js', () => ({
   },
 }));
 
-vi.mock('../../../models/session.model.js', () => ({
+vi.mock('../../../models/session/index.js', () => ({
   SessionModel: {
     findActiveSessions: vi.fn().mockResolvedValue([]),
     getUserSessionStats: vi.fn(),
@@ -100,7 +100,7 @@ describe('UserService', () => {
     const userModule = await import('../../../models/user.model.js');
     UserModel = userModule.UserModel;
 
-    const sessionModule = await import('../../../models/session.model.js');
+    const sessionModule = await import('../../../models/session/index.js');
     SessionModel = sessionModule.SessionModel;
 
     const authModule = await import('../../../utils/auth.js');
@@ -403,5 +403,204 @@ describe('UserService', () => {
 
     expect(result.failed).toHaveLength(1);
     expect(result.failed[0].error).toBe('用户不存在');
+  });
+
+  // ========================================
+  // USR-21: countAll - 返回用户总数
+  // ========================================
+  it('countAll 应该委托给 UserModel.countAll', async () => {
+    vi.mocked(UserModel.countAll).mockResolvedValue(42);
+
+    const { countAll } = await import('../../../services/user.service.js');
+    const result = await countAll();
+
+    expect(UserModel.countAll).toHaveBeenCalledOnce();
+    expect(result).toBe(42);
+  });
+
+  // ========================================
+  // USR-22: sumAllCredits - 返回总积分
+  // ========================================
+  it('sumAllCredits 应该委托给 UserModel.sumAllCredits', async () => {
+    vi.mocked(UserModel.sumAllCredits).mockResolvedValue(1500);
+
+    const { sumAllCredits } = await import('../../../services/user.service.js');
+    const result = await sumAllCredits();
+
+    expect(UserModel.sumAllCredits).toHaveBeenCalledOnce();
+    expect(result).toBe(1500);
+  });
+
+  // ========================================
+  // USR-23: countNewUsers - 按天数统计新用户
+  // ========================================
+  it('countNewUsers 应该委托给 UserModel.countNewUsers 并传入天数', async () => {
+    vi.mocked(UserModel.countNewUsers).mockResolvedValue(8);
+
+    const { countNewUsers } = await import('../../../services/user.service.js');
+    const result = await countNewUsers(30);
+
+    expect(UserModel.countNewUsers).toHaveBeenCalledWith(30);
+    expect(result).toBe(8);
+  });
+
+  // ========================================
+  // USR-24: findByUsername - 用户存在
+  // ========================================
+  it('findByUsername 用户存在时应该返回用户', async () => {
+    vi.mocked(UserModel.findByUsername).mockResolvedValue(mockUser as any);
+
+    const { findByUsername } = await import('../../../services/user.service.js');
+    const result = await findByUsername('testuser');
+
+    expect(UserModel.findByUsername).toHaveBeenCalledWith('testuser');
+    expect(result).toEqual(mockUser);
+  });
+
+  // ========================================
+  // USR-25: findByUsername - 用户不存在
+  // ========================================
+  it('findByUsername 用户不存在时应该返回 null', async () => {
+    vi.mocked(UserModel.findByUsername).mockResolvedValue(null);
+
+    const { findByUsername } = await import('../../../services/user.service.js');
+    const result = await findByUsername('nonexistent');
+
+    expect(result).toBeNull();
+  });
+
+  // ========================================
+  // USR-26: findByApiKey - 用户存在
+  // ========================================
+  it('findByApiKey 用户存在时应该返回用户', async () => {
+    vi.mocked(UserModel.findByApiKey).mockResolvedValue(mockUser as any);
+
+    const { findByApiKey } = await import('../../../services/user.service.js');
+    const result = await findByApiKey('api-key-123');
+
+    expect(UserModel.findByApiKey).toHaveBeenCalledWith('api-key-123');
+    expect(result).toEqual(mockUser);
+  });
+
+  // ========================================
+  // USR-27: findByApiKey - 用户不存在
+  // ========================================
+  it('findByApiKey 用户不存在时应该返回 null', async () => {
+    vi.mocked(UserModel.findByApiKey).mockResolvedValue(null);
+
+    const { findByApiKey } = await import('../../../services/user.service.js');
+    const result = await findByApiKey('invalid-key');
+
+    expect(result).toBeNull();
+  });
+
+  // ========================================
+  // USR-28: getCreditsStats - 总积分统计
+  // ========================================
+  it('getCreditsStats 应该委托给 UserModel.getCreditsStats', async () => {
+    const stats = { total: 5000, used: 1200, available: 3800 };
+    vi.mocked(UserModel.getCreditsStats).mockResolvedValue(stats as any);
+
+    const { getCreditsStats } = await import('../../../services/user.service.js');
+    const result = await getCreditsStats();
+
+    expect(UserModel.getCreditsStats).toHaveBeenCalledOnce();
+    expect(result).toEqual(stats);
+  });
+
+  // ========================================
+  // USR-29: getUserSessionStats - 用户会话统计
+  // ========================================
+  it('getUserSessionStats 应该委托给 SessionModel.getUserSessionStats', async () => {
+    const stats = { total_sessions: 10, total_duration: 3600, total_credits_used: 100 };
+    vi.mocked(SessionModel.getUserSessionStats).mockResolvedValue(stats as any);
+
+    const { getUserSessionStats } = await import('../../../services/user.service.js');
+    const result = await getUserSessionStats(1);
+
+    expect(SessionModel.getUserSessionStats).toHaveBeenCalledWith(1);
+    expect(result).toEqual(stats);
+  });
+
+  // ========================================
+  // USR-30: batchRecharge - 部分成功部分失败
+  // ========================================
+  it('batchRecharge 部分用户不存在应该返回 recharged 和 failed', async () => {
+    const trx = createTrx();
+    trx.usersChain.first.mockResolvedValueOnce({ ...mockUser, id: 1 }).mockResolvedValueOnce(null);
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
+
+    const { batchRecharge } = await import('../../../services/user.service.js');
+    const result = await batchRecharge([1, 999], 50, 1);
+
+    expect(result.recharged).toEqual([1]);
+    expect(result.failed).toEqual([{ userId: 999, error: '用户不存在' }]);
+    expect(trx.logsChain.insert).toHaveBeenCalledOnce();
+  });
+
+  // ========================================
+  // USR-31: batchRecharge - 带 adminId 记录操作日志
+  // ========================================
+  it('batchRecharge 带 adminId 应该记录操作日志', async () => {
+    const trx = createTrx();
+    trx.usersChain.first.mockResolvedValue({ ...mockUser, id: 1 });
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
+
+    const { batchRecharge } = await import('../../../services/user.service.js');
+    await batchRecharge([1], 100, 1, '系统赠送');
+
+    expect(trx.logsChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        admin_id: 1,
+        action: '批量充值',
+      })
+    );
+  });
+
+  // ========================================
+  // USR-32: batchDeleteUsers - 排除活跃会话用户
+  // ========================================
+  it('batchDeleteUsers 有活跃会话的用户应该标记为 failed', async () => {
+    vi.mocked(SessionModel.findActiveSessions).mockResolvedValueOnce([{ id: 'sess-1', user_id: 2 }]);
+    const trx = createTrx();
+    trx.usersChain.first.mockResolvedValue({ ...mockUser, id: 3 });
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
+
+    const { batchDeleteUsers } = await import('../../../services/user.service.js');
+    const result = await batchDeleteUsers([2, 3]);
+
+    expect(result.failed).toEqual([{ userId: 2, error: '该用户有活跃会话，请先释放所有会话后再删除' }]);
+    expect(result.deleted).toContain(3);
+  });
+
+  // ========================================
+  // USR-33: batchDeleteUsers - 排除管理员
+  // ========================================
+  it('batchDeleteUsers 管理员应该标记为 failed', async () => {
+    const trx = createTrx();
+    trx.usersChain.first
+      .mockResolvedValueOnce({ ...mockUser, id: 1, role: UserRole.ADMIN })
+      .mockResolvedValueOnce({ ...mockUser, id: 2 });
+    vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
+
+    const { batchDeleteUsers } = await import('../../../services/user.service.js');
+    const result = await batchDeleteUsers([1, 2], 1);
+
+    expect(result.failed.some((f) => f.userId === 1 && f.error === '不允许删除管理员账号')).toBe(true);
+    expect(result.deleted).toContain(2);
+  });
+
+  // ========================================
+  // USR-34: getUserStats - 用户统计
+  // ========================================
+  it('getUserStats 应该委托给 UserModel.getStats', async () => {
+    const stats = { total: 100, active: 80, inactive: 20 };
+    vi.mocked(UserModel.getStats).mockResolvedValue(stats as any);
+
+    const { getUserStats } = await import('../../../services/user.service.js');
+    const result = await getUserStats();
+
+    expect(UserModel.getStats).toHaveBeenCalledOnce();
+    expect(result).toEqual(stats);
   });
 });

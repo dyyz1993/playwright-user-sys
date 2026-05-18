@@ -1,9 +1,9 @@
-import { SessionModel } from '../models/session.model.js';
+import { SessionModel } from '../models/session/index.js';
 import { MachineModel } from '../models/machine.model.js';
 import { UserModel } from '../models/user.model.js';
 import { SessionStatus, WebhookEventType } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
-import { connectionManager } from './machine-grpc.service.js';
+import { connectionManager } from './machine-grpc/index.js';
 
 export interface BatchReleaseResult {
   released: string[];

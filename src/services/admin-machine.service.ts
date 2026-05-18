@@ -2,7 +2,7 @@ import { MachineModel } from '../models/machine.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@shared/utils/logger.js';
-import { connectionManager } from './machine-grpc.service.js';
+import { connectionManager } from './machine-grpc/index.js';
 
 export async function addMachine(
   body: { hostname: string; ip: string; grpcPort?: number; proxyPort?: number; maxInstances?: number },

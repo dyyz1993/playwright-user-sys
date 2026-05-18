@@ -10,7 +10,7 @@ vi.mock('../../../models/machine.model.js', () => ({
   },
 }));
 
-vi.mock('../../../models/session.model.js', () => ({
+vi.mock('../../../models/session/index.js', () => ({
   SessionModel: {
     findByMachineId: vi.fn(),
     findActiveSessionsByMachineId: vi.fn(),
@@ -32,12 +32,13 @@ vi.mock('../../../utils/webhook.js', () => ({
 vi.mock('../../../shared/utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
+    debug: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
   },
 }));
 
-vi.mock('../../../services/machine-grpc.service.js', () => ({
+vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: {
     getAllConnectedMachines: vi.fn().mockReturnValue([]),
     getActiveConnections: vi.fn().mockReturnValue([]),
@@ -72,7 +73,7 @@ describe('MachineMonitorService', () => {
     const machineModule = await import('../../../models/machine.model.js');
     MachineModel = machineModule.MachineModel;
 
-    const sessionModule = await import('../../../models/session.model.js');
+    const sessionModule = await import('../../../models/session/index.js');
     SessionModel = sessionModule.SessionModel;
 
     const userModule = await import('../../../models/user.model.js');
@@ -81,7 +82,7 @@ describe('MachineMonitorService', () => {
     const memoryModule = await import('../../../services/memory-store.service.js');
     memoryStore = memoryModule.memoryStore;
 
-    const grpcModule = await import('../../../services/machine-grpc.service.js');
+    const grpcModule = await import('../../../services/machine-grpc/index.js');
     connectionManager = grpcModule.connectionManager;
 
     const loggerModule = await import('../../../shared/utils/logger.js');
@@ -286,7 +287,7 @@ describe('MachineMonitorService', () => {
       const mockTimer = setTimeout(() => {}, 10000);
       stopMachineMonitor(mockTimer);
 
-      expect(logger.info).toHaveBeenCalledWith('机器监控服务已停止');
+      expect(logger.debug).toHaveBeenCalledWith('机器监控服务已停止');
 
       clearTimeout(mockTimer);
     });
@@ -296,7 +297,7 @@ describe('MachineMonitorService', () => {
 
       stopMachineMonitor(null as any);
 
-      expect(logger.info).not.toHaveBeenCalled();
+      expect(logger.debug).not.toHaveBeenCalled();
     });
   });
 });

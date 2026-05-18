@@ -1,10 +1,10 @@
-import { SessionModel, Session } from '../models/session.model.js';
+import { SessionModel, Session } from '../models/session/index.js';
 import { UserModel } from '../models/user.model.js';
 import { MachineModel } from '../models/machine.model.js';
 import { WebhookEventType } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { logger } from '@shared/utils/logger.js';
-import { connectionManager } from './machine-grpc.service.js';
+import { connectionManager } from './machine-grpc/index.js';
 import { db } from '../config/database.js';
 import { calculateCreditsUsed } from '@shared/utils/credits-calculator.js';
 
@@ -17,18 +17,18 @@ export async function checkSessionCredits(): Promise<void> {
   try {
     // 获取所有活跃会话
     const activeSessions = await SessionModel.findActiveSessions();
-    logger.info(`点数监控: 检查 ${activeSessions.length} 个活跃会话的点数情况`);
+    logger.debug(`点数监控: 检查 ${activeSessions.length} 个活跃会话的点数情况`);
 
     // 获取所有在线的机器ID
     const connectedMachineIds = connectionManager.getActiveConnections();
-    logger.info(`当前有 ${connectedMachineIds.length} 台已连接的机器`);
+    logger.debug(`当前有 ${connectedMachineIds.length} 台已连接的机器`);
 
     // 过滤出在真正在线的机器上的会话
     const validSessions = activeSessions.filter(
       (session) => session.machine_id && connectedMachineIds.includes(session.machine_id)
     );
 
-    logger.info(`其中 ${validSessions.length} 个会话在真正在线的机器上`);
+    logger.debug(`其中 ${validSessions.length} 个会话在真正在线的机器上`);
 
     // 对于不在在线机器上的会话，标记为断开状态
     const invalidSessions = activeSessions.filter(
@@ -42,7 +42,7 @@ export async function checkSessionCredits(): Promise<void> {
 
         // 标记会话为已断开
         await SessionModel.markDisconnected(session.id, duration);
-        logger.info(
+        logger.debug(
           `标记无效会话为已断开 (sessionId: ${session.id}, 机器: ${session.machine_id || '无'}, 持续时间: ${duration}s)`
         );
       } catch (error: unknown) {
@@ -60,7 +60,7 @@ export async function checkSessionCredits(): Promise<void> {
       sessionsByUser.get(userId)!.push(session);
     }
 
-    logger.info(`点数监控: 有 ${sessionsByUser.size} 个用户有活跃会话`);
+    logger.debug(`点数监控: 有 ${sessionsByUser.size} 个用户有活跃会话`);
 
     // 对每个用户进行一次处理
     for (const [userId, userSessions] of sessionsByUser.entries()) {
@@ -112,7 +112,7 @@ export async function checkSessionCredits(): Promise<void> {
           // 计算本次需要新扣除的点数
           const newCreditsToDeduct = Math.max(0, minutes - recordedCreditsUsed);
 
-          logger.info(
+          logger.debug(
             `点数监控: 会话 ${session.id} 已运行 ${duration} 秒，总消耗 ${minutes} 点，已记录 ${recordedCreditsUsed} 点，本次需扣除 ${newCreditsToDeduct} 点`
           );
 
@@ -129,7 +129,7 @@ export async function checkSessionCredits(): Promise<void> {
           }
         }
 
-        logger.info(
+        logger.debug(
           `用户 ${user.username} (ID: ${userId}) 共有 ${userSessions.length} 个会话，需要扣除 ${totalNewCreditsToDeduct} 点，当前剩余 ${user.credits} 点`
         );
 
@@ -143,7 +143,7 @@ export async function checkSessionCredits(): Promise<void> {
 
               // 扣除用户点数
               await UserModel.deductCredits(userId, totalNewCreditsToDeduct, trx);
-              logger.info(
+              logger.debug(
                 `事务中已扣除用户 ${userId} 的点数: ${totalNewCreditsToDeduct} 点，共 ${sessionUpdates.length} 个会话`
               );
             });
@@ -175,32 +175,32 @@ export async function checkSessionCredits(): Promise<void> {
 
             try {
               // 尝试使用直接关闭方法
-              logger.info(`尝试直接关闭浏览器 (machineId: ${machineId}, sessionId: ${session.id})`);
+              logger.debug(`尝试直接关闭浏览器 (machineId: ${machineId}, sessionId: ${session.id})`);
               const success = await connectionManager.closeBrowser(machineId, session.id);
-              logger.info(
+              logger.debug(
                 `直接关闭浏览器${success ? '成功' : '失败'} (machineId: ${machineId}, sessionId: ${session.id})`
               );
 
               if (!success) {
                 // 如果直接关闭失败，尝试发送关闭命令
-                logger.info(`发送关闭浏览器命令 (machineId: ${machineId}, sessionId: ${session.id})`);
+                logger.debug(`发送关闭浏览器命令 (machineId: ${machineId}, sessionId: ${session.id})`);
                 connectionManager.sendCloseBrowserCommand(machineId, session.id);
               }
             } catch (error: unknown) {
               logger.error(`关闭浏览器失败 (machineId: ${machineId}, sessionId: ${session.id}):`, error);
 
               // 如果关闭失败，尝试发送关闭命令
-              logger.info(`尝试发送关闭浏览器命令 (machineId: ${machineId}, sessionId: ${session.id})`);
+              logger.debug(`尝试发送关闭浏览器命令 (machineId: ${machineId}, sessionId: ${session.id})`);
               connectionManager.sendCloseBrowserCommand(machineId, session.id);
             }
 
             // 标记会话为已断开
             await SessionModel.markDisconnected(session.id, duration);
-            logger.info(`已标记会话为已断开 (sessionId: ${session.id}, duration: ${duration}s)`);
+            logger.debug(`已标记会话为已断开 (sessionId: ${session.id}, duration: ${duration}s)`);
 
             // 减少机器的实例计数
             await MachineModel.decrementInstanceCount(machineId);
-            logger.info(`已减少机器 ${machineId} 的实例计数`);
+            logger.debug(`已减少机器 ${machineId} 的实例计数`);
           }
 
           // 触发点数不足事件（只触发一次）
@@ -212,7 +212,7 @@ export async function checkSessionCredits(): Promise<void> {
           });
         } else if (updatedUser.credits < totalNewCreditsToDeduct + 2) {
           // 点数即将不足，发送警告（只发送一次）
-          logger.info(
+          logger.debug(
             `用户 ${updatedUser.username} (ID: ${userId}) 点数即将不足，剩余: ${updatedUser.credits}，已使用: ${totalNewCreditsToDeduct} 点`
           );
 
@@ -236,7 +236,7 @@ export async function checkSessionCredits(): Promise<void> {
  * 启动点数监控服务
  */
 export function startCreditsMonitor(intervalMs: number = 10000): NodeJS.Timeout {
-  logger.info(`启动点数监控服务，检查间隔: ${intervalMs}ms`);
+  logger.debug(`启动点数监控服务，检查间隔: ${intervalMs}ms`);
 
   // 立即执行一次检查
   checkSessionCredits().catch((error) => {
@@ -259,7 +259,7 @@ export function startCreditsMonitor(intervalMs: number = 10000): NodeJS.Timeout 
 export function stopCreditsMonitor(timerId: NodeJS.Timeout): void {
   if (timerId) {
     clearInterval(timerId);
-    logger.info('点数监控服务已停止');
+    logger.debug('点数监控服务已停止');
   }
 }
 

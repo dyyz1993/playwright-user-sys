@@ -2,7 +2,7 @@ import { FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { UserModel, CreateUserInput, UpdateUserInput } from '../models/user.model.js';
 import { OperationLogModel } from '../models/operation-log.model.js';
-import { SessionModel } from '../models/session.model.js';
+import { SessionModel } from '../models/session/index.js';
 import { sendSuccess, sendError, sendCreated, sendNoContent, sendPaginated } from '../utils/response.js';
 import {
   UserRole,
@@ -262,7 +262,7 @@ export async function getUserSessionStats(request: AuthenticatedRequestWithParam
     }
 
     // 获取用户的会话消耗统计
-    const { SessionModel } = await import('../models/session.model.js');
+    const { SessionModel } = await import('../models/session/index.js');
     const stats = await SessionModel.getUserSessionStats(userId);
 
     return sendSuccess(reply, stats);

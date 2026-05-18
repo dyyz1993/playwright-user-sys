@@ -1,10 +1,10 @@
 import { MachineModel } from '../models/machine.model.js';
-import { SessionModel, Session } from '../models/session.model.js';
+import { SessionModel, Session } from '../models/session/index.js';
 import { UserModel } from '../models/user.model.js';
 import { SessionStatus, WebhookEventType } from '@shared/types/index.js';
 import { createWebhookEvent } from '../utils/webhook.js';
 import { logger } from '@shared/utils/logger.js';
-import { connectionManager } from './machine-grpc.service.js';
+import { connectionManager } from './machine-grpc/index.js';
 import { memoryStore } from './memory-store.service.js';
 
 // 机器离线超时时间（毫秒）
@@ -17,7 +17,7 @@ export async function checkMachineStatus(): Promise<void> {
   try {
     // 优先使用内存中的机器数据
     const memoryMachines = memoryStore.getAllMachines();
-    logger.info(`从内存中获取到 ${memoryMachines.length} 台机器`);
+    logger.debug(`从内存中获取到 ${memoryMachines.length} 台机器`);
 
     // 如果内存中没有数据，则从数据库加载
     if (memoryMachines.length === 0) {
@@ -26,7 +26,7 @@ export async function checkMachineStatus(): Promise<void> {
 
     // 再次获取内存中的机器数据
     const machines = memoryStore.getAllMachines();
-    logger.info(`检查 ${machines.length} 台机器的状态`);
+    logger.debug(`检查 ${machines.length} 台机器的状态`);
 
     const now = new Date();
 
@@ -86,7 +86,7 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
     // 合并会话数据
     const sessions = activeSessions.length > 0 ? activeSessions : dbSessions;
 
-    logger.info(`处理机器 ${machineId} 上的 ${sessions.length} 个活跃会话`);
+    logger.debug(`处理机器 ${machineId} 上的 ${sessions.length} 个活跃会话`);
 
     for (const session of sessions) {
       try {
@@ -106,7 +106,7 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
 
         // 同时在数据库中标记会话为错误状态
         await SessionModel.markError(sessionId, duration);
-        logger.info(`标记会话为错误状态 (sessionId: ${sessionId}, machineId: ${machineId})`);
+        logger.debug(`标记会话为错误状态 (sessionId: ${sessionId}, machineId: ${machineId})`);
 
         // 扣除用户点数（每分钟1点）
         // 即使会话只运行了几秒钟，也至少消耗 1 点
@@ -115,7 +115,7 @@ async function handleOfflineMachineSessions(machineId: string): Promise<void> {
 
         try {
           await UserModel.deductCredits(userId, minutes);
-          logger.info(`已扣除用户 ${userId} 的点数: ${minutes} 点 (sessionId: ${sessionId})`);
+          logger.debug(`已扣除用户 ${userId} 的点数: ${minutes} 点 (sessionId: ${sessionId})`);
         } catch (error: unknown) {
           logger.error(`扣除点数失败 (sessionId: ${sessionId}):`, error);
         }
@@ -147,7 +147,7 @@ async function handleOfflineMachineSessionsV2(machineId: string): Promise<void> 
   try {
     // 获取该机器上的所有活跃会话
     const activeSessions = await SessionModel.findActiveSessionsByMachineId(machineId);
-    logger.info(`机器 ${machineId} 上有 ${activeSessions.length} 个活跃会话需要处理`);
+    logger.debug(`机器 ${machineId} 上有 ${activeSessions.length} 个活跃会话需要处理`);
 
     // 将所有活跃会话标记为错误状态
     for (const session of activeSessions) {
@@ -168,7 +168,7 @@ async function handleOfflineMachineSessionsV2(machineId: string): Promise<void> 
         error_message: '机器意外离线',
       });
 
-      logger.info(`会话 ${session.id} 已标记为错误状态`);
+      logger.debug(`会话 ${session.id} 已标记为错误状态`);
 
       // 同时更新内存中的会话状态
       const memorySession = memoryStore.getSession(session.id);
@@ -178,7 +178,7 @@ async function handleOfflineMachineSessionsV2(machineId: string): Promise<void> 
       }
     }
 
-    logger.info(`机器 ${machineId} 上的所有会话已处理完成`);
+    logger.debug(`机器 ${machineId} 上的所有会话已处理完成`);
   } catch (error: unknown) {
     logger.error(`处理离线机器会话失败 (${machineId}):`, error);
   }
@@ -192,11 +192,11 @@ export async function forceCheckAllMachines(): Promise<void> {
   try {
     // 获取所有标记为在线的机器
     const onlineMachines = await MachineModel.findByStatus('online');
-    logger.info(`数据库中有 ${onlineMachines.items.length} 台标记为在线的机器`);
+    logger.debug(`数据库中有 ${onlineMachines.items.length} 台标记为在线的机器`);
 
     // 获取实际连接的机器ID列表
     const connectedMachineIds = connectionManager.getAllConnectedMachines();
-    logger.info(`实际有 ${connectedMachineIds.length} 台已连接的机器`);
+    logger.debug(`实际有 ${connectedMachineIds.length} 台已连接的机器`);
 
     // 将不在连接列表中的"在线"机器标记为离线
     let updatedCount = 0;
@@ -212,7 +212,7 @@ export async function forceCheckAllMachines(): Promise<void> {
       }
     }
 
-    logger.info(`强制检查完成，共更新了 ${updatedCount} 台机器的状态`);
+    logger.debug(`强制检查完成，共更新了 ${updatedCount} 台机器的状态`);
   } catch (error: unknown) {
     logger.error('强制检查机器状态失败:', error);
   }
@@ -229,7 +229,7 @@ export async function cleanupOldMachines(daysThreshold: number = 30): Promise<vo
     // 删除长时间未活动的离线机器
     const result = await MachineModel.deleteOldMachines(cutoffDate);
 
-    logger.info(`已清理 ${result} 台长时间未活动的机器记录`);
+    logger.debug(`已清理 ${result} 台长时间未活动的机器记录`);
   } catch (error: unknown) {
     logger.error('清理旧机器记录失败:', error);
   }
@@ -239,12 +239,12 @@ export async function cleanupOldMachines(daysThreshold: number = 30): Promise<vo
  * 启动机器监控服务
  */
 export async function startMachineMonitor(intervalMs: number = 30000): Promise<NodeJS.Timeout> {
-  logger.info(`启动机器监控服务，检查间隔: ${intervalMs}ms`);
+  logger.debug(`启动机器监控服务，检查间隔: ${intervalMs}ms`);
 
   // 首先从数据库加载初始数据到内存
   try {
     await memoryStore.loadInitialData();
-    logger.info('已从数据库加载初始数据到内存');
+    logger.debug('已从数据库加载初始数据到内存');
   } catch (error: unknown) {
     logger.error('从数据库加载初始数据失败:', error);
   }
@@ -252,7 +252,7 @@ export async function startMachineMonitor(intervalMs: number = 30000): Promise<N
   // 立即执行一次强制检查
   try {
     await forceCheckAllMachines();
-    logger.info('初始机器状态强制检查完成');
+    logger.debug('初始机器状态强制检查完成');
   } catch (error: unknown) {
     logger.error('初始机器状态强制检查失败:', error);
   }
@@ -260,7 +260,7 @@ export async function startMachineMonitor(intervalMs: number = 30000): Promise<N
   // 立即执行一次常规检查
   try {
     await checkMachineStatus();
-    logger.info('初始机器状态检查完成');
+    logger.debug('初始机器状态检查完成');
   } catch (error: unknown) {
     logger.error('初始机器状态检查失败:', error);
   }
@@ -296,7 +296,7 @@ export async function startMachineMonitor(intervalMs: number = 30000): Promise<N
 export function stopMachineMonitor(timerId: NodeJS.Timeout): void {
   if (timerId) {
     clearInterval(timerId);
-    logger.info('机器监控服务已停止');
+    logger.debug('机器监控服务已停止');
   }
 }
 

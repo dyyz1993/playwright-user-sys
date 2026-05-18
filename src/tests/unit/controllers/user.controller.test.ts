@@ -56,7 +56,7 @@ vi.mock('../../../utils/response.js', () => ({
   }),
 }));
 
-vi.mock('../../../models/session.model.js', () => ({
+vi.mock('../../../models/session/index.js', () => ({
   SessionModel: {
     getUserSessionStats: vi.fn(),
     findActiveSessions: vi.fn().mockResolvedValue([]),
@@ -83,7 +83,7 @@ describe('UserController', () => {
     const operationLogModule = await import('../../../models/operation-log.model.js');
     OperationLogModel = operationLogModule.OperationLogModel;
 
-    const sessionModule = await import('../../../models/session.model.js');
+    const sessionModule = await import('../../../models/session/index.js');
     SessionModel = sessionModule.SessionModel;
 
     const responseModule = await import('../../../utils/response.js');

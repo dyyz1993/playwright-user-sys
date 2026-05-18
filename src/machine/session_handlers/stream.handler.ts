@@ -2,6 +2,7 @@ import { WebSocket } from 'ws';
 import { browserService, SessionConfig } from '../browser.service.js';
 import { Page, CDPSession } from 'puppeteer-core';
 import { logger } from '@shared/utils/logger.js';
+import { clampScreenshotSize } from '../utils/screenshot-size.js';
 
 interface StartScreencastParams {
   format?: 'jpeg' | 'png';
@@ -189,11 +190,21 @@ async function captureAndSend(ws: WebSocket, page: Page, sessionId: string): Pro
   }
   try {
     const currentConfig = browserService.getSessionConfig(sessionId);
+    const viewport = page.viewport();
+    let clip = currentConfig?.clip;
+
+    if (!clip && viewport) {
+      const clamped = clampScreenshotSize(viewport.width, viewport.height);
+      if (clamped.width !== viewport.width || clamped.height !== viewport.height) {
+        clip = { x: 0, y: 0, width: clamped.width, height: clamped.height };
+      }
+    }
+
     const screenshotBuffer = await page.screenshot({
       type: 'jpeg',
       quality: 60,
       encoding: 'binary',
-      clip: currentConfig?.clip,
+      clip,
     });
 
     if (ws.readyState === WebSocket.OPEN) {

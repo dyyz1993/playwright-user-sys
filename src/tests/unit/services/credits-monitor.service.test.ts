@@ -12,7 +12,7 @@ const mockCloseBrowser = vi.fn();
 const mockSendCloseBrowserCommand = vi.fn();
 const mockCreateWebhookEvent = vi.fn();
 
-vi.mock('../../../models/session.model.js', () => ({
+vi.mock('../../../models/session/index.js', () => ({
   SessionModel: {
     findActiveSessions: mockFindActiveSessions,
     markDisconnected: mockMarkDisconnected,
@@ -33,7 +33,7 @@ vi.mock('../../../models/machine.model.js', () => ({
   },
 }));
 
-vi.mock('../../../services/machine-grpc.service.js', () => ({
+vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: {
     getActiveConnections: mockGetActiveConnections,
     closeBrowser: mockCloseBrowser,

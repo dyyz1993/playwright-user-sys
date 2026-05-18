@@ -21,7 +21,10 @@ const createDatabaseConfig = () => {
         filename: dbPath,
       },
       useNullAsDefault: true,
-      // SQLite 不需要连接池，移除这些设置
+      // SQLite 基于单文件 + 文件级写入锁，并发写入能力有限，
+      // 多连接反而会增加锁竞争和 SQLITE_BUSY 错误，因此不配置连接池。
+      // acquireConnectionTimeout 设为 120s：应对长事务（如迁移、批量写入）
+      // 时避免超时中断，SQLite 操作多为磁盘 I/O，偶有耗时属正常。
       acquireConnectionTimeout: 120000,
     };
   } else {
@@ -42,14 +45,25 @@ const createDatabaseConfig = () => {
         timezone: (process.env.TZ === 'UTC' ? '+00:00' : process.env.TZ) || '+00:00',
         dateStrings: true,
       },
+      // MySQL 连接池配置
+      // 多连接可充分利用 MySQL 的行级锁并发写入能力，
+      // 配合 Server 端 thread_handling 实现高并发吞吐。
       pool: {
+        // min=2：保持 2 个常驻连接，避免请求到来时频繁建连（TCP 三次握手 + 认证）
+        // 的冷启动延迟。对于低并发场景 2 足够，高并发由 max 兜底弹性扩容。
         min: parseInt(env.DB_POOL_MIN || '2'),
+        // max=10：单实例管理 Server 典型并发在 10 以内，10 连接已覆盖峰值。
+        // 过大会占用 MySQL max_connections 配额，且增加连接管理开销。
+        // 如部署为集群（多 Server → 同一 MySQL），需按实例数缩减单实例 max。
         max: parseInt(env.DB_POOL_MAX || '10'),
-        // 空闲超时，单位毫秒 - 增加到 120 秒
+        // 空闲超时 120s：连接空闲超过 2 分钟自动回收至 min 水位，
+        // 平衡资源占用与突发流量时的连接复用。
         idleTimeoutMillis: 120000,
-        // 连接超时，单位毫秒 - 增加到 120 秒
+        // 获取连接超时 120s：池中所有连接均繁忙时，等待新连接的最长时间。
+        // 设为 120s 容忍慢查询堆积场景，避免正常请求被误杀。
         acquireTimeoutMillis: 120000,
-        // 创建连接的错误将被记录并抛出
+        // propagateCreateError=false：建连失败时由 knex 内部重试，
+        // 避免瞬时网络抖动直接抛错导致请求失败（如 MySQL 临时重启）。
         propagateCreateError: false,
       },
       // 增加连接限制选项 - 匹配池配置的超时时间

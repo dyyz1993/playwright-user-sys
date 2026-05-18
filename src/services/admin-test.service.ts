@@ -1,4 +1,4 @@
-import { SessionModel } from '../models/session.model.js';
+import { SessionModel } from '../models/session/index.js';
 import { MachineModel } from '../models/machine.model.js';
 import { v4 as uuidv4 } from 'uuid';
 

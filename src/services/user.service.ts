@@ -1,6 +1,6 @@
 import { db } from '../config/database.js';
 import { UserModel, User } from '../models/user.model.js';
-import { SessionModel } from '../models/session.model.js';
+import { SessionModel } from '../models/session/index.js';
 import { UserRole, UserStatus, PaginationQuery, PaginatedResponse } from '@shared/types/index.js';
 import { NotFoundError } from '../utils/errors.js';
 import { hashPassword } from '../utils/auth.js';

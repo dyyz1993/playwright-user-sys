@@ -338,8 +338,8 @@ class MemoryStoreService extends EventEmitter {
     try {
       // 导入模型
       const { MachineModel } = await import('../models/machine.model.js');
-      const { SessionModel } = await import('../models/session.model.js');
-      const { connectionManager } = await import('../services/machine-grpc.service.js');
+      const { SessionModel } = await import('../models/session/index.js');
+      const { connectionManager } = await import('../services/machine-grpc/index.js');
 
       // 检查机器连接状态
       if (connectionManager) {
@@ -442,11 +442,11 @@ class MemoryStoreService extends EventEmitter {
       this.sessions.clear();
 
       const { MachineModel } = await import('../models/machine.model.js');
-      const { SessionModel } = await import('../models/session.model.js');
+      const { SessionModel } = await import('../models/session/index.js');
 
       try {
         // 尝试导入连接管理器
-        const { connectionManager } = await import('../services/machine-grpc.service.js');
+        const { connectionManager } = await import('../services/machine-grpc/index.js');
 
         // 加载机器数据
         const machinesData = await MachineModel.findAll();

@@ -10,6 +10,7 @@ import { BrowserFingerprintWithHeaders, FingerprintGenerator } from 'fingerprint
 import { CONFIG } from './config.js';
 import { logger } from '@shared/utils/logger.js';
 import { sessionFocusEmitter } from './utils.js';
+import { clampScreenshotSize } from './utils/screenshot-size.js';
 import puppeteerStealth from 'puppeteer-extra';
 import ProxyChain from 'proxy-chain';
 const puppeteer = puppeteerStealth.default;
@@ -1219,7 +1220,27 @@ export class BrowserService extends EventEmitter {
 
       const page = await this.getSessionPage(sessionId);
       if (page) {
-        const buffer = await page.screenshot({ type: 'jpeg', quality: 80 });
+        const viewport = page.viewport();
+        const screenshotOptions: {
+          type: 'jpeg';
+          quality: number;
+          clip?: { x: number; y: number; width: number; height: number };
+        } = {
+          type: 'jpeg',
+          quality: 80,
+        };
+
+        if (viewport) {
+          const clamped = clampScreenshotSize(viewport.width, viewport.height);
+          if (clamped.width !== viewport.width || clamped.height !== viewport.height) {
+            screenshotOptions.clip = { x: 0, y: 0, width: clamped.width, height: clamped.height };
+            logger.info(
+              `截图尺寸已限制 (sessionId: ${sessionId}): ${viewport.width}x${viewport.height} -> ${clamped.width}x${clamped.height}`
+            );
+          }
+        }
+
+        const buffer = await page.screenshot(screenshotOptions);
         await fs.writeFile(filePath, buffer);
         logger.info(`截图已保存 (sessionId: ${sessionId}): ${filePath} (${(buffer.length / 1024).toFixed(1)}KB)`);
       } else {

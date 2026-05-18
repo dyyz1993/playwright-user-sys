@@ -93,6 +93,8 @@ describe('AuthController', () => {
         password: 'Test1234',
       },
       log: {
+        warn: vi.fn(),
+        info: vi.fn(),
         error: vi.fn(),
       },
     };
@@ -133,6 +135,8 @@ describe('AuthController', () => {
         password: 'Test1234',
       },
       log: {
+        warn: vi.fn(),
+        info: vi.fn(),
         error: vi.fn(),
       },
     };
@@ -170,6 +174,8 @@ describe('AuthController', () => {
         password: 'Wrongpass1',
       },
       log: {
+        warn: vi.fn(),
+        info: vi.fn(),
         error: vi.fn(),
       },
     };
@@ -207,6 +213,8 @@ describe('AuthController', () => {
         password: 'Test1234',
       },
       log: {
+        warn: vi.fn(),
+        info: vi.fn(),
         error: vi.fn(),
       },
     };
@@ -232,6 +240,8 @@ describe('AuthController', () => {
         username: '',
       },
       log: {
+        warn: vi.fn(),
+        info: vi.fn(),
         error: vi.fn(),
       },
     };
@@ -271,6 +281,8 @@ describe('AuthController', () => {
         id: 1,
       },
       log: {
+        warn: vi.fn(),
+        info: vi.fn(),
         error: vi.fn(),
       },
     };
@@ -303,6 +315,8 @@ describe('AuthController', () => {
     const request = {
       user: null,
       log: {
+        warn: vi.fn(),
+        info: vi.fn(),
         error: vi.fn(),
       },
     };
@@ -330,6 +344,8 @@ describe('AuthController', () => {
         id: 1,
       },
       log: {
+        warn: vi.fn(),
+        info: vi.fn(),
         error: vi.fn(),
       },
     };

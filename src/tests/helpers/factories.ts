@@ -3,7 +3,7 @@
  * 用于创建测试数据
  */
 import { UserModel } from '../../models/user.model.js';
-import { SessionModel } from '../../models/session.model.js';
+import { SessionModel } from '../../models/session/index.js';
 import { MachineModel } from '../../models/machine.model.js';
 import { hashPassword } from '../../utils/auth.js';
 import { UserRole, UserStatus, SessionCreateOptions } from '../../shared/types/index.js';

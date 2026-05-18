@@ -31,7 +31,7 @@ vi.mock('../../../models/operation-log.model.js', () => ({
   },
 }));
 
-vi.mock('../../../services/machine-grpc.service.js', () => ({
+vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: {
     isConnected: vi.fn(),
     sendRestartCommand: vi.fn(),
@@ -73,7 +73,7 @@ describe('AdminMachineService', () => {
     const logModule = await import('../../../models/operation-log.model.js');
     OperationLogModel = logModule.OperationLogModel;
 
-    const grpcModule = await import('../../../services/machine-grpc.service.js');
+    const grpcModule = await import('../../../services/machine-grpc/index.js');
     connectionManager = grpcModule.connectionManager;
   });
 

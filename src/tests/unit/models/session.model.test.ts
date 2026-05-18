@@ -7,7 +7,7 @@
  */
 import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
 import { db, initDatabase } from '../../../config/database.js';
-import { SessionModel } from '../../../models/session.model.js';
+import { SessionModel } from '../../../models/session/index.js';
 import { UserModel } from '../../../models/user.model.js';
 import { MachineModel } from '../../../models/machine.model.js';
 import { hashPassword } from '../../../utils/auth.js';

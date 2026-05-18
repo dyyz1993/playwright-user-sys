@@ -15,17 +15,20 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
     // 查找用户
     const user = await UserModel.findByUsername(username);
     if (!user) {
+      request.log.warn({ username }, 'Login failed: user not found');
       return sendError(reply, '用户名或密码错误', 401);
     }
 
     // 检查用户状态
     if (user.status !== UserStatus.ACTIVE) {
+      request.log.warn({ userId: user.id, status: user.status }, 'Login failed: account disabled');
       return sendError(reply, '用户账号已被禁用', 403);
     }
 
     // 验证密码
     const { valid, needsMigration } = await verifyPasswordWithMigration(password, user.password);
     if (!valid) {
+      request.log.warn({ userId: user.id, username }, 'Login failed: invalid password');
       return sendError(reply, '用户名或密码错误', 401);
     }
 

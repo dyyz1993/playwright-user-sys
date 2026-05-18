@@ -7,7 +7,7 @@ import { test, expect, describe } from 'vitest';
 describe('Profile 页面已使用点数', () => {
   describe('问题验证: used_credits 应该从数据库获取，而不是硬编码为 0', () => {
     test('SessionModel.getUserSessionStats 方法应该存在', async () => {
-      const { SessionModel } = await import('../../../models/session.model.js');
+      const { SessionModel } = await import('../../../models/session/index.js');
       expect(typeof SessionModel.getUserSessionStats).toBe('function');
     });
   });

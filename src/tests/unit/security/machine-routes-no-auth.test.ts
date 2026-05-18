@@ -36,7 +36,7 @@ vi.mock('../../../models/machine.model.js', () => ({
   },
 }));
 
-vi.mock('../../../models/session.model.js', () => ({
+vi.mock('../../../models/session/index.js', () => ({
   SessionModel: {},
 }));
 

@@ -673,7 +673,7 @@ export class MachineConnectionManager extends EventEmitter {
     try {
       logger.info(`收到会话截图更新 (${machineId}, ${session_id}): ${screenshot_url}`);
 
-      const { SessionModel } = await import('../../models/session.model.js');
+      const { SessionModel } = await import('../../models/session/index.js');
       const session = await SessionModel.findById(session_id);
       if (!session) {
         logger.warn(`会话不存在 (${session_id})`);
@@ -691,7 +691,7 @@ export class MachineConnectionManager extends EventEmitter {
   }
 
   private async handleSessionStatus(machineId: string, status: SessionStatusUpdate): Promise<void> {
-    const { SessionModel } = await import('../../models/session.model.js');
+    const { SessionModel } = await import('../../models/session/index.js');
     const { UserModel } = await import('../../models/user.model.js');
     const { SessionStatus } = await import('@shared/types/index.js');
     const { createWebhookEvent } = await import('../../utils/webhook.js');

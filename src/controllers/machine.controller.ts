@@ -2,7 +2,7 @@ import { logger } from '@shared/utils/logger.js';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { MachineModel } from '../models/machine.model.js';
-import { SessionModel } from '../models/session.model.js';
+import { SessionModel } from '../models/session/index.js';
 import { sendSuccess, sendError, sendCreated, sendPaginated, getSafeErrorMessage } from '../utils/response.js';
 import { PaginationQuery } from '@shared/types/index.js';
 import {
@@ -293,7 +293,7 @@ export async function restartMachine(request: FastifyRequest<IdParamRoute>, repl
     }
 
     // 导入必要的服务
-    const { connectionManager } = await import('../services/machine-grpc.service.js');
+    const { connectionManager } = await import('../services/machine-grpc/index.js');
 
     // 发送重启命令
     try {
@@ -345,7 +345,7 @@ export async function deleteMachine(request: FastifyRequest<IdParamRoute>, reply
     // 如果机器在线，先发送关闭命令并断开连接
     if (machine.status === 'online') {
       try {
-        const { connectionManager } = await import('../services/machine-grpc.service.js');
+        const { connectionManager } = await import('../services/machine-grpc/index.js');
         if (connectionManager.isConnected(machineId)) {
           // 先发送永久关闭命令，告诉机器端不要重连
           request.log.info(`发送永久关闭命令: ${machineId}`);

@@ -1,4 +1,4 @@
-import { SessionModel } from '../../models/session.model.js';
+import { SessionModel } from '../../models/session/index.js';
 
 export async function getSessionDetailPageData(sessionId: string) {
   const session = await SessionModel.getDetailById(sessionId);

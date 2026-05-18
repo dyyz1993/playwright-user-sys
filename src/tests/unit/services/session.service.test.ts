@@ -25,7 +25,7 @@ vi.mock('../../../models/user.model.js', () => ({
   },
 }));
 
-vi.mock('../../../models/session.model.js', () => ({
+vi.mock('../../../models/session/index.js', () => ({
   SessionModel: {
     create: vi.fn(),
     findById: vi.fn(),
@@ -47,7 +47,7 @@ vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: mockConnectionManager,
 }));
 
-vi.mock('../../../services/machine-grpc.service.js', () => ({
+vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: mockConnectionManager,
 }));
 
@@ -148,7 +148,7 @@ describe('SessionService', () => {
     const userModule = await import('../../../models/user.model.js');
     UserModel = userModule.UserModel;
 
-    const sessionModule = await import('../../../models/session.model.js');
+    const sessionModule = await import('../../../models/session/index.js');
     SessionModel = sessionModule.SessionModel;
 
     const machineModule = await import('../../../models/machine.model.js');

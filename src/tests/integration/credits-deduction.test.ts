@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { build } from '../../app.js';
 import { initDatabase } from '../../config/database.js';
 import { UserModel } from '../../models/user.model.js';
-import { SessionModel } from '../../models/session.model.js';
+import { SessionModel } from '../../models/session/index.js';
 import { SessionStatus } from '@shared/types/index.js';
 
 describe('点数扣除集成测试', () => {

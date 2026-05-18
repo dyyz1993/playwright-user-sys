@@ -1,5 +1,5 @@
 import * as UserService from '../../services/user.service.js';
-import { SessionModel } from '../../models/session.model.js';
+import { SessionModel } from '../../models/session/index.js';
 
 export async function getUserEditPageData(userId: number) {
   const user = await UserService.getUserById(userId);

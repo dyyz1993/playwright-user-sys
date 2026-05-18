@@ -2,7 +2,7 @@ import { CONFIG, MachineConfig, loadConfig } from './config.js';
 import { logger } from '@shared/utils/logger.js';
 import { browserService } from './browser.service.js';
 import { ProxyService } from './proxy.service.js';
-import { startGrpcServer, GrpcClient, setGrpcServerConfig } from './grpc.service.js';
+import { startGrpcServer, GrpcClient, setGrpcServerConfig } from './grpc/index.js';
 import { startHealthServer, stopHealthServer } from './health.service.js';
 import retry from 'async-retry';
 import { fileService } from './services/file.service.js';

@@ -11,7 +11,7 @@ import { MachineModel } from '../../../models/machine.model.js';
 import { clearAllTables } from '../../helpers/database.js';
 
 // Mock connectionManager for findAvailable test
-vi.mock('../../../services/machine-grpc.service.js', () => ({
+vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: {
     getAllConnectedMachines: vi.fn(() => []),
   },
@@ -194,7 +194,7 @@ describe('MachineModel', () => {
   // ========================================
   it('应该返回可用的已连接机器', async () => {
     // Mock connectionManager to return connected machines
-    const { connectionManager } = await import('../../../services/machine-grpc.service.js');
+    const { connectionManager } = await import('../../../services/machine-grpc/index.js');
     vi.mocked(connectionManager.getAllConnectedMachines).mockReturnValue(['machine-001']);
 
     await MachineModel.register({
@@ -215,7 +215,7 @@ describe('MachineModel', () => {
   // ========================================
   it('没有可用机器时应该返回null', async () => {
     // Mock 返回空数组
-    const { connectionManager } = await import('../../../services/machine-grpc.service.js');
+    const { connectionManager } = await import('../../../services/machine-grpc/index.js');
     vi.mocked(connectionManager.getAllConnectedMachines).mockReturnValue([]);
 
     const available = await MachineModel.findAvailable();
@@ -227,7 +227,7 @@ describe('MachineModel', () => {
   // ========================================
   it('所有机器满载时应该返回null', async () => {
     // Mock connectionManager to return connected machines
-    const { connectionManager } = await import('../../../services/machine-grpc.service.js');
+    const { connectionManager } = await import('../../../services/machine-grpc/index.js');
     vi.mocked(connectionManager.getAllConnectedMachines).mockReturnValue(['machine-001']);
 
     await MachineModel.register({

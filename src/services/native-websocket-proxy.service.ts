@@ -6,7 +6,7 @@ import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import httpProxy from 'http-proxy';
 import { UserModel } from '../models/user.model.js';
-import { SessionModel } from '../models/session.model.js';
+import { SessionModel } from '../models/session/index.js';
 import { logger } from '@shared/utils/logger.js';
 import { createBrowserSession, handleSessionDisconnect } from './session.service.js';
 import { memoryStore } from './memory-store.service.js';
@@ -85,6 +85,15 @@ export class NativeWebSocketProxyService {
 
       // Origin 校验：防止跨站 WebSocket 劫持（CSWSH）
       const origin = request.headers.origin;
+
+      // 生产环境：无 Origin 的连接应被拒绝（浏览器总会发送 Origin）
+      if (process.env.NODE_ENV === 'production' && !origin) {
+        logger.warn('WebSocket 连接被拒绝: 生产环境缺少 Origin header');
+        socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+
       if (origin) {
         const allowedHosts = ['localhost', '127.0.0.1'];
         try {

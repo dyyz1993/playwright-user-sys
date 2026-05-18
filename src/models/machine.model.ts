@@ -194,7 +194,7 @@ export class MachineModel {
       logger.info('开始查找可用机器');
 
       // 直接从 connectionManager 获取已连接的机器
-      const { connectionManager } = await import('../services/machine-grpc.service.js');
+      const { connectionManager } = await import('../services/machine-grpc/index.js');
       const connectedMachineIds = connectionManager.getAllConnectedMachines();
 
       logger.info(`当前有 ${connectedMachineIds.length} 台已连接的机器`);
@@ -460,7 +460,7 @@ export class MachineModel {
       }
 
       // 导入 gRPC 连接管理器
-      const { connectionManager } = await import('../services/machine-grpc.service.js');
+      const { connectionManager } = await import('../services/machine-grpc/index.js');
 
       const startTime = Date.now();
       try {

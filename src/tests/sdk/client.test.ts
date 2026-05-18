@@ -4,7 +4,7 @@ import { build } from '../helpers/app.js';
 import { initDatabase } from '../../config/database.js';
 import { Client } from '../../sdk/client.js';
 import { UserModel } from '../../models/user.model.js';
-import { SessionModel } from '../../models/session.model.js';
+import { SessionModel } from '../../models/session/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import { SessionStatus, UserRole, UserStatus } from '@shared/types/index.js';
 
@@ -13,7 +13,7 @@ describe('SDK 客户端集成测试', () => {
   let client: Client;
   let apiKey: string;
   let userId: number;
-  let createdSessionIds: string[] = [];
+  const createdSessionIds: string[] = [];
 
   // 在所有测试之前设置测试环境
   beforeAll(async () => {

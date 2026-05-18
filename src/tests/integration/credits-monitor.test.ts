@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { initDatabase } from '../../config/database.js';
 import { UserModel } from '../../models/user.model.js';
-import { SessionModel } from '../../models/session.model.js';
+import { SessionModel } from '../../models/session/index.js';
 import { SessionStatus } from '@shared/types/index.js';
 import { checkSessionCredits } from '../../services/credits-monitor.service.js';
 
-vi.mock('../../services/machine-grpc.service.js', () => ({
+vi.mock('../../services/machine-grpc/index.js', () => ({
   connectionManager: {
     getActiveConnections: vi.fn().mockReturnValue(['test-machine-1']),
     closeBrowser: vi.fn().mockResolvedValue(true),
@@ -23,7 +23,7 @@ vi.mock('../../utils/webhook.js', () => ({
 
 describe('点数监控服务集成测试', () => {
   let testUser: any;
-  let testMachineId = 'test-machine-1';
+  const testMachineId = 'test-machine-1';
 
   beforeAll(async () => {
     await initDatabase();

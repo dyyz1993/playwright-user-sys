@@ -13,14 +13,14 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vites
 import { FastifyInstance } from 'fastify';
 import { build } from '../../helpers/app.js';
 import { MachineModel } from '../../../models/machine.model.js';
-import { SessionModel } from '../../../models/session.model.js';
+import { SessionModel } from '../../../models/session/index.js';
 import { generateToken } from '../../../utils/auth.js';
 import { UserRole } from '../../../shared/types/index.js';
 import { initDatabase } from '../../../config/database.js';
 import { createTestUser, createTestAdmin, createTestMachine, createTestSession } from '../../helpers/factories.js';
 
 // Mock gRPC connection manager - 集成测试仅Mock外部依赖
-vi.mock('../../../services/machine-grpc.service.js', () => ({
+vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: {
     isConnected: vi.fn(() => true),
     getMachineStatus: vi.fn(async () => ({

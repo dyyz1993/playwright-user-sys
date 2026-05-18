@@ -18,7 +18,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vites
 import { FastifyInstance } from 'fastify';
 import { build } from '../../helpers/app.js';
 import { UserModel } from '../../../models/user.model.js';
-import { SessionModel } from '../../../models/session.model.js';
+import { SessionModel } from '../../../models/session/index.js';
 import { generateToken } from '../../../utils/auth.js';
 import { UserRole, SessionStatus } from '../../../shared/types/index.js';
 import { initDatabase } from '../../../config/database.js';
@@ -40,7 +40,7 @@ const mockConnectionManager = {
   }),
 };
 
-vi.mock('../../../services/machine-grpc.service.js', () => ({
+vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: mockConnectionManager,
 }));
 

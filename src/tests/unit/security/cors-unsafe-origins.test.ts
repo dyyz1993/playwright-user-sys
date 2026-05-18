@@ -14,7 +14,7 @@ import { build } from '../../helpers/app.js';
 vi.mock('../../../models/machine.model.js', () => ({
   MachineModel: {},
 }));
-vi.mock('../../../models/session.model.js', () => ({
+vi.mock('../../../models/session/index.js', () => ({
   SessionModel: {},
 }));
 vi.mock('../../../models/operation-log.model.js', () => ({

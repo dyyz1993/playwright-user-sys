@@ -3,7 +3,7 @@ import { z } from 'zod';
 import path from 'path';
 import fs from 'fs/promises';
 import http from 'http';
-import { SessionModel } from '../models/session.model.js';
+import { SessionModel } from '../models/session/index.js';
 import { UserModel } from '../models/user.model.js';
 import { sendSuccess, sendError, sendCreated, getSafeErrorMessage } from '../utils/response.js';
 import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/types/index.js';
@@ -20,7 +20,7 @@ import { IdParamRoute, PaginationQueryRoute } from '@shared/types/routes.js';
 import { logger } from '@shared/utils/logger.js';
 
 import * as sessionService from '../services/session.service.js';
-import { connectionManager } from '../services/machine-grpc.service.js';
+import { connectionManager } from '../services/machine-grpc/index.js';
 
 interface User {
   id: number;
@@ -316,7 +316,7 @@ export async function getSessionScreenshot(request: FastifyRequest<IdParamRoute>
 
     if (session.machine_id) {
       try {
-        const { connectionManager } = await import('../services/machine-grpc.service.js');
+        const { connectionManager } = await import('../services/machine-grpc/index.js');
         await connectionManager.requestScreenshot(session.machine_id, sessionId);
         await new Promise((resolve) => setTimeout(resolve, 3000));
       } catch (screenshotErr: unknown) {

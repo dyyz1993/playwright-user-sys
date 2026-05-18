@@ -1,4 +1,4 @@
-import { SessionModel } from '../models/session.model.js';
+import { SessionModel } from '../models/session/index.js';
 import { MachineModel } from '../models/machine.model.js';
 import { SessionStatus, SessionCreateOptions, WebhookEventType } from '@shared/types/index.js';
 import { logger } from '@shared/utils/logger.js';

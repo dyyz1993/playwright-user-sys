@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { UserRole, SessionStatus } from '../../../shared/types/index.js';
 
 // Mock 所有依赖
-vi.mock('../../../models/session.model.js', () => ({
+vi.mock('../../../models/session/index.js', () => ({
   SessionModel: {
     findById: vi.fn(),
     findByUserId: vi.fn(),
@@ -40,7 +40,7 @@ vi.mock('../../../services/session.service.js', () => ({
   releaseSession: vi.fn(),
 }));
 
-vi.mock('../../../services/machine-grpc.service.js', () => ({
+vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: {
     closeBrowser: vi.fn(),
   },
@@ -90,7 +90,7 @@ describe('SessionController', () => {
   beforeEach(async () => {
     vi.resetModules();
 
-    const sessionModule = await import('../../../models/session.model.js');
+    const sessionModule = await import('../../../models/session/index.js');
     SessionModel = sessionModule.SessionModel;
 
     const machineModule = await import('../../../models/machine.model.js');
@@ -103,7 +103,7 @@ describe('SessionController', () => {
     createBrowserSession = sessionServiceModule.createBrowserSession;
     sessionReleaseSession = sessionServiceModule.releaseSession;
 
-    const machineGrpcModule = await import('../../../services/machine-grpc.service.js');
+    const machineGrpcModule = await import('../../../services/machine-grpc/index.js');
     connectionManager = machineGrpcModule.connectionManager;
 
     const responseModule = await import('../../../utils/response.js');

@@ -1,5 +1,5 @@
 import type { User } from '../../models/user.model.js';
-import type { Session } from '../../models/session.model.js';
+import type { Session } from '../../models/session/index.js';
 import type { MachineInfo } from '@shared/types/index.js';
 import type {
   UserResponseDTO,

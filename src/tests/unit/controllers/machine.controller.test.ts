@@ -17,7 +17,7 @@ vi.mock('../../../models/machine.model.js', () => ({
   },
 }));
 
-vi.mock('../../../models/session.model.js', () => ({
+vi.mock('../../../models/session/index.js', () => ({
   SessionModel: {
     findByMachineId: vi.fn(),
     findActiveSessionsByMachineId: vi.fn(),
@@ -35,7 +35,7 @@ vi.mock('../../../services/memory-store.service.js', () => ({
   },
 }));
 
-vi.mock('../../../services/machine-grpc.service.js', () => ({
+vi.mock('../../../services/machine-grpc/index.js', () => ({
   connectionManager: {
     isConnected: vi.fn(),
     sendRestartCommand: vi.fn(),
@@ -91,13 +91,13 @@ describe('MachineController', () => {
     const machineModule = await import('../../../models/machine.model.js');
     MachineModel = machineModule.MachineModel;
 
-    const sessionModule = await import('../../../models/session.model.js');
+    const sessionModule = await import('../../../models/session/index.js');
     SessionModel = sessionModule.SessionModel;
 
     const memoryModule = await import('../../../services/memory-store.service.js');
     memoryStore = memoryModule.memoryStore;
 
-    const grpcModule = await import('../../../services/machine-grpc.service.js');
+    const grpcModule = await import('../../../services/machine-grpc/index.js');
     connectionManager = grpcModule.connectionManager;
 
     const responseModule = await import('../../../utils/response.js');

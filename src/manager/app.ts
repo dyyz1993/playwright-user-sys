@@ -92,7 +92,7 @@ export async function startManager() {
     logger.info('内存存储服务已初始化');
 
     // 启动 gRPC 服务器
-    const { startGrpcServer } = await import('../services/machine-grpc.service.js');
+    const { startGrpcServer } = await import('../services/machine-grpc/index.js');
     const grpcPort = parseInt(env.GRPC_PORT + '' || '50051', 10);
     startGrpcServer(grpcPort);
 

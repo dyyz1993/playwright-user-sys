@@ -1,12 +1,22 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
-import { errorResponseSchema, idParamSchema, numericIdParamSchema } from '../../schemas/index.js';
+import { errorResponseSchema, idParamSchema, numericIdParamSchema, timestampSchema } from '../../schemas/index.js';
 import { OperationLogQueryRoute, OperationLogStatsQueryRoute } from '@shared/types/routes.js';
 import { createAuthenticate } from './authenticate.js';
 import { getSafeErrorMessage } from '../../utils/response.js';
 import { tryCatchWrapper } from '../../utils/try-catch-wrapper.js';
 import * as AdminOpLogService from '../../services/admin-operation-log.service.js';
+
+const operationLogItemSchema = z.object({
+  id: z.number(),
+  admin_id: z.number(),
+  action: z.string(),
+  details: z.record(z.unknown()).nullable().optional(),
+  target_user_id: z.number().nullable(),
+  created_at: timestampSchema,
+  updated_at: timestampSchema,
+});
 
 export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);
@@ -22,17 +32,7 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
             z.object({
               success: z.boolean(),
               data: z.object({
-                items: z.array(
-                  z.object({
-                    id: z.number(),
-                    admin_id: z.number(),
-                    action: z.string(),
-                    details: z.any().optional(),
-                    target_user_id: z.number().nullable(),
-                    created_at: z.any(),
-                    updated_at: z.any(),
-                  })
-                ),
+                items: z.array(operationLogItemSchema),
                 total: z.number(),
                 page: z.number(),
                 limit: z.number(),
@@ -96,7 +96,12 @@ export async function adminApiOperationLogRoutes(fastify: FastifyInstance): Prom
             z.object({
               success: z.boolean(),
               data: z.object({
-                items: z.array(z.any()),
+                items: z.array(
+                  operationLogItemSchema.extend({
+                    username: z.string().optional(),
+                    role: z.string().optional(),
+                  })
+                ),
                 total: z.number(),
                 page: z.number(),
                 limit: z.number(),

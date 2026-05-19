@@ -32,7 +32,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
                 instanceCount: z.number(),
                 maxInstances: z.number(),
                 status: z.string(),
-                lastSeen: z.any(),
+                lastSeen: z.date(),
                 activeSessions: z.number(),
                 healthStatus: z.string().optional(),
               }),
@@ -167,7 +167,7 @@ export default async function adminMachineApiRoutes(fastify: FastifyInstance): P
                   })
                   .optional(),
                 error: z.string().optional(),
-                checkedAt: z.any(),
+                checkedAt: z.date(),
               }),
             })
           ),

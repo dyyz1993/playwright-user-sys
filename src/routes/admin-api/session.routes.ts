@@ -1,10 +1,34 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
-import { errorResponseSchema, idParamSchema, numericIdParamSchema } from '../../schemas/index.js';
+import { errorResponseSchema, idParamSchema, numericIdParamSchema, timestampSchema } from '../../schemas/index.js';
+import { sessionOptionsSchema } from '../../schemas/session.schema.js';
 import { createAuthenticate } from './authenticate.js';
 import { tryCatchWrapper } from '../../utils/try-catch-wrapper.js';
 import * as AdminSessionService from '../../services/admin-session.service.js';
+
+const sessionListItemAdminSchema = z.object({
+  id: z.string(),
+  user_id: z.number(),
+  machine_id: z.string().nullable(),
+  port: z.number().nullable(),
+  status: z.string(),
+  options: sessionOptionsSchema,
+  start_time: timestampSchema,
+  end_time: timestampSchema.nullable(),
+  duration: z.number(),
+  credits_used: z.number(),
+  created_at: timestampSchema,
+});
+
+const sessionDetailAdminSchema = sessionListItemAdminSchema.extend({
+  username: z.string(),
+  machine_name: z.string().nullable(),
+  last_activity: timestampSchema.nullable(),
+  error_message: z.string().nullable(),
+  screenshot_url: z.string().nullable(),
+  updated_at: timestampSchema,
+});
 
 export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<void> {
   const authenticate = createAuthenticate(fastify);
@@ -72,21 +96,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
             z.object({
               success: z.boolean(),
               data: z.object({
-                items: z.array(
-                  z.object({
-                    id: z.string(),
-                    user_id: z.number(),
-                    machine_id: z.string().nullable(),
-                    port: z.number().nullable(),
-                    status: z.string(),
-                    options: z.any().nullable(),
-                    start_time: z.any(),
-                    end_time: z.any().nullable(),
-                    duration: z.number(),
-                    credits_used: z.number(),
-                    created_at: z.any(),
-                  })
-                ),
+                items: z.array(sessionListItemAdminSchema),
                 total: z.number(),
                 page: z.number(),
                 limit: z.number(),
@@ -147,7 +157,11 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
             z.object({
               success: z.boolean(),
               data: z.object({
-                items: z.array(z.any()),
+                items: z.array(
+                  sessionListItemAdminSchema.extend({
+                    username: z.string().optional(),
+                  })
+                ),
                 total: z.number(),
                 page: z.number(),
                 limit: z.number(),
@@ -263,25 +277,7 @@ export async function adminApiSessionRoutes(fastify: FastifyInstance): Promise<v
           200: zodToJsonSchema(
             z.object({
               success: z.boolean(),
-              data: z.object({
-                id: z.string(),
-                user_id: z.number(),
-                username: z.string(),
-                machine_id: z.string().nullable(),
-                machine_name: z.string().nullable(),
-                port: z.number().nullable(),
-                status: z.string(),
-                options: z.any().nullable(),
-                start_time: z.any(),
-                end_time: z.any().nullable(),
-                duration: z.number(),
-                credits_used: z.number(),
-                last_activity: z.any().nullable(),
-                error_message: z.string().nullable(),
-                screenshot_url: z.string().nullable(),
-                created_at: z.any(),
-                updated_at: z.any(),
-              }),
+              data: sessionDetailAdminSchema,
             })
           ),
           400: zodToJsonSchema(errorResponseSchema),

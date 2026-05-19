@@ -71,7 +71,7 @@ async function runMigrations(): Promise<void> {
 
   try {
     const [rows] = await testDb.raw('SHOW TABLES');
-    const tableCount = (rows as any[]).length;
+    const tableCount = (rows as Record<string, unknown>[]).length;
 
     if (tableCount === 0) {
       console.log('[全局初始化] 运行数据库迁移...');

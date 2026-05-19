@@ -3,10 +3,10 @@ import { logger } from '@shared/utils/logger.js';
 import { browserService } from '../browser.service.js';
 import { setGrpcConnected } from '../health.service.js';
 import { getCpuUsage, getMemoryUsage, getDiskUsage } from './system-info.js';
-import type { ManagerMessage, HeartbeatRequest } from '../../shared/types/grpc.js';
+import type { ManagerMessage, HeartbeatRequest, MachineMessage } from '../../shared/types/grpc.js';
 
 export class ConnectionManager {
-  private call: grpc.ClientDuplexStream<any, ManagerMessage> | null = null;
+  private call: grpc.ClientDuplexStream<MachineMessage, ManagerMessage> | null = null;
   private connected: boolean = false;
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private machineId: string;
@@ -19,7 +19,7 @@ export class ConnectionManager {
     this.onReconnectNeeded = onReconnectNeeded;
   }
 
-  setCall(call: grpc.ClientDuplexStream<any, ManagerMessage>): void {
+  setCall(call: grpc.ClientDuplexStream<MachineMessage, ManagerMessage>): void {
     this.call = call;
   }
 
@@ -32,11 +32,11 @@ export class ConnectionManager {
     return this.connected;
   }
 
-  getCall(): grpc.ClientDuplexStream<any, ManagerMessage> | null {
+  getCall(): grpc.ClientDuplexStream<MachineMessage, ManagerMessage> | null {
     return this.call;
   }
 
-  setupStreamHandlers(call: grpc.ClientDuplexStream<any, ManagerMessage>): void {
+  setupStreamHandlers(call: grpc.ClientDuplexStream<MachineMessage, ManagerMessage>): void {
     this.call = call;
 
     call.on('data', (message: ManagerMessage) => {

@@ -9,8 +9,8 @@ export interface HeartbeatHandle {
 }
 
 export interface HeartbeatSocket {
-  on(event: string, listener: (...args: any[]) => void): this;
-  removeListener(event: string, listener: (...args: any[]) => void): this;
+  on(event: string, listener: (...args: unknown[]) => void): this;
+  removeListener(event: string, listener: (...args: unknown[]) => void): this;
   setKeepAlive?(enable: boolean, initialDelay: number): this;
   destroyed?: boolean;
 }

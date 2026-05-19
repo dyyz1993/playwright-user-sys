@@ -74,7 +74,7 @@ export enum SessionStatus {
 }
 
 // 基础响应类型
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -102,7 +102,7 @@ export interface PaginatedResponse<T> {
 }
 
 // 类型化的 Fastify 处理函数
-export type TypedHandler<T = any, U = any> = (
+export type TypedHandler<T = unknown, U = unknown> = (
   request: FastifyRequest<RouteGenericInterface & { Body: T }>,
   reply: FastifyReply
 ) => Promise<ApiResponse<U>>;
@@ -191,7 +191,7 @@ export enum WebhookEventType {
 }
 
 // Webhook 事件数据
-export interface WebhookEvent<T = any> {
+export interface WebhookEvent<T = unknown> {
   type: WebhookEventType;
   timestamp: string;
   data: T;

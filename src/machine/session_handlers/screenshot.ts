@@ -8,7 +8,7 @@ import { clampScreenshotSize } from '../utils/screenshot-size.js';
 
 export interface ScreenshotContext {
   getSessionPage(sessionId: string): Promise<Page | null>;
-  emit(event: string | symbol, ...args: any[]): boolean;
+  emit(event: string | symbol, ...args: unknown[]): boolean;
 }
 
 export async function takeScreenshot(

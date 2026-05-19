@@ -9,16 +9,18 @@ function readSrc(relPath: string): string {
 }
 
 describe('P1-10 FIX: gRPC calls now have deadline/timeout', () => {
-  const connectionManagerPath = 'src/services/machine-grpc/connection-manager.ts';
+  const commandsPath = 'src/services/machine-grpc/connection-commands.ts';
+  const typesPath = 'src/services/machine-grpc/connection-types.ts';
+  const poolPath = 'src/services/machine-grpc/connection-pool.ts';
 
   it('should prove the source file NOW contains "deadline" usage via withDeadline', () => {
-    const content = readSrc(connectionManagerPath);
+    const content = readSrc(commandsPath);
 
     expect(content).toContain('withDeadline');
   });
 
   it('should prove withDeadline utility function exists and uses setTimeout', () => {
-    const content = readSrc(connectionManagerPath);
+    const content = readSrc(typesPath);
 
     expect(content).toContain('function withDeadline');
     expect(content).toContain('Promise.race');
@@ -26,7 +28,7 @@ describe('P1-10 FIX: gRPC calls now have deadline/timeout', () => {
   });
 
   it('should identify all 6 RPC call sites that NOW have deadlines', () => {
-    const content = readSrc(connectionManagerPath);
+    const content = readSrc(commandsPath);
 
     const rpcMethods = [
       'LaunchBrowser',
@@ -44,7 +46,7 @@ describe('P1-10 FIX: gRPC calls now have deadline/timeout', () => {
   });
 
   it('should count the number of withDeadline usages (should be 6 for 6 RPC methods)', () => {
-    const content = readSrc(connectionManagerPath);
+    const content = readSrc(commandsPath);
 
     const withDeadlineMatches = content.match(/withDeadline\s*\(/g);
     expect(withDeadlineMatches).not.toBeNull();
@@ -52,7 +54,7 @@ describe('P1-10 FIX: gRPC calls now have deadline/timeout', () => {
   });
 
   it('should prove standard RPC methods use 30s (30000ms) deadline', () => {
-    const content = readSrc(connectionManagerPath);
+    const content = readSrc(commandsPath);
 
     const standardRpcMethods = ['LaunchBrowser', 'CloseBrowser', 'GetMachineStatus', 'TransferFile', 'InjectFile'];
 
@@ -63,7 +65,7 @@ describe('P1-10 FIX: gRPC calls now have deadline/timeout', () => {
   });
 
   it('should prove DownloadAndInjectFile uses a longer deadline (60s/60000ms) vs others (30s)', () => {
-    const content = readSrc(connectionManagerPath);
+    const content = readSrc(commandsPath);
 
     const downloadPattern = /DownloadAndInjectFile[\s\S]*?\}\s*\)\s*,\s*60000\s*,\s*`DownloadAndInjectFile/;
     expect(downloadPattern.test(content), 'DownloadAndInjectFile should use 60000ms deadline').toBe(true);
@@ -73,7 +75,7 @@ describe('P1-10 FIX: gRPC calls now have deadline/timeout', () => {
   });
 
   it('should prove the withDeadline timeout error includes the RPC label for debugging', () => {
-    const content = readSrc(connectionManagerPath);
+    const content = readSrc(typesPath);
 
     expect(content).toContain('gRPC call timeout:');
     expect(content).toContain('${label}');
@@ -81,7 +83,7 @@ describe('P1-10 FIX: gRPC calls now have deadline/timeout', () => {
   });
 
   it('should verify each RPC method passes a descriptive label to withDeadline', () => {
-    const content = readSrc(connectionManagerPath);
+    const content = readSrc(commandsPath);
 
     const rpcMethods = [
       'LaunchBrowser',
@@ -100,7 +102,7 @@ describe('P1-10 FIX: gRPC calls now have deadline/timeout', () => {
   });
 
   it('should confirm keepalive options still exist for connection health', () => {
-    const content = readSrc(connectionManagerPath);
+    const content = readSrc(poolPath);
 
     expect(content).toContain('grpc.keepalive_time_ms');
     expect(content).toContain('grpc.keepalive_timeout_ms');

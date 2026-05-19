@@ -187,6 +187,6 @@ describe('services/machine-grpc MachineConnectionManager', () => {
 
     cm.setProto(mockProto);
 
-    expect(cm['proto']).toBe(mockProto);
+    expect(cm['pool']['proto']).toBe(mockProto);
   });
 });

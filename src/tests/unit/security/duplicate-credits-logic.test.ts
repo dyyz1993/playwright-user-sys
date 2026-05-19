@@ -50,7 +50,7 @@ describe('P1-8 FIX: Credits calculation consolidated to shared utility', () => {
   });
 
   it('should prove connection-manager.ts imports and uses calculateCreditsUsed', () => {
-    const content = readSrc('src/services/machine-grpc/connection-manager.ts');
+    const content = readSrc('src/services/machine-grpc/connection-message-handler.ts');
 
     expect(content, 'Should import calculateCreditsUsed').toMatch(
       /import\s*\{[^}]*calculateCreditsUsed[^}]*\}\s*from\s*['"]@shared\/utils\/credits-calculator\.js['"]/
@@ -115,7 +115,7 @@ describe('P1-8 FIX: Credits calculation consolidated to shared utility', () => {
       'src/services/session.service.ts',
       'src/models/session/session-status.model.ts',
       'src/services/credits-monitor.service.ts',
-      'src/services/machine-grpc/connection-manager.ts',
+      'src/services/machine-grpc/connection-message-handler.ts',
     ];
 
     for (const file of files) {

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 提问
+    url: https://github.com/dyyz1993/playwright-user-sys/discussions
+    about: 使用 Discussions 进行提问和讨论

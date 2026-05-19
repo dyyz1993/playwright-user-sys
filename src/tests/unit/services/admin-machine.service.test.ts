@@ -49,9 +49,9 @@ vi.mock('../../../shared/utils/logger.js', () => ({
 }));
 
 describe('AdminMachineService', () => {
-  let MachineModel: any;
-  let OperationLogModel: any;
-  let connectionManager: any;
+  let MachineModel: ReturnType<typeof vi.fn>;
+  let OperationLogModel: ReturnType<typeof vi.fn>;
+  let connectionManager: ReturnType<typeof vi.fn>;
 
   const mockMachine = {
     id: 'machine-001',

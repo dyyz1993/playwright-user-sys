@@ -32,8 +32,8 @@ vi.mock('../../../shared/utils/logger.js', () => ({
 }));
 
 describe('AdminOperationLogService', () => {
-  let OperationLogModel: any;
-  let UserModel: any;
+  let OperationLogModel: ReturnType<typeof vi.fn>;
+  let UserModel: ReturnType<typeof vi.fn>;
 
   const mockUser = {
     id: 1,

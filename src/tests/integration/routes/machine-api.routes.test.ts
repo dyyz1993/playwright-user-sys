@@ -36,8 +36,8 @@ vi.mock('../../../services/machine-grpc/index.js', () => ({
 
 describe('机器管理 API 集成测试', () => {
   let app: FastifyInstance;
-  let testAdmin: any;
-  let testUser: any;
+  let testAdmin: ReturnType<typeof vi.fn>;
+  let testUser: ReturnType<typeof vi.fn>;
   let adminToken: string;
   let userToken: string;
 
@@ -287,7 +287,7 @@ describe('机器管理 API 集成测试', () => {
   // A-03: 更新机器配置
   // ========================================
   describe('PUT /api/admin/machines/:id - 更新机器配置', () => {
-    let machineToUpdate: any;
+    let machineToUpdate: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       machineToUpdate = await createTestMachine();
@@ -598,7 +598,7 @@ describe('机器管理 API 集成测试', () => {
   // B-04: 资源使用率验证
   // ========================================
   describe('资源使用率字段验证', () => {
-    let testMachine: any;
+    let testMachine: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       testMachine = await createTestMachine();
@@ -713,7 +713,7 @@ describe('机器管理 API 集成测试', () => {
   // B-06: 状态枚举验证
   // ========================================
   describe('状态字段验证', () => {
-    let testMachine: any;
+    let testMachine: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       testMachine = await createTestMachine();
@@ -775,7 +775,7 @@ describe('机器管理 API 集成测试', () => {
   // C-01: 健康检查测试
   // ========================================
   describe('POST /api/admin/machines/:id/health-check - 健康检查', () => {
-    let testMachine: any;
+    let testMachine: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       testMachine = await createTestMachine();
@@ -834,7 +834,7 @@ describe('机器管理 API 集成测试', () => {
   // C-02: 批量健康检查测试
   // ========================================
   describe('POST /api/admin/machines/health-check/batch - 批量健康检查', () => {
-    let machines: any[];
+    let machines: unknown[];
 
     beforeEach(async () => {
       machines = [];
@@ -902,7 +902,7 @@ describe('机器管理 API 集成测试', () => {
   // C-03: 批量重启测试
   // ========================================
   describe('POST /api/admin/machines/batch-restart - 批量重启', () => {
-    let machines: any[];
+    let machines: unknown[];
 
     beforeEach(async () => {
       machines = [];
@@ -1057,7 +1057,7 @@ describe('机器管理 API 集成测试', () => {
   // C-05: 状态转换测试
   // ========================================
   describe('机器状态转换测试', () => {
-    let testMachine: any;
+    let testMachine: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       testMachine = await createTestMachine();
@@ -1130,8 +1130,8 @@ describe('机器管理 API 集成测试', () => {
   // C-06: 机器与会话关联测试
   // ========================================
   describe('机器与会话关联测试', () => {
-    let testMachine: any;
-    let testUser: any;
+    let testMachine: ReturnType<typeof vi.fn>;
+    let testUser: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       testMachine = await createTestMachine();
@@ -1142,7 +1142,7 @@ describe('机器管理 API 集成测试', () => {
       // 创建会话
       const session = await createTestSession(testUser.id, {
         machine_id: testMachine.id,
-        status: 'active' as any,
+        status: 'active' as unknown as Record<string, unknown>,
       });
 
       // 标记机器离线
@@ -1166,7 +1166,7 @@ describe('机器管理 API 集成测试', () => {
       // 创建会话
       await createTestSession(testUser.id, {
         machine_id: testMachine.id,
-        status: 'active' as any,
+        status: 'active' as unknown as Record<string, unknown>,
       });
 
       // 增加实例计数
@@ -1238,7 +1238,7 @@ describe('机器管理 API 集成测试', () => {
   // D-01: 获取所有机器
   // ========================================
   describe('GET /machines - 获取所有机器', () => {
-    let machines: any[];
+    let machines: unknown[];
 
     beforeEach(async () => {
       machines = [];
@@ -1311,7 +1311,7 @@ describe('机器管理 API 集成测试', () => {
   // D-02: 删除机器
   // ========================================
   describe('DELETE /machines/:id - 删除机器', () => {
-    let machineToDelete: any;
+    let machineToDelete: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       machineToDelete = await createTestMachine();
@@ -1594,7 +1594,7 @@ describe('机器管理 API 集成测试', () => {
 
       for (const endpoint of adminEndpoints) {
         const response = await app.inject({
-          method: endpoint.method as any,
+          method: endpoint.method as unknown as Record<string, unknown>,
           url: endpoint.url,
           headers: {
             Authorization: `Bearer ${userToken}`,
@@ -1616,7 +1616,7 @@ describe('机器管理 API 集成测试', () => {
 
       for (const endpoint of endpoints) {
         const response = await app.inject({
-          method: endpoint.method as any,
+          method: endpoint.method as unknown as Record<string, unknown>,
           url: endpoint.url,
           payload: endpoint.method === 'POST' ? {} : undefined,
         });

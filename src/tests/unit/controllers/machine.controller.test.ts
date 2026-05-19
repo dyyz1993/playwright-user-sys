@@ -80,17 +80,17 @@ vi.mock('../../../utils/response.js', () => ({
 }));
 
 describe('MachineController', () => {
-  let MachineModel: any;
-  let SessionModel: any;
-  let memoryStore: any;
-  let connectionManager: any;
-  let sendSuccess: any;
-  let sendError: any;
-  let sendCreated: any;
-  let sendPaginated: any;
-  let forceCheckAllMachines: any;
-  let cleanupOldMachines: any;
-  let logAndSendError: any;
+  let MachineModel: ReturnType<typeof vi.fn>;
+  let SessionModel: ReturnType<typeof vi.fn>;
+  let memoryStore: ReturnType<typeof vi.fn>;
+  let connectionManager: ReturnType<typeof vi.fn>;
+  let sendSuccess: ReturnType<typeof vi.fn>;
+  let sendError: ReturnType<typeof vi.fn>;
+  let sendCreated: ReturnType<typeof vi.fn>;
+  let sendPaginated: ReturnType<typeof vi.fn>;
+  let forceCheckAllMachines: ReturnType<typeof vi.fn>;
+  let cleanupOldMachines: ReturnType<typeof vi.fn>;
+  let logAndSendError: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -129,9 +129,9 @@ describe('MachineController', () => {
       const request = {
         body: { id: 'machine-1', hostname: 'test-host', ip: '192.168.1.1' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await registerMachine(request, reply);
 
@@ -149,9 +149,9 @@ describe('MachineController', () => {
       const request = {
         body: { id: '', hostname: '', ip: 'invalid-ip' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await registerMachine(request, reply);
 
@@ -166,9 +166,9 @@ describe('MachineController', () => {
       const request = {
         body: { id: 'machine-1', hostname: 'test-host', ip: '192.168.1.1' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await registerMachine(request, reply);
 
@@ -189,9 +189,9 @@ describe('MachineController', () => {
         params: { id: 'machine-1' },
         body: { cpuUsage: 80, memoryUsage: 50, diskUsage: 30 },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await updateMachineStatus(request, reply);
 
@@ -207,9 +207,9 @@ describe('MachineController', () => {
         params: { id: 'nonexistent' },
         body: { cpuUsage: 80, memoryUsage: 50, diskUsage: 30 },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await updateMachineStatus(request, reply);
 
@@ -223,9 +223,9 @@ describe('MachineController', () => {
         params: { id: 'machine-1' },
         body: { cpuUsage: 200, memoryUsage: 50, diskUsage: 30 },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await updateMachineStatus(request, reply);
 
@@ -273,9 +273,9 @@ describe('MachineController', () => {
       const request = {
         query: { page: '1', limit: '10' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await getAllMachines(request, reply);
 
@@ -303,9 +303,9 @@ describe('MachineController', () => {
       const request = {
         query: { page: '1', limit: '10' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await getAllMachines(request, reply);
 
@@ -336,9 +336,9 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'm1' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await getMachineById(request, reply);
 
@@ -361,9 +361,9 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'm1' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await getMachineById(request, reply);
 
@@ -380,9 +380,9 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'nonexistent' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await getMachineById(request, reply);
 
@@ -400,9 +400,9 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'm1' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await markMachineOffline(request, reply);
 
@@ -418,9 +418,9 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'nonexistent' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await markMachineOffline(request, reply);
 
@@ -438,9 +438,9 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'm1' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await healthCheck(request, reply);
 
@@ -456,9 +456,9 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'm1' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await healthCheck(request, reply);
 
@@ -479,9 +479,9 @@ describe('MachineController', () => {
       const request = {
         body: { machineIds: ['m1', 'm2'] },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await batchHealthCheck(request, reply);
 
@@ -501,9 +501,9 @@ describe('MachineController', () => {
       const request = {
         body: { machineIds: [] },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await batchHealthCheck(request, reply);
 
@@ -516,9 +516,9 @@ describe('MachineController', () => {
       const request = {
         body: { machineIds: 'not-array' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await batchHealthCheck(request, reply);
 
@@ -538,9 +538,9 @@ describe('MachineController', () => {
         params: { id: 'm1' },
         body: { ip: '10.0.0.5' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await updateMachineConfig(request, reply);
 
@@ -556,9 +556,9 @@ describe('MachineController', () => {
         params: { id: 'nonexistent' },
         body: { ip: '10.0.0.5' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await updateMachineConfig(request, reply);
 
@@ -574,9 +574,9 @@ describe('MachineController', () => {
         params: { id: 'm1' },
         body: { ip: 'not-an-ip' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await updateMachineConfig(request, reply);
 
@@ -592,9 +592,9 @@ describe('MachineController', () => {
         params: { id: 'm1' },
         body: { grpcPort: 99999 },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await updateMachineConfig(request, reply);
 
@@ -610,9 +610,9 @@ describe('MachineController', () => {
         params: { id: 'm1' },
         body: { proxyPort: 0 },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await updateMachineConfig(request, reply);
 
@@ -629,13 +629,13 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'nonexistent' },
         log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
       const reply = {
         status: vi.fn().mockReturnValue({
           send: vi.fn(),
         }),
-      } as any;
+      } as unknown as Record<string, unknown>;
 
       await deleteMachine(request, reply);
 
@@ -651,13 +651,13 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'm1' },
         log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
       const reply = {
         status: vi.fn().mockReturnValue({
           send: vi.fn(),
         }),
-      } as any;
+      } as unknown as Record<string, unknown>;
 
       await deleteMachine(request, reply);
 
@@ -675,13 +675,13 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'm1' },
         log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
       const reply = {
         status: vi.fn().mockReturnValue({
           send: vi.fn(),
         }),
-      } as any;
+      } as unknown as Record<string, unknown>;
 
       await deleteMachine(request, reply);
 
@@ -698,9 +698,9 @@ describe('MachineController', () => {
 
       const request = {
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await refreshMachineStatus(request, reply);
 
@@ -721,9 +721,9 @@ describe('MachineController', () => {
 
       const request = {
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await refreshMachineStatus(request, reply);
 
@@ -740,9 +740,9 @@ describe('MachineController', () => {
       const request = {
         body: { daysThreshold: 60 },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await controllerCleanup(request, reply);
 
@@ -763,9 +763,9 @@ describe('MachineController', () => {
       const request = {
         body: {},
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await controllerCleanup(request, reply);
 
@@ -780,9 +780,9 @@ describe('MachineController', () => {
       const request = {
         body: {},
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await controllerCleanup(request, reply);
 
@@ -799,9 +799,9 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'nonexistent' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await restartMachine(request, reply);
 
@@ -817,9 +817,9 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'm1' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await restartMachine(request, reply);
 
@@ -837,9 +837,9 @@ describe('MachineController', () => {
       const request = {
         params: { id: 'm1' },
         log: { error: vi.fn() },
-      } as any;
+      } as unknown as Record<string, unknown>;
 
-      const reply = {} as any;
+      const reply = {} as unknown as Record<string, unknown>;
 
       await restartMachine(request, reply);
 

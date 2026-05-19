@@ -141,7 +141,7 @@ describe('UserModel', () => {
   });
 
   it('验证不存在用户的密码应该返回false', async () => {
-    const isValid = await UserModel.verifyPassword(null as any, 'password');
+    const isValid = await UserModel.verifyPassword(null as unknown as Record<string, unknown>, 'password');
     expect(isValid).toBe(false);
   });
 

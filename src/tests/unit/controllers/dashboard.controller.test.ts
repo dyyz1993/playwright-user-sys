@@ -24,9 +24,9 @@ vi.mock('../../../services/user.service.js', () => ({
 }));
 
 describe('DashboardController', () => {
-  let SessionModel: any;
-  let MachineModel: any;
-  let UserService: any;
+  let SessionModel: ReturnType<typeof vi.fn>;
+  let MachineModel: ReturnType<typeof vi.fn>;
+  let UserService: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();

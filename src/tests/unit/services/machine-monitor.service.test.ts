@@ -59,13 +59,13 @@ vi.mock('../../../services/memory-store.service.js', () => ({
 }));
 
 describe('MachineMonitorService', () => {
-  let MachineModel: any;
-  let SessionModel: any;
-  let UserModel: any;
-  let memoryStore: any;
-  let connectionManager: any;
-  let logger: any;
-  let createWebhookEvent: any;
+  let MachineModel: ReturnType<typeof vi.fn>;
+  let SessionModel: ReturnType<typeof vi.fn>;
+  let UserModel: ReturnType<typeof vi.fn>;
+  let memoryStore: ReturnType<typeof vi.fn>;
+  let connectionManager: ReturnType<typeof vi.fn>;
+  let logger: ReturnType<typeof vi.fn>;
+  let createWebhookEvent: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -295,7 +295,7 @@ describe('MachineMonitorService', () => {
     it('空定时器不应报错', async () => {
       const { stopMachineMonitor } = await import('../../../services/machine-monitor.service.js');
 
-      stopMachineMonitor(null as any);
+      stopMachineMonitor(null as unknown as Record<string, unknown>);
 
       expect(logger.debug).not.toHaveBeenCalled();
     });

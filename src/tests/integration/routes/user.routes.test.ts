@@ -27,8 +27,8 @@ vi.mock('../../../utils/webhook.js', () => ({
 
 describe('User Routes集成测试', () => {
   let app: FastifyInstance;
-  let testUser: any;
-  let testAdmin: any;
+  let testUser: ReturnType<typeof vi.fn>;
+  let testAdmin: ReturnType<typeof vi.fn>;
   let testApiKey: string;
   let adminToken: string;
   let userToken: string;
@@ -298,7 +298,7 @@ describe('User Routes集成测试', () => {
   // UR-05: 更新用户流程
   // ========================================
   describe('PUT /api/users/:id', () => {
-    let userToUpdate: any;
+    let userToUpdate: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       // 创建一个要更新的用户
@@ -375,7 +375,7 @@ describe('User Routes集成测试', () => {
   // UR-07: 删除用户 - 管理员自己
   // ========================================
   describe('DELETE /api/users/:id', () => {
-    let userToDelete: any;
+    let userToDelete: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       // 创建一个要删除的用户
@@ -448,7 +448,7 @@ describe('User Routes集成测试', () => {
   // UR-08: 重置API Key流程
   // ========================================
   describe('POST /api/users/:id/reset-api-key', () => {
-    let userToReset: any;
+    let userToReset: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       // 创建一个要重置API Key的用户

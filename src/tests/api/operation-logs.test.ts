@@ -199,7 +199,7 @@ describe('操作日志功能测试', () => {
       const result = JSON.parse(response.payload);
       expect(result.success).toBe(true);
 
-      result.data.items.forEach((log: any) => {
+      result.data.items.forEach((log: Record<string, unknown>) => {
         expect(log.action).toBe('创建用户');
       });
     });

@@ -4,7 +4,7 @@ import Fastify, { FastifyInstance } from 'fastify';
 const mockAuth = vi.hoisted(() => ({ behavior: 'reject' as 'reject' | 'pass' }));
 
 vi.mock('../../../../routes/admin-api/authenticate.js', () => ({
-  createAuthenticate: () => async (request: any, reply: any) => {
+  createAuthenticate: () => async (request: Record<string, unknown>, reply: Record<string, unknown>) => {
     if (mockAuth.behavior === 'reject') {
       return reply.status(401).send({ success: false, error: '未授权' });
     }
@@ -29,7 +29,7 @@ vi.mock('../../../../models/user.model.js', () => ({
 function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: false });
   app.decorate('verifyJWT', async () => {});
-  app.decorateRequest('user', undefined as any);
+  app.decorateRequest('user', undefined as unknown as Record<string, unknown>);
 
   return import('../../../../routes/admin-api/operation-log.routes.js').then((mod) => {
     app.register(mod.adminApiOperationLogRoutes);
@@ -64,8 +64,8 @@ describe('admin-api operation-log routes - auth enforcement', () => {
 
 describe('admin-api operation-log routes - data retrieval', () => {
   let app: FastifyInstance;
-  let OperationLogModel: any;
-  let UserModel: any;
+  let OperationLogModel: ReturnType<typeof vi.fn>;
+  let UserModel: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();

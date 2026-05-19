@@ -5,7 +5,7 @@ import { UserRole, UserStatus } from '../../../../shared/types/index.js';
 const mockAuth = vi.hoisted(() => ({ behavior: 'reject' as 'reject' | 'pass' }));
 
 vi.mock('../../../../routes/admin-api/authenticate.js', () => ({
-  createAuthenticate: () => async (request: any, reply: any) => {
+  createAuthenticate: () => async (request: Record<string, unknown>, reply: Record<string, unknown>) => {
     if (mockAuth.behavior === 'reject') {
       return reply.status(401).send({ success: false, error: '未授权' });
     }
@@ -67,7 +67,7 @@ vi.mock('uuid', () => ({
 function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: false });
   app.decorate('verifyJWT', async () => {});
-  app.decorateRequest('user', undefined as any);
+  app.decorateRequest('user', undefined as unknown as Record<string, unknown>);
 
   return import('../../../../routes/admin-api/user.routes.js').then((mod) => {
     app.register(mod.adminApiUserRoutes);
@@ -158,7 +158,7 @@ describe('admin-api user routes - auth enforcement', () => {
 
 describe('admin-api user routes - authenticated CRUD', () => {
   let app: FastifyInstance;
-  let UserService: any;
+  let UserService: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();

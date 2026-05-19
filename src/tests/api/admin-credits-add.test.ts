@@ -98,7 +98,9 @@ describe('管理员添加点数功能测试', () => {
 
       // 验证操作日志已创建
       const logs = await OperationLogModel.findByAdminId(adminId);
-      const log = logs.items.find((l: any) => l.action === '添加点数' && l.target_user_id === testUserId);
+      const log = logs.items.find(
+        (l: Record<string, unknown>) => l.action === '添加点数' && l.target_user_id === testUserId
+      );
 
       expect(log).toBeTruthy();
       if (log) {

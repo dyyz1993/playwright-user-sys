@@ -48,7 +48,7 @@ describe('Docker Compose Configuration', () => {
           const compose = parseCompose(file);
           if (!compose || !compose.services) return;
 
-          const services = Object.entries(compose.services) as [string, any][];
+          const services = Object.entries(compose.services) as [string, Record<string, unknown>][];
           const violations: string[] = [];
 
           for (const [name, svc] of services) {
@@ -64,7 +64,7 @@ describe('Docker Compose Configuration', () => {
           const compose = parseCompose(file);
           if (!compose || !compose.services) return;
 
-          const services = Object.entries(compose.services) as [string, any][];
+          const services = Object.entries(compose.services) as [string, Record<string, unknown>][];
           const violations: string[] = [];
 
           for (const [name, svc] of services) {
@@ -97,7 +97,7 @@ describe('Docker Compose Configuration', () => {
           const compose = parseCompose(file);
           if (!compose || !compose.services) return;
 
-          const services = Object.entries(compose.services) as [string, any][];
+          const services = Object.entries(compose.services) as [string, Record<string, unknown>][];
           const violations: string[] = [];
 
           for (const [name, svc] of services) {

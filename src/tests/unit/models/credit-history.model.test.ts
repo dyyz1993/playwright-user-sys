@@ -47,7 +47,7 @@ vi.mock('../../../config/database.js', () => ({
 }));
 
 describe('CreditHistoryModel', () => {
-  let CreditHistoryModel: any;
+  let CreditHistoryModel: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();

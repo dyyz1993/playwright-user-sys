@@ -76,16 +76,16 @@ vi.mock('../../../config/env.js', () => ({
 }));
 
 describe('SessionController', () => {
-  let SessionModel: any;
-  let MachineModel: any;
-  let UserModel: any;
-  let createBrowserSession: any;
-  let sessionReleaseSession: any;
-  let connectionManager: any;
-  let sendSuccess: any;
-  let sendError: any;
-  let sendCreated: any;
-  let createWebhookEvent: any;
+  let SessionModel: ReturnType<typeof vi.fn>;
+  let MachineModel: ReturnType<typeof vi.fn>;
+  let UserModel: ReturnType<typeof vi.fn>;
+  let createBrowserSession: ReturnType<typeof vi.fn>;
+  let sessionReleaseSession: ReturnType<typeof vi.fn>;
+  let connectionManager: ReturnType<typeof vi.fn>;
+  let sendSuccess: ReturnType<typeof vi.fn>;
+  let sendError: ReturnType<typeof vi.fn>;
+  let sendCreated: ReturnType<typeof vi.fn>;
+  let createWebhookEvent: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -153,7 +153,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await createSession(request as any, reply as any);
+    await createSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(createBrowserSession).toHaveBeenCalledWith(1, request.body);
     expect(sendCreated).toHaveBeenCalledWith(
@@ -186,7 +186,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await createSession(request as any, reply as any);
+    await createSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户未认证', 401);
   });
@@ -216,7 +216,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await createSession(request as any, reply as any);
+    await createSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '点数不足，请联系管理员充值', 402);
   });
@@ -262,7 +262,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSession(request as any, reply as any);
+    await getSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(SessionModel.findById).toHaveBeenCalledWith('session-123');
     expect(sendSuccess).toHaveBeenCalledWith(
@@ -306,7 +306,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSession(request as any, reply as any);
+    await getSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '无权访问此会话', 403);
   });
@@ -337,7 +337,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSession(request as any, reply as any);
+    await getSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '未找到指定的会话记录', 404);
   });
@@ -387,7 +387,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await releaseSession(request as any, reply as any);
+    await releaseSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sessionReleaseSession).toHaveBeenCalledWith({
       sessionId: 'session-123',
@@ -440,7 +440,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await releaseSession(request as any, reply as any);
+    await releaseSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendSuccess).toHaveBeenCalledWith(
       reply,
@@ -494,7 +494,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await releaseSession(request as any, reply as any);
+    await releaseSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sessionReleaseSession).toHaveBeenCalledWith({
       sessionId: 'session-123',
@@ -549,7 +549,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await releaseSession(request as any, reply as any);
+    await releaseSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sessionReleaseSession).toHaveBeenCalled();
     expect(sendSuccess).toHaveBeenCalledWith(
@@ -607,12 +607,12 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getUserSessions(request as any, reply as any);
+    await getUserSessions(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(SessionModel.findByUserId).toHaveBeenCalledWith(1, { page: '1', limit: '10' });
     expect(sendSuccess).toHaveBeenLastCalledWith(reply, {
       ...mockSessions,
-      items: mockSessions.items.map((item: any) => ({
+      items: mockSessions.items.map((item: Record<string, unknown>) => ({
         ...item,
         start_time: null,
         end_time: null,
@@ -670,12 +670,12 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getAllSessions(request as any, reply as any);
+    await getAllSessions(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(SessionModel.findAll).toHaveBeenCalledWith({ page: '1', limit: '10' });
     expect(sendSuccess).toHaveBeenLastCalledWith(reply, {
       ...mockSessions,
-      items: mockSessions.items.map((item: any) => ({
+      items: mockSessions.items.map((item: Record<string, unknown>) => ({
         ...item,
         start_time: null,
         end_time: null,
@@ -709,7 +709,7 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getAllSessions(request as any, reply as any);
+    await getAllSessions(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '无权访问', 403);
   });
@@ -752,14 +752,14 @@ describe('SessionController', () => {
         info: vi.fn(),
         error: vi.fn(),
       },
-    } as any;
+    } as unknown as Record<string, unknown>;
 
     const reply = {
       code: vi.fn(),
       send: vi.fn(),
-    } as any;
+    } as unknown as Record<string, unknown>;
 
-    await closeSession(request as any, reply as any);
+    await closeSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sessionReleaseSession).toHaveBeenCalledWith({
       sessionId: 'session-123',
@@ -808,7 +808,10 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSessionScreenshot(request as any, reply as any);
+    await getSessionScreenshot(
+      request as unknown as Record<string, unknown>,
+      reply as unknown as Record<string, unknown>
+    );
 
     expect(UserModel.findByApiKey).toHaveBeenCalledWith('invalid-api-key');
     expect(sendError).toHaveBeenCalledWith(reply, '无效的 API Key', 401);
@@ -850,7 +853,10 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSessionScreenshot(request as any, reply as any);
+    await getSessionScreenshot(
+      request as unknown as Record<string, unknown>,
+      reply as unknown as Record<string, unknown>
+    );
 
     expect(sendError).toHaveBeenCalledWith(reply, '无权访问该会话', 403);
   });
@@ -891,7 +897,10 @@ describe('SessionController', () => {
       send: vi.fn(),
     };
 
-    await getSessionScreenshot(request as any, reply as any);
+    await getSessionScreenshot(
+      request as unknown as Record<string, unknown>,
+      reply as unknown as Record<string, unknown>
+    );
 
     expect(sendError).toHaveBeenCalledWith(reply, '会话没有截图', 404);
   });

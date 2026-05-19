@@ -52,15 +52,15 @@ const mockDownloadAndInject = vi.fn().mockResolvedValue({ success: true, files: 
 
 vi.mock('../../../services/file-transfer.service.js', () => ({
   fileTransferService: {
-    injectFile: (...args: any[]) => mockInjectFile(...args),
-    downloadAndInject: (...args: any[]) => mockDownloadAndInject(...args),
+    injectFile: (...args: unknown[]) => mockInjectFile(...args),
+    downloadAndInject: (...args: unknown[]) => mockDownloadAndInject(...args),
   },
 }));
 
 describe('Session File API 集成测试', () => {
   let app: FastifyInstance;
-  let testUser: any;
-  let testAdmin: any;
+  let testUser: ReturnType<typeof vi.fn>;
+  let testAdmin: ReturnType<typeof vi.fn>;
   let userToken: string;
   let adminToken: string;
 

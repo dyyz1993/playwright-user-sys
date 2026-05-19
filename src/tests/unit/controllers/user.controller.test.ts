@@ -64,14 +64,14 @@ vi.mock('../../../models/session/index.js', () => ({
 }));
 
 describe('UserController', () => {
-  let UserModel: any;
-  let OperationLogModel: any;
-  let SessionModel: any;
-  let sendSuccess: any;
-  let sendError: any;
-  let sendCreated: any;
-  let sendNoContent: any;
-  let sendPaginated: any;
+  let UserModel: ReturnType<typeof vi.fn>;
+  let OperationLogModel: ReturnType<typeof vi.fn>;
+  let SessionModel: ReturnType<typeof vi.fn>;
+  let sendSuccess: ReturnType<typeof vi.fn>;
+  let sendError: ReturnType<typeof vi.fn>;
+  let sendCreated: ReturnType<typeof vi.fn>;
+  let sendNoContent: ReturnType<typeof vi.fn>;
+  let sendPaginated: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -138,7 +138,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await createUser(request as any, reply as any);
+    await createUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(UserModel.findByUsername).toHaveBeenCalledWith('newuser');
     expect(UserModel.create).toHaveBeenCalled();
@@ -184,7 +184,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await createUser(request as any, reply as any);
+    await createUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户名已存在', 409);
   });
@@ -214,7 +214,7 @@ describe('UserController', () => {
       send: vi.fn().mockReturnThis(),
     };
 
-    await createUser(request as any, reply as any);
+    await createUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     // Zod validation should fail and trigger error response
     expect(sendError).toHaveBeenCalledWith(reply, expect.stringContaining('无效的请求数据'), 400);
@@ -274,7 +274,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await getAllUsers(request as any, reply as any);
+    await getAllUsers(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(UserModel.findAll).toHaveBeenCalledWith({ page: '1', limit: '10' });
     expect(sendPaginated).toHaveBeenCalledWith(
@@ -327,7 +327,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await getUserById(request as any, reply as any);
+    await getUserById(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(UserModel.findById).toHaveBeenCalledWith(1);
     expect(sendSuccess).toHaveBeenCalledWith(
@@ -363,7 +363,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await getUserById(request as any, reply as any);
+    await getUserById(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '无效的用户 ID', 400);
   });
@@ -394,7 +394,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await getUserById(request as any, reply as any);
+    await getUserById(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户不存在', 404);
   });
@@ -444,7 +444,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await updateUser(request as any, reply as any);
+    await updateUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(UserModel.update).toHaveBeenCalledWith(1, { email: 'new@example.com' });
     expect(OperationLogModel.create).toHaveBeenCalled();
@@ -485,7 +485,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await updateUser(request as any, reply as any);
+    await updateUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户不存在', 404);
   });
@@ -525,7 +525,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await resetApiKey(request as any, reply as any);
+    await resetApiKey(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(UserModel.resetApiKey).toHaveBeenCalledWith(1);
     expect(OperationLogModel.create).toHaveBeenCalled();
@@ -566,7 +566,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await deleteUser(request as any, reply as any);
+    await deleteUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(UserModel.delete).toHaveBeenCalledWith(2);
     expect(OperationLogModel.create).toHaveBeenCalled();
@@ -605,7 +605,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await deleteUser(request as any, reply as any);
+    await deleteUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '不允许删除管理员账号', 403);
     expect(UserModel.delete).not.toHaveBeenCalled();
@@ -637,7 +637,7 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await deleteUser(request as any, reply as any);
+    await deleteUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户不存在', 404);
   });
@@ -680,7 +680,10 @@ describe('UserController', () => {
       send: vi.fn(),
     };
 
-    await getUserSessionStats(request as any, reply as any);
+    await getUserSessionStats(
+      request as unknown as Record<string, unknown>,
+      reply as unknown as Record<string, unknown>
+    );
 
     expect(SessionModel.getUserSessionStats).toHaveBeenCalledWith(1);
     expect(sendSuccess).toHaveBeenCalledWith(reply, mockStats);

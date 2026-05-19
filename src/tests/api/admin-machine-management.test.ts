@@ -13,7 +13,7 @@ describe('管理员机器管理功能测试', () => {
   let adminToken: string;
   let userToken: string;
   let testMachineId: string;
-  let _testAdmin: any;
+  let _testAdmin: ReturnType<typeof vi.fn>;
 
   // 在所有测试之前设置应用和创建测试用户
   beforeAll(async () => {
@@ -92,7 +92,7 @@ describe('管理员机器管理功能测试', () => {
       expect(Array.isArray(result.data)).toBe(true);
 
       // 验证返回的机器中包含我们创建的测试机器
-      const foundMachine = result.data.find((machine: any) => machine.id === testMachineId);
+      const foundMachine = result.data.find((machine: Record<string, unknown>) => machine.id === testMachineId);
       expect(foundMachine).toBeTruthy();
       expect(foundMachine?.hostname).toBe('test-machine');
       expect(foundMachine?.ip).toBe('192.168.1.100');

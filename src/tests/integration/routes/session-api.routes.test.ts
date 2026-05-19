@@ -61,13 +61,13 @@ vi.mock('../../../services/machine.service.js', () => ({
 
 describe('会话管理 API 集成测试', () => {
   let app: FastifyInstance;
-  let testAdmin: any;
-  let testUser: any;
-  let _anotherUser: any;
+  let testAdmin: ReturnType<typeof vi.fn>;
+  let testUser: ReturnType<typeof vi.fn>;
+  let _anotherUser: ReturnType<typeof vi.fn>;
   let adminToken: string;
   let userToken: string;
   let _anotherUserToken: string;
-  let _testMachine: any;
+  let _testMachine: ReturnType<typeof vi.fn>;
 
   // ========================================
   // 测试初始化
@@ -399,8 +399,8 @@ describe('会话管理 API 集成测试', () => {
   // A-03: 权限控制测试 (15个)
   // ========================================
   describe('A-03: 权限控制测试', () => {
-    let userSession: any;
-    let adminSession: any;
+    let userSession: ReturnType<typeof vi.fn>;
+    let adminSession: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       // 为每个测试创建新的会话
@@ -551,7 +551,7 @@ describe('会话管理 API 集成测试', () => {
       const result = JSON.parse(response.payload);
 
       // 验证所有会话都属于当前用户
-      result.data.items.forEach((session: any) => {
+      result.data.items.forEach((session: Record<string, unknown>) => {
         expect(session.user_id).toBe(testUser.id);
       });
     });
@@ -1223,7 +1223,7 @@ describe('会话管理 API 集成测试', () => {
       const result = JSON.parse(response.payload);
 
       // 验证返回的都是活跃会话
-      result.data.items.forEach((session: any) => {
+      result.data.items.forEach((session: Record<string, unknown>) => {
         expect([SessionStatus.CREATED, SessionStatus.CONNECTED]).toContain(session.status);
       });
     });
@@ -1246,7 +1246,7 @@ describe('会话管理 API 集成测试', () => {
       expect(response.statusCode).toBe(200);
       const result = JSON.parse(response.payload);
 
-      result.data.items.forEach((session: any) => {
+      result.data.items.forEach((session: Record<string, unknown>) => {
         expect([SessionStatus.DISCONNECTED, SessionStatus.EXPIRED, SessionStatus.COMPLETED]).toContain(session.status);
       });
     });
@@ -1268,7 +1268,7 @@ describe('会话管理 API 集成测试', () => {
       expect(response.statusCode).toBe(200);
       const result = JSON.parse(response.payload);
 
-      result.data.items.forEach((session: any) => {
+      result.data.items.forEach((session: Record<string, unknown>) => {
         expect(session.status).toBe(SessionStatus.ERROR);
       });
     });
@@ -1293,7 +1293,7 @@ describe('会话管理 API 集成测试', () => {
       const result = JSON.parse(response.payload);
 
       // 验证所有会话都属于user1
-      result.data.items.forEach((session: any) => {
+      result.data.items.forEach((session: Record<string, unknown>) => {
         expect(session.user_id).toBe(user1.id);
       });
     });
@@ -1334,7 +1334,7 @@ describe('会话管理 API 集成测试', () => {
       const result = JSON.parse(response.payload);
 
       // 验证结果符合所有筛选条件
-      result.data.items.forEach((session: any) => {
+      result.data.items.forEach((session: Record<string, unknown>) => {
         expect(session.user_id).toBe(user.id);
         expect([SessionStatus.CREATED, SessionStatus.CONNECTED]).toContain(session.status);
       });
@@ -1626,8 +1626,8 @@ describe('会话管理 API 集成测试', () => {
       const result2 = JSON.parse(response2.payload);
 
       // 验证第二页的数据与第一页不同
-      const ids1 = result1.data.items.map((s: any) => s.id);
-      const ids2 = result2.data.items.map((s: any) => s.id);
+      const ids1 = result1.data.items.map((s: Record<string, unknown>) => s.id);
+      const ids2 = result2.data.items.map((s: Record<string, unknown>) => s.id);
       const intersection = ids1.filter((id: string) => ids2.includes(id));
       expect(intersection).toHaveLength(0);
     });

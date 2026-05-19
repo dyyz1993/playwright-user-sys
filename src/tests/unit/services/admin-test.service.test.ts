@@ -17,9 +17,9 @@ vi.mock('uuid', () => ({
 }));
 
 describe('admin-test.service', () => {
-  let SessionModel: any;
-  let MachineModel: any;
-  let uuidv4: any;
+  let SessionModel: ReturnType<typeof vi.fn>;
+  let MachineModel: ReturnType<typeof vi.fn>;
+  let uuidv4: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();

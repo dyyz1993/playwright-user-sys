@@ -23,8 +23,8 @@ describe('SessionModel', () => {
     await initDatabase();
   });
 
-  let testUser: any;
-  let testMachine: any;
+  let testUser: ReturnType<typeof vi.fn>;
+  let testMachine: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     await clearAllTables();

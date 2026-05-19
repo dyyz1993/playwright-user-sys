@@ -47,13 +47,13 @@ vi.mock('../../../services/machine-monitor.service.js', () => ({
 
 describe('Machine Management API 集成测试', () => {
   let app: FastifyInstance;
-  let testAdmin: any;
-  let testUser: any;
+  let testAdmin: ReturnType<typeof vi.fn>;
+  let testUser: ReturnType<typeof vi.fn>;
   let adminApiKey: string;
   let userApiKey: string;
   let adminToken: string;
   let userToken: string;
-  let testMachine: any;
+  let testMachine: ReturnType<typeof vi.fn>;
 
   beforeAll(async () => {
     await initDatabase();
@@ -228,7 +228,7 @@ describe('Machine Management API 集成测试', () => {
 
     it('400: 机器未连接无法重启', async () => {
       const { connectionManager } = await import('../../../services/machine-grpc/index.js');
-      (connectionManager.isConnected as any).mockReturnValueOnce(false);
+      (connectionManager.isConnected as unknown as Record<string, unknown>).mockReturnValueOnce(false);
 
       const machine = await createTestMachine();
       const response = await app.inject({

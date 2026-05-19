@@ -38,8 +38,8 @@ vi.mock('../../../services/machine.service.js', () => ({
 
 describe('File List API 集成测试', () => {
   let app: FastifyInstance;
-  let testAdmin: any;
-  let testUser: any;
+  let testAdmin: ReturnType<typeof vi.fn>;
+  let testUser: ReturnType<typeof vi.fn>;
   let adminToken: string;
   let userToken: string;
 

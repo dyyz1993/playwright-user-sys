@@ -65,12 +65,12 @@ describe('CI workflow configuration', () => {
       if (!data?.yaml) return;
       const jobs = data.yaml.jobs;
       for (const job of Object.values(jobs)) {
-        const strategy = (job as any).strategy;
+        const strategy = (job as unknown as Record<string, unknown>).strategy;
         if (strategy?.matrix?.['node-version']) {
           expect(strategy.matrix['node-version']).toContain(20);
         }
-        const steps = (job as any).steps || [];
-        const nodeStep = steps.find((s: any) => s.uses?.includes('actions/setup-node'));
+        const steps = (job as unknown as Record<string, unknown>).steps || [];
+        const nodeStep = steps.find((s: Record<string, unknown>) => s.uses?.includes('actions/setup-node'));
         if (nodeStep) {
           const nv = nodeStep.with?.['node-version'];
           expect(nv === 20 || nv === '20' || String(nv).includes('matrix')).toBe(true);
@@ -82,8 +82,8 @@ describe('CI workflow configuration', () => {
       if (!data?.yaml) return;
       const jobs = data.yaml.jobs;
       for (const job of Object.values(jobs)) {
-        const steps = (job as any).steps || [];
-        const checkoutStep = steps.find((s: any) => s.uses?.includes('actions/checkout'));
+        const steps = (job as unknown as Record<string, unknown>).steps || [];
+        const checkoutStep = steps.find((s: Record<string, unknown>) => s.uses?.includes('actions/checkout'));
         if (checkoutStep) {
           expect(checkoutStep.uses).toContain('actions/checkout');
         }

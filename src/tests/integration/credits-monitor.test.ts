@@ -22,7 +22,7 @@ vi.mock('../../utils/webhook.js', () => ({
 }));
 
 describe('点数监控服务集成测试', () => {
-  let testUser: any;
+  let testUser: ReturnType<typeof vi.fn>;
   const testMachineId = 'test-machine-1';
 
   beforeAll(async () => {

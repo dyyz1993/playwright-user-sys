@@ -32,7 +32,7 @@ vi.mock('@shared/utils/logger.js', () => ({
 }));
 
 describe('services/machine-grpc MachineConnectionManager', () => {
-  let MachineConnectionManager: any;
+  let MachineConnectionManager: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -53,7 +53,7 @@ describe('services/machine-grpc MachineConnectionManager', () => {
       end: vi.fn(),
     };
 
-    cm.addConnection('machine-001', mockCall as any);
+    cm.addConnection('machine-001', mockCall as unknown as Record<string, unknown>);
 
     expect(cm.isConnected('machine-001')).toBe(true);
     expect(cm.getAllConnectedMachines()).toContain('machine-001');
@@ -64,8 +64,8 @@ describe('services/machine-grpc MachineConnectionManager', () => {
     const mockCall1 = { on: vi.fn(), end: vi.fn() };
     const mockCall2 = { on: vi.fn(), end: vi.fn() };
 
-    cm.addConnection('machine-001', mockCall1 as any);
-    cm.addConnection('machine-001', mockCall2 as any);
+    cm.addConnection('machine-001', mockCall1 as unknown as Record<string, unknown>);
+    cm.addConnection('machine-001', mockCall2 as unknown as Record<string, unknown>);
 
     expect(cm.isConnected('machine-001')).toBe(true);
     expect(cm.getConnection('machine-001')).toBe(mockCall2);
@@ -75,7 +75,7 @@ describe('services/machine-grpc MachineConnectionManager', () => {
     const cm = new MachineConnectionManager();
     const mockCall = { on: vi.fn(), end: vi.fn() };
 
-    cm.addConnection('machine-001', mockCall as any);
+    cm.addConnection('machine-001', mockCall as unknown as Record<string, unknown>);
     expect(cm.isConnected('machine-001')).toBe(true);
 
     await cm.removeConnection('machine-001');
@@ -92,7 +92,7 @@ describe('services/machine-grpc MachineConnectionManager', () => {
     const mockWrite = vi.fn();
     const mockCall = { on: vi.fn(), end: vi.fn(), write: mockWrite };
 
-    cm.addConnection('machine-001', mockCall as any);
+    cm.addConnection('machine-001', mockCall as unknown as Record<string, unknown>);
     cm.sendCloseBrowserCommand('machine-001', 'session-123');
 
     expect(mockWrite).toHaveBeenCalledWith({
@@ -113,7 +113,7 @@ describe('services/machine-grpc MachineConnectionManager', () => {
     const mockWrite = vi.fn();
     const mockCall = { on: vi.fn(), end: vi.fn(), write: mockWrite };
 
-    cm.addConnection('machine-001', mockCall as any);
+    cm.addConnection('machine-001', mockCall as unknown as Record<string, unknown>);
     cm.sendRestartCommand('machine-001');
 
     expect(mockWrite).toHaveBeenCalledWith({
@@ -126,7 +126,7 @@ describe('services/machine-grpc MachineConnectionManager', () => {
     const mockWrite = vi.fn();
     const mockCall = { on: vi.fn(), end: vi.fn(), write: mockWrite };
 
-    cm.addConnection('machine-001', mockCall as any);
+    cm.addConnection('machine-001', mockCall as unknown as Record<string, unknown>);
     cm.sendShutdownCommand('machine-001');
 
     expect(mockWrite).toHaveBeenCalledWith({
@@ -139,7 +139,7 @@ describe('services/machine-grpc MachineConnectionManager', () => {
     const mockWrite = vi.fn();
     const mockCall = { on: vi.fn(), end: vi.fn(), write: mockWrite };
 
-    cm.addConnection('machine-001', mockCall as any);
+    cm.addConnection('machine-001', mockCall as unknown as Record<string, unknown>);
     cm.sendHeartbeatRequest('machine-001');
 
     expect(mockWrite).toHaveBeenCalledWith({
@@ -173,8 +173,8 @@ describe('services/machine-grpc MachineConnectionManager', () => {
   it('should track multiple machines', () => {
     const cm = new MachineConnectionManager();
 
-    cm.addConnection('machine-001', { on: vi.fn(), end: vi.fn() } as any);
-    cm.addConnection('machine-002', { on: vi.fn(), end: vi.fn() } as any);
+    cm.addConnection('machine-001', { on: vi.fn(), end: vi.fn() } as unknown as Record<string, unknown>);
+    cm.addConnection('machine-002', { on: vi.fn(), end: vi.fn() } as unknown as Record<string, unknown>);
 
     expect(cm.getAllConnectedMachines().length).toBe(2);
     expect(cm.isConnected('machine-001')).toBe(true);

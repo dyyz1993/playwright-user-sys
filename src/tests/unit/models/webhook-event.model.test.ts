@@ -37,7 +37,7 @@ describe('WebhookEventModel', () => {
       const mod = await import('../../../models/webhook-event.model.js');
       const input: mod.CreateWebhookEventInput = {
         user_id: 1,
-        event_type: 'session.created' as any,
+        event_type: 'session.created' as unknown as Record<string, unknown>,
         payload: { sessionId: 'abc123' },
       };
       expect(input.user_id).toBe(1);
@@ -49,7 +49,7 @@ describe('WebhookEventModel', () => {
       const mod = await import('../../../models/webhook-event.model.js');
       const input: mod.CreateWebhookEventInput = {
         user_id: 5,
-        event_type: 'session.released' as any,
+        event_type: 'session.released' as unknown as Record<string, unknown>,
         payload: {
           sessionId: 'xyz',
           duration: 3600,
@@ -67,7 +67,7 @@ describe('WebhookEventModel', () => {
       const event: mod.WebhookEvent = {
         id: 1,
         user_id: 1,
-        event_type: 'session.created' as any,
+        event_type: 'session.created' as unknown as Record<string, unknown>,
         payload: { key: 'value' },
         delivered: false,
         attempts: 0,
@@ -87,7 +87,7 @@ describe('WebhookEventModel', () => {
       const event: mod.WebhookEvent = {
         id: 2,
         user_id: 1,
-        event_type: 'session.created' as any,
+        event_type: 'session.created' as unknown as Record<string, unknown>,
         payload: {},
         delivered: true,
         attempts: 1,

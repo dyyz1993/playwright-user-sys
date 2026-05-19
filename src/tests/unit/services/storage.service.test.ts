@@ -36,7 +36,7 @@ vi.mock('../../../shared/utils/logger.js', () => ({
 }));
 
 describe('StorageService', () => {
-  let StorageService: any;
+  let StorageService: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -109,10 +109,10 @@ describe('StorageService', () => {
     vi.mocked(readdir).mockResolvedValue([
       { name: 'a.txt', isDirectory: () => false, isFile: () => true },
       { name: 'b.txt', isDirectory: () => false, isFile: () => true },
-    ] as any);
+    ] as unknown as Record<string, unknown>);
     vi.mocked(stat)
-      .mockResolvedValueOnce({ size: 100 } as any)
-      .mockResolvedValueOnce({ size: 200 } as any);
+      .mockResolvedValueOnce({ size: 100 } as unknown as Record<string, unknown>)
+      .mockResolvedValueOnce({ size: 200 } as unknown as Record<string, unknown>);
 
     const result = await StorageService.getDirectorySize('/files');
 
@@ -130,10 +130,10 @@ describe('StorageService', () => {
     vi.mocked(readdir).mockResolvedValue([
       { name: 'a.txt', isDirectory: () => false, isFile: () => true },
       { name: 'b.txt', isDirectory: () => false, isFile: () => true },
-    ] as any);
+    ] as unknown as Record<string, unknown>);
     vi.mocked(stat)
       .mockRejectedValueOnce(new Error('permission denied'))
-      .mockResolvedValueOnce({ size: 200 } as any);
+      .mockResolvedValueOnce({ size: 200 } as unknown as Record<string, unknown>);
 
     const result = await StorageService.getDirectorySize('/files');
 
@@ -178,8 +178,10 @@ describe('StorageService', () => {
     const { readdir, stat } = await import('fs/promises');
 
     vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(readdir).mockResolvedValue([{ name: 'big.txt', isDirectory: () => false, isFile: () => true }] as any);
-    vi.mocked(stat).mockResolvedValue({ size: 6 * 1024 * 1024 * 1024 } as any);
+    vi.mocked(readdir).mockResolvedValue([
+      { name: 'big.txt', isDirectory: () => false, isFile: () => true },
+    ] as unknown as Record<string, unknown>);
+    vi.mocked(stat).mockResolvedValue({ size: 6 * 1024 * 1024 * 1024 } as unknown as Record<string, unknown>);
 
     const result = await StorageService.checkUserStorageLimit(1);
 
@@ -299,7 +301,7 @@ describe('StorageService', () => {
       { name: '2', isDirectory: () => true },
       { name: 'abc', isDirectory: () => true },
       { name: 'notadir.txt', isDirectory: () => false },
-    ] as any);
+    ] as unknown as Record<string, unknown>);
 
     const result = await StorageService.getAllUserIds();
 

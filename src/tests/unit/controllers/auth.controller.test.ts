@@ -44,11 +44,11 @@ vi.mock('../../../config/env.js', () => ({
 }));
 
 describe('AuthController', () => {
-  let UserModel: any;
-  let verifyPasswordWithMigration: any;
-  let generateToken: any;
-  let sendSuccess: any;
-  let sendError: any;
+  let UserModel: ReturnType<typeof vi.fn>;
+  let verifyPasswordWithMigration: ReturnType<typeof vi.fn>;
+  let generateToken: ReturnType<typeof vi.fn>;
+  let sendSuccess: ReturnType<typeof vi.fn>;
+  let sendError: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -104,7 +104,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await login(request as any, reply as any);
+    await login(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(UserModel.findByUsername).toHaveBeenCalledWith('testuser');
     expect(verifyPasswordWithMigration).toHaveBeenCalledWith('Test1234', 'hashed_password');
@@ -146,7 +146,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await login(request as any, reply as any);
+    await login(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户名或密码错误', 401);
   });
@@ -185,7 +185,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await login(request as any, reply as any);
+    await login(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户名或密码错误', 401);
   });
@@ -224,7 +224,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await login(request as any, reply as any);
+    await login(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户账号已被禁用', 403);
   });
@@ -251,7 +251,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await login(request as any, reply as any);
+    await login(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, expect.stringContaining('无效的请求数据'), 400);
   });
@@ -292,7 +292,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await getCurrentUser(request as any, reply as any);
+    await getCurrentUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(UserModel.findById).toHaveBeenCalledWith(1);
     expect(sendSuccess).toHaveBeenCalledWith(
@@ -326,7 +326,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await getCurrentUser(request as any, reply as any);
+    await getCurrentUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户未登录', 401);
   });
@@ -355,7 +355,7 @@ describe('AuthController', () => {
       send: vi.fn(),
     };
 
-    await getCurrentUser(request as any, reply as any);
+    await getCurrentUser(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
     expect(sendError).toHaveBeenCalledWith(reply, '用户不存在', 404);
   });

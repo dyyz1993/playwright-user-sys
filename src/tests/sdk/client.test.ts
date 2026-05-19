@@ -173,7 +173,7 @@ describe('SDK 客户端集成测试', () => {
       await client.sessions.get(nonExistentSessionId);
       // 如果没有抛出错误，测试失败
       expect(true).toBe(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 验证错误
       expect(error).toBeDefined();
       expect(error.message).toBeDefined();

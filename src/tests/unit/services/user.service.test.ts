@@ -15,7 +15,7 @@ vi.mock('uuid', () => ({
 
 vi.mock('../../../config/database.js', () => {
   const dbFn = vi.fn();
-  (dbFn as any).transaction = vi.fn();
+  (dbFn as unknown as Record<string, unknown>).transaction = vi.fn();
   return { db: dbFn };
 });
 
@@ -53,10 +53,10 @@ vi.mock('../../../shared/utils/logger.js', () => ({
 }));
 
 describe('UserService', () => {
-  let db: any;
-  let UserModel: any;
-  let SessionModel: any;
-  let hashPassword: any;
+  let db: ReturnType<typeof vi.fn>;
+  let UserModel: ReturnType<typeof vi.fn>;
+  let SessionModel: ReturnType<typeof vi.fn>;
+  let hashPassword: ReturnType<typeof vi.fn>;
 
   const mockUser = {
     id: 1,
@@ -70,7 +70,7 @@ describe('UserService', () => {
     updated_at: new Date(),
   };
 
-  function createTrx(overrides: Record<string, any> = {}) {
+  function createTrx(overrides: Record<string, unknown> = {}) {
     const usersChain = {
       where: vi.fn().mockReturnThis(),
       first: vi.fn().mockResolvedValue(overrides.user ?? mockUser),
@@ -318,7 +318,7 @@ describe('UserService', () => {
   // ========================================
   it('listUsers 应该委托给 UserModel.findAll', async () => {
     const mockResult = { items: [mockUser], total: 1, page: 1, limit: 20, totalPages: 1 };
-    vi.mocked(UserModel.findAll).mockResolvedValue(mockResult as any);
+    vi.mocked(UserModel.findAll).mockResolvedValue(mockResult as unknown as Record<string, unknown>);
 
     const { listUsers } = await import('../../../services/user.service.js');
     const result = await listUsers({ page: '1', limit: '20' });
@@ -331,7 +331,7 @@ describe('UserService', () => {
   // USR-16: getUserById - 委托给 UserModel
   // ========================================
   it('getUserById 应该委托给 UserModel.findById', async () => {
-    vi.mocked(UserModel.findById).mockResolvedValue(mockUser as any);
+    vi.mocked(UserModel.findById).mockResolvedValue(mockUser as unknown as Record<string, unknown>);
 
     const { getUserById } = await import('../../../services/user.service.js');
     const result = await getUserById(1);
@@ -350,7 +350,7 @@ describe('UserService', () => {
       page: 1,
       limit: 20,
       totalPages: 1,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     const { exportUsersCsv } = await import('../../../services/user.service.js');
     const csv = await exportUsersCsv({});
@@ -448,7 +448,7 @@ describe('UserService', () => {
   // USR-24: findByUsername - 用户存在
   // ========================================
   it('findByUsername 用户存在时应该返回用户', async () => {
-    vi.mocked(UserModel.findByUsername).mockResolvedValue(mockUser as any);
+    vi.mocked(UserModel.findByUsername).mockResolvedValue(mockUser as unknown as Record<string, unknown>);
 
     const { findByUsername } = await import('../../../services/user.service.js');
     const result = await findByUsername('testuser');
@@ -473,7 +473,7 @@ describe('UserService', () => {
   // USR-26: findByApiKey - 用户存在
   // ========================================
   it('findByApiKey 用户存在时应该返回用户', async () => {
-    vi.mocked(UserModel.findByApiKey).mockResolvedValue(mockUser as any);
+    vi.mocked(UserModel.findByApiKey).mockResolvedValue(mockUser as unknown as Record<string, unknown>);
 
     const { findByApiKey } = await import('../../../services/user.service.js');
     const result = await findByApiKey('api-key-123');
@@ -499,7 +499,7 @@ describe('UserService', () => {
   // ========================================
   it('getCreditsStats 应该委托给 UserModel.getCreditsStats', async () => {
     const stats = { total: 5000, used: 1200, available: 3800 };
-    vi.mocked(UserModel.getCreditsStats).mockResolvedValue(stats as any);
+    vi.mocked(UserModel.getCreditsStats).mockResolvedValue(stats as unknown as Record<string, unknown>);
 
     const { getCreditsStats } = await import('../../../services/user.service.js');
     const result = await getCreditsStats();
@@ -513,7 +513,7 @@ describe('UserService', () => {
   // ========================================
   it('getUserSessionStats 应该委托给 SessionModel.getUserSessionStats', async () => {
     const stats = { total_sessions: 10, total_duration: 3600, total_credits_used: 100 };
-    vi.mocked(SessionModel.getUserSessionStats).mockResolvedValue(stats as any);
+    vi.mocked(SessionModel.getUserSessionStats).mockResolvedValue(stats as unknown as Record<string, unknown>);
 
     const { getUserSessionStats } = await import('../../../services/user.service.js');
     const result = await getUserSessionStats(1);
@@ -595,7 +595,7 @@ describe('UserService', () => {
   // ========================================
   it('getUserStats 应该委托给 UserModel.getStats', async () => {
     const stats = { total: 100, active: 80, inactive: 20 };
-    vi.mocked(UserModel.getStats).mockResolvedValue(stats as any);
+    vi.mocked(UserModel.getStats).mockResolvedValue(stats as unknown as Record<string, unknown>);
 
     const { getUserStats } = await import('../../../services/user.service.js');
     const result = await getUserStats();

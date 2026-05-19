@@ -23,8 +23,8 @@ vi.mock('../../../services/memory-store.service.js', () => ({
 }));
 
 describe('NativeWebSocketProxyService', () => {
-  let NativeWebSocketProxyService: any;
-  let mockServer: any;
+  let NativeWebSocketProxyService: ReturnType<typeof vi.fn>;
+  let mockServer: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -55,7 +55,7 @@ describe('NativeWebSocketProxyService', () => {
   it('WS-03: 非ws/connect路径的upgrade应该被忽略', () => {
     const service = new NativeWebSocketProxyService(mockServer);
 
-    const mockSocket = new EventEmitter() as any;
+    const mockSocket = new EventEmitter() as unknown as Record<string, unknown>;
     mockSocket.destroyed = false;
     mockSocket.writable = true;
     mockSocket.write = vi.fn();
@@ -83,7 +83,7 @@ describe('NativeWebSocketProxyService', () => {
   it('WS-05: close应该清理所有活动连接', () => {
     const service = new NativeWebSocketProxyService(mockServer);
 
-    const activeConnections = (service as any).activeConnections;
+    const activeConnections = (service as unknown as Record<string, unknown>).activeConnections;
     activeConnections.add('sess-001');
     activeConnections.add('sess-002');
 
@@ -96,7 +96,7 @@ describe('NativeWebSocketProxyService', () => {
 
     mockFindByApiKey.mockResolvedValue(null);
 
-    const mockSocket = new EventEmitter() as any;
+    const mockSocket = new EventEmitter() as unknown as Record<string, unknown>;
     mockSocket.destroyed = false;
     mockSocket.writable = true;
     mockSocket.write = vi.fn();
@@ -126,7 +126,7 @@ describe('NativeWebSocketProxyService', () => {
       directUrl: 'ws://127.0.0.1:9222/devtools/browser/sess-001',
     });
 
-    const mockSocket = new EventEmitter() as any;
+    const mockSocket = new EventEmitter() as unknown as Record<string, unknown>;
     mockSocket.destroyed = false;
     mockSocket.writable = true;
     mockSocket.write = vi.fn();
@@ -155,7 +155,7 @@ describe('NativeWebSocketProxyService', () => {
   it('WS-08: 连接参数验证应该拒绝无效参数', async () => {
     const service = new NativeWebSocketProxyService(mockServer);
 
-    const mockSocket = new EventEmitter() as any;
+    const mockSocket = new EventEmitter() as unknown as Record<string, unknown>;
     mockSocket.destroyed = false;
     mockSocket.writable = true;
     mockSocket.write = vi.fn();

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-let mockTable: any;
+let mockTable: Record<string, ReturnType<typeof vi.fn>>;
 const mockRaw = vi.fn((sql: string) => sql);
 
 const dbFn = (tableOrMethod: string) => {
@@ -13,15 +13,16 @@ vi.mock('../../../config/database.js', () => ({
   db: dbFn,
 }));
 
-function createMockChain(finalValue: any) {
-  const chain: any = (..._args: any[]) => chain;
-  chain.then = (resolve: any, reject: any) =>
+function createMockChain(finalValue: unknown) {
+  const chain: ((...args: unknown[]) => Record<string, unknown>) & Record<string, unknown> = (..._args: unknown[]) =>
+    chain as unknown as ((...args: unknown[]) => Record<string, unknown>) & Record<string, unknown>;
+  chain.then = (resolve: (value?: unknown) => unknown, reject: (reason?: unknown) => unknown) =>
     Promise.resolve(typeof finalValue === 'function' ? finalValue() : finalValue).then(resolve, reject);
   return chain;
 }
 
 describe('WebhookEventModel - JSON parse protection', () => {
-  let WebhookEventModel: any;
+  let WebhookEventModel: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();

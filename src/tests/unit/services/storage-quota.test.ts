@@ -32,7 +32,7 @@ const MB = 1024 * 1024;
 const MAX_TOTAL = 5 * GB;
 
 describe('Storage Quota - 配额用尽场景', () => {
-  let StorageService: any;
+  let StorageService: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -50,13 +50,17 @@ describe('Storage Quota - 配额用尽场景', () => {
       return false;
     });
 
-    vi.mocked(readdir).mockResolvedValue([{ name: 'data.bin', isDirectory: () => false, isFile: () => true }] as any);
+    vi.mocked(readdir).mockResolvedValue([
+      { name: 'data.bin', isDirectory: () => false, isFile: () => true },
+    ] as unknown as Record<string, unknown>);
 
     vi.mocked(stat).mockImplementation((_p: string) => {
       const pathStr = String(_p);
-      if (pathStr.includes('sessions')) return Promise.resolve({ size: sessionsSize } as any);
-      if (pathStr.includes('shared')) return Promise.resolve({ size: sharedSize } as any);
-      return Promise.resolve({ size: 0 } as any);
+      if (pathStr.includes('sessions'))
+        return Promise.resolve({ size: sessionsSize } as unknown as Record<string, unknown>);
+      if (pathStr.includes('shared'))
+        return Promise.resolve({ size: sharedSize } as unknown as Record<string, unknown>);
+      return Promise.resolve({ size: 0 } as unknown as Record<string, unknown>);
     });
   }
 
@@ -107,7 +111,7 @@ describe('Storage Quota - 配额用尽场景', () => {
 
   it('SQ-05: 配额为 0 时任何上传都应该被拒绝', async () => {
     const { STORAGE_CONFIG } = await import('../../../config/storage.config.js');
-    (STORAGE_CONFIG as any).MAX_TOTAL_SIZE_PER_USER = 0;
+    (STORAGE_CONFIG as unknown as Record<string, unknown>).MAX_TOTAL_SIZE_PER_USER = 0;
 
     await mockEmptyStorage();
 
@@ -116,7 +120,7 @@ describe('Storage Quota - 配额用尽场景', () => {
     expect(result.canCreateSession).toBe(false);
     expect(result.canCreateShared).toBe(false);
 
-    (STORAGE_CONFIG as any).MAX_TOTAL_SIZE_PER_USER = MAX_TOTAL;
+    (STORAGE_CONFIG as unknown as Record<string, unknown>).MAX_TOTAL_SIZE_PER_USER = MAX_TOTAL;
   });
 
   it('SQ-06: 已用空间恰好等于配额但无新增时仍允许', async () => {

@@ -92,7 +92,7 @@ describe('MachineGrpcService', () => {
         ({
           addService: mockAddService,
           bindAsync: mockBindAsync,
-        }) as any
+        }) as unknown as Record<string, unknown>
     );
 
     const { startGrpcServer } = await import('../../../services/machine-grpc/index.js');

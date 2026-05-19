@@ -2,25 +2,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UserRole } from '../../../../shared/types/index.js';
 
 function createMockFastify(userRole?: string, verifySucceeds = true) {
-  const reply: any = {
+  const reply: Record<string, ReturnType<typeof vi.fn>> = {
     sent: false,
     statusCode: 200,
-    status: vi.fn(function (this: any, code: number) {
+    status: vi.fn(function (this: Record<string, unknown>, code: number) {
       this.statusCode = code;
       return this;
     }),
-    send: vi.fn(function (this: any) {
+    send: vi.fn(function (this: Record<string, unknown>) {
       this.sent = true;
       return this;
     }),
   };
 
-  const request: any = {
+  const request: Record<string, unknown> = {
     user: userRole ? { id: 1, role: userRole } : undefined,
     log: { error: vi.fn() },
   };
 
-  const fastify: any = {
+  const fastify: Record<string, unknown> = {
     verifyJWT: vi.fn(async () => {
       if (!verifySucceeds) throw new Error('JWT verify failed');
     }),
@@ -30,7 +30,7 @@ function createMockFastify(userRole?: string, verifySucceeds = true) {
 }
 
 describe('createAuthenticate', () => {
-  let createAuthenticate: any;
+  let createAuthenticate: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();

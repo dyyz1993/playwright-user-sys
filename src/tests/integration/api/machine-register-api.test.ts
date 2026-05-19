@@ -39,8 +39,8 @@ vi.mock('../../../services/machine.service.js', () => ({
 
 describe('Machine Register API 集成测试', () => {
   let app: FastifyInstance;
-  let testAdmin: any;
-  let testUser: any;
+  let testAdmin: ReturnType<typeof vi.fn>;
+  let testUser: ReturnType<typeof vi.fn>;
   let adminApiKey: string;
   let userApiKey: string;
 

@@ -34,8 +34,8 @@ vi.mock('../../../utils/webhook.js', () => ({
 
 describe('积分管理 API Routes 集成测试', () => {
   let app: FastifyInstance;
-  let testAdmin: any;
-  let testUser: any;
+  let testAdmin: ReturnType<typeof vi.fn>;
+  let testUser: ReturnType<typeof vi.fn>;
   let adminToken: string;
   let userToken: string;
 
@@ -89,7 +89,7 @@ describe('积分管理 API Routes 集成测试', () => {
 
   describe('A. 积分操作核心功能', () => {
     describe('POST /api/admin/users/:id/credits - 添加积分', () => {
-      let userForCredits: any;
+      let userForCredits: ReturnType<typeof vi.fn>;
 
       beforeEach(async () => {
         userForCredits = await createTestUser({
@@ -359,7 +359,7 @@ describe('积分管理 API Routes 集成测试', () => {
     });
 
     describe('POST /api/admin/users/batch-recharge - 批量充值', () => {
-      let usersForRecharge: any[];
+      let usersForRecharge: unknown[];
 
       beforeEach(async () => {
         // 创建多个要充值的用户
@@ -561,7 +561,7 @@ describe('积分管理 API Routes 集成测试', () => {
     });
 
     describe('GET /api/admin/users/:id/session-stats - 会话统计', () => {
-      let userForStats: any;
+      let userForStats: ReturnType<typeof vi.fn>;
 
       beforeEach(async () => {
         userForStats = await createTestUser({
@@ -667,7 +667,7 @@ describe('积分管理 API Routes 集成测试', () => {
         await UserModel.deductCredits(user!.id, 15);
         // 如果没有抛出错误，测试失败
         expect(true).toBe(false);
-      } catch (error: any) {
+      } catch (error: unknown) {
         expect(error.message).toContain('点数不足');
       }
 
@@ -686,7 +686,7 @@ describe('积分管理 API Routes 集成测试', () => {
       try {
         await UserModel.deductCredits(user!.id, 1);
         expect(true).toBe(false);
-      } catch (error: any) {
+      } catch (error: unknown) {
         expect(error.message).toContain('点数不足');
       }
 
@@ -749,7 +749,7 @@ describe('积分管理 API Routes 集成测试', () => {
       try {
         await UserModel.deductCredits(user!.id, 1);
         expect(true).toBe(false);
-      } catch (error: any) {
+      } catch (error: unknown) {
         expect(error.message).toContain('点数不足');
       }
 
@@ -808,7 +808,7 @@ describe('积分管理 API Routes 集成测试', () => {
   // ========================================
 
   describe('C. 金额类型验证测试', () => {
-    let userForAmount: any;
+    let userForAmount: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       userForAmount = await createTestUser({
@@ -1408,7 +1408,7 @@ describe('积分管理 API Routes 集成测试', () => {
       });
 
       // 并发添加
-      const promises: Promise<any>[] = [];
+      const promises: Promise<unknown>[] = [];
       for (let i = 0; i < 10; i++) {
         promises.push(UserModel.addCredits(user!.id, 10));
       }
@@ -1431,7 +1431,7 @@ describe('积分管理 API Routes 集成测试', () => {
       });
 
       // 并发扣除（有些会失败因为余额不足）
-      const promises: Promise<any>[] = [];
+      const promises: Promise<unknown>[] = [];
       for (let i = 0; i < 10; i++) {
         promises.push(
           UserModel.deductCredits(user!.id, 10).catch((_err) => {
@@ -1456,7 +1456,7 @@ describe('积分管理 API Routes 集成测试', () => {
         credits: 100,
       });
 
-      const promises: Promise<any>[] = [];
+      const promises: Promise<unknown>[] = [];
 
       // 并发操作
       for (let i = 0; i < 5; i++) {
@@ -1475,7 +1475,7 @@ describe('积分管理 API Routes 集成测试', () => {
       const users = await createTestUsers(5);
 
       // 并发批量充值
-      const promises: Promise<any>[] = [];
+      const promises: Promise<unknown>[] = [];
       for (const user of users) {
         promises.push(
           app.inject({
@@ -1513,7 +1513,7 @@ describe('积分管理 API Routes 集成测试', () => {
       });
 
       // 大量并发操作
-      const promises: Promise<any>[] = [];
+      const promises: Promise<unknown>[] = [];
       for (let i = 0; i < 50; i++) {
         promises.push(UserModel.addCredits(user!.id, 1).catch((_err) => null));
       }

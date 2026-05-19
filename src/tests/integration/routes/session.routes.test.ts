@@ -41,9 +41,9 @@ vi.mock('../../../utils/webhook.js', () => ({
 
 describe('Session Routes集成测试', () => {
   let app: FastifyInstance;
-  let testUser: any;
-  let testAdmin: any;
-  let testMachine: any;
+  let testUser: ReturnType<typeof vi.fn>;
+  let testAdmin: ReturnType<typeof vi.fn>;
+  let testMachine: ReturnType<typeof vi.fn>;
   let testApiKey: string;
   let adminToken: string;
 
@@ -179,7 +179,7 @@ describe('Session Routes集成测试', () => {
   // SR-05: 获取会话 - 无权限
   // ========================================
   describe('GET /api/sessions/:id', () => {
-    let testSession: any;
+    let testSession: ReturnType<typeof vi.fn>;
 
     beforeAll(async () => {
       // 创建一个测试会话
@@ -255,7 +255,7 @@ describe('Session Routes集成测试', () => {
   // SR-06: 释放会话流程
   // ========================================
   describe('POST /api/sessions/:id/release', () => {
-    let testSession: any;
+    let testSession: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       // 创建一个测试会话
@@ -306,7 +306,7 @@ describe('Session Routes集成测试', () => {
   // SR-07: 关闭会话 - 管理员
   // ========================================
   describe('POST /api/sessions/:id/close', () => {
-    let testSession: any;
+    let testSession: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       // 创建一个测试会话

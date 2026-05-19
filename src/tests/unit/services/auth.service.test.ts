@@ -16,7 +16,7 @@ vi.mock('../../../models/user.model.js', () => ({
 
 vi.mock('../../../config/database.js', () => {
   const dbFn = vi.fn();
-  (dbFn as any).transaction = vi.fn();
+  (dbFn as unknown as Record<string, unknown>).transaction = vi.fn();
   return { db: dbFn };
 });
 
@@ -35,13 +35,13 @@ vi.mock('../../../shared/utils/logger.js', () => ({
 }));
 
 describe('AuthService', () => {
-  let authenticateUser: any;
-  let webLogin: any;
-  let UserModel: any;
-  let db: any;
-  let verifyPasswordWithMigration: any;
-  let hashPassword: any;
-  let generateToken: any;
+  let authenticateUser: ReturnType<typeof vi.fn>;
+  let webLogin: ReturnType<typeof vi.fn>;
+  let UserModel: ReturnType<typeof vi.fn>;
+  let db: ReturnType<typeof vi.fn>;
+  let verifyPasswordWithMigration: ReturnType<typeof vi.fn>;
+  let hashPassword: ReturnType<typeof vi.fn>;
+  let generateToken: ReturnType<typeof vi.fn>;
 
   const mockActiveUser = {
     id: 1,

@@ -45,13 +45,13 @@ vi.mock('../../../shared/utils/logger.js', () => ({
 }));
 
 describe('DemoService', () => {
-  let DemoService: any;
-  let createBrowserSession: any;
-  let releaseSessionFn: any;
-  let SessionModel: any;
-  let UserModel: any;
-  let db: any;
-  let hashPassword: any;
+  let DemoService: ReturnType<typeof vi.fn>;
+  let createBrowserSession: ReturnType<typeof vi.fn>;
+  let releaseSessionFn: ReturnType<typeof vi.fn>;
+  let SessionModel: ReturnType<typeof vi.fn>;
+  let UserModel: ReturnType<typeof vi.fn>;
+  let db: ReturnType<typeof vi.fn>;
+  let hashPassword: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -301,7 +301,7 @@ describe('DemoService', () => {
     expect(status).toBeTruthy();
 
     // 通过直接操作内部 map 来模拟过期
-    const tracker = (service as any).activeSessions.get('demo-session-001');
+    const tracker = (service as unknown as Record<string, unknown>).activeSessions.get('demo-session-001');
     tracker.lastActivity = new Date(Date.now() - 301 * 1000);
 
     const refreshed = service.refreshActivity('demo-session-001');
@@ -387,7 +387,7 @@ describe('DemoService', () => {
   it('demoApiKey 为 null 时 createSession 不应返回 undefined apiKey', async () => {
     vi.mocked(UserModel.findByUsername).mockResolvedValue({
       id: 1,
-      api_key: null as any,
+      api_key: null as unknown as Record<string, unknown>,
     });
 
     const service = new DemoService();
@@ -441,7 +441,7 @@ describe('DemoService', () => {
     await service.createSession('127.0.0.1');
 
     // 直接模拟绝对超时: 修改 tracker 并手动触发超时逻辑
-    const tracker = (service as any).activeSessions.get('demo-session-001');
+    const tracker = (service as unknown as Record<string, unknown>).activeSessions.get('demo-session-001');
     expect(tracker).toBeTruthy();
     expect(tracker.absoluteTimeoutHandle).toBeTruthy();
 
@@ -460,7 +460,7 @@ describe('DemoService', () => {
   it('demoApiKey 为 null 时 createSession 应抛出错误', async () => {
     vi.mocked(UserModel.findByUsername).mockResolvedValue({
       id: 1,
-      api_key: null as any,
+      api_key: null as unknown as Record<string, unknown>,
     });
 
     const service = new DemoService();

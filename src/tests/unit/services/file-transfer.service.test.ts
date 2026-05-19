@@ -29,8 +29,8 @@ vi.mock('../../../shared/utils/logger.js', () => ({
 }));
 
 describe('FileTransferService', () => {
-  let FileTransferService: any;
-  let fileTransferService: any;
+  let FileTransferService: ReturnType<typeof vi.fn>;
+  let fileTransferService: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();

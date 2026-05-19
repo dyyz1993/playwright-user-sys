@@ -24,7 +24,7 @@ vi.mock('../../utils/webhook.js', () => ({
 
 describe('Web 管理后台登录集成测试', () => {
   let app: FastifyInstance;
-  let _testAdmin: any;
+  let _testAdmin: ReturnType<typeof vi.fn>;
 
   beforeAll(async () => {
     await initDatabase();

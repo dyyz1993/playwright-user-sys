@@ -127,15 +127,15 @@ vi.mock('../../../config/env.js', () => ({
 }));
 
 describe('SessionService', () => {
-  let createBrowserSession: any;
-  let handleSessionDisconnect: any;
-  let releaseSessionFn: any;
-  let UserModel: any;
-  let SessionModel: any;
-  let MachineModel: any;
-  let connectionManager: any;
-  let createWebhookEvent: any;
-  let db: any;
+  let createBrowserSession: ReturnType<typeof vi.fn>;
+  let handleSessionDisconnect: ReturnType<typeof vi.fn>;
+  let releaseSessionFn: ReturnType<typeof vi.fn>;
+  let UserModel: ReturnType<typeof vi.fn>;
+  let SessionModel: ReturnType<typeof vi.fn>;
+  let MachineModel: ReturnType<typeof vi.fn>;
+  let connectionManager: ReturnType<typeof vi.fn>;
+  let createWebhookEvent: ReturnType<typeof vi.fn>;
+  let db: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -304,7 +304,7 @@ describe('SessionService', () => {
     vi.spyOn(envModule, 'env', 'get').mockReturnValue({
       PUBLIC_MACHINE_ENDPOINT: 'public.example.com:8082',
       MAX_SESSIONS_PER_USER: 5,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     vi.mocked(MachineModel.findAvailable).mockResolvedValue({
       id: 'machine-001',
@@ -620,7 +620,7 @@ describe('SessionService', () => {
       PUBLIC_MANAGER_URL: 'manager.example.com',
       PUBLIC_MACHINE_ENDPOINT: '',
       MAX_SESSIONS_PER_USER: 5,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     vi.mocked(MachineModel.findAvailable).mockResolvedValue({
       id: 'machine-001',
@@ -657,7 +657,7 @@ describe('SessionService', () => {
     const trx = createCreateSessionTrx(100);
     vi.mocked(db.transaction).mockImplementation(async (fn: Function) => fn(trx));
 
-    const sharedError: any = new Error('活跃的共享数据会话');
+    const sharedError = new Error('活跃的共享数据会话');
     sharedError.code = 'SHARED_SESSION_EXISTS';
     vi.mocked(connectionManager.launchBrowser).mockRejectedValue(sharedError);
 

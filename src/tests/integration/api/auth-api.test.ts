@@ -38,7 +38,7 @@ vi.mock('../../../services/machine.service.js', () => ({
 
 describe('Auth API 集成测试', () => {
   let app: FastifyInstance;
-  let testUser: any;
+  let testUser: ReturnType<typeof vi.fn>;
   let validToken: string;
 
   beforeAll(async () => {

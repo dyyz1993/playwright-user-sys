@@ -44,7 +44,7 @@ describe('MemoryStoreService', () => {
   // 由于类未导出，无法访问 getInstance() 进行单例测试
   // MS-01: 单例模式测试被跳过
 
-  let service: any;
+  let service: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     // 重置所有 mock
@@ -54,8 +54,8 @@ describe('MemoryStoreService', () => {
     service = memoryStore;
 
     // 清空内存数据 - 直接访问私有属性
-    (service as any).machines.clear();
-    (service as any).sessions.clear();
+    (service as unknown as Record<string, unknown>).machines.clear();
+    (service as unknown as Record<string, unknown>).sessions.clear();
   });
 
   afterEach(() => {
@@ -112,7 +112,7 @@ describe('MemoryStoreService', () => {
       active_sessions: 5,
       max_sessions: 10,
       last_heartbeat: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     // 第二次更新
     service.updateMachineStatus({
@@ -123,7 +123,7 @@ describe('MemoryStoreService', () => {
       active_sessions: 8,
       max_sessions: 10,
       last_heartbeat: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     const machine = service.getMachine('machine-001');
     expect(machine!.cpu_usage).toBe(50); // 更新后的值
@@ -143,7 +143,7 @@ describe('MemoryStoreService', () => {
       active_sessions: 0,
       max_sessions: 10,
       last_heartbeat: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     const machine = service.getMachine('machine-001');
     expect(machine!.cpu_usage).toBe(50.5);
@@ -160,7 +160,7 @@ describe('MemoryStoreService', () => {
       active_sessions: 0,
       max_sessions: 10,
       last_heartbeat: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     const machine = service.getMachine('machine-001');
     expect(machine).toBeDefined();
@@ -186,7 +186,7 @@ describe('MemoryStoreService', () => {
       active_sessions: 0,
       max_sessions: 10,
       last_heartbeat: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     service.updateMachineStatus({
       machine_id: 'machine-002',
@@ -195,7 +195,7 @@ describe('MemoryStoreService', () => {
       active_sessions: 0,
       max_sessions: 10,
       last_heartbeat: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     const machines = service.getAllMachines();
     expect(machines.length).toBe(2);
@@ -215,7 +215,7 @@ describe('MemoryStoreService', () => {
       active_sessions: 0,
       max_sessions: 10,
       last_heartbeat: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     service.markMachineOffline('machine-001');
 
@@ -236,7 +236,7 @@ describe('MemoryStoreService', () => {
       last_activity: new Date(),
     };
 
-    service.updateSessionStatus(sessionData as any);
+    service.updateSessionStatus(sessionData as unknown as Record<string, unknown>);
 
     const session = service.getSession('session-001');
     expect(session).toBeDefined();
@@ -256,7 +256,7 @@ describe('MemoryStoreService', () => {
       status: SessionStatus.CREATED,
       start_time: new Date(),
       last_activity: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     // 更新状态
     service.updateSessionStatus({
@@ -266,7 +266,7 @@ describe('MemoryStoreService', () => {
       status: SessionStatus.CONNECTED,
       start_time: new Date(),
       last_activity: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     const session = service.getSession('session-001');
     expect(session!.status).toBe(SessionStatus.CONNECTED);
@@ -283,7 +283,7 @@ describe('MemoryStoreService', () => {
       status: SessionStatus.CONNECTED,
       start_time: new Date(),
       last_activity: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     const session = service.getSession('session-001');
     expect(session).toBeDefined();
@@ -309,7 +309,7 @@ describe('MemoryStoreService', () => {
       status: SessionStatus.CONNECTED,
       start_time: new Date(),
       last_activity: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     service.updateSessionStatus({
       id: 'session-002',
@@ -318,7 +318,7 @@ describe('MemoryStoreService', () => {
       status: SessionStatus.CONNECTED,
       start_time: new Date(),
       last_activity: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     const sessions = service.getAllSessions();
     expect(sessions.length).toBe(2);
@@ -342,7 +342,7 @@ describe('MemoryStoreService', () => {
       status: SessionStatus.COMPLETED, // 非活跃状态才能被清理
       start_time: oldTime,
       last_activity: oldTime,
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     // 创建一个活跃会话
     service.updateSessionStatus({
@@ -352,7 +352,7 @@ describe('MemoryStoreService', () => {
       status: SessionStatus.CONNECTED, // 活跃状态不会被清理
       start_time: new Date(),
       last_activity: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     // 清理30分钟之前的会话
     service.cleanupOldSessions(30 * 60 * 1000);
@@ -443,7 +443,7 @@ describe('MemoryStoreService', () => {
       status: SessionStatus.CONNECTED,
       start_time: new Date(),
       last_activity: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     service.updateSessionStatus({
       id: 'session-002',
@@ -452,7 +452,7 @@ describe('MemoryStoreService', () => {
       status: SessionStatus.CONNECTED,
       start_time: new Date(),
       last_activity: new Date(),
-    } as any);
+    } as unknown as Record<string, unknown>);
 
     const machine = service.getMachine('machine-001');
     expect(machine!.active_sessions).toBe(2);

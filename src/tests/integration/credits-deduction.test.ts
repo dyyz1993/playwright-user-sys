@@ -6,8 +6,8 @@ import { SessionModel } from '../../models/session/index.js';
 import { SessionStatus } from '@shared/types/index.js';
 
 describe('点数扣除集成测试', () => {
-  let app: any;
-  let testUser: any;
+  let app: ReturnType<typeof vi.fn>;
+  let testUser: ReturnType<typeof vi.fn>;
 
   beforeAll(async () => {
     await initDatabase();

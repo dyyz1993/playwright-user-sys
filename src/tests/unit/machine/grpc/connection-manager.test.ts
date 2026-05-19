@@ -29,9 +29,9 @@ vi.mock('@shared/utils/logger.js', () => ({
 }));
 
 describe('machine/grpc ConnectionManager', () => {
-  let ConnectionManager: any;
-  let onDisconnected: any;
-  let onReconnectNeeded: any;
+  let ConnectionManager: ReturnType<typeof vi.fn>;
+  let onDisconnected: ReturnType<typeof vi.fn>;
+  let onReconnectNeeded: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -62,7 +62,7 @@ describe('machine/grpc ConnectionManager', () => {
     expect(cm.getCall()).toBeNull();
 
     const mockCall = { write: vi.fn(), on: vi.fn(), end: vi.fn() };
-    cm.setCall(mockCall as any);
+    cm.setCall(mockCall as unknown as Record<string, unknown>);
     expect(cm.getCall()).toBe(mockCall);
   });
 
@@ -79,16 +79,16 @@ describe('machine/grpc ConnectionManager', () => {
     const mockCall = {
       on: vi.fn((event: string, handler: Function) => {
         if (event === 'end') {
-          (mockCall as any)._endHandler = handler;
+          (mockCall as unknown as Record<string, unknown>)._endHandler = handler;
         }
       }),
       write: vi.fn(),
       end: vi.fn(),
     };
 
-    cm.setupStreamHandlers(mockCall as any);
+    cm.setupStreamHandlers(mockCall as unknown as Record<string, unknown>);
 
-    const endHandler = (mockCall as any)._endHandler;
+    const endHandler = (mockCall as unknown as Record<string, unknown>)._endHandler;
     if (endHandler) endHandler();
 
     expect(onDisconnected).toHaveBeenCalled();
@@ -101,16 +101,16 @@ describe('machine/grpc ConnectionManager', () => {
     const mockCall = {
       on: vi.fn((event: string, handler: Function) => {
         if (event === 'error') {
-          (mockCall as any)._errorHandler = handler;
+          (mockCall as unknown as Record<string, unknown>)._errorHandler = handler;
         }
       }),
       write: vi.fn(),
       end: vi.fn(),
     };
 
-    cm.setupStreamHandlers(mockCall as any);
+    cm.setupStreamHandlers(mockCall as unknown as Record<string, unknown>);
 
-    const errorHandler = (mockCall as any)._errorHandler;
+    const errorHandler = (mockCall as unknown as Record<string, unknown>)._errorHandler;
     if (errorHandler) errorHandler(new Error('test error'));
 
     expect(onReconnectNeeded).toHaveBeenCalled();
@@ -127,7 +127,7 @@ describe('machine/grpc ConnectionManager', () => {
       write: mockWrite,
       end: vi.fn(),
     };
-    cm.setCall(mockCall as any);
+    cm.setCall(mockCall as unknown as Record<string, unknown>);
 
     const message = {
       heartbeat_request: {
@@ -140,7 +140,7 @@ describe('machine/grpc ConnectionManager', () => {
       handlers[event] = handler;
     });
 
-    cm.setupStreamHandlers(mockCall as any);
+    cm.setupStreamHandlers(mockCall as unknown as Record<string, unknown>);
 
     if (handlers['data']) {
       await handlers['data'](message);
@@ -168,7 +168,7 @@ describe('machine/grpc ConnectionManager', () => {
       handlers[event] = handler;
     });
 
-    cm.setupStreamHandlers(mockCall as any);
+    cm.setupStreamHandlers(mockCall as unknown as Record<string, unknown>);
 
     const message = {
       close_browser: {
@@ -203,7 +203,7 @@ describe('machine/grpc ConnectionManager', () => {
       handlers[event] = handler;
     });
 
-    cm.setupStreamHandlers(mockCall as any);
+    cm.setupStreamHandlers(mockCall as unknown as Record<string, unknown>);
 
     const message = {
       close_browser: {
@@ -240,7 +240,7 @@ describe('machine/grpc ConnectionManager', () => {
       handlers[event] = handler;
     });
 
-    cm.setupStreamHandlers(mockCall as any);
+    cm.setupStreamHandlers(mockCall as unknown as Record<string, unknown>);
 
     const message = {
       request_screenshot: {

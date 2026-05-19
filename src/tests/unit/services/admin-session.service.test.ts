@@ -47,11 +47,11 @@ vi.mock('../../../utils/webhook.js', () => ({
 }));
 
 describe('AdminSessionService', () => {
-  let SessionModel: any;
-  let MachineModel: any;
-  let UserModel: any;
-  let connectionManager: any;
-  let createWebhookEvent: any;
+  let SessionModel: ReturnType<typeof vi.fn>;
+  let MachineModel: ReturnType<typeof vi.fn>;
+  let UserModel: ReturnType<typeof vi.fn>;
+  let connectionManager: ReturnType<typeof vi.fn>;
+  let createWebhookEvent: ReturnType<typeof vi.fn>;
 
   const mockSession = {
     id: 'session-001',
@@ -186,7 +186,7 @@ describe('AdminSessionService', () => {
   // ========================================
   it('getUserSessions 应该委托给 SessionModel.findByUserId', async () => {
     const mockResult = { items: [mockSession], total: 1 };
-    vi.mocked(SessionModel.findByUserId).mockResolvedValue(mockResult as any);
+    vi.mocked(SessionModel.findByUserId).mockResolvedValue(mockResult as unknown as Record<string, unknown>);
 
     const { getUserSessions } = await import('../../../services/admin-session.service.js');
     const result = await getUserSessions(1, { page: '1', limit: '20' });
@@ -213,7 +213,7 @@ describe('AdminSessionService', () => {
   // ========================================
   it('listSessions 应该正确解析参数并查询', async () => {
     const mockResult = { items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
-    vi.mocked(SessionModel.paginateSorted).mockResolvedValue(mockResult as any);
+    vi.mocked(SessionModel.paginateSorted).mockResolvedValue(mockResult as unknown as Record<string, unknown>);
 
     const { listSessions } = await import('../../../services/admin-session.service.js');
     const result = await listSessions({ page: '2', limit: '10', sort: 'created_at', order: 'desc' });
@@ -230,7 +230,7 @@ describe('AdminSessionService', () => {
   // AS-10: listSessions - 带 status 过滤
   // ========================================
   it('listSessions 应该支持 status 过滤', async () => {
-    vi.mocked(SessionModel.paginateSorted).mockResolvedValue({} as any);
+    vi.mocked(SessionModel.paginateSorted).mockResolvedValue({} as unknown as Record<string, unknown>);
 
     const { listSessions } = await import('../../../services/admin-session.service.js');
     await listSessions({ page: '1', limit: '20', sort: 'created_at', order: 'desc', status: 'connected' });
@@ -249,7 +249,7 @@ describe('AdminSessionService', () => {
   // ========================================
   it('getSessionStats 应该委托给 SessionModel.getStats', async () => {
     const mockStats = { total: 100, connected: 10 };
-    vi.mocked(SessionModel.getStats).mockResolvedValue(mockStats as any);
+    vi.mocked(SessionModel.getStats).mockResolvedValue(mockStats as unknown as Record<string, unknown>);
 
     const { getSessionStats } = await import('../../../services/admin-session.service.js');
     const result = await getSessionStats({});
@@ -262,7 +262,7 @@ describe('AdminSessionService', () => {
   // AS-12: getSessionDetail - 委托给 SessionModel
   // ========================================
   it('getSessionDetail 应该委托给 SessionModel.getDetailById', async () => {
-    vi.mocked(SessionModel.getDetailById).mockResolvedValue(mockSession as any);
+    vi.mocked(SessionModel.getDetailById).mockResolvedValue(mockSession as unknown as Record<string, unknown>);
 
     const { getSessionDetail } = await import('../../../services/admin-session.service.js');
     const result = await getSessionDetail('session-001');

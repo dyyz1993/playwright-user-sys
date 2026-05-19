@@ -92,7 +92,7 @@ describe('管理员会话管理功能测试', () => {
       expect(Array.isArray(result.data)).toBe(true);
 
       // 验证返回的会话中包含我们创建的测试会话
-      const foundSession = result.data.find((session: any) => session.id === testSessionId);
+      const foundSession = result.data.find((session: Record<string, unknown>) => session.id === testSessionId);
       expect(foundSession).toBeTruthy();
       expect(foundSession?.user_id).toBe(testUserId);
     });

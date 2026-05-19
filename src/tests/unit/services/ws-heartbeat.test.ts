@@ -18,14 +18,14 @@ import {
 } from '../../../services/ws-heartbeat.js';
 
 function createMockSocket() {
-  const socket = new EventEmitter() as any;
+  const socket = new EventEmitter() as unknown as Record<string, unknown>;
   socket.destroyed = false;
   socket.writable = true;
   socket.write = vi.fn();
   socket.destroy = vi.fn();
   socket.end = vi.fn();
   socket.setKeepAlive = vi.fn();
-  socket.removeListener = function (event: string, fn: (...args: any[]) => void) {
+  socket.removeListener = function (event: string, fn: (...args: unknown[]) => void) {
     this.off(event, fn);
   };
   return socket;
@@ -142,7 +142,7 @@ describe('ws-heartbeat', () => {
     expect(onTimeout).toHaveBeenCalledTimes(1);
   });
 
-  it('HB-11: 应接受符合 HeartbeatSocket 接口的对象（无 as any）', () => {
+  it('HB-11: 应接受符合 HeartbeatSocket 接口的对象（无 as unknown as Record<string, unknown>）', () => {
     const typedSocket: HeartbeatSocket = {
       on: vi.fn(),
       removeListener: vi.fn(),

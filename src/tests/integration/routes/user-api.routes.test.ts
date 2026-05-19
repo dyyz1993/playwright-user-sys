@@ -26,8 +26,8 @@ vi.mock('../../../utils/webhook.js', () => ({
 
 describe('Admin User Management API Routes 集成测试', () => {
   let app: FastifyInstance;
-  let testUser: any;
-  let testAdmin: any;
+  let testUser: ReturnType<typeof vi.fn>;
+  let testAdmin: ReturnType<typeof vi.fn>;
   let adminToken: string;
   let userToken: string;
 
@@ -320,7 +320,7 @@ describe('Admin User Management API Routes 集成测试', () => {
       expect(result.success).toBe(true);
 
       // 验证搜索结果包含目标用户
-      const found = result.data.items.find((u: any) => u.username === testUser?.username);
+      const found = result.data.items.find((u: Record<string, unknown>) => u.username === testUser?.username);
       expect(found).toBeDefined();
     });
 
@@ -338,7 +338,7 @@ describe('Admin User Management API Routes 集成测试', () => {
       expect(result.success).toBe(true);
 
       // 验证所有结果都是管理员
-      result.data.items.forEach((user: any) => {
+      result.data.items.forEach((user: Record<string, unknown>) => {
         expect(user.role).toBe(UserRole.ADMIN);
       });
     });
@@ -357,7 +357,7 @@ describe('Admin User Management API Routes 集成测试', () => {
       expect(result.success).toBe(true);
 
       // 验证所有结果都是活跃状态
-      result.data.items.forEach((user: any) => {
+      result.data.items.forEach((user: Record<string, unknown>) => {
         expect(user.status).toBe(UserStatus.ACTIVE);
       });
     });
@@ -491,7 +491,7 @@ describe('Admin User Management API Routes 集成测试', () => {
   // A-04: 更新用户信息
   // ========================================
   describe('PUT /api/admin/users/:id - 更新用户信息', () => {
-    let userToUpdate: any;
+    let userToUpdate: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       // 创建一个要更新的用户
@@ -688,8 +688,8 @@ describe('Admin User Management API Routes 集成测试', () => {
   // A-05: 删除用户
   // ========================================
   describe('DELETE /api/admin/users/:id - 删除用户', () => {
-    let userToDelete: any;
-    let adminToDelete: any;
+    let userToDelete: ReturnType<typeof vi.fn>;
+    let adminToDelete: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       // 创建要删除的用户
@@ -1305,7 +1305,7 @@ describe('Admin User Management API Routes 集成测试', () => {
   // C-01: 添加点数
   // ========================================
   describe('POST /api/admin/users/:id/credits - 添加点数', () => {
-    let userForCredits: any;
+    let userForCredits: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       userForCredits = await createTestUser({
@@ -1432,7 +1432,7 @@ describe('Admin User Management API Routes 集成测试', () => {
   // C-02: 重置API Key
   // ========================================
   describe('POST /api/admin/users/:id/reset-api-key - 重置API Key', () => {
-    let userForReset: any;
+    let userForReset: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
       userForReset = await createTestUser({
@@ -1499,7 +1499,7 @@ describe('Admin User Management API Routes 集成测试', () => {
   // C-03: 批量删除用户
   // ========================================
   describe('POST /api/admin/users/batch-delete - 批量删除用户', () => {
-    let usersToDelete: any[];
+    let usersToDelete: unknown[];
 
     beforeEach(async () => {
       // 创建多个要删除的用户
@@ -1633,7 +1633,7 @@ describe('Admin User Management API Routes 集成测试', () => {
   // C-04: 批量充值
   // ========================================
   describe('POST /api/admin/users/batch-recharge - 批量充值', () => {
-    let usersForRecharge: any[];
+    let usersForRecharge: unknown[];
 
     beforeEach(async () => {
       // 创建多个要充值的用户

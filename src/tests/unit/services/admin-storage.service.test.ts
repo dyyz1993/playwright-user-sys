@@ -47,16 +47,16 @@ vi.mock('path', () => ({
 }));
 
 describe('AdminStorageService', () => {
-  let UserModel: any;
-  let OperationLogModel: any;
-  let StorageService: any;
-  let logger: any;
-  let fsModule: any;
+  let UserModel: ReturnType<typeof vi.fn>;
+  let OperationLogModel: ReturnType<typeof vi.fn>;
+  let StorageService: ReturnType<typeof vi.fn>;
+  let logger: ReturnType<typeof vi.fn>;
+  let fsModule: ReturnType<typeof vi.fn>;
 
-  let getStorageStats: any;
-  let cleanupUserData: any;
-  let cleanupAllOldData: any;
-  let getSystemStorageStats: any;
+  let getStorageStats: ReturnType<typeof vi.fn>;
+  let cleanupUserData: ReturnType<typeof vi.fn>;
+  let cleanupAllOldData: ReturnType<typeof vi.fn>;
+  let getSystemStorageStats: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();

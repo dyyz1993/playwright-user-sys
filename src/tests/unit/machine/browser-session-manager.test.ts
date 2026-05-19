@@ -30,7 +30,7 @@ describe('BrowserService Session Manager API', () => {
     it('should return session info after setSession', async () => {
       const ctx = {
         port: 9222,
-        browser: {} as any,
+        browser: {} as unknown as Record<string, unknown>,
         path: '/devtools/browser/abc',
         lastActivity: Date.now(),
         startTime: Date.now(),
@@ -50,7 +50,7 @@ describe('BrowserService Session Manager API', () => {
     it('should return true after setSession', () => {
       trackSetSession('test-id', {
         port: 9222,
-        browser: {} as any,
+        browser: {} as unknown as Record<string, unknown>,
         path: '/devtools/browser/abc',
         lastActivity: Date.now(),
         startTime: Date.now(),
@@ -65,7 +65,7 @@ describe('BrowserService Session Manager API', () => {
     it('should set, get, and delete a session', () => {
       const ctx = {
         port: 9222,
-        browser: {} as any,
+        browser: {} as unknown as Record<string, unknown>,
         path: '/devtools/browser/abc',
         lastActivity: 1000,
         startTime: 1000,
@@ -92,7 +92,7 @@ describe('BrowserService Session Manager API', () => {
     it('should reflect added and removed sessions', () => {
       const ctx = {
         port: 9222,
-        browser: {} as any,
+        browser: {} as unknown as Record<string, unknown>,
         path: '/devtools/browser/abc',
         lastActivity: Date.now(),
         startTime: Date.now(),
@@ -114,7 +114,7 @@ describe('BrowserService Session Manager API', () => {
     it('should return all session IDs after adding', () => {
       const ctx = {
         port: 9222,
-        browser: {} as any,
+        browser: {} as unknown as Record<string, unknown>,
         path: '/devtools/browser/abc',
         lastActivity: Date.now(),
         startTime: Date.now(),
@@ -134,7 +134,7 @@ describe('BrowserService Session Manager API', () => {
     it('should return all session contexts', () => {
       const ctx1 = {
         port: 9222,
-        browser: {} as any,
+        browser: {} as unknown as Record<string, unknown>,
         path: '/devtools/browser/abc',
         lastActivity: Date.now(),
         startTime: Date.now(),
@@ -143,7 +143,7 @@ describe('BrowserService Session Manager API', () => {
       };
       const ctx2 = {
         port: 9223,
-        browser: {} as any,
+        browser: {} as unknown as Record<string, unknown>,
         path: '/devtools/browser/def',
         lastActivity: Date.now(),
         startTime: Date.now(),
@@ -162,7 +162,7 @@ describe('BrowserService Session Manager API', () => {
     it('should iterate over added sessions', () => {
       const ctx = {
         port: 9222,
-        browser: {} as any,
+        browser: {} as unknown as Record<string, unknown>,
         path: '/devtools/browser/abc',
         lastActivity: Date.now(),
         startTime: Date.now(),
@@ -194,7 +194,7 @@ describe('BrowserService Session Manager API', () => {
       const now = Date.now();
       trackSetSession('s1', {
         port: 9222,
-        browser: {} as any,
+        browser: {} as unknown as Record<string, unknown>,
         path: '/devtools/browser/abc',
         lastActivity: now,
         startTime: now,

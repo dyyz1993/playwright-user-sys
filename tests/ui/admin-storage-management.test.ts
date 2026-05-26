@@ -59,7 +59,7 @@ interface TestData {
   testTimestamp: number;
 }
 
-let testData: TestData = {
+const testData: TestData = {
   testUsers: [],
   testTimestamp: 0,
 };

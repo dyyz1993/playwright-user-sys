@@ -1617,7 +1617,7 @@ test.describe('P0-权限控制验证', () => {
     await takeScreenshot(page, 'auth', 'P0-A04-登录状态', 'general');
 
     // 2. 验证Cookie存在
-    let cookies = await context.cookies();
+    const cookies = await context.cookies();
     const tokenCookie = cookies.find((c) => c.name === 'token');
     expect(tokenCookie).toBeDefined();
     await takeScreenshot(page, 'auth', 'P0-A04-Cookie存在', 'success');

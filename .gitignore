@@ -49,6 +49,7 @@ tmp/
 temp/
 prebuilt/
 .docker-cache/
+*~
 
 # 预编译的 SQLite3 文件
 # 但保留目录结构
@@ -56,8 +57,22 @@ prebuilt/
 
 test-results/
 test-results.json
+test-screenshots/
+playwright-report/
+screenshots/
 *.bak
+
+# VitePress
+website/.vitepress/cache/
+website/.vitepress/dist/
 
 # Claude local settings (contains credentials)
 .claude/settings.local.json
+
+# IDE / 工具临时文件
+.trae/
+.ui-tester/
+.augment-guidelines
+.terminalname
+.bfg-replacements.txt
 

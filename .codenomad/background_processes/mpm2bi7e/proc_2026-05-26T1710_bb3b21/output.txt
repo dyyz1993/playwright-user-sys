@@ -1,0 +1,97 @@
+
+> playwright-user-sys@1.0.0 docs:dev /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys
+> vitepress dev website
+
+
+  vitepress v1.6.4
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+01:28:49 [vitepress] website/.vitepress/config.ts changed, restarting server...
+
+
+  vitepress v1.6.4
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+01:28:58 [vitepress] page reload .vitepress/dist/404.html
+01:28:58 [vitepress] page reload .vitepress/dist/api/rest-api.html
+01:28:58 [vitepress] page reload .vitepress/dist/api/authentication.html
+01:28:58 [vitepress] page reload .vitepress/dist/api/websocket.html
+01:28:58 [vitepress] page reload .vitepress/dist/deploy/environment-variables.html
+01:28:58 [vitepress] page reload .vitepress/dist/deploy/docker.html
+01:28:58 [vitepress] page reload .vitepress/dist/deploy/manual.html
+01:28:58 [vitepress] page reload .vitepress/dist/guide/configuration.html
+01:28:58 [vitepress] page reload .vitepress/dist/guide/architecture.html
+01:28:58 [vitepress] page reload .vitepress/dist/guide/getting-started.html
+01:28:58 [vitepress] page reload .vitepress/dist/index.html
+01:28:58 [vitepress] page reload .vitepress/dist/sdk/cdp-direct.html
+01:28:58 [vitepress] page reload .vitepress/dist/sdk/session-management.html
+01:28:58 [vitepress] page reload .vitepress/dist/sdk/client-sdk.html
+01:28:59 [vitepress] page reload .vitepress/dist/deploy/docker.html
+01:28:59 [vitepress] page reload .vitepress/dist/404.html
+01:28:59 [vitepress] page reload .vitepress/dist/api/authentication.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/architecture.html
+01:28:59 [vitepress] page reload .vitepress/dist/api/rest-api.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/changelog.html
+01:28:59 [vitepress] page reload .vitepress/dist/deploy/manual.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/configuration.html
+01:28:59 [vitepress] page reload .vitepress/dist/deploy/environment-variables.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/best-practices.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/faq.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/demo.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/contributing.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/getting-started.html
+01:28:59 [vitepress] page reload .vitepress/dist/api/websocket.html
+01:28:59 [vitepress] page reload .vitepress/dist/sdk/client-sdk.html
+01:28:59 [vitepress] page reload .vitepress/dist/sdk/session-management.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/troubleshooting.html
+01:28:59 [vitepress] page reload .vitepress/dist/index.html
+01:28:59 [vitepress] page reload .vitepress/dist/sdk/cdp-direct.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/performance.html
+01:28:59 [vitepress] page reload .vitepress/dist/guide/security.html
+01:29:27 [vitepress] page reload .vitepress/dist/404.html
+01:29:27 [vitepress] page reload .vitepress/dist/api/rest-api.html
+01:29:27 [vitepress] page reload .vitepress/dist/api/authentication.html
+01:29:27 [vitepress] page reload .vitepress/dist/api/websocket.html
+01:29:27 [vitepress] page reload .vitepress/dist/deploy/environment-variables.html
+01:29:27 [vitepress] page reload .vitepress/dist/deploy/docker.html
+01:29:27 [vitepress] page reload .vitepress/dist/deploy/manual.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/changelog.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/configuration.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/architecture.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/performance.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/security.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/getting-started.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/best-practices.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/troubleshooting.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/contributing.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/demo.html
+01:29:27 [vitepress] page reload .vitepress/dist/guide/faq.html
+01:29:27 [vitepress] page reload .vitepress/dist/index.html
+01:29:27 [vitepress] page reload .vitepress/dist/sdk/cdp-direct.html
+01:29:27 [vitepress] page reload .vitepress/dist/sdk/session-management.html
+01:29:27 [vitepress] page reload .vitepress/dist/sdk/client-sdk.html
+01:29:28 [vitepress] page reload .vitepress/dist/api/websocket.html
+01:29:28 [vitepress] page reload .vitepress/dist/deploy/docker.html
+01:29:28 [vitepress] page reload .vitepress/dist/api/rest-api.html
+01:29:28 [vitepress] page reload .vitepress/dist/api/authentication.html
+01:29:28 [vitepress] page reload .vitepress/dist/deploy/environment-variables.html
+01:29:28 [vitepress] page reload .vitepress/dist/deploy/manual.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/best-practices.html
+01:29:28 [vitepress] page reload .vitepress/dist/404.html
+01:29:28 [vitepress] page reload .vitepress/dist/sdk/client-sdk.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/configuration.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/changelog.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/getting-started.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/contributing.html
+01:29:28 [vitepress] page reload .vitepress/dist/index.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/troubleshooting.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/security.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/performance.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/faq.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/architecture.html
+01:29:28 [vitepress] page reload .vitepress/dist/sdk/session-management.html
+01:29:28 [vitepress] page reload .vitepress/dist/sdk/cdp-direct.html
+01:29:28 [vitepress] page reload .vitepress/dist/guide/demo.html
+bash: line 1: 70314 Killed: 9               pnpm docs:dev

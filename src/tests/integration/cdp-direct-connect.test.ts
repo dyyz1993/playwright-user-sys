@@ -33,7 +33,11 @@ describe('CDP Direct Connect', () => {
       return;
     }
 
-    const wsUrl = managerUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/connect?apiKey=' + apiKey + '&width=800&height=600';
+    const wsUrl =
+      managerUrl.replace('http://', 'ws://').replace('https://', 'wss://') +
+      '/ws/connect?apiKey=' +
+      apiKey +
+      '&width=800&height=600';
 
     const browser = await chromium.connectOverCDP(wsUrl, { timeout: 15000 });
     expect(browser).toBeDefined();

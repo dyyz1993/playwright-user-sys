@@ -3,3 +3,5 @@ node_modules
 coverage
 *.min.js
 pnpm-lock.yaml
+website/.vitepress/cache
+website/.vitepress/dist

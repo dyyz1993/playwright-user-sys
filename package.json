@@ -88,7 +88,10 @@
     "test:tier:architecture": "NODE_ENV=test NODE_OPTIONS=\"--max-old-space-size=4096\" npx vitest run tests/integration/three-tier-architecture.test.ts",
     "check:types": "bash scripts/check-type-safety.sh",
     "check:all": "pnpm lint && pnpm format:check && pnpm build && pnpm check:types && pnpm test:unit",
-    "quality": "pnpm check:all"
+    "quality": "pnpm check:all",
+    "docs:dev": "vitepress dev website",
+    "docs:build": "vitepress build website",
+    "docs:preview": "vitepress preview website"
   },
   "keywords": [],
   "author": "xuyingzhou",
@@ -149,6 +152,7 @@
     "tsc-alias": "^1.8.17",
     "tsx": "^4.21.0",
     "typescript": "^5.8.3",
+    "vitepress": "^1.6.4",
     "vitest": "^3.2.4",
     "ws": "^8.18.1",
     "yaml": ">=2.8.3"

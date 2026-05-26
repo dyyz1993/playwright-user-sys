@@ -185,7 +185,7 @@
             <%
               const machineIp = session.machine_ip || '';
               const machineProxyPort = session.machine_proxy_port || '';
-              const wsUrl = machineIp && machineProxyPort ? `ws://${machineIp}:${machineProxyPort}/ws/${session.id}` : '';
+              const wsUrl = machineIp && machineProxyPort ? `ws://${machineIp}:${machineProxyPort}?sessionId=${session.id}` : '';
               const httpProxyUrl = machineIp && session.port ? `http://${machineIp}:${session.port}` : '';
               const apiEndpoint = `/api/sessions/${session.id}`;
             %>

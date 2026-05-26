@@ -114,6 +114,15 @@
               </button>
             </div>
             <div id="quick-session-result" class="hidden mt-3 p-3 bg-gray-50 rounded-md text-xs font-mono break-all"></div>
+            <div id="quick-session-ws-url" class="hidden mt-3 p-3 bg-green-50 border border-green-300 rounded-md">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-green-700"><i class="fas fa-link mr-1"></i>WebSocket 连接地址（点击复制）</span>
+                <button onclick="appUtils.copyToClipboard(document.getElementById('quick-session-ws-url-text').textContent.trim())" class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 font-medium">
+                  <i class="fas fa-copy mr-1"></i>复制
+                </button>
+              </div>
+              <p id="quick-session-ws-url-text" class="text-sm font-mono text-green-900 break-all cursor-pointer select-all" onclick="appUtils.copyToClipboard(this.textContent.trim())"></p>
+            </div>
           </div>
           <hr class="border-gray-200">
           <div>
@@ -712,15 +721,25 @@
         resultEl.textContent = JSON.stringify(res.data, null, 2);
         resultEl.className = 'mt-3 p-3 bg-green-50 rounded-md text-xs font-mono break-all text-green-700';
         appUtils.toast.success('会话创建成功');
+        var wsUrlBox = document.getElementById('quick-session-ws-url');
+        var wsUrlText = document.getElementById('quick-session-ws-url-text');
+        if (res.data.directUrl || res.data.browserWSEndpoint) {
+          wsUrlText.textContent = res.data.directUrl || res.data.browserWSEndpoint;
+          wsUrlBox.classList.remove('hidden');
+        } else {
+          wsUrlBox.classList.add('hidden');
+        }
       } else {
         resultEl.textContent = JSON.stringify(res, null, 2);
         resultEl.className = 'mt-3 p-3 bg-red-50 rounded-md text-xs font-mono break-all text-red-700';
         appUtils.toast.error('会话创建失败');
+        document.getElementById('quick-session-ws-url').classList.add('hidden');
       }
     })
     .catch(function(err) {
       resultEl.textContent = err.message;
       resultEl.className = 'mt-3 p-3 bg-red-50 rounded-md text-xs font-mono break-all text-red-700';
+      document.getElementById('quick-session-ws-url').classList.add('hidden');
     });
   };
 

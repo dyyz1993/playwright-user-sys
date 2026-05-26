@@ -1,5 +1,6 @@
 import { SessionModel } from '../../models/session/index.js';
 import * as UserService from '../../services/user.service.js';
+import { env } from '../../config/env.js';
 
 export async function getSessionsPageData(query: {
   page?: string;
@@ -81,5 +82,6 @@ export async function getSessionsPageData(query: {
       sort,
       order,
     },
+    wsUrlBase: env.PUBLIC_MANAGER_URL || '',
   };
 }

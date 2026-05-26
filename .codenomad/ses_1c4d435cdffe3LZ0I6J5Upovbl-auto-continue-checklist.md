@@ -1,0 +1,6 @@
+- [x] Write test for rawFocusEvent listener leak
+- [x] Write test for JSON.parse protection
+- [x] Fix rawFocusEvent listener leak in events.handler.ts
+- [x] Verify JSON.parse protection already exists
+- [x] Run pnpm test:unit — all 1004 tests pass
+- [x] Verify build passes

@@ -3,6 +3,7 @@
 [![Code Quality](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/code-quality.yml/badge.svg)](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/code-quality.yml)
 [![Integration Tests](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/test-integration.yml/badge.svg)](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/test-integration.yml)
 [![E2E Tests](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/e2e-smoke-test.yml/badge.svg)](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/e2e-smoke-test.yml)
+[![Coverage](https://img.shields.io/badge/coverage-coming__soon-yellow)]()
 [![Docker Build](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/docker-build.yml/badge.svg)](https://github.com/dyyz1993/playwright-user-sys/actions/workflows/docker-build.yml)
 [![License: Apache 2.0 with Commons Clause](https://img.shields.io/badge/License-Apache%202.0%20with%20Commons%20Clause-red.svg)](LICENSE)
 

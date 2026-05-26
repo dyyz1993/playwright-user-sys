@@ -1,0 +1,7 @@
+- [x] 分析当前 WS 连接管理代码
+- [x] 设计心跳机制（30s ping / 60s timeout）
+- [x] 先写测试 (ws-heartbeat.test.ts — 10 个测试)
+- [x] 实现心跳模块 (ws-heartbeat.ts)
+- [x] 集成到 NativeWebSocketProxyService
+- [x] pnpm build 通过
+- [x] pnpm test:unit 通过（18/18）

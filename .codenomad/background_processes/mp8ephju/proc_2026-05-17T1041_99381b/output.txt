@@ -1,0 +1,70 @@
+[36m[2026-05-17T10:41:03.566Z] [INFO] 使用环境变量配置初始化 MachineServer[0m
+[36m[2026-05-17T10:41:03.569Z] [INFO] 机器端状态变更: stopped -> starting[0m
+[36m[2026-05-17T10:41:03.569Z] [INFO] 机器端配置:[0m {
+  machineId: 'machine-1',
+  machineName: 'local-machine',
+  managerHost: 'localhost:50051',
+  proxyPort: 8082,
+  grpcPort: 50052
+}
+[36m[2026-05-17T10:41:03.569Z] [INFO] gRPC 服务器配置已更新:[0m { machineId: 'machine-1', grpcPort: 50052 }
+[36m[2026-05-17T10:41:03.569Z] [INFO] 开始启动 gRPC 服务器，端口: 50052[0m
+[36m[2026-05-17T10:41:03.571Z] [INFO] 代理服务器运行在端口 8082[0m
+[36m[2026-05-17T10:41:03.575Z] [INFO] gRPC 服务器已启动并绑定到端口 50052[0m
+[36m[2026-05-17T10:41:03.581Z] [INFO] 注册机器:[0m {
+  machine_id: 'machine-1',
+  name: 'local-machine',
+  ip_address: '127.0.0.1',
+  grpc_port: 50052,
+  proxy_port: 8082,
+  max_sessions: 10,
+  system_info: {
+    os: 'darwin',
+    cpu: 'Apple M2 Max',
+    memory: 34359738368,
+    disk: 994662584320
+  }
+}
+[36m[2026-05-17T10:41:03.624Z] [INFO] 注册成功:[0m { success: true, message: '注册成功' }
+[36m[2026-05-17T10:41:03.624Z] [INFO] 尝试连接到管理端...[0m
+[36m[2026-05-17T10:41:03.625Z] [INFO] 已启动心跳定时器，每 30 秒发送一次心跳[0m
+[36m[2026-05-17T10:41:03.625Z] [INFO] 机器端状态变更: starting -> running[0m
+[36m[2026-05-17T10:41:03.625Z] [INFO] 机器端启动完成[0m
+[36m[2026-05-17T10:41:03.626Z] [INFO] Health server listening on 127.0.0.1:9100[0m
+[36m[2026-05-17T10:41:03.633Z] [INFO] 准备发送首次心跳消息: {"machine_id":"machine-1","heartbeat":{"timestamp":1779014463632,"cpu_usage":63.911946614583336,"memory_usage":94.43612098693848,"disk_usage":1.2333743532121444,"active_sessions":0}}[0m
+[36m[2026-05-17T10:41:03.633Z] [INFO] 使用 write 方法发送消息结果: true[0m
+[31m[2026-05-17T10:59:42.940Z] [ERROR] 连接错误:[0m Error: 14 UNAVAILABLE: Connection dropped
+    at callErrorFromStatus (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/@grpc/grpc-js/src/call.ts:84:17)
+    at Object.onReceiveStatus (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/@grpc/grpc-js/src/client.ts:706:51)
+    at Object.onReceiveStatus (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/@grpc/grpc-js/src/client-interceptors.ts:424:48)
+    at <anonymous> (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/@grpc/grpc-js/src/resolving-call.ts:170:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:84:11)
+for call at
+    at ServiceClientImpl.makeBidiStreamRequest (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/@grpc/grpc-js/src/client.ts:690:42)
+    at ServiceClientImpl.<anonymous> (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/@grpc/grpc-js/src/make-client.ts:189:15)
+    at <anonymous> (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/machine/grpc/index.ts:198:40)
+    at new Promise (<anonymous>)
+    at retry.retries (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/machine/grpc/index.ts:181:18)
+    at RetryOperation.runAttempt [as _fn] (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/async-retry/lib/index.js:42:15)
+    at RetryOperation.attempt (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/retry/lib/retry_operation.js:116:8)
+    at run (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/async-retry/lib/index.js:55:8)
+    at new Promise (<anonymous>)
+    at retry (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/async-retry/lib/index.js:58:10) {
+  code: 14,
+  details: 'Connection dropped',
+  metadata: Metadata {
+    internalRepr: Map(0) {},
+    opaqueData: Map(0) {},
+    options: {}
+  }
+}
+[36m[2026-05-17T10:59:42.940Z] [INFO] 已停止心跳定时器[0m
+[33m[2026-05-17T10:59:42.940Z] [WARN] 检测到 gRPC 连接断开错误，将在内部处理而不传播异常[0m
+[31m[2026-05-17T10:59:42.940Z] [ERROR] 未捕获的异常:[0m Error: UNAVAILABLE
+    at ConnectionManager.onReconnectNeeded (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/machine/grpc/index.ts:76:32)
+    at ClientDuplexStreamImpl.<anonymous> (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/src/machine/grpc/connection-manager.ts:77:12)
+    at ClientDuplexStreamImpl.emit (node:events:508:28)
+    at Object.onReceiveStatus (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/@grpc/grpc-js/src/client.ts:706:18)
+    at Object.onReceiveStatus (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/@grpc/grpc-js/src/client-interceptors.ts:424:48)
+    at <anonymous> (/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys/node_modules/@grpc/grpc-js/src/resolving-call.ts:170:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:84:11)

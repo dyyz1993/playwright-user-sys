@@ -1,13 +1,8 @@
 import { describe, it, expect } from 'vitest';
 
-// Pure logic test for WS Origin validation
+// Tests mirror the actual Origin validation logic in native-websocket-proxy.service.ts
 function shouldAllowWebSocketUpgrade(origin: string | undefined, nodeEnv: string): boolean {
-  // In production: reject connections without Origin header
-  if (nodeEnv === 'production' && !origin) {
-    return false;
-  }
-
-  // If no origin (non-browser clients in dev), allow
+  // No origin header = allow (Playwright/CDP clients don't send Origin)
   if (!origin) {
     return true;
   }
@@ -17,17 +12,14 @@ function shouldAllowWebSocketUpgrade(origin: string | undefined, nodeEnv: string
     const originHost = new URL(origin).hostname;
     const allowedHosts = ['localhost', '127.0.0.1'];
 
-    // Allow localhost/127.0.0.1 always
     if (allowedHosts.includes(originHost)) {
       return true;
     }
 
-    // In production: allow non-localhost origins (production domains)
     if (nodeEnv === 'production') {
       return true;
     }
 
-    // In development: only allow localhost
     return false;
   } catch {
     return false;
@@ -36,8 +28,8 @@ function shouldAllowWebSocketUpgrade(origin: string | undefined, nodeEnv: string
 
 describe('WebSocket Origin validation', () => {
   describe('production environment', () => {
-    it('should reject connections without Origin header', () => {
-      expect(shouldAllowWebSocketUpgrade(undefined, 'production')).toBe(false);
+    it('should allow connections without Origin header (CDP clients)', () => {
+      expect(shouldAllowWebSocketUpgrade(undefined, 'production')).toBe(true);
     });
 
     it('should allow connections with valid Origin', () => {
@@ -51,6 +43,10 @@ describe('WebSocket Origin validation', () => {
     it('should reject malformed Origin', () => {
       expect(shouldAllowWebSocketUpgrade('not-a-url', 'production')).toBe(false);
     });
+
+    it('should allow connections without Origin header for CDP clients like Playwright', () => {
+      expect(shouldAllowWebSocketUpgrade(undefined, 'production')).toBe(true);
+    });
   });
 
   describe('development environment', () => {
@@ -58,18 +54,8 @@ describe('WebSocket Origin validation', () => {
       expect(shouldAllowWebSocketUpgrade(undefined, 'development')).toBe(true);
     });
 
-    it('should allow localhost Origin', () => {
-      expect(shouldAllowWebSocketUpgrade('http://localhost:3000', 'development')).toBe(true);
-    });
-
-    it('should reject non-localhost Origin in dev', () => {
+    it('should reject non-localhost Origin', () => {
       expect(shouldAllowWebSocketUpgrade('https://evil.com', 'development')).toBe(false);
-    });
-  });
-
-  describe('test environment', () => {
-    it('should allow connections without Origin header', () => {
-      expect(shouldAllowWebSocketUpgrade(undefined, 'test')).toBe(true);
     });
   });
 });

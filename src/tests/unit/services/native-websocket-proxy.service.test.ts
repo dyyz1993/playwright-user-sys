@@ -173,4 +173,111 @@ describe('NativeWebSocketProxyService', () => {
     expect(mockFindByApiKey).not.toHaveBeenCalled();
     service.close();
   });
+
+  it('WS-09: 无Origin header的CDP客户端应该允许连接', async () => {
+    const service = new NativeWebSocketProxyService(mockServer);
+
+    mockFindByApiKey.mockResolvedValue({ id: 1, username: 'testuser' });
+    mockCreateBrowserSession.mockResolvedValue({
+      sessionId: 'sess-001',
+      machineId: 'machine-001',
+      browserWSEndpoint: 'ws://127.0.0.1:9222',
+      directUrl: 'ws://127.0.0.1:9222/devtools/browser/sess-001',
+    });
+
+    const mockSocket = new EventEmitter() as unknown as Record<string, unknown>;
+    mockSocket.destroyed = false;
+    mockSocket.writable = true;
+    mockSocket.write = vi.fn();
+    mockSocket.destroy = vi.fn();
+
+    const mockRequest = {
+      url: '/ws/connect?apiKey=valid-key',
+      headers: {},
+    };
+
+    mockServer.emit('upgrade', mockRequest, mockSocket, Buffer.alloc(0));
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    expect(mockFindByApiKey).toHaveBeenCalledWith('valid-key');
+    expect(mockSocket.write).not.toHaveBeenCalledWith(expect.stringContaining('403'));
+    service.close();
+  });
+
+  it('WS-10: 有效的localhost Origin应该允许连接', async () => {
+    const service = new NativeWebSocketProxyService(mockServer);
+
+    mockFindByApiKey.mockResolvedValue({ id: 1, username: 'testuser' });
+    mockCreateBrowserSession.mockResolvedValue({
+      sessionId: 'sess-001',
+      machineId: 'machine-001',
+      browserWSEndpoint: 'ws://127.0.0.1:9222',
+      directUrl: 'ws://127.0.0.1:9222/devtools/browser/sess-001',
+    });
+
+    const mockSocket = new EventEmitter() as unknown as Record<string, unknown>;
+    mockSocket.destroyed = false;
+    mockSocket.writable = true;
+    mockSocket.write = vi.fn();
+    mockSocket.destroy = vi.fn();
+
+    const mockRequest = {
+      url: '/ws/connect?apiKey=valid-key',
+      headers: { origin: 'http://localhost:3000' },
+    };
+
+    mockServer.emit('upgrade', mockRequest, mockSocket, Buffer.alloc(0));
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    expect(mockFindByApiKey).toHaveBeenCalledWith('valid-key');
+    expect(mockSocket.write).not.toHaveBeenCalledWith(expect.stringContaining('403'));
+    service.close();
+  });
+
+  it('WS-11: 畸形Origin应该拒绝连接', async () => {
+    const service = new NativeWebSocketProxyService(mockServer);
+
+    const mockSocket = new EventEmitter() as unknown as Record<string, unknown>;
+    mockSocket.destroyed = false;
+    mockSocket.writable = true;
+    mockSocket.write = vi.fn();
+    mockSocket.destroy = vi.fn();
+
+    const mockRequest = {
+      url: '/ws/connect?apiKey=valid-key',
+      headers: { origin: 'not-a-valid-url' },
+    };
+
+    mockServer.emit('upgrade', mockRequest, mockSocket, Buffer.alloc(0));
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(mockSocket.write).toHaveBeenCalledWith(expect.stringContaining('403'));
+    expect(mockSocket.destroy).toHaveBeenCalled();
+    service.close();
+  });
+
+  it('WS-12: sessionId模式连接应该路由到handleExistingSessionProxy', async () => {
+    const service = new NativeWebSocketProxyService(mockServer);
+
+    const mockSocket = new EventEmitter() as unknown as Record<string, unknown>;
+    mockSocket.destroyed = false;
+    mockSocket.writable = true;
+    mockSocket.write = vi.fn();
+    mockSocket.destroy = vi.fn();
+
+    const mockRequest = {
+      url: '/ws/connect?sessionId=sess-existing&token=jwt-token-here',
+      headers: {},
+    };
+
+    mockServer.emit('upgrade', mockRequest, mockSocket, Buffer.alloc(0));
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(mockFindByApiKey).not.toHaveBeenCalled();
+    service.close();
+  });
 });

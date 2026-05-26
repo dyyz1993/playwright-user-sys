@@ -1,0 +1,5 @@
+- [x] Search for old session.model references
+- [x] Verify new session/index.ts exists and exports correctly
+- [x] Fix CI yml pnpm version issue
+- [x] Verify build passes
+- [x] Verify unit tests pass

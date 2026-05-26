@@ -1,0 +1,24 @@
+[
+  {
+    "id": "proc_2026-05-17T1220_35a5f7",
+    "workspaceId": "mp9q7g0z",
+    "title": "Manager Server (dev, port 3010)",
+    "command": "cd /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys && export $(grep -v '^#' .env.dev | xargs) && PORT=3010 tsx src/manager/server.ts 2>&1",
+    "cwd": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys",
+    "status": "running",
+    "pid": 78688,
+    "startedAt": "2026-05-17T12:20:58.931Z",
+    "outputSizeBytes": 0
+  },
+  {
+    "id": "proc_2026-05-17T1221_db3e0c",
+    "workspaceId": "mp9q7g0z",
+    "title": "Machine Service (dev)",
+    "command": "cd /Users/xuyingzhou/Project/study-node-ts/playwright-user-sys && export $(grep -v '^#' .env.dev | xargs) && PORT=3010 tsx src/machine/server.ts 2>&1",
+    "cwd": "/Users/xuyingzhou/Project/study-node-ts/playwright-user-sys",
+    "status": "running",
+    "pid": 79520,
+    "startedAt": "2026-05-17T12:21:34.859Z",
+    "outputSizeBytes": 0
+  }
+]

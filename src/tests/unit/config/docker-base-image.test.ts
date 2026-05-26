@@ -5,9 +5,7 @@ import path from 'path';
 const PROJECT_ROOT = path.resolve(__dirname, '../../../..');
 
 const DOCKERFILES: { path: string; type: 'dev' | 'prod' }[] = [
-  { path: 'docker/manager/Dockerfile', type: 'dev' },
   { path: 'docker/manager/Dockerfile.prod', type: 'prod' },
-  { path: 'docker/machine/Dockerfile', type: 'dev' },
   { path: 'docker/machine/Dockerfile.prod', type: 'prod' },
 ];
 

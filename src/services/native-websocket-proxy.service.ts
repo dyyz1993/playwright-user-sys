@@ -89,13 +89,6 @@ export class NativeWebSocketProxyService {
 
       const origin = request.headers.origin;
 
-      if (process.env.NODE_ENV === 'production' && !origin) {
-        logger.warn('WebSocket 连接被拒绝: 生产环境缺少 Origin header');
-        socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-        socket.destroy();
-        return;
-      }
-
       if (origin) {
         const allowedHosts = ['localhost', '127.0.0.1'];
         try {

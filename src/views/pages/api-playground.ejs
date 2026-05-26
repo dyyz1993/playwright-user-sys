@@ -203,11 +203,26 @@
     };
   }
 
+  function safeCopy(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    return Promise.resolve();
+  }
+
   window.copyWithFeedback = function(btn, elemId) {
     var el = document.getElementById(elemId);
     var text = elemId === 'full-ws-url' ? (el.dataset.url || '') : (el.textContent || '');
     if (!text) return;
-    navigator.clipboard.writeText(text);
+    safeCopy(text);
     var orig = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-check mr-1"></i>已复制!';
     setTimeout(function() { btn.innerHTML = orig; }, 1500);

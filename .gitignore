@@ -13,7 +13,7 @@ build/
 .env.local
 .env.*.local
 docker/.env.local
-
+.claude/settings.local.json
 # 日志
 logs/
 *.log

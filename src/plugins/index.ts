@@ -37,35 +37,56 @@ export default fp(async function (fastify: FastifyInstance) {
 
   const isHttps = process.env.NODE_ENV === 'production' && process.env.HTTPS === 'true';
   await fastify.register(helmet, {
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          "'unsafe-eval'",
-          'https://cdn.tailwindcss.com',
-          'https://cdnjs.cloudflare.com',
-        ],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com', 'https://cdnjs.cloudflare.com'],
-        fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'data:'],
-        imgSrc: ["'self'", 'data:', 'blob:'],
-        connectSrc: ["'self'", 'ws:', 'wss:'],
-        frameSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        ...(isHttps ? { upgradeInsecureRequests: [] } : {}),
-      },
-    },
-    xFrameOptions: { action: 'deny' },
-    xContentTypeOptions: true,
     ...(isHttps
       ? {
           strictTransportSecurity: {
             maxAge: 31536000,
             includeSubDomains: true,
           },
+          contentSecurityPolicy: {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                "'unsafe-eval'",
+                'https://cdn.tailwindcss.com',
+                'https://cdnjs.cloudflare.com',
+              ],
+              styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com', 'https://cdnjs.cloudflare.com'],
+              fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'data:'],
+              imgSrc: ["'self'", 'data:', 'blob:'],
+              connectSrc: ["'self'", 'ws:', 'wss:'],
+              frameSrc: ["'self'"],
+              objectSrc: ["'none'"],
+              upgradeInsecureRequests: [],
+            },
+          },
         }
-      : {}),
+      : {
+          strictTransportSecurity: false,
+          contentSecurityPolicy: {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                "'unsafe-eval'",
+                'https://cdn.tailwindcss.com',
+                'https://cdnjs.cloudflare.com',
+              ],
+              styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com', 'https://cdnjs.cloudflare.com'],
+              fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'data:'],
+              imgSrc: ["'self'", 'data:', 'blob:'],
+              connectSrc: ["'self'", 'ws:', 'wss:'],
+              frameSrc: ["'self'"],
+              objectSrc: ["'none'"],
+              upgradeInsecureRequests: null,
+            },
+          },
+        }),
+    xFrameOptions: { action: 'deny' },
+    xContentTypeOptions: true,
     xXssProtection: true,
     crossOriginEmbedderPolicy: false,
   });

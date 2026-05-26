@@ -23,6 +23,7 @@
     "test:mysql": "tsx src/test-mysql.ts",
     "build": "tsc --skipLibCheck && tsc-alias && cp -r src/shared/protos dist/shared/protos && cp -r src/public dist/public",
     "build:check": "tsc --noEmit",
+    "build:emit": "tsc --skipLibCheck --allowJs --noEmit false --noImplicitAny false && tsc-alias && cp -r src/shared/protos dist/shared/protos && cp -r src/public dist/public",
     "start": "node dist/manager/server.js",
     "prestart:server": "bash scripts/setup-aliases.sh",
     "start:server": "tsx src/manager/server.ts",

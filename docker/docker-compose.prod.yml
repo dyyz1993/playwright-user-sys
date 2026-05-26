@@ -1,5 +1,6 @@
 # Docker Compose for Production
 # Usage: docker compose -f docker-compose.prod.yml up -d
+# Requires: .env file with required variables (see .env.example)
 
 version: '3.8'
 
@@ -18,28 +19,29 @@ services:
     image: ${DOCKER_REGISTRY:-ghcr.io/dyyz1993/playwright-user-sys-manager}:${IMAGE_TAG:-latest}
     container_name: playwright-manager-prod
     ports:
-      - "3011:3000"
-      - "50051:50051"
+      - "${MANAGER_HTTP_PORT:-3011}:3000"
+      - "${MANAGER_GRPC_PORT:-50051}:50051"
     volumes:
       - manager-prod-data:/app/data
       - manager-prod-files:/app/files
+    env_file: .env
     environment:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
       - DB_TYPE=mysql
-      - DB_HOST=192.168.0.29
-      - DB_PORT=3307
-      - DB_USER=playwright_user_sys
-      - DB_PASSWORD=tPc^LY^Gj2
-      - DB_NAME=playwright_user_sys
-      - JWT_SECRET=your-32-character-minimum-secret-key-for-jwt-and-session
-      - JWT_EXPIRES_IN=1d
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=admin123
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - GRPC_PORT=50051
-      - MACHINE_MONITOR_INTERVAL=30000
-      - PUBLIC_MANAGER_URL=192.168.0.29:3011
+      - MACHINE_MONITOR_INTERVAL=${MACHINE_MONITOR_INTERVAL}
+      - PUBLIC_MANAGER_URL=${PUBLIC_MANAGER_URL}
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
@@ -66,8 +68,8 @@ services:
     container_name: playwright-machine-1-prod
     restart: always
     ports:
-      - "50052:50052"
-      - "8082:8082"
+      - "${MACHINE_1_GRPC_PORT:-50052}:50052"
+      - "${MACHINE_1_PROXY_PORT:-8082}:8082"
     volumes:
       - machine-1-prod-data:/app/data
       - machine-1-prod-screenshots:/app/dist/data/screenshots
@@ -79,16 +81,12 @@ services:
       - MANAGER_HOST=manager:50051
       - MACHINE_GRPC_PORT=50052
       - PROXY_PORT=8082
-      - JWT_SECRET=your-32-character-minimum-secret-key-for-jwt-and-session
-      - ADMIN_PASSWORD=admin123
-      - MAX_SESSIONS=10
-      - SESSION_TIMEOUT=300000
-      - HEARTBEAT_INTERVAL=30000
+      - MAX_SESSIONS=${MAX_SESSIONS}
+      - SESSION_TIMEOUT=${SESSION_TIMEOUT}
+      - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL}
       - CHROME_BIN=/opt/google/chrome/chromium
       - CHROME_PATH=/opt/google/chrome/chromium
-      - PUPPETEER_EXECUTABLE_PATH=/opt/google/chrome/chromium
-      - no_proxy=192.168.0.29,localhost,127.0.0.1,manager,machine-1,machine-2
-      - NO_PROXY=192.168.0.29,localhost,127.0.0.1,manager,machine-1,machine-2
+      - NO_PROXY=${NO_PROXY}
     depends_on:
       - manager
     healthcheck:
@@ -117,8 +115,8 @@ services:
     container_name: playwright-machine-2-prod
     restart: always
     ports:
-      - "50053:50053"
-      - "8083:8083"
+      - "${MACHINE_2_GRPC_PORT:-50053}:50053"
+      - "${MACHINE_2_PROXY_PORT:-8083}:8083"
     volumes:
       - machine-2-prod-data:/app/data
       - machine-2-prod-screenshots:/app/dist/data/screenshots
@@ -130,16 +128,12 @@ services:
       - MANAGER_HOST=manager:50051
       - MACHINE_GRPC_PORT=50053
       - PROXY_PORT=8083
-      - JWT_SECRET=your-32-character-minimum-secret-key-for-jwt-and-session
-      - ADMIN_PASSWORD=admin123
-      - MAX_SESSIONS=10
-      - SESSION_TIMEOUT=300000
-      - HEARTBEAT_INTERVAL=30000
+      - MAX_SESSIONS=${MAX_SESSIONS}
+      - SESSION_TIMEOUT=${SESSION_TIMEOUT}
+      - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL}
       - CHROME_BIN=/opt/google/chrome/chromium
       - CHROME_PATH=/opt/google/chrome/chromium
-      - PUPPETEER_EXECUTABLE_PATH=/opt/google/chrome/chromium
-      - no_proxy=192.168.0.29,localhost,127.0.0.1,manager,machine-1,machine-2
-      - NO_PROXY=192.168.0.29,localhost,127.0.0.1,manager,machine-1,machine-2
+      - NO_PROXY=${NO_PROXY}
     depends_on:
       - manager
     healthcheck:

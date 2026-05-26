@@ -13,7 +13,7 @@
       <div class="border border-gray-200 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-semibold text-gray-500 uppercase">API Base URL</span>
-          <button onclick="appUtils.copyToClipboard(document.getElementById('api-base-url').textContent)" class="text-gray-400 hover:text-primary-600">
+          <button onclick="appUtils&&appUtils.copyToClipboard(document.getElementById('api-base-url').textContent)" class="text-gray-400 hover:text-primary-600">
             <i class="fas fa-copy"></i>
           </button>
         </div>
@@ -26,7 +26,7 @@
             <button onclick="toggleApiKeyVisibility()" class="text-gray-400 hover:text-primary-600">
               <i id="api-key-eye" class="fas fa-eye-slash"></i>
             </button>
-            <button onclick="appUtils.copyToClipboard(document.getElementById('api-key-value').dataset.full)" class="text-gray-400 hover:text-primary-600">
+            <button onclick="appUtils&&appUtils.copyToClipboard(document.getElementById('api-key-value').dataset.full)" class="text-gray-400 hover:text-primary-600">
               <i class="fas fa-copy"></i>
             </button>
           </div>
@@ -36,7 +36,7 @@
       <div class="border border-gray-200 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-semibold text-gray-500 uppercase">WebSocket Proxy</span>
-          <button onclick="appUtils.copyToClipboard(document.getElementById('ws-proxy-url').textContent)" class="text-gray-400 hover:text-primary-600">
+          <button onclick="appUtils&&appUtils.copyToClipboard(document.getElementById('ws-proxy-url').textContent)" class="text-gray-400 hover:text-primary-600">
             <i class="fas fa-copy"></i>
           </button>
         </div>
@@ -45,11 +45,26 @@
       <div class="border border-gray-200 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-semibold text-gray-500 uppercase">gRPC Port</span>
-          <button onclick="appUtils.copyToClipboard('<%= locals.grpcPort || 50051 %>')" class="text-gray-400 hover:text-primary-600">
+          <button onclick="appUtils&&appUtils.copyToClipboard('<%= locals.grpcPort || 50051 %>')" class="text-gray-400 hover:text-primary-600">
             <i class="fas fa-copy"></i>
           </button>
         </div>
         <p class="text-sm font-mono text-gray-800"><%= locals.grpcPort || 50051 %></p>
+      </div>
+    </div>
+
+    <div class="px-6 pb-6">
+      <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-link text-green-600"></i>
+            <span class="text-sm font-bold text-green-700">WebSocket 连接地址（创建会话后自动填充）</span>
+          </div>
+          <button id="copy-full-ws-btn" onclick="var t=document.getElementById('full-ws-url');if(t.textContent){navigator.clipboard.writeText(t.textContent);this.innerHTML='<i class=\\'fas fa-check mr-1\\'></i>已复制!';setTimeout(function(){document.getElementById(\\'copy-full-ws-btn\\').innerHTML=\\'<i class=\\'fas fa-copy mr-1\\'></i>复制\\'},1500)}" class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 font-medium whitespace-nowrap">
+            <i class="fas fa-copy mr-1"></i>复制
+          </button>
+        </div>
+        <p id="full-ws-url" class="text-sm font-mono text-green-900 break-all select-all cursor-pointer bg-white/80 p-2 rounded border border-green-200 min-h-[40px] flex items-center" onclick="if(this.textContent.trim()){navigator.clipboard.writeText(this.textContent)}"><span class="text-green-400 text-xs">创建会话后自动显示完整地址...</span></p>
       </div>
     </div>
   </div>
@@ -162,6 +177,17 @@
   var proxyPort = '<%= locals.proxyPort || 8081 %>';
   var baseUrl = window.location.origin;
   var wsUrl = 'ws://' + window.location.host + '/ws/connect';
+
+  if (!window.appUtils) {
+    window.appUtils = {
+      copyToClipboard: function(t) { if(navigator.clipboard) navigator.clipboard.writeText(typeof t==='string'?t:t.textContent||''); },
+      toast: { success: function(){}, error: function(){}, warning: function(){} },
+      API: {
+        get: function(u){return fetch(u,{credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':(document.querySelector('meta[name=csrf-token]')||{}).content||''}}).then(function(r){return r.json()})},
+        post: function(u,d){return fetch(u,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':(document.querySelector('meta[name=csrf-token]')||{}).content||''},body:JSON.stringify(d)}).then(function(r){return r.json()})}
+      }
+    };
+  }
 
   document.getElementById('api-base-url').textContent = baseUrl;
   document.getElementById('ws-proxy-url').textContent = wsUrl;
@@ -720,11 +746,16 @@
       if (res.success !== false && res.data) {
         resultEl.textContent = JSON.stringify(res.data, null, 2);
         resultEl.className = 'mt-3 p-3 bg-green-50 rounded-md text-xs font-mono break-all text-green-700';
-        appUtils.toast.success('会话创建成功');
+        if (appUtils && appUtils.toast) appUtils.toast.success('会话创建成功');
+        var fullWsUrl = res.data.directUrl || res.data.browserWSEndpoint || '';
+        if (fullWsUrl) {
+          document.getElementById('full-ws-url').textContent = fullWsUrl;
+          document.getElementById('full-ws-url').className = 'text-sm font-mono text-green-900 break-all select-all cursor-pointer bg-white/80 p-2 rounded border border-green-200 min-h-[40px] flex items-center font-bold';
+        }
         var wsUrlBox = document.getElementById('quick-session-ws-url');
         var wsUrlText = document.getElementById('quick-session-ws-url-text');
-        if (res.data.directUrl || res.data.browserWSEndpoint) {
-          wsUrlText.textContent = res.data.directUrl || res.data.browserWSEndpoint;
+        if (fullWsUrl) {
+          wsUrlText.textContent = fullWsUrl;
           wsUrlBox.classList.remove('hidden');
         } else {
           wsUrlBox.classList.add('hidden');
@@ -732,7 +763,7 @@
       } else {
         resultEl.textContent = JSON.stringify(res, null, 2);
         resultEl.className = 'mt-3 p-3 bg-red-50 rounded-md text-xs font-mono break-all text-red-700';
-        appUtils.toast.error('会话创建失败');
+        if (appUtils && appUtils.toast) appUtils.toast.error('会话创建失败');
         document.getElementById('quick-session-ws-url').classList.add('hidden');
       }
     })

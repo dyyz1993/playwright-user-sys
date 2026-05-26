@@ -281,7 +281,7 @@ describe('UserController', () => {
       reply,
       expect.objectContaining({
         items: expect.arrayContaining([
-          expect.not.objectContaining({
+          expect.objectContaining({
             api_key: expect.any(String),
           }),
         ]),

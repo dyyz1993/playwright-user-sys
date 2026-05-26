@@ -35,7 +35,7 @@ export default fp(async function (fastify: FastifyInstance) {
     });
   }
 
-  // 注册安全响应头插件
+  const isHttps = process.env.NODE_ENV === 'production' && process.env.HTTPS === 'true';
   await fastify.register(helmet, {
     contentSecurityPolicy: {
       directives: {
@@ -53,15 +53,19 @@ export default fp(async function (fastify: FastifyInstance) {
         connectSrc: ["'self'", 'ws:', 'wss:'],
         frameSrc: ["'self'"],
         objectSrc: ["'none'"],
-        upgradeInsecureRequests: [],
+        ...(isHttps ? { upgradeInsecureRequests: [] } : {}),
       },
     },
     xFrameOptions: { action: 'deny' },
     xContentTypeOptions: true,
-    strictTransportSecurity: {
-      maxAge: 31536000,
-      includeSubDomains: true,
-    },
+    ...(isHttps
+      ? {
+          strictTransportSecurity: {
+            maxAge: 31536000,
+            includeSubDomains: true,
+          },
+        }
+      : {}),
     xXssProtection: true,
     crossOriginEmbedderPolicy: false,
   });

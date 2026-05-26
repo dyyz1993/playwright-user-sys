@@ -60,7 +60,7 @@
             <i class="fas fa-bolt text-blue-600 text-lg"></i>
             <span class="text-sm font-bold text-blue-800">直连模式（推荐 — 无需创建会话，连上即用）</span>
           </div>
-          <button id="copy-direct-ws-btn" onclick="var u=document.getElementById('direct-ws-url').textContent;navigator.clipboard.writeText(u);this.innerHTML='<i class=\\'fas fa-check mr-1\\'></i>已复制!';setTimeout(function(){document.getElementById('copy-direct-ws-btn').innerHTML='<i class=\\'fas fa-copy mr-1\\'></i>复制'},1500)" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 font-bold whitespace-nowrap">
+          <button id="copy-direct-ws-btn" onclick="copyWithFeedback(this,&#39;direct-ws-url&#39;)" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 font-bold whitespace-nowrap">
             <i class="fas fa-copy mr-1"></i>复制
           </button>
         </div>
@@ -74,7 +74,7 @@
             <i class="fas fa-link text-green-600"></i>
             <span class="text-xs font-bold text-green-700">会话模式（创建会话后自动填充）</span>
           </div>
-          <button id="copy-full-ws-btn" onclick="var t=document.getElementById('full-ws-url');if(t.dataset.url){navigator.clipboard.writeText(t.dataset.url);this.innerHTML='<i class=\\'fas fa-check mr-1\\'></i>已复制!';setTimeout(function(){document.getElementById('copy-full-ws-btn\\').innerHTML=\\'<i class=\\'fas fa-copy mr-1\\'></i>复制\\'},1500)}" class="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 font-medium whitespace-nowrap">
+          <button id="copy-full-ws-btn" onclick="copyWithFeedback(this,&#39;full-ws-url&#39;)" class="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 font-medium whitespace-nowrap">
             <i class="fas fa-copy mr-1"></i>复制
           </button>
         </div>
@@ -202,6 +202,16 @@
       }
     };
   }
+
+  window.copyWithFeedback = function(btn, elemId) {
+    var el = document.getElementById(elemId);
+    var text = elemId === 'full-ws-url' ? (el.dataset.url || '') : (el.textContent || '');
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check mr-1"></i>已复制!';
+    setTimeout(function() { btn.innerHTML = orig; }, 1500);
+  };
 
   document.getElementById('api-base-url').textContent = baseUrl;
   document.getElementById('ws-proxy-url').textContent = wsUrl;

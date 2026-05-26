@@ -163,6 +163,20 @@
           </div>
         </div>
 
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-400 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-bolt text-blue-600 text-lg"></i>
+              <span class="text-sm font-bold text-blue-800">直连 WebSocket 地址（连上即用，无需创建会话）</span>
+            </div>
+            <button onclick="var u=document.getElementById('direct-ws-url').textContent;navigator.clipboard.writeText(u);this.innerHTML='<i class=\\'fas fa-check mr-1\\'></i>已复制!';var s=this;setTimeout(function(){s.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i>复制'},1500)" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 font-bold whitespace-nowrap">
+              <i class="fas fa-copy mr-1"></i>复制
+            </button>
+          </div>
+          <p id="direct-ws-url" class="text-sm font-mono text-blue-900 break-all select-all cursor-pointer bg-white/80 p-2 rounded border border-blue-200 font-bold" onclick="navigator.clipboard.writeText(this.textContent)"><%= wsUrl %>?apiKey=<%= user.api_key || 'YOUR_API_KEY' %></p>
+          <p class="text-xs text-blue-500 mt-1"><i class="fas fa-info-circle mr-1"></i>playwright.chromium.connectOverCDP(url) 直接连，断开自动释放</p>
+        </div>
+
         <div class="border-t border-gray-200 pt-4">
           <h4 class="text-sm font-medium text-gray-700 mb-3">SDK 代码片段</h4>
           <div class="flex space-x-1 mb-2">
@@ -173,19 +187,23 @@
 
           <div class="relative">
             <div id="sdk-tab-js" class="sdk-tab-content">
-              <pre class="bg-gray-900 text-green-400 text-xs rounded-md p-4 overflow-x-auto"><code>import { Client } from './src/sdk/client.js';
+              <pre class="bg-gray-900 text-green-400 text-xs rounded-md p-4 overflow-x-auto"><code>// 方式1：直连（推荐，无需创建会话）
+import playwright from 'playwright';
 
+const wsUrl = '<%= wsUrl %>?apiKey=<%= user.api_key %>';
+const browser = await playwright.chromium.connectOverCDP(wsUrl);
+const page = await browser.newPage();
+await page.goto('https://www.baidu.com');
+console.log(await page.title());
+await browser.close(); // 断开自动释放
+
+// 方式2：SDK 创建会话
+import { Client } from './src/sdk/client.js';
 const client = new Client({
   apiKey: '<%= user.api_key %>',
   baseUrl: '<%= baseUrl %>'
 });
-
-const session = await client.sessions.create({
-  headless: true,
-  browserType: 'chromium'
-});
-
-console.log('Session ID:', session.id);
+const session = await client.sessions.create();
 console.log('WebSocket URL:', session.browserWSEndpoint);</code></pre>
               <button onclick="window.appUtils.copyToClipboard(document.querySelector('#sdk-tab-js code').textContent, this)" class="absolute top-2 right-2 bg-gray-700 px-2 py-1 rounded text-gray-300 hover:bg-gray-600 text-xs">
                 <i class="fas fa-copy"></i>

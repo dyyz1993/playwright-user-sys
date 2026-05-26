@@ -53,18 +53,32 @@
       </div>
     </div>
 
-    <div class="px-6 pb-6">
-      <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
+    <div class="px-6 pb-6 space-y-3">
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-400 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
-            <i class="fas fa-link text-green-600"></i>
-            <span class="text-sm font-bold text-green-700">WebSocket 连接地址（创建会话后自动填充）</span>
+            <i class="fas fa-bolt text-blue-600 text-lg"></i>
+            <span class="text-sm font-bold text-blue-800">直连模式（推荐 — 无需创建会话，连上即用）</span>
           </div>
-          <button id="copy-full-ws-btn" onclick="var t=document.getElementById('full-ws-url');if(t.textContent){navigator.clipboard.writeText(t.textContent);this.innerHTML='<i class=\\'fas fa-check mr-1\\'></i>已复制!';setTimeout(function(){document.getElementById(\\'copy-full-ws-btn\\').innerHTML=\\'<i class=\\'fas fa-copy mr-1\\'></i>复制\\'},1500)}" class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 font-medium whitespace-nowrap">
+          <button id="copy-direct-ws-btn" onclick="var u=document.getElementById('direct-ws-url').textContent;navigator.clipboard.writeText(u);this.innerHTML='<i class=\\'fas fa-check mr-1\\'></i>已复制!';setTimeout(function(){document.getElementById('copy-direct-ws-btn').innerHTML='<i class=\\'fas fa-copy mr-1\\'></i>复制'},1500)" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 font-bold whitespace-nowrap">
             <i class="fas fa-copy mr-1"></i>复制
           </button>
         </div>
-        <p id="full-ws-url" class="text-sm font-mono text-green-900 break-all select-all cursor-pointer bg-white/80 p-2 rounded border border-green-200 min-h-[40px] flex items-center" onclick="if(this.textContent.trim()){navigator.clipboard.writeText(this.textContent)}"><span class="text-green-400 text-xs">创建会话后自动显示完整地址...</span></p>
+        <p id="direct-ws-url" class="text-sm font-mono text-blue-900 break-all select-all cursor-pointer bg-white/80 p-2 rounded border border-blue-200 font-bold" onclick="navigator.clipboard.writeText(this.textContent)"></p>
+        <p class="text-xs text-blue-500 mt-1"><i class="fas fa-info-circle mr-1"></i>playwright.chromium.connectOverCDP(url) 直接连，断开自动释放</p>
+      </div>
+
+      <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-lg p-3">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-link text-green-600"></i>
+            <span class="text-xs font-bold text-green-700">会话模式（创建会话后自动填充）</span>
+          </div>
+          <button id="copy-full-ws-btn" onclick="var t=document.getElementById('full-ws-url');if(t.dataset.url){navigator.clipboard.writeText(t.dataset.url);this.innerHTML='<i class=\\'fas fa-check mr-1\\'></i>已复制!';setTimeout(function(){document.getElementById('copy-full-ws-btn\\').innerHTML=\\'<i class=\\'fas fa-copy mr-1\\'></i>复制\\'},1500)}" class="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 font-medium whitespace-nowrap">
+            <i class="fas fa-copy mr-1"></i>复制
+          </button>
+        </div>
+        <p id="full-ws-url" data-url="" class="text-xs font-mono text-green-900/60 break-all select-all cursor-pointer bg-white/80 p-2 rounded border border-green-200 min-h-[30px] flex items-center"><span class="text-green-400 text-xs">创建会话后自动显示...</span></p>
       </div>
     </div>
   </div>
@@ -191,6 +205,12 @@
 
   document.getElementById('api-base-url').textContent = baseUrl;
   document.getElementById('ws-proxy-url').textContent = wsUrl;
+
+  if (apiKey) {
+    document.getElementById('direct-ws-url').textContent = wsUrl + '?apiKey=' + apiKey;
+  } else {
+    document.getElementById('direct-ws-url').textContent = wsUrl + '?apiKey=YOUR_API_KEY';
+  }
 
   var apiKeyVisible = false;
   window.toggleApiKeyVisibility = function() {

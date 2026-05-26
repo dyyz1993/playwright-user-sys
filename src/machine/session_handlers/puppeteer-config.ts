@@ -8,7 +8,7 @@ export async function convertPuppeteerOptions(options: BrowserOptions = {}): Pro
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--remote-allow-origins=localhost',
+      '--remote-allow-origins=*',
       '--remote-debugging-port=0',
       '--disable-dev-shm-usage',
       '--disable-responsive-ui',

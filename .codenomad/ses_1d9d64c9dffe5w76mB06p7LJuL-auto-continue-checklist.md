@@ -1,8 +1,0 @@
-- [x] Phase 1: Bootstrap - Read existing knowledge for demo module
-- [x] Phase 2: Plan - Create test strategy for 3 scenarios
-- [x] Phase 3: Explore - Analyze demo page, probe iframe/viewer architecture
-- [x] Phase 4: Execute Scenario 1 - Create session and navigate to Baidu
-- [x] Phase 4: Execute Scenario 2 - Test Ctrl+C copy in viewer (documented failure)
-- [x] Phase 4: Execute Scenario 3 - Test Baidu image upload (partial success)
-- [x] Phase 5: Persist knowledge - Updated patterns.yml and session log
-- [x] Phase 6: Report - Generated HTML report with screenshots

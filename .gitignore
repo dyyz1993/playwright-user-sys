@@ -75,4 +75,10 @@ website/.vitepress/dist/
 .augment-guidelines
 .terminalname
 .bfg-replacements.txt
+.codenomad/
+.opencode/node_modules/
+.opencode/session-registry.json
+.opencode/outline.md
+.opencode/plan.md
+.opencode/idle-auto-continue/
 

@@ -1,3 +1,0 @@
-- [x] 添加 dev:test 命令到 package.json
-- [x] 验证 dev:test 命令正常工作
-- [x] 全量回归验证 (build, test:unit, lint, format:check)

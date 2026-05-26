@@ -1,4 +1,0 @@
-Usage: dotenv [OPTIONS] COMMAND [ARGS]...
-Try 'dotenv --help' for help.
-
-Error: Invalid value for '-e' / '--export': '.env.dev' is not a valid boolean.

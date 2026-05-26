@@ -52,6 +52,7 @@ export function toUserListItem(user: User): UserListItemDTO {
     role: user.role,
     status: user.status,
     credits: user.credits,
+    api_key: user.api_key ?? '',
     created_at: toISO(user.created_at) || '',
   };
 }

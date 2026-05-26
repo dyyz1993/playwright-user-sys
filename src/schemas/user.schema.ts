@@ -106,6 +106,7 @@ export const addCreditsResponseSchema = successResponseSchema(
 // 用户列表项模式
 export const userListItemSchema = userBaseSchema.extend({
   credits: z.number(),
+  api_key: z.string().nullable(),
   created_at: timestampSchema,
 });
 

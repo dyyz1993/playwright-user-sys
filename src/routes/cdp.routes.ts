@@ -1,6 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { UserModel } from '../models/user.model.js';
-import { MachineModel } from '../models/machine.model.js';
 import { SessionModel } from '../models/session/index.js';
 import { createBrowserSession, releaseSession } from '../services/session.service.js';
 import { logger } from '@shared/utils/logger.js';
@@ -21,18 +20,15 @@ async function authenticateUser(apiKey: string) {
   return { id: user.id, username: user.username };
 }
 
-async function buildWsUrl(machineId: string, sessionId: string): Promise<string> {
-  const publicMachineEndpoint = env.PUBLIC_MACHINE_ENDPOINT;
-  if (publicMachineEndpoint) {
-    return `ws://${publicMachineEndpoint}?sessionId=${sessionId}`;
+function buildWsUrl(request: FastifyRequest, sessionId: string): string {
+  if (env.PUBLIC_MANAGER_URL) {
+    return `ws://${env.PUBLIC_MANAGER_URL}/ws/connect?sessionId=${sessionId}`;
   }
-  const machine = await MachineModel.findById(machineId);
-  if (!machine) {
-    return `ws://localhost:${env.PROXY_PORT || 8082}?sessionId=${sessionId}`;
+  if (env.PUBLIC_MACHINE_ENDPOINT) {
+    return `ws://${env.PUBLIC_MACHINE_ENDPOINT}?sessionId=${sessionId}`;
   }
-  const ip = machine.ip || 'localhost';
-  const proxyPort = machine.proxyPort || 8082;
-  return `ws://${ip}:${proxyPort}?sessionId=${sessionId}`;
+  const host = request.headers.host || `localhost:${env.PORT || 3000}`;
+  return `ws://${host}/ws/connect?sessionId=${sessionId}`;
 }
 
 const CDP_VERSION_RESPONSE = {
@@ -55,7 +51,7 @@ export default async function cdpRoutes(fastify: FastifyInstance): Promise<void>
         }
 
         const sessionResult = await createBrowserSession(user.id, {}, true);
-        const wsUrl = await buildWsUrl(sessionResult.machineId, sessionResult.sessionId);
+        const wsUrl = buildWsUrl(request, sessionResult.sessionId);
 
         return reply.send({
           ...CDP_VERSION_RESPONSE,
@@ -90,9 +86,7 @@ export default async function cdpRoutes(fastify: FastifyInstance): Promise<void>
 
       const targets = await Promise.all(
         activeSessions.map(async (s) => {
-          const wsUrl = s.machine_id
-            ? await buildWsUrl(s.machine_id, s.id)
-            : `ws://localhost:${env.PROXY_PORT || 8082}?sessionId=${s.id}`;
+          const wsUrl = buildWsUrl(request, s.id);
           return {
             id: s.id,
             type: 'page',
@@ -126,7 +120,7 @@ export default async function cdpRoutes(fastify: FastifyInstance): Promise<void>
       }
 
       const sessionResult = await createBrowserSession(user.id, {}, true);
-      const wsUrl = await buildWsUrl(sessionResult.machineId, sessionResult.sessionId);
+      const wsUrl = buildWsUrl(request, sessionResult.sessionId);
 
       return reply.send({
         id: sessionResult.sessionId,

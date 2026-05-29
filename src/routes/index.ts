@@ -9,6 +9,7 @@ import adminApiAuthRoutes from './admin-api-auth.routes.js';
 import adminMachineApiRoutes from './admin-machine-api.routes.js';
 import fileRoutes from './file.routes.js';
 import demoRoutes from './demo.routes.js';
+import cdpRoutes from './cdp.routes.js';
 
 export default async function routes(fastify: FastifyInstance) {
   // 注册所有路由
@@ -24,6 +25,9 @@ export default async function routes(fastify: FastifyInstance) {
   fastify.register(adminApiAuthRoutes);
   fastify.register(adminMachineApiRoutes);
   fastify.register(demoRoutes);
+
+  // CDP 兼容端点（无前缀，路径以 /json 开头）
+  fastify.register(cdpRoutes);
 
   // 健康检查路由
   fastify.get('/health', async () => {

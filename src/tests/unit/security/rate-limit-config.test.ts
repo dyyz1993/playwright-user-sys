@@ -69,7 +69,7 @@ describe('Rate Limit Configuration', () => {
   describe('Login endpoints - strict rate limit (5 req/min)', () => {
     const cases = [
       { file: 'auth.routes.ts', method: 'POST', path: '/login' },
-      { file: 'admin.routes.ts', method: 'POST', path: '/admin/login' },
+      { file: 'admin/auth.routes.ts', method: 'POST', path: '/admin/login' },
       { file: 'admin-api-auth.routes.ts', method: 'POST', path: '/api/admin/login' },
     ];
     for (const c of cases) {
@@ -144,7 +144,7 @@ describe('Rate Limit Configuration', () => {
       'user.routes.ts',
       'session.routes.ts',
       'demo.routes.ts',
-      'admin.routes.ts',
+      'admin/auth.routes.ts',
       'admin-api-auth.routes.ts',
     ];
     for (const f of files) {

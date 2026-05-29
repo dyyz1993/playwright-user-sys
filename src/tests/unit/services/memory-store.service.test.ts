@@ -53,9 +53,12 @@ describe('MemoryStoreService', () => {
     // 使用已导出的 memoryStore 单例实例
     service = memoryStore;
 
-    // 清空内存数据 - 直接访问私有属性
-    (service as unknown as Record<string, unknown>).machines.clear();
-    (service as unknown as Record<string, unknown>).sessions.clear();
+    // 清空内存数据 - 通过子存储重置
+    const s = service as unknown as Record<string, unknown>;
+    const ms = s.machineStore as { clear: () => void };
+    const ss = s.sessionStore as { clear: () => void };
+    ms.clear();
+    ss.clear();
   });
 
   afterEach(() => {

@@ -52,6 +52,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import http from 'http';
 import { URL } from 'url';
+import { browserService } from '../../src/machine/browser.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -267,6 +268,9 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
   // 步骤 6: beforeEach - 每个测试前清理
   // ========================================
   beforeEach(async () => {
+    // 关闭机器端所有残留浏览器实例，避免资源耗尽
+    await browserService.closeAllBrowsers();
+
     await testDb.db('sessions').del();
     await testDb.db('credit_history').del();
 
@@ -278,7 +282,7 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
     for (const machine of machines) {
       await testDb.db('machines').where({ id: machine.id }).update({ instance_count: 0 });
     }
-  }, 10000);
+  }, 15000);
 
   // ========================================
   // 步骤 7: 辅助函数
@@ -302,59 +306,66 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
     // 如果提供了 instanceId，添加为查询参数以区分不同的浏览器实例
     const url = instanceId ? `${testPageUrl}?instance=${instanceId}` : testPageUrl;
 
-    // 使用 HTTP 服务器加载页面
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 });
-
-    // 收集控制台消息用于调试
+    // 收集控制台消息用于调试（在 goto 前注册以捕获所有消息）
     const consoleMessages: string[] = [];
-    page.on('console', (msg: any) => {
+    const onConsole = (msg: any) => {
       consoleMessages.push(msg.text());
-    });
-    page.on('pageerror', (error: any) => {
+    };
+    const onError = (error: any) => {
       console.error('[Page Error]', error.message);
-    });
+    };
+    page.on('console', onConsole);
+    page.on('pageerror', onError);
 
-    // 等待指纹计算完成
     try {
-      await page.waitForFunction(
-        () => {
-          const ready = (window as any).fingerprintReady === true;
-          const hasHash = typeof (window as any).fingerprintHash === 'string';
-          const hasData = (window as any).fingerprintData !== undefined;
-          const hasBasic = (window as any).fingerprintData?.basic !== undefined;
-          const hasCanvas = (window as any).fingerprintData?.canvas !== undefined;
-          return ready && hasHash && hasData && hasBasic && hasCanvas;
-        },
-        { timeout: 20000, polling: 100 }
-      );
-    } catch (e) {
-      // 调试信息：检查页面状态
-      const debugInfo = await page.evaluate(() => {
+      // 使用 HTTP 服务器加载页面
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 });
+
+      // 等待指纹计算完成
+      try {
+        await page.waitForFunction(
+          () => {
+            const ready = (window as any).fingerprintReady === true;
+            const hasHash = typeof (window as any).fingerprintHash === 'string';
+            const hasData = (window as any).fingerprintData !== undefined;
+            const hasBasic = (window as any).fingerprintData?.basic !== undefined;
+            const hasCanvas = (window as any).fingerprintData?.canvas !== undefined;
+            return ready && hasHash && hasData && hasBasic && hasCanvas;
+          },
+          { timeout: 20000, polling: 100 }
+        );
+      } catch (e) {
+        // 调试信息：检查页面状态
+        const debugInfo = await page.evaluate(() => {
+          return {
+            ready: (window as any).fingerprintReady,
+            hash: (window as any).fingerprintHash,
+            hasData: typeof (window as any).fingerprintData !== 'undefined',
+            dataKeys: (window as any).fingerprintData ? Object.keys((window as any).fingerprintData) : [],
+            url: document.URL,
+            readyState: document.readyState,
+            hasInitFunction: typeof (window as any).init === 'function',
+          };
+        });
+        console.error('[getFingerprint] 等待超时，调试信息:', debugInfo);
+        console.error('[getFingerprint] 控制台消息:', consoleMessages.join('\n  '));
+        throw e;
+      }
+
+      return await page.evaluate(() => {
         return {
-          ready: (window as any).fingerprintReady,
           hash: (window as any).fingerprintHash,
-          hasData: typeof (window as any).fingerprintData !== 'undefined',
-          dataKeys: (window as any).fingerprintData ? Object.keys((window as any).fingerprintData) : [],
-          url: document.URL,
-          readyState: document.readyState,
-          hasInitFunction: typeof (window as any).init === 'function',
+          basic: (window as any).fingerprintData?.basic,
+          canvas: (window as any).fingerprintData?.canvas,
+          webgl: (window as any).fingerprintData?.webgl,
+          audio: (window as any).fingerprintData?.audio,
+          fonts: (window as any).fingerprintData?.fonts,
         };
       });
-      console.error('[getFingerprint] 等待超时，调试信息:', debugInfo);
-      console.error('[getFingerprint] 控制台消息:', consoleMessages.join('\n  '));
-      throw e;
+    } finally {
+      page.off('console', onConsole);
+      page.off('pageerror', onError);
     }
-
-    return await page.evaluate(() => {
-      return {
-        hash: (window as any).fingerprintHash,
-        basic: (window as any).fingerprintData?.basic,
-        canvas: (window as any).fingerprintData?.canvas,
-        webgl: (window as any).fingerprintData?.webgl,
-        audio: (window as any).fingerprintData?.audio,
-        fonts: (window as any).fingerprintData?.fonts,
-      };
-    });
   }
 
   /**
@@ -417,90 +428,102 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
      * - Database Layer: 同一个 session_id
      */
     it('TIER-101: 同一实例的不同 Tab 应该有相同的综合指纹哈希', { timeout: 60000 }, async () => {
-      const { browser, sessionId } = await createSessionAndConnect();
+      let browser;
+      try {
+        const { browser: b, sessionId } = await createSessionAndConnect();
+        browser = b;
 
-      console.log('\n[指纹测试] 打开多个 Tab 并比较指纹...');
+        console.log('\n[指纹测试] 打开多个 Tab 并比较指纹...');
 
-      // 打开 3 个 Tab
-      const tab1 = await browser.newPage();
-      const tab2 = await browser.newPage();
-      const tab3 = await browser.newPage();
+        // 打开 3 个 Tab
+        const tab1 = await browser.newPage();
+        const tab2 = await browser.newPage();
+        const tab3 = await browser.newPage();
 
-      // 在每个 Tab 中打开指纹测试页面
-      // getFingerprint() 会使用 setContent() 加载 HTML
+        // 在每个 Tab 中打开指纹测试页面
+        // getFingerprint() 会使用 setContent() 加载 HTML
 
-      // 获取每个 Tab 的指纹
-      const fp1 = await getFingerprint(tab1);
-      const fp2 = await getFingerprint(tab2);
-      const fp3 = await getFingerprint(tab3);
+        // 获取每个 Tab 的指纹
+        const fp1 = await getFingerprint(tab1);
+        const fp2 = await getFingerprint(tab2);
+        const fp3 = await getFingerprint(tab3);
 
-      console.log(`   Tab 1 指纹: ${fp1.hash}`);
-      console.log(`   Tab 2 指纹: ${fp2.hash}`);
-      console.log(`   Tab 3 指纹: ${fp3.hash}`);
+        console.log(`   Tab 1 指纹: ${fp1.hash}`);
+        console.log(`   Tab 2 指纹: ${fp2.hash}`);
+        console.log(`   Tab 3 指纹: ${fp3.hash}`);
 
-      // Layer 1: Browser Layer - 验证指纹哈希相同
-      expect(fp1.hash).toBe(fp2.hash);
-      expect(fp2.hash).toBe(fp3.hash);
+        // Layer 1: Browser Layer - 验证指纹哈希相同
+        expect(fp1.hash).toBe(fp2.hash);
+        expect(fp2.hash).toBe(fp3.hash);
 
-      // Layer 2: Database Layer - 验证属于同一个 session
-      const session = await SessionModel.findById(sessionId);
-      expect(session).toBeDefined();
+        // Layer 2: Database Layer - 验证属于同一个 session
+        const session = await SessionModel.findById(sessionId);
+        expect(session).toBeDefined();
 
-      console.log('   ✅ 同一实例的不同 Tab 指纹相同');
-      console.log('✅ TIER-101 测试通过');
+        console.log('   ✅ 同一实例的不同 Tab 指纹相同');
+        console.log('✅ TIER-101 测试通过');
 
-      await tab1.close();
-      await tab2.close();
-      await tab3.close();
-      await browser.disconnect();
+        await tab1.close();
+        await tab2.close();
+        await tab3.close();
+      } finally {
+        if (browser) {
+          await browser.disconnect();
+        }
+      }
     });
 
     /**
      * TIER-102: 同一实例的不同 Tab 应该有相同的 Canvas 指纹
      */
     it('TIER-102: 同一实例的不同 Tab 应该有相同的 Canvas 指纹', { timeout: 60000 }, async () => {
-      const { browser } = await createSessionAndConnect();
+      let browser;
+      try {
+        const { browser: b } = await createSessionAndConnect();
+        browser = b;
 
-      const tab1 = await browser.newPage();
-      const tab2 = await browser.newPage();
+        const tab1 = await browser.newPage();
+        const tab2 = await browser.newPage();
 
-      const fp1 = await getFingerprint(tab1);
-      const fp2 = await getFingerprint(tab2);
+        const fp1 = await getFingerprint(tab1);
+        const fp2 = await getFingerprint(tab2);
 
-      const canvasMatch = fp1.canvas.hash === fp2.canvas.hash;
+        const canvasMatch = fp1.canvas.hash === fp2.canvas.hash;
+        if (canvasMatch) {
+          console.log(`   Canvas 指纹: ${fp1.canvas.hash}`);
+          console.log('   ✅ Canvas 指纹相同');
+        } else {
+          console.log(`   Tab1 Canvas: ${fp1.canvas.hash}`);
+          console.log(`   Tab2 Canvas: ${fp2.canvas.hash}`);
+          console.log('   ⚠️  Canvas 指纹不同（可能由 GPU 渲染差异导致，重试验证）');
 
-      if (canvasMatch) {
-        console.log(`   Canvas 指纹: ${fp1.canvas.hash}`);
-        console.log('   ✅ Canvas 指纹相同');
-      } else {
-        console.log(`   Tab1 Canvas: ${fp1.canvas.hash}`);
-        console.log(`   Tab2 Canvas: ${fp2.canvas.hash}`);
-        console.log('   ⚠️  Canvas 指纹不同（可能由 GPU 渲染差异导致，重试验证）');
+          await tab1.close();
+          await tab2.close();
+
+          const retryTab1 = await browser.newPage();
+          const retryTab2 = await browser.newPage();
+          const retryFp1 = await getFingerprint(retryTab1);
+          const retryFp2 = await getFingerprint(retryTab2);
+
+          const retryCanvasMatch = retryFp1.canvas.hash === retryFp2.canvas.hash;
+          expect(retryCanvasMatch).toBe(true);
+          console.log(`   ✅ 重试后 Canvas 指纹一致: ${retryFp1.canvas.hash}`);
+
+          await retryTab1.close();
+          await retryTab2.close();
+          console.log('✅ TIER-102 测试通过（重试）');
+          return;
+        }
+
+        console.log('✅ TIER-102 测试通过');
 
         await tab1.close();
         await tab2.close();
-
-        const retryTab1 = await browser.newPage();
-        const retryTab2 = await browser.newPage();
-        const retryFp1 = await getFingerprint(retryTab1);
-        const retryFp2 = await getFingerprint(retryTab2);
-
-        const retryCanvasMatch = retryFp1.canvas.hash === retryFp2.canvas.hash;
-        expect(retryCanvasMatch).toBe(true);
-        console.log(`   ✅ 重试后 Canvas 指纹一致: ${retryFp1.canvas.hash}`);
-
-        await retryTab1.close();
-        await retryTab2.close();
-        await browser.disconnect();
-        console.log('✅ TIER-102 测试通过（重试）');
-        return;
+      } finally {
+        if (browser) {
+          await browser.disconnect();
+        }
       }
-
-      console.log('✅ TIER-102 测试通过');
-
-      await tab1.close();
-      await tab2.close();
-      await browser.disconnect();
     });
 
     /**
@@ -510,162 +533,184 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
      * 这是正常的行为，因此 WebGL 指纹可能不同
      */
     it('TIER-103: 同一实例的不同 Tab 应该有相同的 WebGL 指纹（或属于同一厂商）', { timeout: 60000 }, async () => {
-      const { browser } = await createSessionAndConnect();
+      let browser;
+      try {
+        const { browser: b } = await createSessionAndConnect();
+        browser = b;
 
-      const tab1 = await browser.newPage();
-      const tab2 = await browser.newPage();
+        const tab1 = await browser.newPage();
+        const tab2 = await browser.newPage();
 
-      const fp1 = await getFingerprint(tab1);
-      const fp2 = await getFingerprint(tab2);
+        const fp1 = await getFingerprint(tab1);
+        const fp2 = await getFingerprint(tab2);
 
-      // Debug output
-      console.log('   Tab 1 WebGL:', JSON.stringify(fp1.webgl, null, 2));
-      console.log('   Tab 2 WebGL:', JSON.stringify(fp2.webgl, null, 2));
+        // Debug output
+        console.log('   Tab 1 WebGL:', JSON.stringify(fp1.webgl, null, 2));
+        console.log('   Tab 2 WebGL:', JSON.stringify(fp2.webgl, null, 2));
 
-      // 由于多 GPU 系统可能导致不同的 WebGL 渲染器，我们放宽检查条件：
-      // 1. 如果完全相同，通过
-      // 2. 如果不同但都属于同一厂商（如 Intel/Apple/NVIDIA），也通过
-      const hashesMatch = fp1.webgl.hash === fp2.webgl.hash;
+        // 由于多 GPU 系统可能导致不同的 WebGL 渲染器，我们放宽检查条件：
+        // 1. 如果完全相同，通过
+        // 2. 如果不同但都属于同一厂商（如 Intel/Apple/NVIDIA），也通过
+        const hashesMatch = fp1.webgl.hash === fp2.webgl.hash;
 
-      if (hashesMatch) {
-        console.log('   ✅ WebGL 指纹完全相同');
-      } else {
-        // 检查是否都是同一厂商的 GPU
-        const vendor1 = fp1.webgl.vendor?.toLowerCase() || '';
-        const vendor2 = fp2.webgl.vendor?.toLowerCase() || '';
-
-        // 提取厂商关键词
-        const vendors = ['intel', 'apple', 'nvidia', 'amd', 'qualcomm', 'arm'];
-        const vendor1Key = vendors.find((v) => vendor1.includes(v));
-        const vendor2Key = vendors.find((v) => vendor2.includes(v));
-
-        if (vendor1Key && vendor1Key === vendor2Key) {
-          console.log(`   ⚠️  WebGL 指纹不同，但都是 ${vendor1Key.toUpperCase()} GPU（多 GPU 系统）`);
-          console.log('   ✅ 测试通过（同厂商 GPU）');
+        if (hashesMatch) {
+          console.log('   ✅ WebGL 指纹完全相同');
         } else {
-          console.log(`   Tab 1: ${fp1.webgl.renderer}`);
-          console.log(`   Tab 2: ${fp2.webgl.renderer}`);
-          // 如果不是同厂商，仍然认为测试通过（可能是其他原因导致的差异）
-          console.log('   ✅ WebGL 指纹已记录');
+          // 检查是否都是同一厂商的 GPU
+          const vendor1 = fp1.webgl.vendor?.toLowerCase() || '';
+          const vendor2 = fp2.webgl.vendor?.toLowerCase() || '';
+
+          // 提取厂商关键词
+          const vendors = ['intel', 'apple', 'nvidia', 'amd', 'qualcomm', 'arm'];
+          const vendor1Key = vendors.find((v) => vendor1.includes(v));
+          const vendor2Key = vendors.find((v) => vendor2.includes(v));
+
+          if (vendor1Key && vendor1Key === vendor2Key) {
+            console.log(`   ⚠️  WebGL 指纹不同，但都是 ${vendor1Key.toUpperCase()} GPU（多 GPU 系统）`);
+            console.log('   ✅ 测试通过（同厂商 GPU）');
+          } else {
+            console.log(`   Tab 1: ${fp1.webgl.renderer}`);
+            console.log(`   Tab 2: ${fp2.webgl.renderer}`);
+            // 如果不是同厂商，仍然认为测试通过（可能是其他原因导致的差异）
+            console.log('   ✅ WebGL 指纹已记录');
+          }
+        }
+
+        // WebGL 参数应该在合理范围内
+        expect(fp1.webgl.maxTextureSize).toBeGreaterThan(0);
+        expect(fp2.webgl.maxTextureSize).toBeGreaterThan(0);
+
+        console.log('✅ TIER-103 测试通过');
+
+        await tab1.close();
+        await tab2.close();
+      } finally {
+        if (browser) {
+          await browser.disconnect();
         }
       }
-
-      // WebGL 参数应该在合理范围内
-      expect(fp1.webgl.maxTextureSize).toBeGreaterThan(0);
-      expect(fp2.webgl.maxTextureSize).toBeGreaterThan(0);
-
-      console.log('✅ TIER-103 测试通过');
-
-      await tab1.close();
-      await tab2.close();
-      await browser.disconnect();
     });
 
     /**
      * TIER-104: 同一实例的不同 Tab 应该有相同的 AudioContext 指纹
      */
     it('TIER-104: 同一实例的不同 Tab 应该有相同的 AudioContext 指纹', { timeout: 60000 }, async () => {
-      const { browser } = await createSessionAndConnect();
+      let browser;
+      try {
+        const { browser: b } = await createSessionAndConnect();
+        browser = b;
 
-      const tab1 = await browser.newPage();
-      const tab2 = await browser.newPage();
+        const tab1 = await browser.newPage();
+        const tab2 = await browser.newPage();
 
-      // 不再需要 goto，getFingerprint() 会使用 setContent() 加载 HTML
-      // getFingerprint() 会使用 setContent() 加载 HTML
+        const fp1 = await getFingerprint(tab1);
+        const fp2 = await getFingerprint(tab2);
 
-      const fp1 = await getFingerprint(tab1);
-      const fp2 = await getFingerprint(tab2);
+        // AudioContext 指纹应该相同
+        expect(fp1.audio.hash).toBe(fp2.audio.hash);
+        expect(fp1.audio.sampleRate).toBe(fp2.audio.sampleRate);
+        console.log(`   AudioContext 指纹: ${fp1.audio.hash}`);
+        console.log(`   Sample Rate: ${fp1.audio.sampleRate} Hz`);
+        console.log('   ✅ AudioContext 指纹相同');
 
-      // AudioContext 指纹应该相同
-      expect(fp1.audio.hash).toBe(fp2.audio.hash);
-      expect(fp1.audio.sampleRate).toBe(fp2.audio.sampleRate);
-      console.log(`   AudioContext 指纹: ${fp1.audio.hash}`);
-      console.log(`   Sample Rate: ${fp1.audio.sampleRate} Hz`);
-      console.log('   ✅ AudioContext 指纹相同');
+        console.log('✅ TIER-104 测试通过');
 
-      console.log('✅ TIER-104 测试通过');
-
-      await tab1.close();
-      await tab2.close();
-      await browser.disconnect();
+        await tab1.close();
+        await tab2.close();
+      } finally {
+        if (browser) {
+          await browser.disconnect();
+        }
+      }
     });
 
     /**
      * TIER-105: 同一实例的不同 Tab 应该有相同的基础指纹
      */
     it('TIER-105: 同一实例的不同 Tab 应该有相同的基础指纹（或反检测随机化）', { timeout: 60000 }, async () => {
-      const { browser } = await createSessionAndConnect();
+      let browser;
+      try {
+        const { browser: b } = await createSessionAndConnect();
+        browser = b;
 
-      const tab1 = await browser.newPage();
-      const tab2 = await browser.newPage();
+        const tab1 = await browser.newPage();
+        const tab2 = await browser.newPage();
 
-      const fp1 = await getFingerprint(tab1);
-      const fp2 = await getFingerprint(tab2);
+        const fp1 = await getFingerprint(tab1);
+        const fp2 = await getFingerprint(tab2);
 
-      // Debug output
-      console.log('   Tab 1 Basic:', JSON.stringify(fp1.basic, null, 2));
-      console.log('   Tab 2 Basic:', JSON.stringify(fp2.basic, null, 2));
+        // Debug output
+        console.log('   Tab 1 Basic:', JSON.stringify(fp1.basic, null, 2));
+        console.log('   Tab 2 Basic:', JSON.stringify(fp2.basic, null, 2));
 
-      // 注意：反检测系统可能会为每个页面随机化 platform、language、hardwareConcurrency 等值
-      // 这是正常且期望的行为，因为它增加了指纹熵值，使跟踪更困难
-      const hashesMatch = fp1.basic.hash === fp2.basic.hash;
+        // 注意：反检测系统可能会为每个页面随机化 platform、language、hardwareConcurrency 等值
+        // 这是正常且期望的行为，因为它增加了指纹熵值，使跟踪更困难
+        const hashesMatch = fp1.basic.hash === fp2.basic.hash;
 
-      if (hashesMatch) {
-        console.log('   ✅ 基础指纹完全相同');
-      } else {
-        console.log('   ⚠️  基础指纹不同（反检测随机化）');
-        console.log(
-          `   Tab 1: platform=${fp1.basic.platform}, language=${fp1.basic.language}, cores=${fp1.basic.hardwareConcurrency}`
-        );
-        console.log(
-          `   Tab 2: platform=${fp2.basic.platform}, language=${fp2.basic.language}, cores=${fp2.basic.hardwareConcurrency}`
-        );
-        console.log('   ✅ 这是正常的反检测行为');
+        if (hashesMatch) {
+          console.log('   ✅ 基础指纹完全相同');
+        } else {
+          console.log('   ⚠️  基础指纹不同（反检测随机化）');
+          console.log(
+            `   Tab 1: platform=${fp1.basic.platform}, language=${fp1.basic.language}, cores=${fp1.basic.hardwareConcurrency}`
+          );
+          console.log(
+            `   Tab 2: platform=${fp2.basic.platform}, language=${fp2.basic.language}, cores=${fp2.basic.hardwareConcurrency}`
+          );
+          console.log('   ✅ 这是正常的反检测行为');
+        }
+
+        expect(fp1.basic.timezone).toBe(fp2.basic.timezone);
+
+        if (fp1.basic.screen !== fp2.basic.screen) {
+          console.log(`   ⚠️  Screen 不同: tab1=${fp1.basic.screen}, tab2=${fp2.basic.screen}`);
+          console.log('   （headless 模式下新 Tab 可能不继承 viewport，属于已知行为）');
+        } else {
+          console.log(`   ✅ Screen 一致: ${fp1.basic.screen}`);
+        }
+
+        console.log('✅ TIER-105 测试通过');
+
+        await tab1.close();
+        await tab2.close();
+      } finally {
+        if (browser) {
+          await browser.disconnect();
+        }
       }
-
-      expect(fp1.basic.timezone).toBe(fp2.basic.timezone);
-
-      if (fp1.basic.screen !== fp2.basic.screen) {
-        console.log(`   ⚠️  Screen 不同: tab1=${fp1.basic.screen}, tab2=${fp2.basic.screen}`);
-        console.log('   （headless 模式下新 Tab 可能不继承 viewport，属于已知行为）');
-      } else {
-        console.log(`   ✅ Screen 一致: ${fp1.basic.screen}`);
-      }
-
-      console.log('✅ TIER-105 测试通过');
-
-      await tab1.close();
-      await tab2.close();
-      await browser.disconnect();
     });
 
     /**
      * TIER-106: 同一实例的不同 Tab 应该有相同的字体指纹
      */
     it('TIER-106: 同一实例的不同 Tab 应该有相同的字体指纹', { timeout: 60000 }, async () => {
-      const { browser } = await createSessionAndConnect();
+      let browser;
+      try {
+        const { browser: b } = await createSessionAndConnect();
+        browser = b;
 
-      const tab1 = await browser.newPage();
-      const tab2 = await browser.newPage();
+        const tab1 = await browser.newPage();
+        const tab2 = await browser.newPage();
 
-      // 不再需要 goto，getFingerprint() 会使用 setContent() 加载 HTML
-      // getFingerprint() 会使用 setContent() 加载 HTML
+        const fp1 = await getFingerprint(tab1);
+        const fp2 = await getFingerprint(tab2);
 
-      const fp1 = await getFingerprint(tab1);
-      const fp2 = await getFingerprint(tab2);
+        // 字体指纹应该相同
+        expect(fp1.fonts.hash).toBe(fp2.fonts.hash);
+        expect(fp1.fonts.count).toBe(fp2.fonts.count);
+        console.log(`   字体指纹: ${fp1.fonts.hash}`);
+        console.log(`   检测字体数: ${fp1.fonts.count}`);
+        console.log('   ✅ 字体指纹相同');
 
-      // 字体指纹应该相同
-      expect(fp1.fonts.hash).toBe(fp2.fonts.hash);
-      expect(fp1.fonts.count).toBe(fp2.fonts.count);
-      console.log(`   字体指纹: ${fp1.fonts.hash}`);
-      console.log(`   检测字体数: ${fp1.fonts.count}`);
-      console.log('   ✅ 字体指纹相同');
+        console.log('✅ TIER-106 测试通过');
 
-      console.log('✅ TIER-106 测试通过');
-
-      await tab1.close();
-      await tab2.close();
-      await browser.disconnect();
+        await tab1.close();
+        await tab2.close();
+      } finally {
+        if (browser) {
+          await browser.disconnect();
+        }
+      }
     });
   });
 
@@ -682,134 +727,162 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
      * - Database Layer: 不同的 session_id
      */
     it('TIER-111: 不同实例应该有不同的综合指纹哈希', { timeout: 90000 }, async () => {
-      console.log('\n[指纹测试] 创建不同实例并比较指纹...');
+      let browser1;
+      let browser2;
+      try {
+        console.log('\n[指纹测试] 创建不同实例并比较指纹...');
 
-      // 创建两个不同的实例
-      const { browser: browser1, sessionId: sessionId1 } = await createSessionAndConnect();
-      const { browser: browser2, sessionId: sessionId2 } = await createSessionAndConnect();
+        // 创建两个不同的实例
+        const r1 = await createSessionAndConnect();
+        browser1 = r1.browser;
+        const sessionId1 = r1.sessionId;
+        const r2 = await createSessionAndConnect();
+        browser2 = r2.browser;
+        const sessionId2 = r2.sessionId;
 
-      // 在每个实例中打开 Tab
-      const tab1 = await browser1.newPage();
-      const tab2 = await browser2.newPage();
+        // 在每个实例中打开 Tab
+        const tab1 = await browser1.newPage();
+        const tab2 = await browser2.newPage();
 
-      // 不再需要 goto，getFingerprint() 会使用 setContent() 加载 HTML
-      // getFingerprint() 会使用 setContent() 加载 HTML
+        // 获取指纹
+        const fp1 = await getFingerprint(tab1);
+        const fp2 = await getFingerprint(tab2);
 
-      // 获取指纹
-      const fp1 = await getFingerprint(tab1);
-      const fp2 = await getFingerprint(tab2);
+        console.log(`   实例 1 指纹: ${fp1.hash} (session: ${sessionId1})`);
+        console.log(`   实例 2 指纹: ${fp2.hash} (session: ${sessionId2})`);
 
-      console.log(`   实例 1 指纹: ${fp1.hash} (session: ${sessionId1})`);
-      console.log(`   实例 2 指纹: ${fp2.hash} (session: ${sessionId2})`);
+        // Layer 1: Browser Layer - 验证指纹哈希不同
+        expect(fp1.hash).not.toBe(fp2.hash);
 
-      // Layer 1: Browser Layer - 验证指纹哈希不同
-      expect(fp1.hash).not.toBe(fp2.hash);
+        // Layer 2: Database Layer - 验证属于不同的 session
+        expect(sessionId1).not.toBe(sessionId2);
+        const session1 = await SessionModel.findById(sessionId1);
+        const session2 = await SessionModel.findById(sessionId2);
+        expect(session1).toBeDefined();
+        expect(session2).toBeDefined();
+        expect(session1!.id).not.toBe(session2!.id);
 
-      // Layer 2: Database Layer - 验证属于不同的 session
-      expect(sessionId1).not.toBe(sessionId2);
-      const session1 = await SessionModel.findById(sessionId1);
-      const session2 = await SessionModel.findById(sessionId2);
-      expect(session1).toBeDefined();
-      expect(session2).toBeDefined();
-      expect(session1!.id).not.toBe(session2!.id);
+        console.log('   ✅ 不同实例的指纹不同');
+        console.log('✅ TIER-111 测试通过');
 
-      console.log('   ✅ 不同实例的指纹不同');
-      console.log('✅ TIER-111 测试通过');
-
-      await tab1.close();
-      await tab2.close();
-      await browser1.disconnect();
-      await browser2.disconnect();
+        await tab1.close();
+        await tab2.close();
+      } finally {
+        if (browser1) await browser1.disconnect();
+        if (browser2) await browser2.disconnect();
+      }
     });
 
     /**
      * TIER-112: 不同实例应该有不同的 Canvas 指纹
      */
     it.skipIf(process.env.CI === 'true')('TIER-112: 不同实例应该有不同的 Canvas 指纹', { timeout: 90000 }, async () => {
-      const { browser: browser1, sessionId: sessionId1 } = await createSessionAndConnect();
-      const { browser: browser2, sessionId: sessionId2 } = await createSessionAndConnect();
+      let browser1;
+      let browser2;
+      try {
+        const r1 = await createSessionAndConnect();
+        browser1 = r1.browser;
+        const sessionId1 = r1.sessionId;
+        const r2 = await createSessionAndConnect();
+        browser2 = r2.browser;
+        const sessionId2 = r2.sessionId;
 
-      const tab1 = await browser1.newPage();
-      const tab2 = await browser2.newPage();
+        const tab1 = await browser1.newPage();
+        const tab2 = await browser2.newPage();
 
-      // 传入不同的 session ID，使 Canvas 指纹不同
-      const fp1 = await getFingerprint(tab1, sessionId1);
-      const fp2 = await getFingerprint(tab2, sessionId2);
+        // 传入不同的 session ID，使 Canvas 指纹不同
+        const fp1 = await getFingerprint(tab1, sessionId1);
+        const fp2 = await getFingerprint(tab2, sessionId2);
 
-      // Canvas 指纹应该不同（由于 URL 查询参数不同）
-      expect(fp1.canvas.hash).not.toBe(fp2.canvas.hash);
-      console.log(`   实例 1 Canvas 指纹: ${fp1.canvas.hash}`);
-      console.log(`   实例 2 Canvas 指纹: ${fp2.canvas.hash}`);
-      console.log('   ✅ Canvas 指纹不同');
+        // Canvas 指纹应该不同（由于 URL 查询参数不同）
+        expect(fp1.canvas.hash).not.toBe(fp2.canvas.hash);
+        console.log(`   实例 1 Canvas 指纹: ${fp1.canvas.hash}`);
+        console.log(`   实例 2 Canvas 指纹: ${fp2.canvas.hash}`);
+        console.log('   ✅ Canvas 指纹不同');
 
-      console.log('✅ TIER-112 测试通过');
+        console.log('✅ TIER-112 测试通过');
 
-      await tab1.close();
-      await tab2.close();
-      await browser1.disconnect();
-      await browser2.disconnect();
+        await tab1.close();
+        await tab2.close();
+      } finally {
+        if (browser1) await browser1.disconnect();
+        if (browser2) await browser2.disconnect();
+      }
     });
 
     /**
      * TIER-113: 不同实例应该有不同的 WebGL 指纹
      */
     it('TIER-113: 不同实例应该有不同的 WebGL 指纹', { timeout: 90000 }, async () => {
-      const { browser: browser1 } = await createSessionAndConnect();
-      const { browser: browser2 } = await createSessionAndConnect();
+      let browser1;
+      let browser2;
+      try {
+        const r1 = await createSessionAndConnect();
+        browser1 = r1.browser;
+        const r2 = await createSessionAndConnect();
+        browser2 = r2.browser;
 
-      const tab1 = await browser1.newPage();
-      const tab2 = await browser2.newPage();
+        const tab1 = await browser1.newPage();
+        const tab2 = await browser2.newPage();
 
-      // 不再需要 goto，getFingerprint() 会使用 setContent() 加载 HTML
-      // getFingerprint() 会使用 setContent() 加载 HTML
+        const fp1 = await getFingerprint(tab1);
+        const fp2 = await getFingerprint(tab2);
 
-      const fp1 = await getFingerprint(tab1);
-      const fp2 = await getFingerprint(tab2);
+        // WebGL 指纹可能相同（同一 GPU），但综合哈希应该不同
+        console.log(`   实例 1 WebGL 指纹: ${fp1.webgl.hash}`);
+        console.log(`   实例 2 WebGL 指纹: ${fp2.webgl.hash}`);
+        console.log(`   Renderer: ${fp1.webgl.renderer}`);
 
-      // WebGL 指纹可能相同（同一 GPU），但综合哈希应该不同
-      console.log(`   实例 1 WebGL 指纹: ${fp1.webgl.hash}`);
-      console.log(`   实例 2 WebGL 指纹: ${fp2.webgl.hash}`);
-      console.log(`   Renderer: ${fp1.webgl.renderer}`);
+        // 由于 WebGL 硬件指纹相同，主要差异来自 Canvas
+        // 综合指纹应该不同
+        expect(fp1.hash).not.toBe(fp2.hash);
+        console.log('   ✅ 综合指纹不同（硬件相同但软件噪声不同）');
 
-      // 由于 WebGL 硬件指纹相同，主要差异来自 Canvas
-      // 综合指纹应该不同
-      expect(fp1.hash).not.toBe(fp2.hash);
-      console.log('   ✅ 综合指纹不同（硬件相同但软件噪声不同）');
+        console.log('✅ TIER-113 测试通过');
 
-      console.log('✅ TIER-113 测试通过');
-
-      await tab1.close();
-      await tab2.close();
-      await browser1.disconnect();
-      await browser2.disconnect();
+        await tab1.close();
+        await tab2.close();
+      } finally {
+        if (browser1) await browser1.disconnect();
+        if (browser2) await browser2.disconnect();
+      }
     });
 
     /**
      * TIER-114: 不同实例应该有不同的 AudioContext 指纹
      */
     it('TIER-114: 不同实例应该有不同的 AudioContext 指纹', { timeout: 90000 }, async () => {
-      const { browser: browser1, sessionId: sessionId1 } = await createSessionAndConnect();
-      const { browser: browser2, sessionId: sessionId2 } = await createSessionAndConnect();
+      let browser1;
+      let browser2;
+      try {
+        const r1 = await createSessionAndConnect();
+        browser1 = r1.browser;
+        const sessionId1 = r1.sessionId;
+        const r2 = await createSessionAndConnect();
+        browser2 = r2.browser;
+        const sessionId2 = r2.sessionId;
 
-      const tab1 = await browser1.newPage();
-      const tab2 = await browser2.newPage();
+        const tab1 = await browser1.newPage();
+        const tab2 = await browser2.newPage();
 
-      // 传入不同的 session ID，使 Audio 指纹不同
-      const fp1 = await getFingerprint(tab1, sessionId1);
-      const fp2 = await getFingerprint(tab2, sessionId2);
+        // 传入不同的 session ID，使 Audio 指纹不同
+        const fp1 = await getFingerprint(tab1, sessionId1);
+        const fp2 = await getFingerprint(tab2, sessionId2);
 
-      // AudioContext 指纹应该不同（由于 URL 查询参数不同）
-      expect(fp1.audio.hash).not.toBe(fp2.audio.hash);
-      console.log(`   实例 1 Audio 指纹: ${fp1.audio.hash}`);
-      console.log(`   实例 2 Audio 指纹: ${fp2.audio.hash}`);
-      console.log('   ✅ AudioContext 指纹不同');
+        // AudioContext 指纹应该不同（由于 URL 查询参数不同）
+        expect(fp1.audio.hash).not.toBe(fp2.audio.hash);
+        console.log(`   实例 1 Audio 指纹: ${fp1.audio.hash}`);
+        console.log(`   实例 2 Audio 指纹: ${fp2.audio.hash}`);
+        console.log('   ✅ AudioContext 指纹不同');
 
-      console.log('✅ TIER-114 测试通过');
+        console.log('✅ TIER-114 测试通过');
 
-      await tab1.close();
-      await tab2.close();
-      await browser1.disconnect();
-      await browser2.disconnect();
+        await tab1.close();
+        await tab2.close();
+      } finally {
+        if (browser1) await browser1.disconnect();
+        if (browser2) await browser2.disconnect();
+      }
     });
 
     /**
@@ -818,30 +891,34 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
      * 测试在不同时间点，同一实例指纹保持一致
      */
     it('TIER-115: 验证指纹隔离的持续性', { timeout: 90000 }, async () => {
-      const { browser } = await createSessionAndConnect();
+      let browser;
+      try {
+        const { browser: b } = await createSessionAndConnect();
+        browser = b;
 
-      const tab1 = await browser.newPage();
-      // 不再需要 goto，getFingerprint() 会使用 setContent() 加载 HTML
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+        const tab1 = await browser.newPage();
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      const fp1 = await getFingerprint(tab1);
-      console.log(`   第一次指纹: ${fp1.hash}`);
+        const fp1 = await getFingerprint(tab1);
+        console.log(`   第一次指纹: ${fp1.hash}`);
 
-      // 等待一段时间
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+        // 等待一段时间
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // getFingerprint() 会重新加载 HTML，模拟重新打开页面
-      const fp2 = await getFingerprint(tab1);
-      console.log(`   第二次指纹: ${fp2.hash}`);
+        // getFingerprint() 会重新加载 HTML，模拟重新打开页面
+        const fp2 = await getFingerprint(tab1);
+        console.log(`   第二次指纹: ${fp2.hash}`);
 
-      // 同一实例的指纹应该保持一致
-      expect(fp1.hash).toBe(fp2.hash);
-      console.log('   ✅ 同一实例指纹保持一致');
+        // 同一实例的指纹应该保持一致
+        expect(fp1.hash).toBe(fp2.hash);
+        console.log('   ✅ 同一实例指纹保持一致');
 
-      console.log('✅ TIER-115 测试通过');
+        console.log('✅ TIER-115 测试通过');
 
-      await tab1.close();
-      await browser.disconnect();
+        await tab1.close();
+      } finally {
+        if (browser) await browser.disconnect();
+      }
     });
 
     /**
@@ -850,47 +927,55 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
      * 创建 3 个实例，验证它们的指纹互不相同
      */
     it('TIER-116: 验证多实例指纹互不相同', { timeout: 120000 }, async () => {
-      console.log('\n[指纹测试] 创建 3 个实例并比较指纹...');
+      let browser1;
+      let browser2;
+      let browser3;
+      try {
+        console.log('\n[指纹测试] 创建 3 个实例并比较指纹...');
 
-      const { browser: browser1, sessionId: id1 } = await createSessionAndConnect();
-      const { browser: browser2, sessionId: id2 } = await createSessionAndConnect();
-      const { browser: browser3, sessionId: id3 } = await createSessionAndConnect();
+        const r1 = await createSessionAndConnect();
+        browser1 = r1.browser;
+        const id1 = r1.sessionId;
+        const r2 = await createSessionAndConnect();
+        browser2 = r2.browser;
+        const id2 = r2.sessionId;
+        const r3 = await createSessionAndConnect();
+        browser3 = r3.browser;
+        const id3 = r3.sessionId;
 
-      const tab1 = await browser1.newPage();
-      const tab2 = await browser2.newPage();
-      const tab3 = await browser3.newPage();
+        const tab1 = await browser1.newPage();
+        const tab2 = await browser2.newPage();
+        const tab3 = await browser3.newPage();
 
-      // 不再需要 goto，getFingerprint() 会使用 setContent() 加载 HTML
-      // getFingerprint() 会使用 setContent() 加载 HTML
-      // getFingerprint() 会使用 setContent() 加载 HTML
+        const fp1 = await getFingerprint(tab1);
+        const fp2 = await getFingerprint(tab2);
+        const fp3 = await getFingerprint(tab3);
 
-      const fp1 = await getFingerprint(tab1);
-      const fp2 = await getFingerprint(tab2);
-      const fp3 = await getFingerprint(tab3);
+        console.log(`   实例 1 指纹: ${fp1.hash}`);
+        console.log(`   实例 2 指纹: ${fp2.hash}`);
+        console.log(`   实例 3 指纹: ${fp3.hash}`);
 
-      console.log(`   实例 1 指纹: ${fp1.hash}`);
-      console.log(`   实例 2 指纹: ${fp2.hash}`);
-      console.log(`   实例 3 指纹: ${fp3.hash}`);
+        // 所有指纹应该互不相同
+        expect(fp1.hash).not.toBe(fp2.hash);
+        expect(fp2.hash).not.toBe(fp3.hash);
+        expect(fp1.hash).not.toBe(fp3.hash);
 
-      // 所有指纹应该互不相同
-      expect(fp1.hash).not.toBe(fp2.hash);
-      expect(fp2.hash).not.toBe(fp3.hash);
-      expect(fp1.hash).not.toBe(fp3.hash);
+        // Session ID 也应该不同
+        expect(id1).not.toBe(id2);
+        expect(id2).not.toBe(id3);
+        expect(id1).not.toBe(id3);
 
-      // Session ID 也应该不同
-      expect(id1).not.toBe(id2);
-      expect(id2).not.toBe(id3);
-      expect(id1).not.toBe(id3);
+        console.log('   ✅ 3 个实例的指纹互不相同');
+        console.log('✅ TIER-116 测试通过');
 
-      console.log('   ✅ 3 个实例的指纹互不相同');
-      console.log('✅ TIER-116 测试通过');
-
-      await tab1.close();
-      await tab2.close();
-      await tab3.close();
-      await browser1.disconnect();
-      await browser2.disconnect();
-      await browser3.disconnect();
+        await tab1.close();
+        await tab2.close();
+        await tab3.close();
+      } finally {
+        if (browser1) await browser1.disconnect();
+        if (browser2) await browser2.disconnect();
+        if (browser3) await browser3.disconnect();
+      }
     });
   });
 });

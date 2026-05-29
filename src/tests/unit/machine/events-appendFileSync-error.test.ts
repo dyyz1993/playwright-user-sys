@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 describe('events.handler - appendFileSync error handling', () => {
-  const SOURCE_PATH = path.resolve(__dirname, '../../../machine/session_handlers/events.handler.ts');
+  const SOURCE_PATH = path.resolve(__dirname, '../../../machine/session_handlers/events-file-ops.ts');
 
   it('should wrap fs.appendFileSync in try/catch', () => {
     const source = fs.readFileSync(SOURCE_PATH, 'utf-8');

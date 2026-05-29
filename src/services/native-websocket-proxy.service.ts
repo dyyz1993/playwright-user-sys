@@ -1,9 +1,6 @@
-import * as crypto from 'crypto';
 import * as stream from 'stream';
 import * as http from 'http';
-import * as net from 'net';
 import * as url from 'url';
-import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import httpProxy from 'http-proxy';
 import { UserModel } from '../models/user.model.js';
@@ -12,39 +9,24 @@ import { logger } from '@shared/utils/logger.js';
 import { createBrowserSession, handleSessionDisconnect } from './session.service.js';
 import { memoryStore } from './memory-store.service.js';
 import { SessionStatus } from '@shared/types/index.js';
-import { startHeartbeat, type HeartbeatHandle } from './ws-heartbeat.js';
-
-function shortId(): string {
-  return crypto.randomUUID().slice(0, 8);
-}
-
-const wsConnectQuerySchema = z.object({
-  apiKey: z.string().min(1),
-  width: z.coerce.number().optional(),
-  height: z.coerce.number().optional(),
-  proxy: z.string().optional(),
-  proxyBypass: z.string().optional(),
-  userAgent: z.string().optional(),
-  cookies: z.record(z.string(), z.string()).optional(),
-  localStorage: z.record(z.string(), z.string()).optional(),
-  sharedUserData: z.coerce.boolean().optional(),
-  timezone: z.string().optional(),
-});
-
-const existingSessionQuerySchema = z.object({
-  sessionId: z.string().min(1),
-  token: z.string().optional(),
-});
+import { startHeartbeat } from './ws-heartbeat.js';
+import { wsConnectQuerySchema, existingSessionQuerySchema } from './websocket-proxy/validation.js';
+import { shortId, getJwtSecret, extractTokenFromHeaderOrCookie } from './websocket-proxy/utils.js';
+import { ConnectionManager } from './websocket-proxy/connection-manager.js';
+import { validateOrigin } from './websocket-proxy/origin-validator.js';
+import { handleViewerWebSocketProxy } from './websocket-proxy/viewer-bridge.js';
+import { rejectUpgrade } from './websocket-proxy/error-handler.js';
 
 export class NativeWebSocketProxyService {
   private proxy: httpProxy;
   private server: http.Server;
-  private activeConnections: Set<string> = new Set();
-  private maxConnections: number = 1000;
-  private connectionTimestamps: Map<string, number> = new Map();
-  private heartbeatHandles: Map<string, HeartbeatHandle> = new Map();
+  private connectionManager: ConnectionManager;
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private upgradeHandler: ((request: http.IncomingMessage, socket: stream.Duplex, head: Buffer) => void) | null = null;
+
+  get activeConnections(): Set<string> {
+    return this.connectionManager.getActiveSet();
+  }
 
   constructor(server: http.Server) {
     if (!server) {
@@ -53,6 +35,7 @@ export class NativeWebSocketProxyService {
     }
 
     this.server = server;
+    this.connectionManager = new ConnectionManager();
     logger.info('正在初始化原生WebSocket代理服务...');
 
     this.proxy = httpProxy.createProxyServer({
@@ -87,26 +70,8 @@ export class NativeWebSocketProxyService {
         logger.info(`收到HTTP升级请求: ${request.url}`);
       }
 
-      const origin = request.headers.origin;
-
-      if (origin) {
-        const allowedHosts = ['localhost', '127.0.0.1'];
-        try {
-          const originHost = new URL(origin).hostname;
-          const isAllowed =
-            allowedHosts.includes(originHost) ||
-            (process.env.NODE_ENV === 'production' && !allowedHosts.includes(originHost));
-          if (!isAllowed) {
-            logger.warn(`WebSocket Origin 不被允许: ${origin}`);
-            socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-            socket.destroy();
-            return;
-          }
-        } catch {
-          socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-          socket.destroy();
-          return;
-        }
+      if (!validateOrigin(request.headers.origin, socket)) {
+        return;
       }
 
       try {
@@ -134,7 +99,7 @@ export class NativeWebSocketProxyService {
           const sessionIdFromPath = pathParts[2];
           if (sessionIdFromPath) {
             logger.info(`处理Viewer WebSocket升级请求: ${pathname} (sessionId: ${sessionIdFromPath})`);
-            this.handleViewerWebSocketProxy(request, socket, head, sessionIdFromPath, pathname).catch((error) => {
+            handleViewerWebSocketProxy(request, socket, head, sessionIdFromPath, pathname).catch((error) => {
               logger.error(`Viewer WebSocket代理失败 (sessionId: ${sessionIdFromPath}):`, error);
               try {
                 if (!socket.destroyed && socket.writable) {
@@ -163,14 +128,10 @@ export class NativeWebSocketProxyService {
     server.on('upgrade', this.upgradeHandler);
 
     this.heartbeatInterval = setInterval(() => {
-      const now = Date.now();
       const STALE_MS = 5 * 60 * 1000;
-      for (const [sid, ts] of this.connectionTimestamps.entries()) {
-        if (now - ts > STALE_MS) {
-          logger.warn(`清理超时的WebSocket连接 (sessionId: ${sid})`);
-          this.cleanupConnection(sid);
-          this.connectionTimestamps.delete(sid);
-        }
+      for (const sid of this.connectionManager.getStaleSessionIds(STALE_MS)) {
+        logger.warn(`清理超时的WebSocket连接 (sessionId: ${sid})`);
+        this.cleanupConnection(sid);
       }
     }, 60 * 1000);
 
@@ -195,8 +156,7 @@ export class NativeWebSocketProxyService {
       await this.handleNewSessionProxy(request, socket, head, queryParams, connId);
     } else {
       logger.error('WebSocket连接缺少 sessionId 或 apiKey 参数', { connectionId: connId });
-      socket.write('HTTP/1.1 400 Bad Request\r\n\r\nMissing sessionId or apiKey');
-      socket.destroy();
+      rejectUpgrade(socket, 400, 'Missing sessionId or apiKey');
     }
   }
 
@@ -212,71 +172,54 @@ export class NativeWebSocketProxyService {
     try {
       existingSessionQuerySchema.parse(queryParams);
 
-      const token =
-        (queryParams.token as string) ||
-        (request.headers.authorization?.startsWith('Bearer ') ? request.headers.authorization.split(' ')[1] : null) ||
-        (request.headers.cookie
-          ? (request.headers.cookie
-              .split(';')
-              .map((c) => c.trim())
-              .find((c) => c.startsWith('token='))
-              ?.split('=')[1] ?? null)
-          : null);
+      const queryToken = queryParams.token as string | undefined;
+      const token: string | null = queryToken || extractTokenFromHeaderOrCookie(request);
 
       if (!token) {
         logger.error(`已有会话代理缺少认证信息`, cid);
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nMissing authentication');
-        socket.destroy();
+        rejectUpgrade(socket, 401, 'Missing authentication');
         return;
       }
 
-      const jwtSecret =
-        process.env.JWT_SECRET ||
-        (process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : 'dev-only-secret-key');
+      const jwtSecret = getJwtSecret();
 
       let decoded: { id: number; role: string };
       try {
         decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
       } catch {
         logger.error(`已有会话代理JWT验证失败`, cid);
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nInvalid token');
-        socket.destroy();
+        rejectUpgrade(socket, 401, 'Invalid token');
         return;
       }
 
       const user = await UserModel.findById(decoded.id);
       if (!user) {
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nUser not found');
-        socket.destroy();
+        rejectUpgrade(socket, 401, 'User not found');
         return;
       }
 
       const session = await SessionModel.findById(sessionId);
       if (!session) {
         logger.error(`已有会话代理：会话不存在`, cid);
-        socket.write('HTTP/1.1 404 Not Found\r\n\r\nSession not found');
-        socket.destroy();
+        rejectUpgrade(socket, 404, 'Session not found');
         return;
       }
 
       if (session.status !== SessionStatus.CREATED && session.status !== SessionStatus.CONNECTED) {
         logger.error(`已有会话代理：会话状态无效 (status: ${session.status})`, cid);
-        socket.write('HTTP/1.1 410 Gone\r\n\r\nSession is not active');
-        socket.destroy();
+        rejectUpgrade(socket, 410, 'Session is not active');
         return;
       }
 
       const machineId = session.machine_id;
       if (!machineId) {
-        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\nNo machine assigned');
-        socket.destroy();
+        rejectUpgrade(socket, 500, 'No machine assigned');
         return;
       }
 
       const machineInfo = memoryStore.getMachine(machineId);
       if (!machineInfo) {
-        socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nMachine not found');
-        socket.destroy();
+        rejectUpgrade(socket, 503, 'Machine not found');
         return;
       }
 
@@ -288,24 +231,25 @@ export class NativeWebSocketProxyService {
 
       (request as { sessionId?: string }).sessionId = sessionId;
 
-      if (this.activeConnections.size >= this.maxConnections) {
-        logger.error(`WebSocket连接数已达上限 (${this.activeConnections.size}/${this.maxConnections})`, cid);
-        socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nMax connections reached');
-        socket.destroy();
+      if (this.connectionManager.isAtCapacity()) {
+        logger.error(
+          `WebSocket连接数已达上限 (${this.connectionManager.getActiveConnectionCount()}/${this.connectionManager.maxConnections})`,
+          cid
+        );
+        rejectUpgrade(socket, 503, 'Max connections reached');
         return;
       }
 
-      this.activeConnections.add(sessionId);
-      this.connectionTimestamps.set(sessionId, Date.now());
+      this.connectionManager.add(sessionId);
 
       const hbHandle = startHeartbeat(socket, sessionId, () => {
         this.cleanupConnection(sessionId, connId);
       });
-      this.heartbeatHandles.set(sessionId, hbHandle);
+      this.connectionManager.setHeartbeat(sessionId, hbHandle);
 
       const cleanupHandler = () => {
         hbHandle.stop();
-        this.heartbeatHandles.delete(sessionId);
+        this.connectionManager.removeHeartbeat(sessionId);
         this.cleanupConnection(sessionId, connId);
       };
 
@@ -328,10 +272,7 @@ export class NativeWebSocketProxyService {
       });
     } catch (error: unknown) {
       logger.error(`已有会话代理失败:`, { ...cid, error: (error as Error).message });
-      if (!socket.destroyed && socket.writable) {
-        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-        socket.destroy();
-      }
+      rejectUpgrade(socket, 500);
     }
   }
 
@@ -357,8 +298,7 @@ export class NativeWebSocketProxyService {
       const user = await UserModel.findByApiKey(validatedParams.apiKey as string);
       if (!user) {
         logger.error('无效的API密钥', cid());
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-        socket.destroy();
+        rejectUpgrade(socket, 401);
         return;
       }
 
@@ -386,15 +326,16 @@ export class NativeWebSocketProxyService {
 
       (request as { sessionId?: string }).sessionId = sessionId;
 
-      if (this.activeConnections.size >= this.maxConnections) {
-        logger.error(`WebSocket连接数已达上限 (${this.activeConnections.size}/${this.maxConnections})`, cid());
-        socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nMax connections reached');
-        socket.destroy();
+      if (this.connectionManager.isAtCapacity()) {
+        logger.error(
+          `WebSocket连接数已达上限 (${this.connectionManager.getActiveConnectionCount()}/${this.connectionManager.maxConnections})`,
+          cid()
+        );
+        rejectUpgrade(socket, 503, 'Max connections reached');
         return;
       }
 
-      this.activeConnections.add(sessionId);
-      this.connectionTimestamps.set(sessionId, Date.now());
+      this.connectionManager.add(sessionId);
 
       const originalWsEndpoint = sessionResult.browserWSEndpoint;
 
@@ -415,12 +356,12 @@ export class NativeWebSocketProxyService {
         if (!sessionId) return;
         this.cleanupConnection(sessionId, connId);
       });
-      this.heartbeatHandles.set(sessionId, hbHandle);
+      this.connectionManager.setHeartbeat(sessionId, hbHandle);
 
       const cleanupHandler = () => {
         if (!sessionId) return;
         hbHandle.stop();
-        this.heartbeatHandles.delete(sessionId);
+        this.connectionManager.removeHeartbeat(sessionId);
         this.cleanupConnection(sessionId, connId);
       };
 
@@ -430,12 +371,12 @@ export class NativeWebSocketProxyService {
       });
 
       socket.on('error', (err: Error) => {
-        logger.error(`客户端WebSocket连接错误:`, { ...cid(), error: err.message });
+        logger.error(`客户端WebSocket连接错误:`, { ...cid, error: err.message });
       });
 
       this.proxy.ws(request, socket, head, { target: targetUrl }, (err: Error) => {
         if (err) {
-          logger.error(`代理WebSocket连接失败:`, { ...cid(), error: err.message });
+          logger.error(`代理WebSocket连接失败:`, { ...cid, error: err.message });
           cleanupHandler();
         } else {
           logger.info(`WebSocket代理连接成功`, cid());
@@ -450,224 +391,17 @@ export class NativeWebSocketProxyService {
         this.cleanupConnection(sessionId, connId);
       }
 
-      if (!socket.destroyed && socket.writable) {
-        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-        socket.destroy();
-      }
-    }
-  }
-
-  private async handleViewerWebSocketProxy(
-    request: http.IncomingMessage,
-    socket: stream.Duplex,
-    head: Buffer,
-    sessionId: string,
-    pathname: string
-  ): Promise<void> {
-    const connId = shortId();
-    const cid = { connectionId: connId, sessionId };
-    try {
-      const parsedUrl = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
-      const queryToken = parsedUrl.searchParams.get('token');
-
-      const token =
-        queryToken ||
-        (request.headers.authorization?.startsWith('Bearer ') ? request.headers.authorization.split(' ')[1] : null) ||
-        (request.headers.cookie
-          ? (request.headers.cookie
-              .split(';')
-              .map((c) => c.trim())
-              .find((c) => c.startsWith('token='))
-              ?.split('=')[1] ?? null)
-          : null);
-
-      if (!token) {
-        logger.error(`Viewer WebSocket代理缺少认证信息`, cid);
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nMissing authentication');
-        socket.destroy();
-        return;
-      }
-
-      const jwtSecret =
-        process.env.JWT_SECRET ||
-        (process.env.NODE_ENV === 'test' ? 'test-secret-key-for-testing-only-32chars' : 'dev-only-secret-key');
-
-      let decoded: { id: number; role: string };
-      try {
-        decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
-      } catch {
-        const userByKey = await UserModel.findByApiKey(token);
-        if (!userByKey) {
-          logger.error(`Viewer WebSocket代理认证失败`, cid);
-          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nInvalid token');
-          socket.destroy();
-          return;
-        }
-        decoded = { id: userByKey.id, role: userByKey.role };
-      }
-
-      const user = await UserModel.findById(decoded.id);
-      if (!user) {
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\nUser not found');
-        socket.destroy();
-        return;
-      }
-
-      const session = await SessionModel.findById(sessionId);
-      if (!session) {
-        logger.error(`Viewer WebSocket代理：会话不存在`, cid);
-        socket.write('HTTP/1.1 404 Not Found\r\n\r\nSession not found');
-        socket.destroy();
-        return;
-      }
-
-      if (session.status !== SessionStatus.CREATED && session.status !== SessionStatus.CONNECTED) {
-        logger.error(`Viewer WebSocket代理：会话状态无效 (status: ${session.status})`, cid);
-        socket.write('HTTP/1.1 410 Gone\r\n\r\nSession is not active');
-        socket.destroy();
-        return;
-      }
-
-      if (session.user_id !== decoded.id && decoded.role !== 'admin') {
-        logger.error(`Viewer WebSocket代理：无权访问会话 (userId: ${decoded.id})`, cid);
-        socket.write('HTTP/1.1 403 Forbidden\r\n\r\nAccess denied');
-        socket.destroy();
-        return;
-      }
-
-      const machineId = session.machine_id;
-      if (!machineId) {
-        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\nNo machine assigned');
-        socket.destroy();
-        return;
-      }
-
-      const machineInfo = memoryStore.getMachine(machineId);
-      if (!machineInfo) {
-        socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\nMachine not found');
-        socket.destroy();
-        return;
-      }
-
-      const machineIp = machineInfo.ip;
-      const proxyPort = machineInfo.proxy_port;
-      const targetUrl = `ws://${machineIp}:${proxyPort}${pathname}?sessionId=${sessionId}`;
-
-      logger.info(`Viewer WS Bridge: target=${targetUrl}`, cid);
-
-      (request as { sessionId?: string }).sessionId = sessionId;
-
-      const netSocket = net.connect(proxyPort, machineIp, () => {
-        logger.info(`Viewer WS bridge TCP connected to ${machineIp}:${proxyPort}`, cid);
-
-        const reqHeaders = [
-          `${request.method} ${request.url} HTTP/1.1`,
-          `Host: ${machineIp}:${proxyPort}`,
-          'Connection: Upgrade',
-          'Upgrade: websocket',
-          `Sec-WebSocket-Key: ${request.headers['sec-websocket-key']}`,
-          `Sec-WebSocket-Version: ${request.headers['sec-websocket-version'] || '13'}`,
-        ];
-
-        reqHeaders.push('\r\n');
-        netSocket.write(reqHeaders.join('\r\n'));
-
-        if (head && head.length > 0) {
-          netSocket.write(head);
-        }
-      });
-
-      let machineHeaderReceived = false;
-      let bridged = false;
-
-      function startBridging() {
-        if (bridged) return;
-        bridged = true;
-        logger.info(`Viewer WS bridge active - piping raw bytes`, cid);
-
-        socket.on('data', (chunk: Buffer) => {
-          if (!netSocket.destroyed && netSocket.writable) {
-            netSocket.write(chunk);
-          }
-        });
-      }
-
-      let machineRespBuffer = Buffer.alloc(0);
-      netSocket.on('data', (chunk: Buffer) => {
-        if (!machineHeaderReceived) {
-          machineRespBuffer = Buffer.concat([machineRespBuffer, chunk]);
-          const headerEnd = machineRespBuffer.indexOf('\r\n\r\n');
-          if (headerEnd !== -1) {
-            const headers = machineRespBuffer.slice(0, headerEnd).toString();
-            const remaining = machineRespBuffer.slice(headerEnd + 4);
-
-            logger.info(`Machine 101 response received: ${headers.split('\r\n')[0]}`, cid);
-
-            const cleanHeaders = headers
-              .split('\r\n')
-              .filter((line) => !line.toLowerCase().startsWith('sec-websocket-extensions'))
-              .join('\r\n');
-
-            socket.write(Buffer.from(cleanHeaders + '\r\n\r\n'));
-            machineHeaderReceived = true;
-
-            if (remaining.length > 0) {
-              socket.write(remaining);
-            }
-
-            startBridging();
-          }
-        } else if (machineHeaderReceived && !socket.destroyed && socket.writable) {
-          socket.write(chunk);
-        }
-      });
-
-      netSocket.on('error', (err: Error) => {
-        logger.error(`Viewer WS TCP error:`, { ...cid, error: err.message });
-        if (!socket.destroyed && socket.writable) {
-          socket.end();
-        }
-      });
-
-      netSocket.on('close', () => {
-        logger.info(`Viewer WS machine TCP closed`, cid);
-        if (!socket.destroyed && socket.writable) {
-          socket.end();
-        }
-      });
-
-      socket.on('close', () => {
-        logger.info(`Viewer WebSocket连接关闭 (path: ${pathname})`, cid);
-        netSocket.destroy();
-      });
-
-      socket.on('error', (err: Error) => {
-        logger.error(`Viewer WebSocket连接错误:`, { ...cid, error: err.message });
-        netSocket.destroy();
-      });
-    } catch (error: unknown) {
-      logger.error(`Viewer WebSocket代理失败:`, { ...cid, error: (error as Error).message });
-      if (!socket.destroyed && socket.writable) {
-        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-        socket.destroy();
-      }
+      rejectUpgrade(socket, 500);
     }
   }
 
   private cleanupConnection(sessionId: string, connId?: string): void {
-    if (!sessionId || !this.activeConnections.has(sessionId)) {
+    if (!sessionId || !this.connectionManager.has(sessionId)) {
       return;
     }
 
     logger.info(`清理WebSocket连接`, { connectionId: connId || 'unknown', sessionId });
-    this.activeConnections.delete(sessionId);
-    this.connectionTimestamps.delete(sessionId);
-
-    const hbHandle = this.heartbeatHandles.get(sessionId);
-    if (hbHandle) {
-      hbHandle.stop();
-      this.heartbeatHandles.delete(sessionId);
-    }
+    this.connectionManager.remove(sessionId);
 
     this.handleCleanupDisconnect(sessionId, connId).catch((error) => {
       logger.error(`清理会话资源失败:`, {
@@ -700,13 +434,13 @@ export class NativeWebSocketProxyService {
   }
 
   public getActiveConnectionCount(): number {
-    return this.activeConnections.size;
+    return this.connectionManager.getActiveConnectionCount();
   }
 
   public close(): void {
     logger.info('关闭WebSocket代理服务...');
 
-    const activeSessionIds = [...this.activeConnections];
+    const activeSessionIds = this.connectionManager.getAllSessionIds();
 
     for (const sessionId of activeSessionIds) {
       this.cleanupConnection(sessionId);

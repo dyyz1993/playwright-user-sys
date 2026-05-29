@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs';
 import { z } from 'zod';
+import { logger } from '@shared/utils/logger.js';
 
 const machineEnvSchema = z.object({
   MACHINE_GRPC_PORT: z.coerce.number().int().min(1).max(65535).default(50052),
@@ -18,7 +19,7 @@ const machineEnvSchema = z.object({
 
 const _validated = machineEnvSchema.safeParse(process.env);
 if (!_validated.success) {
-  console.error('Machine config validation failed:', _validated.error.format());
+  logger.error('Machine config validation failed:', _validated.error.format());
   throw new Error('Machine config validation failed');
 }
 const validatedEnv = _validated.data;

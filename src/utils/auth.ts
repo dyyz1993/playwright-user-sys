@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { env } from '../config/env.js';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { UserRole } from '@shared/types/index.js';
+import { logger } from '@shared/utils/logger.js';
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(10);
@@ -18,7 +19,7 @@ export function getJwtSecret(): string {
   if (!secret) {
     if (process.env.NODE_ENV === 'test') return 'test-secret-key-for-testing-only-32chars';
     if (process.env.NODE_ENV === 'development') {
-      console.warn('\x1b[33m[WARN] Using default development JWT secret. Set JWT_SECRET in production!\x1b[0m');
+      logger.warn('Using default development JWT secret. Set JWT_SECRET in production!');
       return 'dev-only-secret-key';
     }
     throw new Error('JWT_SECRET 必须在生产环境中设置至少 32 个字符的安全密钥');

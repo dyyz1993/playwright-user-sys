@@ -16,6 +16,11 @@ interface AuthRouteInfo {
   routePath: string;
 }
 
+function getFileKey(filePath: string, routesDir: string): string {
+  const relative = path.relative(routesDir, filePath);
+  return relative;
+}
+
 function extractAuthRoutes(filePath: string): AuthRouteInfo[] {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
@@ -45,7 +50,7 @@ function extractAuthRoutes(filePath: string): AuthRouteInfo[] {
 
       if (hasAuth) {
         results.push({
-          file: path.basename(filePath),
+          file: getFileKey(filePath, routesDir),
           line: i + 1,
           hook,
           middleware: middlewareSection.trim(),
@@ -65,7 +70,7 @@ function getAllRouteFiles(): string[] {
     const fullPath = path.join(routesDir, entry.name);
     if (entry.isFile() && entry.name.endsWith('.ts')) {
       files.push(fullPath);
-    } else if (entry.isDirectory() && entry.name === 'admin-api') {
+    } else if (entry.isDirectory() && (entry.name === 'admin-api' || entry.name === 'admin')) {
       const subEntries = fs.readdirSync(fullPath, { withFileTypes: true });
       for (const sub of subEntries) {
         if (sub.isFile() && sub.name.endsWith('.ts')) {
@@ -110,10 +115,10 @@ describe('Auth Hook Consistency', () => {
     expect(preHandlerRoutes.length).toBe(0);
   });
 
-  it('should verify admin.routes.ts uses onRequest for most auth routes', () => {
-    const adminRoutes = allRoutes.filter((r) => r.file === 'admin.routes.ts');
-    const onRequestCount = adminRoutes.filter((r) => r.hook === 'onRequest').length;
-    const preHandlerCount = adminRoutes.filter((r) => r.hook === 'preHandler').length;
+  it('should verify admin page routes use onRequest for most auth routes', () => {
+    const adminPageRoutes = allRoutes.filter((r) => r.file.startsWith('admin/') && r.file.endsWith('.routes.ts'));
+    const onRequestCount = adminPageRoutes.filter((r) => r.hook === 'onRequest').length;
+    const preHandlerCount = adminPageRoutes.filter((r) => r.hook === 'preHandler').length;
 
     expect(onRequestCount).toBeGreaterThan(preHandlerCount);
   });

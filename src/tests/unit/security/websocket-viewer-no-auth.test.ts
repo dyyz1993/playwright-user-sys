@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 const WS_SERVICE_PATH = path.resolve(__dirname, '../../../services/native-websocket-proxy.service.ts');
+const WS_VIEWER_BRIDGE_PATH = path.resolve(__dirname, '../../../services/websocket-proxy/viewer-bridge.ts');
 
 describe('P0-3 FIX: WebSocket viewer paths now require JWT authentication', () => {
   const source = fs.readFileSync(WS_SERVICE_PATH, 'utf-8');
@@ -10,15 +11,26 @@ describe('P0-3 FIX: WebSocket viewer paths now require JWT authentication', () =
 
   function extractMethodBody(methodName: string): string {
     const start = lines.findIndex((l) => new RegExp(`(private|public)\\s+async\\s+${methodName}\\s*\\(`).test(l));
-    if (start < 0) return '';
-    let end = lines.length - 1;
-    for (let i = start + 1; i < lines.length; i++) {
-      if (/^\s{2}(private|public)\s+(async\s+)?\w+\s*\(/.test(lines[i])) {
-        end = i;
-        break;
+    if (start >= 0) {
+      let end = lines.length - 1;
+      for (let i = start + 1; i < lines.length; i++) {
+        if (/^\s{2}(private|public)\s+(async\s+)?\w+\s*\(/.test(lines[i])) {
+          end = i;
+          break;
+        }
       }
+      return lines.slice(start, end).join('\n');
     }
-    return lines.slice(start, end).join('\n');
+    if (methodName === 'handleViewerWebSocketProxy') {
+      const bridgeSource = fs.readFileSync(WS_VIEWER_BRIDGE_PATH, 'utf-8');
+      const bridgeLines = bridgeSource.split('\n');
+      const funcStart = bridgeLines.findIndex((l) =>
+        /\bexport\s+async\s+function\s+handleViewerWebSocketProxy\s*\(/.test(l)
+      );
+      if (funcStart < 0) return '';
+      return bridgeLines.slice(funcStart).join('\n');
+    }
+    return '';
   }
 
   it('finds viewer WebSocket handling code for /stream and /events paths', () => {
@@ -48,7 +60,9 @@ describe('P0-3 FIX: WebSocket viewer paths now require JWT authentication', () =
 
     expect(methodBody, 'Should verify JWT').toContain('jwt.verify');
     expect(methodBody, 'Should decode token into user identity').toContain('decoded');
-    expect(methodBody, 'Should extract Bearer token from authorization header').toContain('authorization');
+    expect(methodBody, 'Should extract Bearer token from authorization header').toContain(
+      'extractTokenFromHeaderOrCookie'
+    );
     expect(methodBody, 'Should look up user from decoded token').toContain('UserModel.findById');
   });
 
@@ -89,7 +103,7 @@ describe('P0-3 FIX: WebSocket viewer paths now require JWT authentication', () =
     expect(viewerBody.length).toBeGreaterThan(0);
     expect(mainBody.length).toBeGreaterThan(0);
 
-    const authPatterns = ['jwt.verify', 'decoded', 'UserModel.findById', 'authorization'];
+    const authPatterns = ['jwt.verify', 'decoded', 'UserModel.findById', 'extractTokenFromHeaderOrCookie'];
     for (const pattern of authPatterns) {
       expect(viewerBody, `Viewer handler should contain ${pattern}`).toContain(pattern);
       expect(mainBody, `Main handler should contain ${pattern}`).toContain(pattern);

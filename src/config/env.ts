@@ -104,7 +104,7 @@ const envSchema = z
 const _env = envSchema.safeParse(process.env);
 
 if (!_env.success) {
-  console.error('❌ 环境变量验证失败:', _env.error.format());
+  console.error('环境变量验证失败:', _env.error.format());
   throw new Error('环境变量验证失败');
 }
 

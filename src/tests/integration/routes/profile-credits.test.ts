@@ -12,22 +12,22 @@ describe('Profile 页面已使用点数', () => {
     });
   });
 
-  describe('代码验证: admin.routes.ts 应该使用正确的逻辑', () => {
-    test('admin.routes.ts 应该使用 SessionModel.getUserSessionStats', async () => {
+  describe('代码验证: admin/profile.routes.ts 应该使用正确的逻辑', () => {
+    test('admin/profile.routes.ts 应该使用 SessionModel.getUserSessionStats', async () => {
       const fs = await import('fs');
-      const adminRoutes = fs.readFileSync('./src/routes/admin.routes.ts', 'utf-8');
+      const profileRoutes = fs.readFileSync('./src/routes/admin/profile.routes.ts', 'utf-8');
 
-      expect(adminRoutes).toContain('getUserSessionStats');
+      expect(profileRoutes).toContain('getUserSessionStats');
 
       console.log('✅ 代码已正确使用 getUserSessionStats');
     });
 
     test('/admin/profile 路由应该使用 sessionStats.total_credits_used', async () => {
       const fs = await import('fs');
-      const adminRoutes = fs.readFileSync('./src/routes/admin.routes.ts', 'utf-8');
+      const profileRoutes = fs.readFileSync('./src/routes/admin/profile.routes.ts', 'utf-8');
 
-      expect(adminRoutes).toContain('sessionStats.total_credits_used');
-      expect(adminRoutes).toContain('used_credits: usedCredits');
+      expect(profileRoutes).toContain('sessionStats.total_credits_used');
+      expect(profileRoutes).toContain('used_credits: usedCredits');
 
       console.log('✅ /admin/profile 路由已正确获取 used_credits');
     });

@@ -20,15 +20,15 @@ async function authenticateUser(apiKey: string) {
   return { id: user.id, username: user.username };
 }
 
-function buildWsUrl(request: FastifyRequest, sessionId: string): string {
+function buildWsUrl(request: FastifyRequest, sessionId: string, apiKey: string): string {
   if (env.PUBLIC_MANAGER_URL) {
-    return `ws://${env.PUBLIC_MANAGER_URL}/ws/connect?sessionId=${sessionId}`;
+    return `ws://${env.PUBLIC_MANAGER_URL}/ws/connect?sessionId=${sessionId}&apiKey=${apiKey}`;
   }
   if (env.PUBLIC_MACHINE_ENDPOINT) {
-    return `ws://${env.PUBLIC_MACHINE_ENDPOINT}?sessionId=${sessionId}`;
+    return `ws://${env.PUBLIC_MACHINE_ENDPOINT}?sessionId=${sessionId}&apiKey=${apiKey}`;
   }
   const host = request.headers.host || `localhost:${env.PORT || 3000}`;
-  return `ws://${host}/ws/connect?sessionId=${sessionId}`;
+  return `ws://${host}/ws/connect?sessionId=${sessionId}&apiKey=${apiKey}`;
 }
 
 const CDP_VERSION_RESPONSE = {
@@ -41,7 +41,7 @@ const CDP_VERSION_RESPONSE = {
 };
 
 export default async function cdpRoutes(fastify: FastifyInstance): Promise<void> {
-  fastify.get('/json/version', async (request: FastifyRequest, reply: FastifyReply) => {
+  const versionHandler = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const apiKey = getApiKey(request);
       if (apiKey) {
@@ -51,7 +51,7 @@ export default async function cdpRoutes(fastify: FastifyInstance): Promise<void>
         }
 
         const sessionResult = await createBrowserSession(user.id, {}, true);
-        const wsUrl = buildWsUrl(request, sessionResult.sessionId);
+        const wsUrl = buildWsUrl(request, sessionResult.sessionId, apiKey);
 
         return reply.send({
           ...CDP_VERSION_RESPONSE,
@@ -65,7 +65,10 @@ export default async function cdpRoutes(fastify: FastifyInstance): Promise<void>
       logger.error('CDP /json/version error:', error);
       return reply.status(500).send({ error: errMsg });
     }
-  });
+  };
+
+  fastify.get('/json/version', versionHandler);
+  fastify.get('/json/version/', versionHandler);
 
   async function listHandler(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -86,7 +89,7 @@ export default async function cdpRoutes(fastify: FastifyInstance): Promise<void>
 
       const targets = await Promise.all(
         activeSessions.map(async (s) => {
-          const wsUrl = buildWsUrl(request, s.id);
+          const wsUrl = buildWsUrl(request, s.id, apiKey);
           return {
             id: s.id,
             type: 'page',
@@ -120,7 +123,7 @@ export default async function cdpRoutes(fastify: FastifyInstance): Promise<void>
       }
 
       const sessionResult = await createBrowserSession(user.id, {}, true);
-      const wsUrl = buildWsUrl(request, sessionResult.sessionId);
+      const wsUrl = buildWsUrl(request, sessionResult.sessionId, apiKey);
 
       return reply.send({
         id: sessionResult.sessionId,

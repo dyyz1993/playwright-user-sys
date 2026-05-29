@@ -151,7 +151,11 @@ export class NativeWebSocketProxyService {
     const apiKeyParam = headerApiKey || (queryParams.apiKey as string | undefined);
 
     if (sessionIdParam) {
-      await this.handleExistingSessionProxy(request, socket, head, sessionIdParam, queryParams, connId);
+      if (apiKeyParam) {
+        await this.handleExistingSessionProxy(request, socket, head, sessionIdParam, queryParams, connId, apiKeyParam);
+      } else {
+        await this.handleExistingSessionProxy(request, socket, head, sessionIdParam, queryParams, connId);
+      }
     } else if (apiKeyParam) {
       await this.handleNewSessionProxy(request, socket, head, queryParams, connId);
     } else {
@@ -166,42 +170,62 @@ export class NativeWebSocketProxyService {
     head: Buffer,
     sessionId: string,
     queryParams: Record<string, unknown>,
-    connId: string
+    connId: string,
+    apiKey?: string
   ): Promise<void> {
     const cid = { connectionId: connId, sessionId };
     try {
       existingSessionQuerySchema.parse(queryParams);
 
-      const queryToken = queryParams.token as string | undefined;
-      const token: string | null = queryToken || extractTokenFromHeaderOrCookie(request);
+      let userId: number;
 
-      if (!token) {
-        logger.error(`已有会话代理缺少认证信息`, cid);
-        rejectUpgrade(socket, 401, 'Missing authentication');
-        return;
-      }
+      if (apiKey) {
+        const apiUser = await UserModel.findByApiKey(apiKey);
+        if (!apiUser || apiUser.status !== 'active') {
+          logger.error(`已有会话代理API Key验证失败`, cid);
+          rejectUpgrade(socket, 401, 'Invalid API Key');
+          return;
+        }
+        userId = apiUser.id;
+      } else {
+        const queryToken = queryParams.token as string | undefined;
+        const token: string | null = queryToken || extractTokenFromHeaderOrCookie(request);
 
-      const jwtSecret = getJwtSecret();
+        if (!token) {
+          logger.error(`已有会话代理缺少认证信息`, cid);
+          rejectUpgrade(socket, 401, 'Missing authentication');
+          return;
+        }
 
-      let decoded: { id: number; role: string };
-      try {
-        decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
-      } catch {
-        logger.error(`已有会话代理JWT验证失败`, cid);
-        rejectUpgrade(socket, 401, 'Invalid token');
-        return;
-      }
+        const jwtSecret = getJwtSecret();
 
-      const user = await UserModel.findById(decoded.id);
-      if (!user) {
-        rejectUpgrade(socket, 401, 'User not found');
-        return;
+        let decoded: { id: number; role: string };
+        try {
+          decoded = jwt.verify(token, jwtSecret) as { id: number; role: string };
+        } catch {
+          logger.error(`已有会话代理JWT验证失败`, cid);
+          rejectUpgrade(socket, 401, 'Invalid token');
+          return;
+        }
+
+        const user = await UserModel.findById(decoded.id);
+        if (!user) {
+          rejectUpgrade(socket, 401, 'User not found');
+          return;
+        }
+        userId = user.id;
       }
 
       const session = await SessionModel.findById(sessionId);
       if (!session) {
         logger.error(`已有会话代理：会话不存在`, cid);
         rejectUpgrade(socket, 404, 'Session not found');
+        return;
+      }
+
+      if (session.user_id !== userId) {
+        logger.error(`已有会话代理：会话不属于当前用户`, cid);
+        rejectUpgrade(socket, 403, 'Forbidden');
         return;
       }
 

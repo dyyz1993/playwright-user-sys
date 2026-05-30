@@ -12,6 +12,7 @@ import type { ConnectionState } from './browser-connection.js';
 import { convertPuppeteerOptions as convertPuppeteerOptionsFn } from './session_handlers/puppeteer-config.js';
 import { CLIPBOARD_INTERCEPTOR_SCRIPT } from './session_handlers/clipboard-constants.js';
 import { injectFocusinScript, injectMouseTrackingScript } from './session_handlers/page-inject.js';
+import { applyFingerprintToPage } from './browser-utils.js';
 import { CONFIG } from './config.js';
 
 const puppeteer = puppeteerStealth.default;
@@ -245,6 +246,30 @@ export async function launchBrowser(
       .catch((e: unknown) => {
         logger.debug('Error injecting file input interceptor:', (e as Error)?.message);
       });
+
+    try {
+      await primaryPage.evaluateOnNewDocument(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+      });
+      await primaryPage.evaluate(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+      });
+      await primaryPage.evaluateOnNewDocument(() => {
+        Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
+      });
+      logger.info(`Anti-detection injects applied on primaryPage for session ${sessionId}`);
+    } catch (antiDetectErr: unknown) {
+      logger.warn(`Failed to apply anti-detection on primaryPage (session: ${sessionId}):`, antiDetectErr);
+    }
+
+    if (fingerprint) {
+      try {
+        await applyFingerprintToPage(primaryPage as unknown as import('puppeteer').Page, fingerprint);
+        logger.info(`Fingerprint injected on primaryPage for session ${sessionId}`);
+      } catch (fpErr: unknown) {
+        logger.warn(`Failed to inject fingerprint on primaryPage (session: ${sessionId}):`, fpErr);
+      }
+    }
 
     const browserWSEndpoint = browser.wsEndpoint();
     const wsUrl = new URL(browserWSEndpoint);

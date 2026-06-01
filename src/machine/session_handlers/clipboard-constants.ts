@@ -19,7 +19,7 @@ export const CLIPBOARD_INTERCEPTOR_SCRIPT = `
             (window).__clipboardContent = text;
           }
         }
-      } catch (_: unknown) { /* ignore */ }
+      } catch (_: unknown) { void _; }
       return origWrite(items);
     };
   }

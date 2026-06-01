@@ -257,6 +257,80 @@ export async function launchBrowser(
       await primaryPage.evaluateOnNewDocument(() => {
         Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
       });
+      await primaryPage.evaluateOnNewDocument(() => {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const origEnumerate = navigator.mediaDevices.enumerateDevices.bind(navigator.mediaDevices);
+          const fakeDevices = [
+            { kind: 'audioinput', deviceId: 'default', groupId: 'default', label: '' },
+            { kind: 'audioinput', deviceId: 'communications', groupId: 'default', label: '' },
+            { kind: 'audiooutput', deviceId: 'default', groupId: 'default', label: '' },
+            { kind: 'audiooutput', deviceId: 'communications', groupId: 'default', label: '' },
+          ];
+          Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', {
+            value: async () => {
+              try {
+                const real = await origEnumerate();
+                if (real && real.length > 0) return real;
+              } catch (e) {
+                void e;
+              }
+              return fakeDevices;
+            },
+            configurable: true,
+          });
+        }
+      });
+      await primaryPage.evaluate(() => {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const origEnumerate = navigator.mediaDevices.enumerateDevices.bind(navigator.mediaDevices);
+          const fakeDevices = [
+            { kind: 'audioinput', deviceId: 'default', groupId: 'default', label: '' },
+            { kind: 'audioinput', deviceId: 'communications', groupId: 'default', label: '' },
+            { kind: 'audiooutput', deviceId: 'default', groupId: 'default', label: '' },
+            { kind: 'audiooutput', deviceId: 'communications', groupId: 'default', label: '' },
+          ];
+          Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', {
+            value: async () => {
+              try {
+                const real = await origEnumerate();
+                if (real && real.length > 0) return real;
+              } catch (e) {
+                void e;
+              }
+              return fakeDevices;
+            },
+            configurable: true,
+          });
+        }
+      });
+      await primaryPage.evaluateOnNewDocument(() => {
+        Object.defineProperty(window, 'outerWidth', { get: () => window.innerWidth });
+        Object.defineProperty(window, 'outerHeight', { get: () => window.innerHeight });
+      });
+      await primaryPage.evaluate(() => {
+        Object.defineProperty(window, 'outerWidth', { get: () => window.innerWidth });
+        Object.defineProperty(window, 'outerHeight', { get: () => window.innerHeight });
+      });
+      await primaryPage.evaluateOnNewDocument(() => {
+        if (window.chrome && !window.chrome.runtime) {
+          window.chrome.runtime = {
+            connect: function () {},
+            sendMessage: function () {},
+            onMessage: { addListener: function () {}, removeListener: function () {} },
+            id: undefined,
+          };
+        }
+      });
+      await primaryPage.evaluate(() => {
+        if (window.chrome && !window.chrome.runtime) {
+          window.chrome.runtime = {
+            connect: function () {},
+            sendMessage: function () {},
+            onMessage: { addListener: function () {}, removeListener: function () {} },
+            id: undefined,
+          };
+        }
+      });
       logger.info(`Anti-detection injects applied on primaryPage for session ${sessionId}`);
     } catch (antiDetectErr: unknown) {
       logger.warn(`Failed to apply anti-detection on primaryPage (session: ${sessionId}):`, antiDetectErr);

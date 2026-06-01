@@ -104,6 +104,26 @@ export default async function setup() {
     return;
   }
 
+  try {
+    const net = await import('net');
+    await new Promise<void>((resolve, reject) => {
+      const sock = net.createConnection(
+        parseInt(process.env.DB_PORT || '3306'),
+        process.env.DB_HOST || 'localhost',
+        () => {
+          sock.end();
+          resolve();
+        }
+      );
+      sock.on('error', reject);
+    });
+  } catch {
+    console.log(`[全局初始化] ⚠️ MySQL 不可达, 切换到 SQLite`);
+    process.env.DB_TYPE = 'sqlite';
+    console.log('========================================\n');
+    return;
+  }
+
   process.env.DB_TYPE = 'mysql';
 
   try {

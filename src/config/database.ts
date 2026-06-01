@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 const createDatabaseConfig = () => {
   // 根据环境变量选择数据库类型
   if (env.DB_TYPE === 'sqlite') {
-    const dbPath = env.DB_PATH || path.join(__dirname, '../../data/database.sqlite');
+    const dbPath = process.env.DB_PATH || env.DB_PATH || path.join(__dirname, '../../data/database.sqlite');
     logger.info(`使用 SQLite 数据库: ${dbPath}`);
 
     return {
@@ -93,6 +93,7 @@ export async function initDatabase(dbName?: string): Promise<Knex> {
       try {
         await oldInstance.destroy();
       } catch (_e) {
+        void _e;
         // ignore destroy errors on stale connection
       }
     }

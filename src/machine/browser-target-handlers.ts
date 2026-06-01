@@ -67,6 +67,81 @@ export function createTargetHandler(sessionId: string, fingerprint: BrowserFinge
         });
       });
 
+      await page.evaluateOnNewDocument(() => {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const origEnumerate = navigator.mediaDevices.enumerateDevices.bind(navigator.mediaDevices);
+          const fakeDevices = [
+            { kind: 'audioinput', deviceId: 'default', groupId: 'default', label: '' },
+            { kind: 'audioinput', deviceId: 'communications', groupId: 'default', label: '' },
+            { kind: 'audiooutput', deviceId: 'default', groupId: 'default', label: '' },
+            { kind: 'audiooutput', deviceId: 'communications', groupId: 'default', label: '' },
+          ];
+          Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', {
+            value: async () => {
+              try {
+                const real = await origEnumerate();
+                if (real && real.length > 0) return real;
+              } catch (e) {
+                void e;
+              }
+              return fakeDevices;
+            },
+            configurable: true,
+          });
+        }
+      });
+      await page.evaluate(() => {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const origEnumerate = navigator.mediaDevices.enumerateDevices.bind(navigator.mediaDevices);
+          const fakeDevices = [
+            { kind: 'audioinput', deviceId: 'default', groupId: 'default', label: '' },
+            { kind: 'audioinput', deviceId: 'communications', groupId: 'default', label: '' },
+            { kind: 'audiooutput', deviceId: 'default', groupId: 'default', label: '' },
+            { kind: 'audiooutput', deviceId: 'communications', groupId: 'default', label: '' },
+          ];
+          Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', {
+            value: async () => {
+              try {
+                const real = await origEnumerate();
+                if (real && real.length > 0) return real;
+              } catch (e) {
+                void e;
+              }
+              return fakeDevices;
+            },
+            configurable: true,
+          });
+        }
+      });
+      await page.evaluateOnNewDocument(() => {
+        Object.defineProperty(window, 'outerWidth', { get: () => window.innerWidth });
+        Object.defineProperty(window, 'outerHeight', { get: () => window.innerHeight });
+      });
+      await page.evaluate(() => {
+        Object.defineProperty(window, 'outerWidth', { get: () => window.innerWidth });
+        Object.defineProperty(window, 'outerHeight', { get: () => window.innerHeight });
+      });
+      await page.evaluateOnNewDocument(() => {
+        if (window.chrome && !window.chrome.runtime) {
+          window.chrome.runtime = {
+            connect: function () {},
+            sendMessage: function () {},
+            onMessage: { addListener: function () {}, removeListener: function () {} },
+            id: undefined,
+          };
+        }
+      });
+      await page.evaluate(() => {
+        if (window.chrome && !window.chrome.runtime) {
+          window.chrome.runtime = {
+            connect: function () {},
+            sendMessage: function () {},
+            onMessage: { addListener: function () {}, removeListener: function () {} },
+            id: undefined,
+          };
+        }
+      });
+
       logger.info(`成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`);
 
       const fingerprintInjector = new FingerprintInjector();

@@ -22,31 +22,19 @@
  * 测试编号: ANTI-001 ~ ANTI-015
  */
 
-// 在导入任何模块之前设置环境变量
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
-// 加载测试环境变量
 const envTestPath = resolve(process.cwd(), '.env.test');
 config({ path: envTestPath });
 
-// 确保设置测试环境
 process.env.NODE_ENV = 'test';
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { buildManager } from '../../src/manager/app.js';
-import { MachineServer } from '../../src/machine/app.js';
-import { UserModel } from '../../src/models/user.model.js';
-import { UserRole } from '../../src/shared/types/index.js';
-import { getFreePort } from '../helpers/ports.js';
-import {
-  createIsolatedTestDatabase,
-  dropIsolatedTestDatabase,
-  type IsolatedTestDatabase,
-} from '../../src/tests/helpers/isolated-database.js';
-import puppeteer from 'puppeteer-core';
 import type { FastifyInstance } from 'fastify';
 import { execSync } from 'child_process';
+import { getFreePort } from '../helpers/ports.js';
+import puppeteer from 'puppeteer-core';
 
 // ========================================
 // 测试配置
@@ -61,7 +49,8 @@ describe('反机器人检测验证测试', () => {
   // 全局变量声明
   // ========================================
 
-  let testDb: IsolatedTestDatabase;
+  let testDb: { dbName: string; db: unknown; dbPath?: string };
+  let dropDb: (db: { dbName: string; db: unknown; dbPath?: string }) => Promise<void>;
   let managerApp: FastifyInstance;
   let managerHttpPort: number;
   let managerGrpcPort: number;
@@ -87,6 +76,28 @@ describe('反机器人检测验证测试', () => {
     console.log('beforeAll: 开始环境准备');
     console.log('========================================');
 
+    // 步骤 0: 自动检测数据库连接，远程 MySQL 不可用时回退到 SQLite
+    if (process.env.DB_TYPE !== 'sqlite') {
+      try {
+        const net = await import('net');
+        await new Promise<void>((resolve, reject) => {
+          const sock = net.createConnection(
+            parseInt(process.env.DB_PORT || '3306'),
+            process.env.DB_HOST || 'localhost',
+            () => {
+              sock.end();
+              resolve();
+            }
+          );
+          sock.on('error', reject);
+        });
+        console.log('   ✅ MySQL 可达');
+      } catch {
+        console.log('   ⚠️  MySQL 不可达，自动切换到 SQLite');
+        process.env.DB_TYPE = 'sqlite';
+      }
+    }
+
     // 步骤 1: 切换到 Node.js 20
     console.log('\n[步骤 1] 切换到 Node.js 20...');
     try {
@@ -97,25 +108,52 @@ describe('反机器人检测验证测试', () => {
     const nodeVersion = process.version;
     console.log(`   当前 Node.js 版本: ${nodeVersion}`);
 
-    // 步骤 2: 创建独立测试数据库
-    console.log('\n[步骤 2] 创建独立测试数据库...');
-    testDb = await createIsolatedTestDatabase();
+    // 步骤 2: 动态导入所有依赖（确保 env 已设置）
+    console.log('\n[步骤 2] 动态导入依赖模块...');
+    const [
+      { createIsolatedTestDatabase: createDb },
+      { initDatabase: initDb },
+      { buildManager: buildMgr },
+      { MachineServer: MachineSrv },
+      { UserModel: UserMdl },
+      { UserRole: UserRl },
+    ] = await Promise.all([
+      import('../../src/tests/helpers/isolated-database.js'),
+      import('../../src/config/database.js'),
+      import('../../src/manager/app.js'),
+      import('../../src/machine/app.js'),
+      import('../../src/models/user.model.js'),
+      import('../../src/shared/types/index.js'),
+    ]);
+    const { dropIsolatedTestDatabase: dropDbFn } = await import('../../src/tests/helpers/isolated-database.js');
+    dropDb = dropDbFn;
+    console.log('   ✅ 依赖模块加载完成');
+
+    // 步骤 3: 创建独立测试数据库
+    console.log('\n[步骤 3] 创建独立测试数据库...');
+    testDb = await createDb();
     console.log(`   ✅ 测试数据库准备完成: ${testDb.dbName}`);
 
-    // 步骤 3: 创建测试用户
-    console.log('\n[步骤 3] 创建测试用户...');
+    if (testDb.dbPath) {
+      process.env.DB_PATH = testDb.dbPath;
+    }
+    await initDb();
+    console.log('   ✅ 全局数据库已初始化');
+
+    // 步骤 4: 创建测试用户
+    console.log('\n[步骤 4] 创建测试用户...');
     for (let i = 0; i < NUM_USERS; i++) {
       const { generateToken, generateApiKey } = await import('../../src/utils/auth.js');
 
       const userData = {
         username: `anti_detection_user_${Date.now()}_${i}`,
         password: 'password123',
-        role: UserRole.USER,
+        role: UserRl.USER,
         credits: INITIAL_CREDITS,
         email: `test_${Date.now()}_${i}@example.com`,
       };
 
-      const user = await UserModel.create(userData);
+      const user = await UserMdl.create(userData);
 
       const token = generateToken({
         id: user!.id,
@@ -126,7 +164,7 @@ describe('反机器人检测验证测试', () => {
       let apiKey = user!.api_key;
       if (!apiKey) {
         apiKey = generateApiKey();
-        await UserModel.update(user!.id, { api_key: apiKey });
+        await UserMdl.update(user!.id, { api_key: apiKey });
       }
 
       testUsers.push({
@@ -140,15 +178,15 @@ describe('反机器人检测验证测试', () => {
     }
     console.log(`   ✅ 创建了 ${testUsers.length} 个测试用户`);
 
-    // 步骤 4: 启动管理端服务器
-    console.log('\n[步骤 4] 启动管理端服务器...');
+    // 步骤 5: 启动管理端服务器
+    console.log('\n[步骤 5] 启动管理端服务器...');
     managerHttpPort = await getFreePort();
     managerGrpcPort = await getFreePort();
-    managerApp = await buildManager();
+    managerApp = await buildMgr();
     await managerApp.listen({ port: managerHttpPort, host: '127.0.0.1' });
     console.log(`   ✅ 管理端启动成功 HTTP端口:${managerHttpPort} gRPC端口:${managerGrpcPort}`);
 
-    // 步骤 5: 启动机器端服务
+    // 步骤 6: 启动机器端服务
     console.log('\n[步骤 5] 启动机器端服务...');
     process.env.PORT = managerHttpPort.toString();
     process.env.GRPC_PORT = managerGrpcPort.toString();
@@ -186,7 +224,7 @@ describe('反机器人检测验证测试', () => {
         tempDir: '/tmp/playwright-test-temp',
       };
 
-      const machineServer = new MachineServer(machineConfig);
+      const machineServer = new MachineSrv(machineConfig);
       await machineServer.start();
 
       machineServers.push({
@@ -198,7 +236,7 @@ describe('反机器人检测验证测试', () => {
       console.log(`   ✅ 机器端 ${i + 1} 启动成功: ${machineId} (gRPC:${grpcPort}, Proxy:${proxyPort})`);
     }
 
-    // 步骤 6: 验证机器注册
+    // 步骤 7: 验证机器注册
     console.log('\n[步骤 6] 验证机器注册状态...');
     await new Promise((resolve) => setTimeout(resolve, 2000));
     const registeredMachines = await testDb.db('machines').select('*').where('status', 'online');
@@ -234,7 +272,7 @@ describe('反机器人检测验证测试', () => {
 
     console.log('\n[步骤 3] 清理独立测试数据库...');
     if (testDb) {
-      await dropIsolatedTestDatabase(testDb);
+      await dropDb(testDb);
       console.log('✅ 测试数据库已删除');
     }
 
@@ -285,7 +323,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -337,14 +377,17 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
     const sessionData = JSON.parse(response.body);
     const sessionId = sessionData.data.id;
+    console.log(`   ✅ 会话创建成功: ${sessionId}`);
 
-    console.log('\n[步骤 2] 连接到浏览器并检查 User-Agent...');
+    console.log('\n[步骤 2] 连接到浏览器...');
     const browserWSEndpoint = sessionData.data.browserWSEndpoint;
     const browser = await puppeteer.connect({
       browserWSEndpoint,
@@ -385,7 +428,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -429,7 +474,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -480,7 +527,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -537,7 +586,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -608,7 +659,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -674,7 +727,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -752,7 +807,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -818,7 +875,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -887,7 +946,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -948,7 +1009,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -1012,7 +1075,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -1074,7 +1139,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);
@@ -1140,7 +1207,9 @@ describe('反机器人检测验证测试', () => {
       url: '/api/sessions',
       headers: {
         authorization: `Bearer ${user.token}`,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({}),
     });
 
     expect(response.statusCode).toBe(201);

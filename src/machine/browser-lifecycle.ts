@@ -74,6 +74,13 @@ export async function launchBrowser(
     const fingerprint = generateFingerprint(options);
     if (fingerprint && !options.userAgent) {
       options.userAgent = fingerprint.fingerprint.navigator.userAgent;
+    } else if (fingerprint && options.userAgent) {
+      // 用户提供了自定义 userAgent，同步到 fingerprint 对象中
+      // 否则 FingerprintInjector.attachFingerprintToPuppeteer 会在页面层面覆盖自定义 UA
+      fingerprint.fingerprint.navigator.userAgent = options.userAgent;
+      if (fingerprint.headers?.['User-Agent']) {
+        fingerprint.headers['User-Agent'] = options.userAgent;
+      }
     }
     const initialConfig = {
       ...DEFAULT_SESSION_CONFIG,

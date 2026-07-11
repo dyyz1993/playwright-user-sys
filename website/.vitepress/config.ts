@@ -12,7 +12,7 @@ export default defineConfig({
       { text: '指南', link: '/guide/getting-started', activeMatch: '/guide/' },
       { text: 'API', link: '/api/rest-api', activeMatch: '/api/' },
       { text: 'SDK', link: '/sdk/client-sdk', activeMatch: '/sdk/' },
-      { text: '部署', link: '/deploy/docker', activeMatch: '/deploy/' },
+      { text: '部署', link: '/deploy/', activeMatch: '/deploy/' },
       {
         text: 'GitHub',
         link: 'https://github.com/dyyz1993/playwright-user-sys',
@@ -82,6 +82,7 @@ export default defineConfig({
         {
           text: '部署指南',
           items: [
+            { text: '部署概览', link: '/deploy/' },
             { text: 'Docker 部署', link: '/deploy/docker' },
             { text: '手动部署', link: '/deploy/manual' },
             { text: '环境变量', link: '/deploy/environment-variables' },

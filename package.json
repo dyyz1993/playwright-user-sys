@@ -97,6 +97,10 @@
   "author": "xuyingzhou",
   "license": "Apache-2.0 WITH Commons-Clause",
   "packageManager": "pnpm@10.8.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
+  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3"

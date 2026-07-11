@@ -162,11 +162,10 @@ pnpm test:coverage    # 测试覆盖率
 ## Docker 部署
 
 ```bash
-# 仅部署管理服务器
-docker-compose up -d
-
-# 部署完整系统（管理服务器 + 实例机器）
-docker-compose -f docker-compose.full.yml up -d
+# 部署完整系统（管理服务器 + 2 台实例机器）
+cd docker
+cp .env.example .env   # 编辑配置
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### Chrome 文件配置
@@ -280,7 +279,8 @@ await cdp.send('DOM.setFileInputFiles', {
 ### 使用示例
 
 ```javascript
-import DistributedFileUploader from './examples/complete-distributed-file-upload.js'
+// DistributedFileUploader 示例（待补充完整示例文件）
+// 参考客户端 SDK: src/sdk/client.ts
 
 // 1. 连接到机器端
 const uploader = new DistributedFileUploader('ws://machine-endpoint:8082')
@@ -299,4 +299,4 @@ await uploader.setFileInput('input[type="file"]', uploadResult.filepath)
 await uploader.closeSession()
 ```
 
-详细文档请参考 [分布式文件上传文档](./docs/distributed-file-upload.md)
+详细文档请参考客户端 SDK 源码：[`src/sdk/client.ts`](./src/sdk/client.ts)

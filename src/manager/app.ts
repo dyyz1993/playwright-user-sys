@@ -111,6 +111,22 @@ export async function startManager() {
       6 * 60 * 60 * 1000
     );
 
+    // 启动共享 user-data 定时清理（每24小时，删除超过30天未修改的 shared 目录）
+    const sharedCleanupInterval = setInterval(
+      async () => {
+        try {
+          const { StorageService } = await import('../services/storage.service.js');
+          const count = await StorageService.cleanupOldSharedData();
+          if (count > 0) {
+            logger.info(`定时清理共享 user-data 完成: ${count} 个目录`);
+          }
+        } catch (error: unknown) {
+          logger.warn('定时清理共享 user-data 失败:', error);
+        }
+      },
+      24 * 60 * 60 * 1000
+    );
+
     // 构建应用
     const fastify = await buildManager();
 
@@ -126,6 +142,7 @@ export async function startManager() {
       stopCreditsMonitor(creditsMonitorTimer);
 
       clearInterval(tempCleanupInterval);
+      clearInterval(sharedCleanupInterval);
     });
 
     // 启动 HTTP 服务器

@@ -1,6 +1,7 @@
 import { config } from '../../config/index.js';
 import path from 'path';
 import fs from 'fs';
+import { STORAGE_CONFIG } from '../../config/storage.config.js';
 
 const SENSITIVE_FIELDS = ['apiKey', 'password', 'token', 'secret', 'authorization'];
 
@@ -128,6 +129,31 @@ export const logger = {
       console.error('\x1b[31m[日志轮转失败]\x1b[0m', error);
     }
   },
+
+  // 清理过期日志文件
+  cleanOldLogs(): void {
+    try {
+      const cutoff = Date.now() - STORAGE_CONFIG.LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+      const files = fs.readdirSync(logsDir);
+      let cleaned = 0;
+      for (const file of files) {
+        if (!file.endsWith('.log')) continue;
+        const filePath = path.join(logsDir, file);
+        const stat = fs.statSync(filePath);
+        if (stat.mtimeMs < cutoff) {
+          fs.unlinkSync(filePath);
+          cleaned++;
+        }
+      }
+      if (cleaned > 0) {
+        console.log(
+          `\x1b[36m[已清理 ${cleaned} 个过期日志文件（超过 ${STORAGE_CONFIG.LOG_RETENTION_DAYS} 天）]\x1b[0m`
+        );
+      }
+    } catch (error: unknown) {
+      console.error('\x1b[31m[清理过期日志失败]\x1b[0m', error);
+    }
+  },
 };
 
 // 每天凌晨轮转日志文件
@@ -143,6 +169,7 @@ const scheduleLogRotation = () => {
     setTimeout(() => {
       try {
         logger.rotateLogFile();
+        logger.cleanOldLogs();
       } catch (error: unknown) {
         console.error('\x1b[31m[日志轮转计划失败]\x1b[0m', error);
       } finally {

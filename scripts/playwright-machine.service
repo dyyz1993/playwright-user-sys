@@ -1,0 +1,54 @@
+# Playwright User Sys — Machine 机器端 systemd 服务
+#
+# 安装方法:
+#   sudo cp scripts/playwright-machine.service /etc/systemd/system/
+#   sudo vi /etc/systemd/system/playwright-machine.service   # 修改路径、用户、机器ID
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now playwright-machine
+#
+# 多机器部署: 为每台机器复制此文件并修改服务名和端口
+#   sudo cp scripts/playwright-machine.service /etc/systemd/system/playwright-machine-2.service
+#   修改 Description、MACHINE_ID、MachineGRPC_PORT、ProxyPort
+#
+[Unit]
+Description=Playwright User Sys - Machine Service
+Documentation=https://github.com/dyyz1993/playwright-user-sys
+After=network.target playwright-manager.service
+Wants=network.target
+
+[Service]
+Type=simple
+
+# === 运行用户（请替换为实际用户）===
+User=root
+Group=root
+
+# === 工作目录（请替换为实际安装路径）===
+WorkingDirectory=/opt/playwright-user-sys
+
+# === 启动命令 ===
+ExecStart=/usr/bin/env node dist/machine/server.js
+
+# === 从 .env 文件加载环境变量 ===
+# 注意: .env 中需包含 MACHINE_ID、MANAGEMENT_SERVER_URL、MANAGER_HOST 等
+EnvironmentFile=/opt/playwright-user-sys/.env
+
+# === 重启策略 ===
+Restart=always
+RestartSec=10
+
+# === 日志 ===
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=playwright-machine
+
+# === 资源限制 ===
+LimitNOFILE=65536
+
+# === 虚拟显示（如需 headed 模式）===
+# 如果需要 headed Chrome，取消下面两行注释并安装 xvfb
+# Environment=DISPLAY=:99
+# ExecStartPre=/usr/bin/Xvfb :99 -screen 0 1920x1080x24 -ac
+
+[Install]
+WantedBy=multi-user.target

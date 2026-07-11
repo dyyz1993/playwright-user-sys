@@ -4,8 +4,11 @@ import path from 'path';
 import crypto from 'crypto';
 import { execFile } from 'child_process';
 import { logger } from '@shared/utils/logger.js';
+import { STORAGE_CONFIG } from '../../config/storage.config.js';
 
 const DEFAULT_TEMP_DIR = 'data/temp';
+const SCREENSHOT_DIR = path.join('data', 'screenshots');
+const USER_DATA_DIR = path.join('data', 'user-data');
 const DEFAULT_MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const DEFAULT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -200,6 +203,117 @@ export class FileService {
     }
 
     return cleanedCount;
+  }
+
+  /**
+   * 清理过期的截图文件
+   * 扫描 data/screenshots/ 目录，删除 mtime 超过 maxAgeDays 天的文件
+   */
+  async cleanupOldScreenshots(maxAgeDays?: number): Promise<number> {
+    const days = maxAgeDays ?? STORAGE_CONFIG.SCREENSHOT_MAX_AGE_DAYS;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    let cleanedCount = 0;
+
+    try {
+      const entries = await fs.readdir(SCREENSHOT_DIR);
+      for (const entry of entries) {
+        const filePath = path.join(SCREENSHOT_DIR, entry);
+        const stat = await fs.stat(filePath);
+        if (stat.isFile() && stat.mtimeMs < cutoff) {
+          await fs.unlink(filePath);
+          cleanedCount++;
+        }
+      }
+    } catch (error: unknown) {
+      const err = error as Error & { code?: string };
+      if (err.code !== 'ENOENT') {
+        logger.warn('清理过期截图失败:', error);
+      }
+    }
+
+    return cleanedCount;
+  }
+
+  /**
+   * 清理孤儿 user-data 目录（因进程崩溃残留的会话目录）
+   * 扫描每个用户目录下的会话子目录，
+   * 删除不在活跃会话列表且 mtime 超过 maxAgeHours 小时的目录
+   *
+   * @param activeSessionDirs 当前内存中活跃会话的 userDataDir 集合（绝对路径）
+   */
+  async cleanupOrphanUserData(activeSessionDirs: Set<string>, maxAgeHours?: number): Promise<number> {
+    const hours = maxAgeHours ?? STORAGE_CONFIG.ORPHAN_USERDATA_MAX_AGE_HOURS;
+    const cutoff = Date.now() - hours * 60 * 60 * 1000;
+    let cleanedCount = 0;
+
+    // 归一化活跃目录为绝对路径，便于比较
+    const activeAbsDirs = new Set([...activeSessionDirs].map((d) => path.resolve(d)));
+
+    try {
+      // 遍历 data/user-data/ 下每个用户目录
+      const userDirs = await fs.readdir(USER_DATA_DIR, { withFileTypes: true });
+      for (const userDir of userDirs) {
+        if (!userDir.isDirectory()) continue;
+
+        // 兼容模式：data/user-data/sessions/<sessionId>（无 userId），session 直接在此目录下
+        if (userDir.name === 'sessions') {
+          await this.cleanOrphanSessionsInDir(
+            path.join(USER_DATA_DIR, 'sessions'),
+            activeAbsDirs,
+            cutoff,
+            () => cleanedCount++
+          );
+          continue;
+        }
+
+        // 标准模式：data/user-data/<userId>/sessions/<sessionId>
+        const sessionsBase = path.join(USER_DATA_DIR, userDir.name, 'sessions');
+        await this.cleanOrphanSessionsInDir(sessionsBase, activeAbsDirs, cutoff, () => cleanedCount++);
+      }
+    } catch (error: unknown) {
+      const err = error as Error & { code?: string };
+      if (err.code !== 'ENOENT') {
+        logger.warn('清理孤儿 user-data 失败:', error);
+      }
+    }
+
+    return cleanedCount;
+  }
+
+  /**
+   * 扫描指定目录下的 session 子目录，删除孤儿+过期的目录
+   */
+  private async cleanOrphanSessionsInDir(
+    dir: string,
+    activeAbsDirs: Set<string>,
+    cutoff: number,
+    onClean: () => void
+  ): Promise<void> {
+    let entries: fsSync.Dirent[];
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch {
+      return; // 目录不存在，跳过
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const sessionDir = path.join(dir, entry.name);
+      const absSessionDir = path.resolve(sessionDir);
+
+      // 跳过正在运行的会话
+      if (activeAbsDirs.has(absSessionDir)) continue;
+
+      try {
+        const stat = await fs.stat(sessionDir);
+        if (stat.mtimeMs < cutoff) {
+          await fs.rm(sessionDir, { recursive: true, force: true });
+          onClean();
+        }
+      } catch {
+        // 单个目录失败不影响其他
+      }
+    }
   }
 
   validateFilePath(filePath: string): boolean {

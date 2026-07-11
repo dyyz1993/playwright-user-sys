@@ -259,6 +259,27 @@ export class MachineServer {
         } catch (error: unknown) {
           logger.warn('定时清理临时文件失败:', error);
         }
+
+        // 清理过期截图
+        try {
+          const screenshotCount = await fileService.cleanupOldScreenshots();
+          if (screenshotCount > 0) {
+            logger.info(`已清理 ${screenshotCount} 个过期截图文件`);
+          }
+        } catch (error: unknown) {
+          logger.warn('定时清理截图失败:', error);
+        }
+
+        // 清理孤儿 user-data 目录（进程崩溃残留）
+        try {
+          const activeDirs = browserService.getActiveUserDataDirs();
+          const orphanCount = await fileService.cleanupOrphanUserData(activeDirs);
+          if (orphanCount > 0) {
+            logger.info(`已清理 ${orphanCount} 个孤儿 user-data 目录`);
+          }
+        } catch (error: unknown) {
+          logger.warn('定时清理孤儿 user-data 失败:', error);
+        }
       },
       60 * 60 * 1000
     );

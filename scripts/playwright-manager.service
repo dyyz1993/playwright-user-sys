@@ -1,0 +1,48 @@
+# Playwright User Sys — Manager 管理端 systemd 服务
+#
+# 安装方法:
+#   sudo cp scripts/playwright-manager.service /etc/systemd/system/
+#   sudo vi /etc/systemd/system/playwright-manager.service   # 修改路径和用户
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now playwright-manager
+#
+[Unit]
+Description=Playwright User Sys - Manager Server
+Documentation=https://github.com/dyyz1993/playwright-user-sys
+After=network.target mysql.service
+Wants=network.target
+
+[Service]
+Type=simple
+
+# === 运行用户（请替换为实际用户）===
+User=root
+Group=root
+
+# === 工作目录（请替换为实际安装路径）===
+WorkingDirectory=/opt/playwright-user-sys
+
+# === 启动命令 ===
+ExecStart=/usr/bin/env node dist/manager/server.js
+
+# === 从 .env 文件加载环境变量 ===
+EnvironmentFile=/opt/playwright-user-sys/.env
+
+# === 重启策略 ===
+Restart=always
+RestartSec=10
+
+# === 日志 ===
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=playwright-manager
+
+# === 资源限制 ===
+LimitNOFILE=65536
+
+# === 安全加固（如需更严格的安全策略可取消注释）===
+# NoNewPrivileges=true
+# PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

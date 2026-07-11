@@ -2,7 +2,7 @@
 
 ## 前置要求
 
-- Node.js >= 18
+- Node.js 20+
 - pnpm
 - MySQL 8.0+（可选，开发可用 SQLite）
 - Nginx（反向代理）

@@ -119,6 +119,20 @@ export class BrowserService extends EventEmitter {
     return this.sessions.size;
   }
 
+  /**
+   * 获取所有活跃 session 的 userDataDir 路径集合
+   * 用于孤儿 user-data 清理时跳过正在运行的会话
+   */
+  getActiveUserDataDirs(): Set<string> {
+    const dirs = new Set<string>();
+    for (const session of this.sessions.values()) {
+      if (session.userDataDir) {
+        dirs.add(session.userDataDir);
+      }
+    }
+    return dirs;
+  }
+
   getBrowserWSEndpoint(sessionId: string): string | null {
     return this.sessions.get(sessionId)?.wsEndpoint ?? null;
   }

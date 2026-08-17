@@ -133,7 +133,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.60.0",
     "@types/async-retry": "^1.4.9",
     "@types/form-data": "^2.5.2",
     "@types/http-proxy": "^1.17.16",

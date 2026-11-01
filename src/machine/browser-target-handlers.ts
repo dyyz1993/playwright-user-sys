@@ -150,6 +150,13 @@ export function createTargetHandler(sessionId: string, fingerprint: BrowserFinge
         page as unknown as Parameters<typeof fingerprintInjector.attachFingerprintToPuppeteer>[0],
         fingerprint
       );
+      // 兜底：evaluateOnNewDocument 只对未来导航生效；若本页在注入注册前已开始加载
+      // （首个 newPage 的紧时序场景），已加载文档拿不到指纹脚本 → 对当前文档补发一次。
+      try {
+        await page.evaluate(fingerprintInjector.getInjectableScript(fingerprint));
+      } catch {
+        /* 页面可能已导航/关闭，evaluateOnNewDocument 已覆盖后续导航 */
+      }
       // 注意：不再叠加额外的 Page.setDeviceMetricsOverride。
       // attachFingerprintToPuppeteer 内部已用 fingerprint.screen 统一设置；
       // 此前再用 viewport 覆写会把 screen 拉平为 viewport 尺寸，导致新 Tab 与

@@ -1,0 +1,91 @@
+name: Deploy Prod
+
+# 一键部署：GitHub Actions 页面 → Deploy Prod → Run workflow
+# 跑在极空间 NAS 的 gha-runner-pus 上（label: pus-deploy，容器 gha2-runner-1），
+# 通过部署专用密钥 SSH 到宿主机执行 compose 滚动更新。
+# ghcr 直连在 NAS 上偶发卡死（国内网络），pull 带 3 次重试；
+# 仍失败时勾选 skip_pull 用本地已有镜像，或从 Mac 中转（见 docs/deploy-cloakbrowser.md）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_pull:
+        description: '跳过镜像拉取（ghcr 拉不动时勾选，直接用 NAS 本地已有镜像）'
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    runs-on: pus-deploy
+    timeout-minutes: 25
+    steps:
+      - name: 配置部署密钥
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          echo "SSH_OK=$(ssh -i ~/.ssh/deploy_key -o BatchMode=yes -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" 'echo yes')"
+
+      - name: 拉取最新镜像（3 次重试）
+        if: ${{ inputs.skip_pull != true }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" '
+            cd /data/docker/playwright-user-sys/docker || exit 1
+            for i in 1 2 3; do
+              echo "== pull attempt $i =="
+              if timeout 300 docker compose -f docker-compose.prod.yml pull; then
+                echo "PULL_OK"; exit 0
+              fi
+              sleep 20
+            done
+            echo "::error::ghcr 拉取三次失败（NAS 直连 ghcr 卡死，国内网络问题）。重跑并勾选 skip_pull 用本地镜像，或从 Mac docker save/load 中转。"
+            exit 1
+          '
+
+      - name: 滚动更新容器
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" '
+            cd /data/docker/playwright-user-sys/docker || exit 1
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+          '
+
+      - name: 健康检查（manager + gRPC 机器数）
+        run: |
+          sleep 20
+          ssh -i ~/.ssh/deploy_key -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" '
+            for i in 1 2 3 4 5 6; do
+              HEALTH=$(curl -sf http://localhost:3011/health || true)
+              if echo "$HEALTH" | grep -q "\"status\":\"ok\""; then
+                MACHINES=$(echo "$HEALTH" | grep -o "\"machines\":[0-9]*" | cut -d: -f2)
+                echo "health=ok machines=$MACHINES"
+                if [ "${MACHINES:-0}" -ge 1 ]; then
+                  echo "DEPLOY_HEALTHY"; exit 0
+                fi
+              fi
+              echo "attempt $i: not healthy yet, retry in 10s"
+              sleep 10
+            done
+            echo "::error::部署后健康检查未通过（manager 异常或 gRPC 无机器连接），请查 docker logs playwright-manager-prod"
+            exit 1
+          '
+
+      - name: 显示当前运行版本
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" '
+            docker ps --format "{{.Names}}\t{{.Image}}\t{{.Status}}" | grep playwright | sort
+          '
+
+  feishu-notify:
+    name: Feishu Notification
+    needs: [deploy]
+    if: ${{ always() }}
+    uses: dyyz1993/ci-tools/.github/workflows/feishu-notify.yml@main
+    with:
+      jobs: '{"deploy":"${{ needs.deploy.result }}"}'
+      sha: ${{ github.sha }}
+      ref: ${{ github.ref_name }}
+      actor: ${{ github.actor }}
+      repo: ${{ github.repository }}
+      run-id: ${{ github.run_id }}
+    secrets: inherit

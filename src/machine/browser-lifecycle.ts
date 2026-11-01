@@ -192,10 +192,7 @@ export async function launchBrowser(
         'targetcreated',
         createTargetHandler(sessionId, fingerprint) as unknown as Parameters<typeof browser.on>[1]
       );
-      browser.on(
-        'targetchanged',
-        handleTargetChangeHandler(sessionId) as unknown as Parameters<typeof browser.on>[1]
-      );
+      browser.on('targetchanged', handleTargetChangeHandler(sessionId) as unknown as Parameters<typeof browser.on>[1]);
       browser.on('disconnected', createDisconnectHandler(sessionId, options.proxy ?? '', disconnectAction));
       logger.info(`已设置浏览器事件监听 (sessionId: ${sessionId})`);
     }

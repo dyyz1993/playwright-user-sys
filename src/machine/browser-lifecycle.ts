@@ -181,31 +181,23 @@ export async function launchBrowser(
       }
     }
 
-    if (fingerprint) {
-      try {
-        const disconnectAction = () =>
-          state
-            .closeBrowser(sessionId)
-            .catch((error: unknown) => logger.error(`关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`, error));
-        browser.on(
-          'targetcreated',
-          createTargetHandler(sessionId, fingerprint) as unknown as Parameters<typeof browser.on>[1]
-        );
-        browser.on(
-          'targetchanged',
-          handleTargetChangeHandler(sessionId) as unknown as Parameters<typeof browser.on>[1]
-        );
-        browser.on('disconnected', createDisconnectHandler(sessionId, options.proxy ?? '', disconnectAction));
-        logger.info(`已设置浏览器事件监听 (sessionId: ${sessionId})`);
-      } catch (error: unknown) {
-        logger.error(`设置指纹事件监听失败 (sessionId: ${sessionId}):`, error);
-      }
-    } else {
+    {
       const disconnectAction = () =>
         state
           .closeBrowser(sessionId)
           .catch((error: unknown) => logger.error(`关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`, error));
+      // 新 Tab 统一注入：复用会话启动时生成的同一份 fingerprint 对象（同 seed 确定性），
+      // 无指纹会话 targetHandler 内部会跳过指纹注入
+      browser.on(
+        'targetcreated',
+        createTargetHandler(sessionId, fingerprint) as unknown as Parameters<typeof browser.on>[1]
+      );
+      browser.on(
+        'targetchanged',
+        handleTargetChangeHandler(sessionId) as unknown as Parameters<typeof browser.on>[1]
+      );
       browser.on('disconnected', createDisconnectHandler(sessionId, options.proxy ?? '', disconnectAction));
+      logger.info(`已设置浏览器事件监听 (sessionId: ${sessionId})`);
     }
     browser.on('targetcreated', (async (target: Target) => {
       if (target.type() === 'page') {

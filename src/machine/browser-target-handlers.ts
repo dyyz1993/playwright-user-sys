@@ -15,7 +15,7 @@ export function handleTargetChangeHandler(_sessionId: string) {
   };
 }
 
-export function createTargetHandler(sessionId: string, fingerprint: BrowserFingerprintWithHeaders) {
+export function createTargetHandler(sessionId: string, fingerprint: BrowserFingerprintWithHeaders | null | undefined) {
   return async (target: Target) => {
     logger.info(`Target created:  ${target.type()}`, target.url());
     try {
@@ -144,6 +144,7 @@ export function createTargetHandler(sessionId: string, fingerprint: BrowserFinge
 
       logger.info(`成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`);
 
+      if (!fingerprint) return;
       const fingerprintInjector = new FingerprintInjector();
       await fingerprintInjector.attachFingerprintToPuppeteer(
         page as unknown as Parameters<typeof fingerprintInjector.attachFingerprintToPuppeteer>[0],

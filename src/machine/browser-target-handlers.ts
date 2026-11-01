@@ -22,11 +22,47 @@ export function createTargetHandler(sessionId: string, fingerprint: BrowserFinge
       if (target.type() !== 'page') return;
       const page = await target.page();
       if (!page) return;
+
+      // 竞态修复：注入完成前 hold 住导航（Fetch 拦截暂停一切请求）。
+      // 背景：puppeteer 的 newPage() 在 targetcreated 后即 resolve，测试随即 goto；
+      // 若本 handler 的 evaluateOnNewDocument 尚未注册，首个导航会裸奔（TIER-101 Tab1 现象）。
+      // 拦截期间请求挂起，注入完成后 resume，导航继续且带上指纹脚本。
+      let fetchCdp: import('puppeteer-core').CDPSession | null = null;
+      try {
+        fetchCdp = await page.createCDPSession();
+        await fetchCdp.send('Fetch.enable', {
+          patterns: [{ requestStage: 'Request' }],
+        });
+        fetchCdp.on('Fetch.requestPaused', async (event) => {
+          try {
+            await fetchCdp?.send('Fetch.continueRequest', { requestId: event.requestId });
+          } catch {
+            /* 会话可能已随注入完成被关闭 */
+          }
+        });
+      } catch (fetchErr: unknown) {
+        logger.warn(`启用导航拦截失败（继续无拦截注入）:`, fetchErr);
+        fetchCdp = null;
+      }
+      const releaseNavigation = async () => {
+        if (fetchCdp) {
+          try {
+            await fetchCdp.send('Fetch.disable');
+            await fetchCdp.detach();
+          } catch {
+            /* 已关闭 */
+          }
+          fetchCdp = null;
+        }
+      };
       page.on('dialog', async (dialog) => {
         await dialog.dismiss();
       });
 
-      if (page.isClosed() || page.url().startsWith('devtools://') || page.url().startsWith('file://')) return;
+      if (page.isClosed() || page.url().startsWith('devtools://') || page.url().startsWith('file://')) {
+        await releaseNavigation();
+        return;
+      }
       logger.debug(`新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`);
 
       await injectMouseTrackingScript(page);
@@ -144,7 +180,10 @@ export function createTargetHandler(sessionId: string, fingerprint: BrowserFinge
 
       logger.info(`成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`);
 
-      if (!fingerprint) return;
+      if (!fingerprint) {
+        await releaseNavigation();
+        return;
+      }
       const fingerprintInjector = new FingerprintInjector();
       await fingerprintInjector.attachFingerprintToPuppeteer(
         page as unknown as Parameters<typeof fingerprintInjector.attachFingerprintToPuppeteer>[0],
@@ -161,6 +200,9 @@ export function createTargetHandler(sessionId: string, fingerprint: BrowserFinge
       // attachFingerprintToPuppeteer 内部已用 fingerprint.screen 统一设置；
       // 此前再用 viewport 覆写会把 screen 拉平为 viewport 尺寸，导致新 Tab 与
       // primaryPage 的 screen 指纹分叉（TIER-101/102 的根因之一）。
+
+      await releaseNavigation();
+      logger.info(`新 Tab 注入完成并放行导航 (sessionId: ${sessionId}, url: ${page.url()})`);
     } catch (error: unknown) {
       logger.error(`处理新页面目标失败 (sessionId: ${sessionId}):`, error);
     }

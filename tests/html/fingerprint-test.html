@@ -703,6 +703,27 @@
 
       // 存储到 window 供测试使用
       window.fingerprintData = fingerprintData;
+      // 调试用：字段级 dump（TIER-101 排查）
+      try {
+        const d = fingerprintData;
+        window.__fpDump = JSON.stringify({
+          ua: d.basic ? d.basic.ua : null,
+          platform: d.basic ? d.basic.platform : null,
+          screen: d.basic ? d.basic.screen : null,
+          colorDepth: d.basic ? d.basic.colorDepth : null,
+          deviceMemory: d.basic ? d.basic.deviceMemory : null,
+          hardwareConcurrency: d.basic ? d.basic.hardwareConcurrency : null,
+          languages: d.basic ? d.basic.languages : null,
+          timezone: d.basic ? d.basic.timezone : null,
+          canvasHash: d.canvas ? d.canvas.hash : null,
+          canvasOffset: d.canvas ? d.canvas.offset : null,
+          webglRenderer: d.webgl ? d.webgl.renderer : null,
+          webglHash: d.webgl ? d.webgl.hash : null,
+          audioHash: d.audio ? d.audio.hash : null,
+          fontsCount: d.fonts ? d.fonts.count : null,
+          other: d.other || null,
+        });
+      } catch (e) { window.__fpDump = 'dump-error:' + e.message; }
       window.fingerprintHash = overallHash;
 
       return overallHash;

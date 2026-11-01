@@ -452,6 +452,26 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
         console.log(`   Tab 2 指纹: ${fp2.hash}`);
         console.log(`   Tab 3 指纹: ${fp3.hash}`);
 
+        // TIER-101 排查：字段级 dump
+        try {
+          const dump1 = await tab1.evaluate(() => (window as any).__fpDump);
+          const dump2 = await tab2.evaluate(() => (window as any).__fpDump);
+          const dump3 = await tab3.evaluate(() => (window as any).__fpDump);
+          console.log('   [dump] Tab1:', dump1);
+          console.log('   [dump] Tab2:', dump2);
+          console.log('   [dump] Tab3:', dump3);
+          if (dump1 && dump2 && dump1 !== dump2) {
+            const a = JSON.parse(dump1), b = JSON.parse(dump2);
+            for (const k of Object.keys(a)) {
+              if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) {
+                console.log(`   [diff] ${k}: Tab1=${JSON.stringify(a[k])} vs Tab2=${JSON.stringify(b[k])}`);
+              }
+            }
+          }
+        } catch (dumpErr: unknown) {
+          console.log('   [dump] 失败:', (dumpErr as Error).message);
+        }
+
         // Layer 1: Browser Layer - 验证指纹哈希相同
         expect(fp1.hash).toBe(fp2.hash);
         expect(fp2.hash).toBe(fp3.hash);

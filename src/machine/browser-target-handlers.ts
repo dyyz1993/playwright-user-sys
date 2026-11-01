@@ -15,13 +15,14 @@ export function handleTargetChangeHandler(_sessionId: string) {
   };
 }
 
-export function createTargetHandler(sessionId: string, fingerprint: BrowserFingerprintWithHeaders) {
+export function createTargetHandler(sessionId: string, fingerprint: BrowserFingerprintWithHeaders | null | undefined) {
   return async (target: Target) => {
     logger.info(`Target created:  ${target.type()}`, target.url());
     try {
       if (target.type() !== 'page') return;
       const page = await target.page();
       if (!page) return;
+
       page.on('dialog', async (dialog) => {
         await dialog.dismiss();
       });
@@ -144,29 +145,16 @@ export function createTargetHandler(sessionId: string, fingerprint: BrowserFinge
 
       logger.info(`成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`);
 
+      if (!fingerprint) return;
       const fingerprintInjector = new FingerprintInjector();
       await fingerprintInjector.attachFingerprintToPuppeteer(
         page as unknown as Parameters<typeof fingerprintInjector.attachFingerprintToPuppeteer>[0],
         fingerprint
       );
-      const currentViewport = await page.viewport();
-      if (!currentViewport) return;
-
-      await page.setViewport({ width: currentViewport.width, height: currentViewport.height });
-      await (
-        await page.createCDPSession()
-      ).send('Page.setDeviceMetricsOverride', {
-        screenHeight: currentViewport.height,
-        screenWidth: currentViewport.width,
-        width: currentViewport.width,
-        height: currentViewport.height,
-        mobile: /phone|android|mobile/i.test(fingerprint.fingerprint.navigator.userAgent),
-        screenOrientation:
-          currentViewport.height > currentViewport.width
-            ? { angle: 0, type: 'portraitPrimary' }
-            : { angle: 90, type: 'landscapePrimary' },
-        deviceScaleFactor: fingerprint.fingerprint.screen.devicePixelRatio,
-      });
+      // 注意：不再叠加额外的 Page.setDeviceMetricsOverride。
+      // attachFingerprintToPuppeteer 内部已用 fingerprint.screen 统一设置；
+      // 此前再用 viewport 覆写会把 screen 拉平为 viewport 尺寸，导致新 Tab 与
+      // primaryPage 的 screen 指纹分叉（TIER-101/102 的根因之一）。
     } catch (error: unknown) {
       logger.error(`处理新页面目标失败 (sessionId: ${sessionId}):`, error);
     }

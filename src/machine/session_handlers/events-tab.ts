@@ -89,15 +89,25 @@ export async function handlePaste(
   data: Record<string, unknown> | undefined,
   requestType: string
 ): Promise<void> {
-  if (data && data.text) {
-    try {
-      const page = await browserService.getSessionPage(sessionId);
-      if (page && !page.isClosed()) {
-        await page.keyboard.type(String(data.text), { delay: 10 });
-      }
-    } catch (err: unknown) {
-      logger.error('Paste failed:', err);
-    }
+  // 兼容两种格式：{type:'paste',data:{text}}（标准）与 {type:'paste',text}（旧客户端顶层字段）
+  const text = data?.text ?? (data as Record<string, unknown> | undefined)?.['text'];
+  if (!text) {
+    sendResponse(ws, requestType, {
+      success: false,
+      error: 'paste 缺少 text 字段（期望 {type:"paste",data:{text:"..."}}）',
+    });
+    return;
   }
-  sendResponse(ws, requestType, { success: true });
+  try {
+    const page = await browserService.getSessionPage(sessionId);
+    if (!page || page.isClosed()) {
+      sendResponse(ws, requestType, { success: false, error: '会话页面不存在或已关闭' });
+      return;
+    }
+    await page.keyboard.type(String(text), { delay: 10 });
+    sendResponse(ws, requestType, { success: true });
+  } catch (err: unknown) {
+    logger.error('Paste failed:', err);
+    sendResponse(ws, requestType, { success: false, error: err instanceof Error ? err.message : String(err) });
+  }
 }

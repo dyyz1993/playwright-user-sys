@@ -267,6 +267,10 @@ export async function startMachineMonitor(intervalMs: number = 30000): Promise<N
 
   // 设置定时器定期检查
   const mainTimer = setInterval(() => {
+    // 周期性向已连接机器下发心跳请求：机器端依赖下行数据流做僵尸流检测
+    // （95s 无下行数据即 cancel 重连），空闲系统若无此下发会被误判为僵尸流
+    connectionManager.sendHeartbeatRequestsToAll();
+
     checkMachineStatus().catch((error) => {
       logger.error('定期机器状态检查失败:', error);
     });

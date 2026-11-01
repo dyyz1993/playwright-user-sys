@@ -9,6 +9,7 @@ export class ConnectionManager {
   private call: grpc.ClientDuplexStream<MachineMessage, ManagerMessage> | null = null;
   private connected: boolean = false;
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  private lastManagerDataAt: number = Date.now();
   private machineId: string;
   private onDisconnected: () => void;
   private onReconnectNeeded: () => void;
@@ -38,9 +39,12 @@ export class ConnectionManager {
 
   setupStreamHandlers(call: grpc.ClientDuplexStream<MachineMessage, ManagerMessage>): void {
     this.call = call;
+    // 新流从当前时刻起算，避免长时间断线后旧时间戳误杀刚重建的健康流
+    this.lastManagerDataAt = Date.now();
 
     call.on('data', (message: ManagerMessage) => {
       try {
+        this.lastManagerDataAt = Date.now();
         logger.debug(`收到管理端消息: ${JSON.stringify(message)}`);
         this.handleManagerMessage(message);
       } catch (dataError: unknown) {
@@ -52,7 +56,7 @@ export class ConnectionManager {
       logger.info('管理端关闭了连接');
       this.connected = false;
       setGrpcConnected(false);
-      this.stopHeartbeat();
+      // 心跳定时器保留运行：作为断线看门狗，每 30 秒触发 onReconnectNeeded 直至重连成功
       this.onDisconnected();
       this.onReconnectNeeded();
     });
@@ -61,7 +65,6 @@ export class ConnectionManager {
       logger.error('连接错误:', error);
       this.connected = false;
       setGrpcConnected(false);
-      this.stopHeartbeat();
 
       if (
         error &&
@@ -105,6 +108,21 @@ export class ConnectionManager {
     }
 
     this.heartbeatInterval = setInterval(async () => {
+      if (this.connected && this.call) {
+        // 僵尸流检测：连接标记为 true 但长时间收不到管理端任何消息
+        // （典型场景：管理端重启导致本流变成孤儿流），cancel 触发 'error' → 走既有重连链
+        const staleMs = Date.now() - this.lastManagerDataAt;
+        if (staleMs > 95000) {
+          logger.warn(`检测到僵尸流（${Math.round(staleMs / 1000)} 秒未收到管理端数据），cancel 当前流以强制重建连接`);
+          this.lastManagerDataAt = Date.now();
+          try {
+            this.call.cancel();
+          } catch (cancelError: unknown) {
+            logger.warn('取消僵尸流失败:', cancelError);
+          }
+          return;
+        }
+      }
       if (!this.connected) {
         try {
           const { getMachineServer } = await import('../index.js');

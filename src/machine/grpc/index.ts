@@ -200,6 +200,11 @@ export class GrpcClient extends EventEmitter {
               this.connectionManager.sendInitialHeartbeat();
               this.connectionManager.startHeartbeat();
 
+              // 管理端重启后刷新机器注册信息（fire-and-forget，失败不影响连接）
+              this.register().catch((registerError: unknown) => {
+                logger.warn('连接后重新注册失败（不影响连接）:', registerError);
+              });
+
               resolve();
             } catch (error: unknown) {
               logger.error('连接到管理端失败:', error);

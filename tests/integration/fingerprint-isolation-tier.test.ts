@@ -461,7 +461,8 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
           console.log('   [dump] Tab2:', dump2);
           console.log('   [dump] Tab3:', dump3);
           if (dump1 && dump2 && dump1 !== dump2) {
-            const a = JSON.parse(dump1), b = JSON.parse(dump2);
+            const a = JSON.parse(dump1),
+              b = JSON.parse(dump2);
             for (const k of Object.keys(a)) {
               if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) {
                 console.log(`   [diff] ${k}: Tab1=${JSON.stringify(a[k])} vs Tab2=${JSON.stringify(b[k])}`);

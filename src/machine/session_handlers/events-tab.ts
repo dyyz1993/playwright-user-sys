@@ -83,14 +83,37 @@ export async function handleTabAction(
   }
 }
 
+type FocusedEditableState = { editable: boolean; tag: string; content: string };
+
+async function readFocusedEditable(page: Page): Promise<FocusedEditableState | null> {
+  try {
+    return await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el) return { editable: false, tag: '', content: '' };
+      const tag = el.tagName;
+      const editable = tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+      let content = '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        content = (el as unknown as HTMLInputElement).value ?? '';
+      } else if (el.isContentEditable) {
+        content = el.textContent ?? '';
+      }
+      return { editable, tag, content };
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function handlePaste(
   ws: WebSocket,
   sessionId: string,
   data: Record<string, unknown> | undefined,
   requestType: string
 ): Promise<void> {
-  // 兼容两种格式：{type:'paste',data:{text}}（标准）与 {type:'paste',text}（旧客户端顶层字段）
-  const text = data?.text ?? (data as Record<string, unknown> | undefined)?.['text'];
+  // 兼容两种格式：{type:'paste',data:{text}}（标准）与 {type:'paste',text}（旧客户端顶层字段，
+  // 分发器在 data 缺失时回退传整个 eventData）
+  const text = typeof data?.text === 'string' ? data.text : undefined;
   if (!text) {
     sendResponse(ws, requestType, {
       success: false,
@@ -104,8 +127,51 @@ export async function handlePaste(
       sendResponse(ws, requestType, { success: false, error: '会话页面不存在或已关闭' });
       return;
     }
-    await page.keyboard.type(String(text), { delay: 10 });
-    sendResponse(ws, requestType, { success: true });
+
+    // 假成功防线 1：没有聚焦的可输入元素时，keyboard/insertText 会静默落空——先检查再插入
+    const before = await readFocusedEditable(page);
+    if (!before) {
+      sendResponse(ws, requestType, { success: false, error: '无法读取远端页面焦点状态' });
+      return;
+    }
+    if (!before.editable) {
+      sendResponse(ws, requestType, {
+        success: false,
+        error: `当前焦点元素 ${before.tag || '(none)'} 不可输入，请先点击远端页面的输入框再粘贴`,
+      });
+      return;
+    }
+
+    // Input.insertText 等价于真实粘贴/IME 上屏：原子插入、中文/长文本可靠，
+    // 且会触发 input 事件（React 受控组件可感知）；keyboard.type 逐字符派发在
+    // 无键盘布局字符（CJK）上不可靠且慢
+    const client = await page.createCDPSession();
+    try {
+      await client.send('Input.insertText', { text });
+    } finally {
+      void client.detach().catch(() => {});
+    }
+
+    // 假成功防线 2：回读焦点元素内容，确认文本真的进了页面（替换选区场景下
+    // 长度可能不增反减，所以用"内容发生变化"判定而不是长度递增）
+    const after = await readFocusedEditable(page);
+    if (!after) {
+      sendResponse(ws, requestType, { success: false, error: '无法回读插入结果，粘贴是否生效未知' });
+      return;
+    }
+    if (after.content === before.content) {
+      sendResponse(ws, requestType, {
+        success: false,
+        error: '远端页面未接收文本（焦点元素内容未变化；页面可能拦截了粘贴或字段只读）',
+      });
+      return;
+    }
+    sendResponse(ws, requestType, {
+      success: true,
+      tag: after.tag,
+      lengthBefore: before.content.length,
+      lengthAfter: after.content.length,
+    });
   } catch (err: unknown) {
     logger.error('Paste failed:', err);
     sendResponse(ws, requestType, { success: false, error: err instanceof Error ? err.message : String(err) });

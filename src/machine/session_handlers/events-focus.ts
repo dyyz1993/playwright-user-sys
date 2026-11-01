@@ -103,6 +103,7 @@ const RAW_EVENT_NAME_MAP: Record<string, string> = {
   mouseup: 'mouseUp',
   click: 'mouseClick',
   wheel: 'mouseWheel',
+  mousewheel: 'mouseWheel', // 客户端别名（VOT 面板等发 mousewheel）
   keydown: 'keyDown',
   keyup: 'keyUp',
 };

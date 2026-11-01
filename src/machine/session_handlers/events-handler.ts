@@ -226,7 +226,8 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
       }
 
       case 'paste':
-        await handlePaste(ws, sessionId, data, requestType);
+        // data 缺失时回退传整个 eventData，兼容旧客户端顶层字段 {type:'paste',text:'...'}
+        await handlePaste(ws, sessionId, data ?? eventData, requestType);
         break;
 
       case 'fileInjectInBrowser':
@@ -263,6 +264,7 @@ async function handleIncomingEventMessage(ws: WebSocket, message: RawData): Prom
       case 'mouseup':
       case 'click':
       case 'wheel':
+      case 'mousewheel': // 部分客户端（VOT 面板等）发 mousewheel 而非 wheel，缺此别名会掉进 default 被拒
       case 'keydown':
       case 'keyup': {
         const mappedType = mapRawEventType(eventType);

@@ -108,6 +108,26 @@ describe('services/machine-grpc MachineConnectionManager', () => {
     expect(mockWrite).not.toHaveBeenCalled();
   });
 
+  it('should send heartbeat requests to all connected machines', () => {
+    const cm = new MachineConnectionManager();
+    const mockWrite1 = vi.fn();
+    const mockWrite2 = vi.fn();
+
+    cm.addConnection('machine-001', { on: vi.fn(), end: vi.fn(), write: mockWrite1 } as unknown as Record<
+      string,
+      unknown
+    >);
+    cm.addConnection('machine-002', { on: vi.fn(), end: vi.fn(), write: mockWrite2 } as unknown as Record<
+      string,
+      unknown
+    >);
+
+    cm.sendHeartbeatRequestsToAll();
+
+    expect(mockWrite1).toHaveBeenCalledWith(expect.objectContaining({ heartbeat_request: expect.anything() }));
+    expect(mockWrite2).toHaveBeenCalledWith(expect.objectContaining({ heartbeat_request: expect.anything() }));
+  });
+
   it('should send restart command', () => {
     const cm = new MachineConnectionManager();
     const mockWrite = vi.fn();

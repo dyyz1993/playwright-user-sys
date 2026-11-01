@@ -96,6 +96,17 @@ export class MachineConnectionManager extends EventEmitter {
     this.commands.sendHeartbeatRequest(machineId);
   }
 
+  /**
+   * 向所有已连接机器下发心跳请求。
+   * 保证管理端→机器方向有周期性数据流（否则空闲系统里机器端收不到任何下行消息，
+   * 其僵尸流检测会在 95 秒后误杀健康连接）。
+   */
+  sendHeartbeatRequestsToAll(): void {
+    for (const machineId of this.pool.getAllIds()) {
+      this.commands.sendHeartbeatRequest(machineId);
+    }
+  }
+
   async launchBrowser(
     machineId: string,
     sessionId: string,

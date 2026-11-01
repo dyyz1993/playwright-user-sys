@@ -39,6 +39,8 @@ export class ConnectionManager {
 
   setupStreamHandlers(call: grpc.ClientDuplexStream<MachineMessage, ManagerMessage>): void {
     this.call = call;
+    // 新流从当前时刻起算，避免长时间断线后旧时间戳误杀刚重建的健康流
+    this.lastManagerDataAt = Date.now();
 
     call.on('data', (message: ManagerMessage) => {
       try {

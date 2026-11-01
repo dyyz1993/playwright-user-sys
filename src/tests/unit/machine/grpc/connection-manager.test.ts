@@ -73,6 +73,72 @@ describe('machine/grpc ConnectionManager', () => {
     expect(cm.isConnected()).toBe(false);
   });
 
+  it('should cancel zombie stream when connected but no manager data arrives for over 95s', async () => {
+    vi.useFakeTimers();
+    try {
+      const cm = new ConnectionManager('machine-001', onDisconnected, onReconnectNeeded);
+      cm.setConnected(true);
+
+      const mockCall = {
+        on: vi.fn(),
+        write: vi.fn().mockReturnValue(true),
+        end: vi.fn(),
+        cancel: vi.fn(),
+      };
+      cm.setupStreamHandlers(mockCall as unknown as Record<string, unknown>);
+      cm.startHeartbeat();
+
+      // 95 秒阈值内不应 cancel（60s < 95s）
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(mockCall.cancel).not.toHaveBeenCalled();
+
+      // 超过 95 秒（第 4 个 30s tick = 120s）应 cancel 僵尸流触发重连
+      await vi.advanceTimersByTimeAsync(70000);
+      expect(mockCall.cancel).toHaveBeenCalled();
+
+      cm.stopHeartbeat();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('should reset staleness clock when a new stream is set up', async () => {
+    vi.useFakeTimers();
+    try {
+      const cm = new ConnectionManager('machine-001', onDisconnected, onReconnectNeeded);
+      cm.setConnected(true);
+
+      const firstCall = {
+        on: vi.fn(),
+        write: vi.fn().mockReturnValue(true),
+        end: vi.fn(),
+        cancel: vi.fn(),
+      };
+      cm.setupStreamHandlers(firstCall as unknown as Record<string, unknown>);
+      cm.startHeartbeat();
+
+      // 模拟长时间断线：旧流时间戳已远超 95s
+      await vi.advanceTimersByTimeAsync(200000);
+      expect(firstCall.cancel).toHaveBeenCalled();
+
+      // 重连建立新流：staleness 应从现在重新起算，60s 内不应误杀新流
+      const secondCall = {
+        on: vi.fn(),
+        write: vi.fn().mockReturnValue(true),
+        end: vi.fn(),
+        cancel: vi.fn(),
+      };
+      cm.setupStreamHandlers(secondCall as unknown as Record<string, unknown>);
+      cm.setConnected(true);
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(secondCall.cancel).not.toHaveBeenCalled();
+
+      cm.stopHeartbeat();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('should call onDisconnected when stream ends', () => {
     const cm = new ConnectionManager('machine-001', onDisconnected, onReconnectNeeded);
 

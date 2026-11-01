@@ -1,6 +1,6 @@
-FROM node:22-alpine AS builder
+FROM node:22-alpine3.21 AS builder
 
-RUN apk add --no-cache chromium python3 make g++
+RUN apk add --no-cache chromium=136.0.7103.113-r0 python3 make g++
 
 WORKDIR /app
 
@@ -15,9 +15,9 @@ COPY src/ ./src/
 
 RUN pnpm build:emit
 
-FROM node:22-alpine AS runner
+FROM node:22-alpine3.21 AS runner
 
-RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont curl tini
+RUN apk add --no-cache chromium=136.0.7103.113-r0 nss freetype harfbuzz ca-certificates ttf-freefont curl tini
 
 WORKDIR /app
 

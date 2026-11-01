@@ -6,6 +6,8 @@ runs:
   steps:
     - uses: browser-actions/setup-chrome@v1
       id: setup-chrome
+      with:
+        chrome-version: '136.0.7103.113'
 
     - run: |
         echo "Chrome installed: ${{ steps.setup-chrome.outputs.chrome-path }}"

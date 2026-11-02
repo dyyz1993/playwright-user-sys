@@ -216,23 +216,25 @@ export async function setupBrowserLevelPreInjection(
         logger.warn(`browser-level pre-inject: child session 未就绪 (${sessionId})`);
         return;
       }
-      child
-        .send('Page.enable')
-        .then(() => child.send('Runtime.enable'))
-        .then(() =>
-          // 指纹脚本在目标仍处于 waitForDebugger 暂停态时注册——先于一切页面 JS
-          child.send('Page.addScriptToEvaluateOnNewDocument', {
-            source: getFingerprintInjectableScript(fingerprint),
-          })
-        )
-        .then(() =>
-          // 本会话的 autoattach 也持有一个等待计数，注册完成后必须放行，
-          // 否则目标被多会话的 waitForDebugger 永久卡死
-          child.send('Runtime.runIfWaitingForDebugger').catch(() => {})
-        )
+      // 四条命令立即连发不等待上一条 ack：同一 ws 连接保序送达，把"注册→放行"
+      // 与 puppeteer 自身 resume 之间的竞态窗口压到近零（串行 await 每跳一次事件
+      // 循环，慢速 runner 下会被 puppeteer 的放行抢先，CI 已实测仍有残留）
+      void child.send('Page.enable').catch((e: Error) => {
+        logger.debug(`pre-inject Page.enable skipped (${sessionId}): ${(e as Error)?.message}`);
+      });
+      void child.send('Runtime.enable').catch((e: Error) => {
+        logger.debug(`pre-inject Runtime.enable skipped (${sessionId}): ${(e as Error)?.message}`);
+      });
+      void child
+        .send('Page.addScriptToEvaluateOnNewDocument', {
+          source: getFingerprintInjectableScript(fingerprint),
+        })
         .catch((e: Error) => {
-          logger.debug(`browser-level fingerprint pre-inject skipped (${sessionId}): ${(e as Error)?.message}`);
+          logger.debug(`pre-inject addScript skipped (${sessionId}): ${(e as Error)?.message}`);
         });
+      void child.send('Runtime.runIfWaitingForDebugger').catch((e: Error) => {
+        logger.debug(`pre-inject resume skipped (${sessionId}): ${(e as Error)?.message}`);
+      });
     } catch (e) {
       logger.debug(`browser-level pre-inject child session error (${sessionId}): ${(e as Error)?.message}`);
     }

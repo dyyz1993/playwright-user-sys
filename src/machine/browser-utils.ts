@@ -86,13 +86,20 @@ export function generateFingerprint(options: BrowserOptions = {}): BrowserFinger
   }
 }
 
-export function applyFingerprintToPage(
+export async function applyFingerprintToPage(
   page: import('puppeteer').Page,
   fingerprint: BrowserFingerprintWithHeaders
 ): Promise<void> {
   const fingerprintInjector = new FingerprintInjector();
-  return fingerprintInjector.attachFingerprintToPuppeteer(
+  await fingerprintInjector.attachFingerprintToPuppeteer(
     page as unknown as Parameters<typeof fingerprintInjector.attachFingerprintToPuppeteer>[0],
     fingerprint
   );
+  // 兜底：attach 只注册 evaluateOnNewDocument，若当前文档的导航已先提交则裸奔——
+  // 同一脚本即时求值补上（幂等）。见 createTargetHandler 的 TIER-101 竞态说明。
+  try {
+    await page.evaluate(fingerprintInjector.getInjectableScript(fingerprint));
+  } catch {
+    // 页面可能已跳转/关闭，忽略
+  }
 }

@@ -30,6 +30,30 @@ export function createTargetHandler(sessionId: string, fingerprint: BrowserFinge
       if (page.isClosed() || page.url().startsWith('devtools://') || page.url().startsWith('file://')) return;
       logger.debug(`新页面目标创建，准备注入指纹 (sessionId: ${sessionId}, url: ${page.url()})`);
 
+      // 指纹注入必须最先做：browser.newPage() 立即返回，客户端可能马上 setContent/navigate，
+      // 若 attach（内部仅注册 evaluateOnNewDocument）晚于导航提交，该文档整个裸奔真实环境
+      // （TIER-101：首个新 tab 拿到 Linux/SwiftShader 裸值 vs 后续 tab 的伪装值）。
+      // 前面原有多步 CDP 往返（鼠标/焦点/剪贴板权限）会把竞态窗口拉大到 100ms+。
+      if (fingerprint) {
+        const fingerprintInjector = new FingerprintInjector();
+        await fingerprintInjector.attachFingerprintToPuppeteer(
+          page as unknown as Parameters<typeof fingerprintInjector.attachFingerprintToPuppeteer>[0],
+          fingerprint
+        );
+        // 注意：不要在此再叠加 Page.setDeviceMetricsOverride / viewport 覆写。
+        // attachFingerprintToPuppeteer 内部已用 fingerprint.screen 统一设置；
+        // 再覆写会把 screen 拉平为 viewport 尺寸，导致新 Tab 与 primaryPage 的
+        // screen 指纹分叉（PR #27 排查结论）。
+        // 兜底：若导航已抢在注册前提交（init script 对当前文档无效），同一脚本即时求值——
+        // 注入脚本按 defineProperty/函数包裹实现，重复执行幂等
+        try {
+          await page.evaluate(fingerprintInjector.getInjectableScript(fingerprint));
+        } catch (lateEvalErr: unknown) {
+          logger.debug(`指纹即时求值跳过（页面可能已跳转）: ${(lateEvalErr as Error).message}`);
+        }
+        logger.info(`成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`);
+      }
+
       await injectMouseTrackingScript(page);
       await injectFocusinScript(sessionId, page);
 
@@ -143,18 +167,7 @@ export function createTargetHandler(sessionId: string, fingerprint: BrowserFinge
         }
       });
 
-      logger.info(`成功注入指纹到新页面 (sessionId: ${sessionId}, url: ${page.url()})`);
-
-      if (!fingerprint) return;
-      const fingerprintInjector = new FingerprintInjector();
-      await fingerprintInjector.attachFingerprintToPuppeteer(
-        page as unknown as Parameters<typeof fingerprintInjector.attachFingerprintToPuppeteer>[0],
-        fingerprint
-      );
-      // 注意：不再叠加额外的 Page.setDeviceMetricsOverride。
-      // attachFingerprintToPuppeteer 内部已用 fingerprint.screen 统一设置；
-      // 此前再用 viewport 覆写会把 screen 拉平为 viewport 尺寸，导致新 Tab 与
-      // primaryPage 的 screen 指纹分叉（TIER-101/102 的根因之一）。
+      // 指纹注入已提前到 handler 首位（见上），此处不再处理
     } catch (error: unknown) {
       logger.error(`处理新页面目标失败 (sessionId: ${sessionId}):`, error);
     }

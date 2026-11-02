@@ -111,39 +111,43 @@ jobs:
           URL="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ART_ID/zip"
           PXP="https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890"
           AUTH="Authorization: Bearer $GH_TOKEN"
-          N=8
+          # 串行分段下载（实测：单流 117MB 能稳定跑完，8 路并发会被 blob 端全拒）。
+          # 每段独立校验+段内续传+空速看门狗；段文件持久卷跨 run 存活
+          N=12
           CHUNK=$(( (TOTAL + N - 1) / N ))
-          for round in 1 2 3 4 5 6 7 8 9 10; do
-            pids=()
+          for round in $(seq 1 30); do
+            all_ok=1
             for i in $(seq 0 $((N-1))); do
               S=$((i*CHUNK)); E=$((S+CHUNK-1)); [ $E -ge $TOTAL ] && E=$((TOTAL-1))
               [ $S -gt $E ] && continue
-              F="$ART_DIR/part_$i"
+              F="$ART_DIR/part_$(printf %02d $i)"
               WANT=$((E-S+1)); HAVE=0; [ -f "$F" ] && HAVE=$(stat -c%s "$F")
               [ "$HAVE" -eq "$WANT" ] && continue
-              (
-                if [ "$HAVE" -gt 0 ]; then RANGE="$((S+HAVE))-$E"; else RANGE="$S-$E"; fi
-                $PXP curl -sfL --retry 6 --retry-delay 5 --retry-all-errors \
-                  --speed-limit 65536 --speed-time 30 \
-                  -H "$AUTH" -r "$RANGE" -o "$F.seg" "$URL" \
-                && cat "$F" "$F.seg" > "$F.tmp" 2>/dev/null || cp "$F.seg" "$F.tmp"; \
+              all_ok=0
+              echo "chunk $i: have=$HAVE want=$WANT (round $round)"
+              if [ "$HAVE" -gt 0 ]; then RANGE="$((S+HAVE))-$E"; else RANGE="$S-$E"; fi
+              $PXP curl -fL --retry 8 --retry-delay 8 --retry-all-errors \
+                --speed-limit 65536 --speed-time 30 \
+                -H "$AUTH" -r "$RANGE" -o "$F.seg" "$URL" || true
+              if [ -s "$F.seg" ]; then
+                if [ "$HAVE" -gt 0 ]; then cat "$F" "$F.seg" > "$F.tmp"; else cp "$F.seg" "$F.tmp"; fi
                 mv "$F.tmp" "$F"; rm -f "$F.seg"
-              ) &
-              pids+=($!)
+                HAVE=$(stat -c%s "$F")
+                echo "chunk $i: now $HAVE/$WANT"
+              fi
             done
-            wait "${pids[@]}" 2>/dev/null || true
-            ok=1
-            for i in $(seq 0 $((N-1))); do
-              S=$((i*CHUNK)); E=$((S+CHUNK-1)); [ $E -ge $TOTAL ] && E=$((TOTAL-1))
-              [ $S -gt $E ] && continue
-              F="$ART_DIR/part_$i"; WANT=$((E-S+1)); HAVE=0; [ -f "$F" ] && HAVE=$(stat -c%s "$F")
-              [ "$HAVE" -ne "$WANT" ] && { ok=0; echo "chunk $i: $HAVE/$WANT"; }
-            done
-            [ "$ok" = 1 ] && { echo "all chunks complete after round $round"; break; }
-            echo "round $round incomplete, retrying in 10s"
-            sleep 10
-            [ "$round" = 10 ] && { echo "::error::分段下载 10 轮未收敛"; exit 1; }
+            [ "$all_ok" = 1 ] && { echo "all chunks complete after round $round"; break; }
+            echo "round $round done, incomplete chunks remain, next round"
           done
+          # 30 轮外循环结束仍不齐则报错（每段都有校验，大小对不上会在拼接处再拦）
+          ok=1
+          for i in $(seq 0 $((N-1))); do
+            S=$((i*CHUNK)); E=$((S+CHUNK-1)); [ $E -ge $TOTAL ] && E=$((TOTAL-1))
+            [ $S -gt $E ] && continue
+            F="$ART_DIR/part_$(printf %02d $i)"; WANT=$((E-S+1)); HAVE=0; [ -f "$F" ] && HAVE=$(stat -c%s "$F")
+            [ "$HAVE" -ne "$WANT" ] && { ok=0; echo "chunk $i incomplete: $HAVE/$WANT"; }
+          done
+          [ "$ok" = 1 ] || { echo "::error::分段下载未收敛"; exit 1; }
           ZIPFINAL="$ART_DIR/image-${{ inputs.image }}.zip"
           rm -f "$ZIPFINAL"
           for i in $(seq 0 $((N-1))); do

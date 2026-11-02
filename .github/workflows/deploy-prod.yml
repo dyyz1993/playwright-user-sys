@@ -42,7 +42,7 @@ on:
 jobs:
   deploy:
     runs-on: pus-deploy
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - name: 配置部署密钥
         run: |
@@ -98,12 +98,29 @@ jobs:
             echo "resolved latest successful build run: $RUN_ID"
           fi
           rm -rf art && mkdir art
-          # GitHub 工件 blob 端点在本网络直连经常不通——走局域网代理（Mac Clash，已开 Allow LAN）。
-          # 仅 gh 下载挂代理；后续 ssh/docker load 走 LAN 不受影响
-          https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890 \
-            gh run download "$RUN_ID" -R "${{ github.repository }}" \
-            -n "image-${{ inputs.image }}" -D art
-          ls -lh art/
+          # 找到工件 id
+          ART_ID=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts" \
+            --jq ".artifacts[] | select(.name==\"image-${{ inputs.image }}\") | .id")
+          [ -n "$ART_ID" ] || { echo "::error::run $RUN_ID 里没有 image-${{ inputs.image }} 工件"; exit 1; }
+          echo "artifact id: $ART_ID"
+          # GitHub blob 端点直连不通 → 走局域网代理 + curl 断点续传重试
+          # （gh run download 无续传，大文件中断即废，已实测吃过亏）
+          CURL_ZIP="art/image-${{ inputs.image }}.zip"
+          for i in 1 2 3; do
+            echo "== curl attempt $i =="
+            if https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890 \
+                 curl -fL -C - --retry 8 --retry-delay 10 --retry-all-errors \
+                   -H "Authorization: Bearer $GH_TOKEN" \
+                   -H "Accept: application/vnd.github+json" \
+                   -o "$CURL_ZIP" \
+                   "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ART_ID/zip"; then
+              break
+            fi
+            [ "$i" = 3 ] && { echo "::error::工件下载三次未完成"; exit 1; }
+            sleep 15
+          done
+          ls -lh "$CURL_ZIP"
+          unzip -o -q "$CURL_ZIP" -d art
           TARBALL=$(ls art/*.tar.gz art/*.tar 2>/dev/null | head -n1)
           [ -n "$TARBALL" ] || { echo "::error::工件里没有 tar"; exit 1; }
           # 流式灌进宿主机 docker（docker load 兼容 gzip 流，不落盘）

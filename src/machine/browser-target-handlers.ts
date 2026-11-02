@@ -1,9 +1,10 @@
-import { Target } from 'puppeteer-core';
+import { Target, CDPSession, Connection } from 'puppeteer-core';
 import { FingerprintInjector } from 'fingerprint-injector';
 import type { BrowserFingerprintWithHeaders } from 'fingerprint-generator';
 import { logger } from '@shared/utils/logger.js';
 import { CLIPBOARD_INTERCEPTOR_SCRIPT } from './session_handlers/clipboard-constants.js';
 import { injectFocusinScript, injectMouseTrackingScript } from './session_handlers/page-inject.js';
+import { getFingerprintInjectableScript } from './browser-utils.js';
 
 export function handleTargetChangeHandler(_sessionId: string) {
   return async (target: Target) => {
@@ -184,4 +185,62 @@ export function createDisconnectHandler(sessionId: string, proxy: string, onClos
     }
     onClose();
   };
+}
+
+/**
+ * #28 框架级前置注入：在浏览器级 CDP 会话上开 autoattach + waitForDebuggerOnStart，
+ * 借 attachedToTarget 时机（新 page target 仍处于 puppeteer 的暂停窗口）把指纹脚本
+ * 抢先注册进 Page.addScriptToEvaluateOnNewDocument——客户端 goto 到达时脚本必然已注册，
+ * 从根上消除 Tab1 首文档与注入注册的赛跑（详见 issue #28）。
+ *
+ * 注意：监听器必须先于 setAutoAttach 注册（否则首个 target 事件会漏掉）；
+ * 本会话的 autoattach 也持有等待计数，注册完成后必须 Runtime.runIfWaitingForDebugger 放行。
+ * 失败会抛出，调用方（browser-lifecycle）负责 try/catch 降级到 targetcreated 路径。
+ */
+export async function setupBrowserLevelPreInjection(
+  // 入参用最小结构 + unknown 断言：调用方的 Browser 来自 puppeteer 包（内嵌另一份
+  // puppeteer-core），与本文件引用的 puppeteer-core 的 CDPSession 是两个不同的类型
+  browser: { target(): { createCDPSession(): Promise<unknown> } },
+  fingerprint: BrowserFingerprintWithHeaders | null | undefined,
+  sessionId: string
+): Promise<void> {
+  if (!fingerprint) return;
+  const browserCDP = (await browser.target().createCDPSession()) as unknown as CDPSession;
+  // 监听器必须先于 setAutoAttach 注册，否则首个 target 的 attachedToTarget 事件会漏掉
+  browserCDP.on('Target.attachedToTarget', (event: { sessionId: string; targetInfo: { type: string } }) => {
+    if (event.targetInfo.type !== 'page') return;
+    try {
+      const conn: Connection | null | undefined = browserCDP.connection();
+      const child = conn?.session(event.sessionId);
+      if (!child) {
+        logger.warn(`browser-level pre-inject: child session 未就绪 (${sessionId})`);
+        return;
+      }
+      child
+        .send('Page.enable')
+        .then(() => child.send('Runtime.enable'))
+        .then(() =>
+          // 指纹脚本在目标仍处于 waitForDebugger 暂停态时注册——先于一切页面 JS
+          child.send('Page.addScriptToEvaluateOnNewDocument', {
+            source: getFingerprintInjectableScript(fingerprint),
+          })
+        )
+        .then(() =>
+          // 本会话的 autoattach 也持有一个等待计数，注册完成后必须放行，
+          // 否则目标被多会话的 waitForDebugger 永久卡死
+          child.send('Runtime.runIfWaitingForDebugger').catch(() => {})
+        )
+        .catch((e: Error) => {
+          logger.debug(`browser-level fingerprint pre-inject skipped (${sessionId}): ${(e as Error)?.message}`);
+        });
+    } catch (e) {
+      logger.debug(`browser-level pre-inject child session error (${sessionId}): ${(e as Error)?.message}`);
+    }
+  });
+  await browserCDP.send('Target.setAutoAttach', {
+    autoAttach: true,
+    waitForDebuggerOnStart: true,
+    flatten: true,
+  });
+  logger.info(`Browser-level fingerprint pre-injection autoattach enabled (sessionId: ${sessionId})`);
 }

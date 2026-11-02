@@ -61,7 +61,8 @@ jobs:
             pull_with_fallback() {
               FULL="$1"
               echo "== try direct: $FULL =="
-              timeout 240 docker pull "$FULL" && return 0
+              # 公开包直连可拉但慢（~1-2.5MB/s），层缓存跨轮累积，给足单次窗口
+              timeout 1500 docker pull "$FULL" && return 0
               for PFX in docker.m.daocloud.io docker.1ms.run; do
                 echo "== try prefix: $PFX/$FULL =="
                 if timeout 480 docker pull "$PFX/$FULL"; then

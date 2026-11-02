@@ -177,16 +177,24 @@ async function main() {
     console.log('  Navigating to https://example.com ...');
     await page.goto('https://example.com', { waitUntil: 'domcontentloaded', timeout: 20000 });
 
+    // example.com 于 2025 年改版后已无 <h1>（IANA 还在页面明示"勿用于测试和监控"），
+    // 此前断言 h1="Example Domain" 自改版起恒超时。这里只保留对它的导航连通性验证
+    // （title），DOM 内容断言迁移到自建页面，确定性且不依赖外网内容。
     const title = await page.title();
     console.log(`  Page title: "${title}"`);
+    if (!title.includes('Example Domain')) {
+      throw new Error(`Navigation verification failed — title="${title}", expected "Example Domain"`);
+    }
+    console.log('  Navigation verified: reached example.com');
 
-    const h1Text = await page.textContent('h1');
+    await page.setContent('<!doctype html><meta charset="utf-8"><h1 id="smoke">E2E Smoke OK</h1>');
+    const h1Text = await page.textContent('#smoke');
     console.log(`  H1 text: "${h1Text}"`);
 
-    if (!h1Text || !h1Text.includes('Example Domain')) {
-      throw new Error(`Unexpected page content — H1="${h1Text}", expected "Example Domain"`);
+    if (!h1Text || !h1Text.includes('E2E Smoke OK')) {
+      throw new Error(`Unexpected page content — H1="${h1Text}", expected "E2E Smoke OK"`);
     }
-    console.log('  Content verified: "Example Domain" found in H1');
+    console.log('  Content verified: "E2E Smoke OK" found in H1');
 
     const screenshotBuf = await page.screenshot();
     console.log(`  Screenshot taken: ${screenshotBuf.length} bytes`);

@@ -7,7 +7,12 @@ import { logger } from '@shared/utils/logger.js';
 import type { BrowserLaunchOptions, BrowserInstance } from './types.js';
 import { DEFAULT_SESSION_CONFIG } from './browser-constants.js';
 import { calculateUserDataDir, ensureUserDataDir, generateFingerprint } from './browser-utils.js';
-import { createTargetHandler, handleTargetChangeHandler, createDisconnectHandler } from './browser-target-handlers.js';
+import {
+  createTargetHandler,
+  handleTargetChangeHandler,
+  createDisconnectHandler,
+  setupBrowserLevelPreInjection,
+} from './browser-target-handlers.js';
 import type { ConnectionState } from './browser-connection.js';
 import { convertPuppeteerOptions as convertPuppeteerOptionsFn } from './session_handlers/puppeteer-config.js';
 import { CLIPBOARD_INTERCEPTOR_SCRIPT } from './session_handlers/clipboard-constants.js';
@@ -195,6 +200,17 @@ export async function launchBrowser(
       browser.on('targetchanged', handleTargetChangeHandler(sessionId) as unknown as Parameters<typeof browser.on>[1]);
       browser.on('disconnected', createDisconnectHandler(sessionId, options.proxy ?? '', disconnectAction));
       logger.info(`已设置浏览器事件监听 (sessionId: ${sessionId})`);
+
+      // ===== #28 框架级前置注入：browser 级 autoattach + 暂停窗口内抢先注册指纹脚本 =====
+      // 失败由 catch 降级到 targetcreated + 当前文档兜底路径（PR #31），不影响启动
+      try {
+        await setupBrowserLevelPreInjection(browser, fingerprint, sessionId);
+      } catch (preinjectError: unknown) {
+        logger.warn(
+          `Browser-level pre-injection setup failed (non-fatal, falls back to targetcreated path) (sessionId: ${sessionId}):`,
+          preinjectError
+        );
+      }
     }
     browser.on('targetcreated', (async (target: Target) => {
       if (target.type() === 'page') {

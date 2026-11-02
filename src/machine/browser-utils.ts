@@ -86,6 +86,15 @@ export function generateFingerprint(options: BrowserOptions = {}): BrowserFinger
   }
 }
 
+/**
+ * 生成 fingerprint-injector 的可注入脚本（浏览器级 addScriptToEvaluateOnNewDocument 用）。
+ * 与 applyFingerprintToPage 使用同一指纹对象，保证各级注入幂等一致。
+ */
+export function getFingerprintInjectableScript(fingerprint: BrowserFingerprintWithHeaders): string {
+  const injector = new FingerprintInjector();
+  return injector.getInjectableScript(fingerprint);
+}
+
 export async function applyFingerprintToPage(
   page: import('puppeteer').Page,
   fingerprint: BrowserFingerprintWithHeaders

@@ -105,9 +105,10 @@ jobs:
           echo "artifact id: $ART_ID"
           # GitHub blob 端点直连不通 → 走局域网代理 + curl 断点续传重试
           # （gh run download 无续传，大文件中断即废，已实测吃过亏）
-          # 持久卷（跨 run 存活）：断点续传不因 runner 一次性容器而清零
-          mkdir -p /opt/tools/art-partial
-          CURL_ZIP="/opt/tools/art-partial/image-${{ inputs.image }}.zip"
+          # 持久卷（跨 run 存活）：断点续传不因 runner 一次性容器而清零。
+          # /opt/tools 是 root 属主 runner 写不了，用 runner 自属主的 npm-cache 卷
+          mkdir -p /home/runner/.npm/art-partial
+          CURL_ZIP="/home/runner/.npm/art-partial/image-${{ inputs.image }}.zip"
           for i in 1 2 3; do
             echo "== curl attempt $i =="
             if https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890 \

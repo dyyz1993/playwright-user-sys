@@ -109,7 +109,10 @@ jobs:
           ART_DIR=/home/runner/.npm/art-partial
           mkdir -p "$ART_DIR"
           URL="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ART_ID/zip"
-          PXP="https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890"
+          # 代理必须 export 进环境：bash 对命令位置的变量展开结果不识别 VAR=value
+          # 赋值前缀（把 https_proxy=... 当可执行路径找，秒挂 No such file or
+          # directory）——此前多轮"下载失败"实际是这个 shell 错误
+          export https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890
           AUTH="Authorization: Bearer $GH_TOKEN"
           # 串行分段下载（实测：单流 117MB 能稳定跑完，8 路并发会被 blob 端全拒）。
           # 每段独立校验+段内续传+空速看门狗；段文件持久卷跨 run 存活
@@ -126,7 +129,7 @@ jobs:
               all_ok=0
               echo "chunk $i: have=$HAVE want=$WANT (round $round)"
               if [ "$HAVE" -gt 0 ]; then RANGE="$((S+HAVE))-$E"; else RANGE="$S-$E"; fi
-              $PXP curl -fL --retry 8 --retry-delay 8 --retry-all-errors \
+              curl -fL --retry 8 --retry-delay 8 --retry-all-errors \
                 --speed-limit 65536 --speed-time 30 \
                 -H "$AUTH" -r "$RANGE" -o "$F.seg" "$URL" || true
               if [ -s "$F.seg" ]; then

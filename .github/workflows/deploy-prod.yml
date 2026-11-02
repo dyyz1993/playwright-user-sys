@@ -109,7 +109,7 @@ jobs:
           for i in 1 2 3; do
             echo "== curl attempt $i =="
             if https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890 \
-                 curl -fL -C - --retry 8 --retry-delay 10 --retry-all-errors \
+                 curl -fL -C - --retry 8 --retry-delay 10 --retry-all-errors --speed-limit 10240 --speed-time 60 \
                    -H "Authorization: Bearer $GH_TOKEN" \
                    -H "Accept: application/vnd.github+json" \
                    -o "$CURL_ZIP" \

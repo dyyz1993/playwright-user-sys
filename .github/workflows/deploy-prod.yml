@@ -105,11 +105,13 @@ jobs:
           echo "artifact id: $ART_ID"
           # GitHub blob 端点直连不通 → 走局域网代理 + curl 断点续传重试
           # （gh run download 无续传，大文件中断即废，已实测吃过亏）
-          CURL_ZIP="art/image-${{ inputs.image }}.zip"
+          # 持久卷（跨 run 存活）：断点续传不因 runner 一次性容器而清零
+          mkdir -p /opt/tools/art-partial
+          CURL_ZIP="/opt/tools/art-partial/image-${{ inputs.image }}.zip"
           for i in 1 2 3; do
             echo "== curl attempt $i =="
             if https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890 \
-                 curl -fL -C - --retry 8 --retry-delay 10 --retry-all-errors --speed-limit 10240 --speed-time 60 \
+                 curl -fL -C - --retry 8 --retry-delay 10 --retry-all-errors --speed-limit 512000 --speed-time 45 \
                    -H "Authorization: Bearer $GH_TOKEN" \
                    -H "Accept: application/vnd.github+json" \
                    -o "$CURL_ZIP" \
@@ -127,6 +129,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p "${{ secrets.DEPLOY_PORT }}" \
             "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" "docker load" \
             < "$TARBALL"
+          rm -f "$CURL_ZIP"
           echo "ARTIFACT_LOAD_OK"
 
       - name: 滚动更新容器

@@ -103,34 +103,67 @@ jobs:
             --jq ".artifacts[] | select(.name==\"image-${{ inputs.image }}\") | .id")
           [ -n "$ART_ID" ] || { echo "::error::run $RUN_ID 里没有 image-${{ inputs.image }} 工件"; exit 1; }
           echo "artifact id: $ART_ID"
-          # GitHub blob 端点直连不通 → 走局域网代理 + curl 断点续传重试
-          # （gh run download 无续传，大文件中断即废，已实测吃过亏）
-          # 持久卷（跨 run 存活）：断点续传不因 runner 一次性容器而清零。
-          # /opt/tools 是 root 属主 runner 写不了，用 runner 自属主的 npm-cache 卷
-          mkdir -p /home/runner/.npm/art-partial
-          CURL_ZIP="/home/runner/.npm/art-partial/image-${{ inputs.image }}.zip"
-          for i in 1 2 3; do
-            echo "== curl attempt $i =="
-            if https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890 \
-                 curl -fL -C - --retry 8 --retry-delay 10 --retry-all-errors --speed-limit 512000 --speed-time 45 \
-                   -H "Authorization: Bearer $GH_TOKEN" \
-                   -H "Accept: application/vnd.github+json" \
-                   -o "$CURL_ZIP" \
-                   "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ART_ID/zip"; then
-              break
-            fi
-            [ "$i" = 3 ] && { echo "::error::工件下载三次未完成"; exit 1; }
-            sleep 15
+          # GitHub blob 端点对单连接限速严重（单流 0.1~0.9MB/s），代理节点国际带宽充足
+          # （实测 4MB/s）→ 用 8 路并发分段下载绕开单流限速。段文件落在 runner 自属主
+          # 持久卷（跨 run 断点续传）；每段按字节数校验，缺失/短小段只补下载
+          ART_DIR=/home/runner/.npm/art-partial
+          mkdir -p "$ART_DIR"
+          URL="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ART_ID/zip"
+          PXP="https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890"
+          AUTH="Authorization: Bearer $GH_TOKEN"
+          TOTAL=$($PXP curl -sIL -H "$AUTH" "$URL" | grep -i '^content-length' | tail -1 | tr -dc 0-9)
+          [ -n "$TOTAL" ] || { echo "::error::拿不到工件大小"; exit 1; }
+          echo "artifact total size: $TOTAL"
+          N=8
+          CHUNK=$(( (TOTAL + N - 1) / N ))
+          for round in 1 2 3 4 5 6 7 8 9 10; do
+            pids=()
+            for i in $(seq 0 $((N-1))); do
+              S=$((i*CHUNK)); E=$((S+CHUNK-1)); [ $E -ge $TOTAL ] && E=$((TOTAL-1))
+              [ $S -gt $E ] && continue
+              F="$ART_DIR/part_$i"
+              WANT=$((E-S+1)); HAVE=0; [ -f "$F" ] && HAVE=$(stat -c%s "$F")
+              [ "$HAVE" -eq "$WANT" ] && continue
+              (
+                if [ "$HAVE" -gt 0 ]; then RANGE="$((S+HAVE))-$E"; else RANGE="$S-$E"; fi
+                $PXP curl -sfL --retry 6 --retry-delay 5 --retry-all-errors \
+                  --speed-limit 65536 --speed-time 30 \
+                  -H "$AUTH" -r "$RANGE" -o "$F.seg" "$URL" \
+                && cat "$F" "$F.seg" > "$F.tmp" 2>/dev/null || cp "$F.seg" "$F.tmp"; \
+                mv "$F.tmp" "$F"; rm -f "$F.seg"
+              ) &
+              pids+=($!)
+            done
+            wait "${pids[@]}" 2>/dev/null || true
+            ok=1
+            for i in $(seq 0 $((N-1))); do
+              S=$((i*CHUNK)); E=$((S+CHUNK-1)); [ $E -ge $TOTAL ] && E=$((TOTAL-1))
+              [ $S -gt $E ] && continue
+              F="$ART_DIR/part_$i"; WANT=$((E-S+1)); HAVE=0; [ -f "$F" ] && HAVE=$(stat -c%s "$F")
+              [ "$HAVE" -ne "$WANT" ] && { ok=0; echo "chunk $i: $HAVE/$WANT"; }
+            done
+            [ "$ok" = 1 ] && { echo "all chunks complete after round $round"; break; }
+            echo "round $round incomplete, retrying in 10s"
+            sleep 10
+            [ "$round" = 10 ] && { echo "::error::分段下载 10 轮未收敛"; exit 1; }
           done
-          ls -lh "$CURL_ZIP"
-          unzip -o -q "$CURL_ZIP" -d art
+          ZIPFINAL="$ART_DIR/image-${{ inputs.image }}.zip"
+          rm -f "$ZIPFINAL"
+          for i in $(seq 0 $((N-1))); do
+            [ -f "$ART_DIR/part_$i" ] && cat "$ART_DIR/part_$i" >> "$ZIPFINAL"
+          done
+          ls -lh "$ZIPFINAL"
+          HAVE=$(stat -c%s "$ZIPFINAL")
+          [ "$HAVE" = "$TOTAL" ] || { echo "::error::拼接后大小不符 have=$HAVE want=$TOTAL"; exit 1; }
+          unzip -o -q "$ZIPFINAL" -d art
           TARBALL=$(ls art/*.tar.gz art/*.tar 2>/dev/null | head -n1)
           [ -n "$TARBALL" ] || { echo "::error::工件里没有 tar"; exit 1; }
           # 流式灌进宿主机 docker（docker load 兼容 gzip 流，不落盘）
           ssh -i ~/.ssh/deploy_key -p "${{ secrets.DEPLOY_PORT }}" \
             "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" "docker load" \
             < "$TARBALL"
-          rm -f "$CURL_ZIP"
+          # 清理持久卷里的分段与成品，防止跨次累积占满
+          rm -rf /home/runner/.npm/art-partial
           echo "ARTIFACT_LOAD_OK"
 
       - name: 滚动更新容器

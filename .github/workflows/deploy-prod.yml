@@ -3,21 +3,46 @@ name: Deploy Prod
 # 一键部署：GitHub Actions 页面 → Deploy Prod → Run workflow
 # 跑在极空间 NAS 的 gha-runner-pus 上（label: pus-deploy，容器 gha2-runner-1），
 # 通过部署专用密钥 SSH 到宿主机执行 compose 滚动更新。
-# ghcr 直连在 NAS 上偶发卡死（国内网络），pull 带 3 次重试；
-# 仍失败时勾选 skip_pull 用本地已有镜像，或从 Mac 中转（见 docs/deploy-cloakbrowser.md）。
+#
+# 两种镜像来源（source）：
+# - registry（默认）：SSH 到宿主机 docker pull；ghcr 直连不通时自动降级试国内代理前缀
+#   （daocloud / 1ms，仅当 ghcr 包为 Public 时代理才看得见——ghcr 新包默认 Private，
+#   需在 GitHub Packages 设置里改 Public，匿名代理和直连匿名拉取才可用）
+# - artifact：从 "Docker Build & Test" 的 run 下载镜像 tar 工件，流式 docker load 进宿主机。
+#   彻底绕开 ghcr 网络/可见性问题，代价是从 GitHub 拉约 1GB 工件
+#
+# skip_pull 仅在 source=registry 时生效（artifact 模式本身就是在装镜像）。
 
 on:
   workflow_dispatch:
     inputs:
+      source:
+        description: '镜像来源'
+        type: choice
+        options:
+          - registry
+          - artifact
+        default: registry
+      image:
+        description: 'artifact 模式：加载哪个镜像'
+        type: choice
+        options:
+          - machine
+          - manager
+        default: machine
+      artifact_run_id:
+        description: 'artifact 模式：Docker Build & Test 的 run id（留空=取 main 最新成功 run）'
+        type: string
+        default: ''
       skip_pull:
-        description: '跳过镜像拉取（ghcr 拉不动时勾选，直接用 NAS 本地已有镜像）'
+        description: '[registry 模式] 跳过拉取，直接用 NAS 本地已有镜像'
         type: boolean
         default: false
 
 jobs:
   deploy:
     runs-on: pus-deploy
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - name: 配置部署密钥
         run: |
@@ -27,21 +52,62 @@ jobs:
           ssh-keyscan -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
           echo "SSH_OK=$(ssh -i ~/.ssh/deploy_key -o BatchMode=yes -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" 'echo yes')"
 
-      - name: 拉取最新镜像（3 次重试）
-        if: ${{ inputs.skip_pull != true }}
+      - name: "[registry] 拉取镜像（直连 → 国内代理前缀降级）"
+        if: ${{ inputs.source == 'registry' && inputs.skip_pull != true }}
         run: |
           ssh -i ~/.ssh/deploy_key -p "${{ secrets.DEPLOY_PORT }}" "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" '
             cd /data/docker/playwright-user-sys/docker || exit 1
-            for i in 1 2 3; do
-              echo "== pull attempt $i =="
-              if timeout 300 docker compose -f docker-compose.prod.yml pull; then
+            set -a; . ./.env; set +a
+            pull_with_fallback() {
+              FULL="$1"
+              echo "== try direct: $FULL =="
+              timeout 240 docker pull "$FULL" && return 0
+              for PFX in docker.m.daocloud.io docker.1ms.run; do
+                echo "== try prefix: $PFX/$FULL =="
+                if timeout 480 docker pull "$PFX/$FULL"; then
+                  docker tag "$PFX/$FULL" "$FULL"
+                  echo "retagged $PFX/$FULL -> $FULL"
+                  return 0
+                fi
+              done
+              return 1
+            }
+            # 两个 ghcr 镜像各带一层重试；mysql 属 docker.io，走 daemon registry-mirrors，无需处理
+            for i in 1 2; do
+              if pull_with_fallback "$DOCKER_REGISTRY:$IMAGE_TAG" && \
+                 pull_with_fallback "$DOCKER_REGISTRY_MACHINE:$IMAGE_TAG"; then
                 echo "PULL_OK"; exit 0
               fi
+              echo "== attempt $i failed, retry in 20s =="
               sleep 20
             done
-            echo "::error::ghcr 拉取三次失败（NAS 直连 ghcr 卡死，国内网络问题）。重跑并勾选 skip_pull 用本地镜像，或从 Mac docker save/load 中转。"
+            echo "::error::registry 模式拉取失败（ghcr 包 Private 时代理也看不见，需改 Public；或改用 source=artifact）。"
             exit 1
           '
+
+      - name: "[artifact] 从 CI 工件加载镜像"
+        if: ${{ inputs.source == 'artifact' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID="${{ inputs.artifact_run_id }}"
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh run list -R "${{ github.repository }}" \
+              --workflow "Docker Build & Test" --branch main --status success \
+              --limit 1 --json databaseId --jq '.[0].databaseId')
+            echo "resolved latest successful build run: $RUN_ID"
+          fi
+          rm -rf art && mkdir art
+          gh run download "$RUN_ID" -R "${{ github.repository }}" \
+            -n "image-${{ inputs.image }}" -D art
+          ls -lh art/
+          TARBALL=$(ls art/*.tar.gz art/*.tar 2>/dev/null | head -n1)
+          [ -n "$TARBALL" ] || { echo "::error::工件里没有 tar"; exit 1; }
+          # 流式灌进宿主机 docker（docker load 兼容 gzip 流，不落盘）
+          ssh -i ~/.ssh/deploy_key -p "${{ secrets.DEPLOY_PORT }}" \
+            "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" "docker load" \
+            < "$TARBALL"
+          echo "ARTIFACT_LOAD_OK"
 
       - name: 滚动更新容器
         run: |

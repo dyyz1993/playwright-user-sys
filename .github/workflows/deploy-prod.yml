@@ -98,11 +98,11 @@ jobs:
             echo "resolved latest successful build run: $RUN_ID"
           fi
           rm -rf art && mkdir art
-          # 找到工件 id
-          ART_ID=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts" \
-            --jq ".artifacts[] | select(.name==\"image-${{ inputs.image }}\") | .id")
+          # 找到工件 id + 大小（zip 端点不支持 HEAD，大小从工件元数据取）
+          read -r ART_ID TOTAL <<< "$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts" \
+            --jq ".artifacts[] | select(.name==\"image-${{ inputs.image }}\") | \"\(.id) \(.size_in_bytes)\"")"
           [ -n "$ART_ID" ] || { echo "::error::run $RUN_ID 里没有 image-${{ inputs.image }} 工件"; exit 1; }
-          echo "artifact id: $ART_ID"
+          echo "artifact id: $ART_ID size: $TOTAL"
           # GitHub blob 端点对单连接限速严重（单流 0.1~0.9MB/s），代理节点国际带宽充足
           # （实测 4MB/s）→ 用 8 路并发分段下载绕开单流限速。段文件落在 runner 自属主
           # 持久卷（跨 run 断点续传）；每段按字节数校验，缺失/短小段只补下载
@@ -111,9 +111,6 @@ jobs:
           URL="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ART_ID/zip"
           PXP="https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890"
           AUTH="Authorization: Bearer $GH_TOKEN"
-          TOTAL=$($PXP curl -sIL -H "$AUTH" "$URL" | grep -i '^content-length' | tail -1 | tr -dc 0-9)
-          [ -n "$TOTAL" ] || { echo "::error::拿不到工件大小"; exit 1; }
-          echo "artifact total size: $TOTAL"
           N=8
           CHUNK=$(( (TOTAL + N - 1) / N ))
           for round in 1 2 3 4 5 6 7 8 9 10; do

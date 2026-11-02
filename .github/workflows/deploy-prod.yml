@@ -98,7 +98,10 @@ jobs:
             echo "resolved latest successful build run: $RUN_ID"
           fi
           rm -rf art && mkdir art
-          gh run download "$RUN_ID" -R "${{ github.repository }}" \
+          # GitHub 工件 blob 端点在本网络直连经常不通——走局域网代理（Mac Clash，已开 Allow LAN）。
+          # 仅 gh 下载挂代理；后续 ssh/docker load 走 LAN 不受影响
+          https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890 \
+            gh run download "$RUN_ID" -R "${{ github.repository }}" \
             -n "image-${{ inputs.image }}" -D art
           ls -lh art/
           TARBALL=$(ls art/*.tar.gz art/*.tar 2>/dev/null | head -n1)

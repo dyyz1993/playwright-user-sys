@@ -73,17 +73,21 @@ jobs:
               done
               return 1
             }
-            # 两个 ghcr 镜像各带一层重试；mysql 属 docker.io，走 daemon registry-mirrors，无需处理
-            for i in 1 2; do
-              if pull_with_fallback "$DOCKER_REGISTRY:$IMAGE_TAG" && \
-                 pull_with_fallback "$DOCKER_REGISTRY_MACHINE:$IMAGE_TAG"; then
-                echo "PULL_OK"; exit 0
-              fi
-              echo "== attempt $i failed, retry in 20s =="
-              sleep 20
+            # machine（真正变更的镜像）优先，独立重试 3 轮——层缓存跨轮累积，逐轮逼近完成；
+            # manager 通常无变更，失败不阻塞（NAS 本地已有可用版本）
+            M_OK=0
+            for i in 1 2 3; do
+              echo "== machine pull round $i =="
+              if pull_with_fallback "$DOCKER_REGISTRY_MACHINE:$IMAGE_TAG"; then M_OK=1; break; fi
+              sleep 15
             done
-            echo "::error::registry 模式拉取失败（ghcr 包 Private 时代理也看不见，需改 Public；或改用 source=artifact）。"
-            exit 1
+            [ "$M_OK" = 1 ] || { echo "::error::machine 镜像 3 轮拉取未完成，层缓存已保留可重跑"; exit 1; }
+            for i in 1 2; do
+              if pull_with_fallback "$DOCKER_REGISTRY:$IMAGE_TAG"; then break; fi
+              echo "== manager pull attempt $i failed (NAS 本地已有可用版本，不阻塞) =="
+              sleep 15
+            done
+            echo "PULL_OK"; exit 0
           '
 
       - name: "[artifact] 从 CI 工件加载镜像"

@@ -151,7 +151,7 @@
     "eslint-plugin-prettier": "^5.5.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.3.0",
-    "prettier": "^3.8.3",
+    "prettier": "^3.9.10",
     "puppeteer": "^24.43.1",
     "tsc-alias": "^1.8.17",
     "tsx": "^4.21.0",

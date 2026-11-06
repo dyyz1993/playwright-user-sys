@@ -79,6 +79,22 @@ export function generateFingerprint(options: BrowserOptions = {}): BrowserFinger
     const fingerprint = fingerprintGenerator.getFingerprint();
     logger.info(`成功生成浏览器指纹: ${fingerprint.fingerprint.navigator.userAgent}`);
 
+    const viewport = options.viewport || { width: 1280, height: 800 };
+    const screen = fingerprint.fingerprint.screen;
+    screen.width = viewport.width;
+    screen.height = viewport.height;
+    screen.availWidth = viewport.width;
+    screen.availHeight = viewport.height;
+    screen.availTop = 0;
+    screen.availLeft = 0;
+    screen.innerWidth = viewport.width;
+    screen.innerHeight = viewport.height;
+    screen.outerWidth = viewport.width;
+    screen.outerHeight = viewport.height;
+    screen.clientWidth = viewport.width;
+    screen.clientHeight = viewport.height;
+    screen.devicePixelRatio = 1;
+
     return fingerprint;
   } catch (error: unknown) {
     logger.error('生成浏览器指纹失败:', error);

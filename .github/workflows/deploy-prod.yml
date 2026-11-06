@@ -102,78 +102,22 @@ jobs:
               --limit 1 --json databaseId --jq '.[0].databaseId')
             echo "resolved latest successful build run: $RUN_ID"
           fi
-          rm -rf art && mkdir art
-          # 找到工件 id + 大小（zip 端点不支持 HEAD，大小从工件元数据取）
-          read -r ART_ID TOTAL <<< "$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts" \
-            --jq ".artifacts[] | select(.name==\"image-${{ inputs.image }}\") | \"\(.id) \(.size_in_bytes)\"")"
-          [ -n "$ART_ID" ] || { echo "::error::run $RUN_ID 里没有 image-${{ inputs.image }} 工件"; exit 1; }
-          echo "artifact id: $ART_ID size: $TOTAL"
-          # GitHub blob 端点对单连接限速严重（单流 0.1~0.9MB/s），代理节点国际带宽充足
-          # （实测 4MB/s）→ 用 8 路并发分段下载绕开单流限速。段文件落在 runner 自属主
-          # 持久卷（跨 run 断点续传）；每段按字节数校验，缺失/短小段只补下载
           ART_DIR=/home/runner/.npm/art-partial/$RUN_ID
-          mkdir -p "$ART_DIR"
-          URL="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ART_ID/zip"
-          # 代理必须 export 进环境：bash 对命令位置的变量展开结果不识别 VAR=value
-          # 赋值前缀（把 https_proxy=... 当可执行路径找，秒挂 No such file or
-          # directory）——此前多轮"下载失败"实际是这个 shell 错误
+          rm -rf art "$ART_DIR" && mkdir -p art "$ART_DIR"
           export https_proxy=http://192.168.0.4:7890 http_proxy=http://192.168.0.4:7890
-          AUTH="Authorization: Bearer $GH_TOKEN"
-          # 串行分段下载（实测：单流 117MB 能稳定跑完，8 路并发会被 blob 端全拒）。
-          # 每段独立校验+段内续传+空速看门狗；段文件持久卷跨 run 存活
-          N=12
-          CHUNK=$(( (TOTAL + N - 1) / N ))
-          for round in $(seq 1 30); do
-            all_ok=1
-            for i in $(seq 0 $((N-1))); do
-              S=$((i*CHUNK)); E=$((S+CHUNK-1)); [ $E -ge $TOTAL ] && E=$((TOTAL-1))
-              [ $S -gt $E ] && continue
-              F="$ART_DIR/part_$(printf %02d $i)"
-              WANT=$((E-S+1)); HAVE=0; [ -f "$F" ] && HAVE=$(stat -c%s "$F")
-              [ "$HAVE" -eq "$WANT" ] && continue
-              all_ok=0
-              echo "chunk $i: have=$HAVE want=$WANT (round $round)"
-              if [ "$HAVE" -gt 0 ]; then RANGE="$((S+HAVE))-$E"; else RANGE="$S-$E"; fi
-              curl -fL --retry 8 --retry-delay 8 --retry-all-errors \
-                --speed-limit 65536 --speed-time 30 \
-                -H "$AUTH" -r "$RANGE" -o "$F.seg" "$URL" || true
-              if [ -s "$F.seg" ]; then
-                if [ "$HAVE" -gt 0 ]; then cat "$F" "$F.seg" > "$F.tmp"; else cp "$F.seg" "$F.tmp"; fi
-                mv "$F.tmp" "$F"; rm -f "$F.seg"
-                HAVE=$(stat -c%s "$F")
-                echo "chunk $i: now $HAVE/$WANT"
-              fi
-            done
-            [ "$all_ok" = 1 ] && { echo "all chunks complete after round $round"; break; }
-            echo "round $round done, incomplete chunks remain, next round"
-          done
-          # 30 轮外循环结束仍不齐则报错（每段都有校验，大小对不上会在拼接处再拦）
-          ok=1
-          for i in $(seq 0 $((N-1))); do
-            S=$((i*CHUNK)); E=$((S+CHUNK-1)); [ $E -ge $TOTAL ] && E=$((TOTAL-1))
-            [ $S -gt $E ] && continue
-            F="$ART_DIR/part_$(printf %02d $i)"; WANT=$((E-S+1)); HAVE=0; [ -f "$F" ] && HAVE=$(stat -c%s "$F")
-            [ "$HAVE" -ne "$WANT" ] && { ok=0; echo "chunk $i incomplete: $HAVE/$WANT"; }
-          done
-          [ "$ok" = 1 ] || { echo "::error::分段下载未收敛"; exit 1; }
-          ZIPFINAL="$ART_DIR/image-${{ inputs.image }}.zip"
-          rm -f "$ZIPFINAL"
-          for i in $(seq 0 $((N-1))); do
-            [ -f "$ART_DIR/part_$i" ] && cat "$ART_DIR/part_$i" >> "$ZIPFINAL"
-          done
-          ls -lh "$ZIPFINAL"
-          HAVE=$(stat -c%s "$ZIPFINAL")
-          [ "$HAVE" = "$TOTAL" ] || { echo "::error::拼接后大小不符 have=$HAVE want=$TOTAL"; exit 1; }
-          unzip -o -q "$ZIPFINAL" -d art
-          TARBALL=$(ls art/*.tar.gz art/*.tar 2>/dev/null | head -n1)
+          gh run download "$RUN_ID" \
+            -R "${{ github.repository }}" \
+            -n "image-${{ inputs.image }}" \
+            -D "$ART_DIR"
+          ls -lh "$ART_DIR"
+          TARBALL=$(find "$ART_DIR" -type f \( -name '*.tar.gz' -o -name '*.tar' \) | head -n1)
           [ -n "$TARBALL" ] || { echo "::error::工件里没有 tar"; exit 1; }
-          # 流式灌进宿主机 docker（docker load 兼容 gzip 流，不落盘）
           ssh -i ~/.ssh/deploy_key -p "${{ secrets.DEPLOY_PORT }}" \
             "${{ secrets.DEPLOY_USER }}"@"${{ secrets.DEPLOY_HOST }}" "docker load" \
             < "$TARBALL"
-          # 清理持久卷里的分段与成品，防止跨次累积占满
           rm -rf /home/runner/.npm/art-partial
           echo "ARTIFACT_LOAD_OK"
+          exit 0
 
       - name: 滚动更新容器
         run: |

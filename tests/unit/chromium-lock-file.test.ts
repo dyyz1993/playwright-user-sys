@@ -11,7 +11,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'fs';
+import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, symlinkSync } from 'fs';
+import { ensureUserDataDir } from '../../src/machine/browser-utils.js';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -57,21 +58,17 @@ describe('Chromium 锁文件清理', () => {
 
   describe('ensureUserDataDir 应该清理锁文件', () => {
     it('当目录中存在 SingletonLock 时，应该清理它', async () => {
-      const { browserService } = await import('../../src/machine/browser.service.js');
-
       const lockPath = join(userDataDir, 'SingletonLock');
       writeFileSync(lockPath, '32505-f9dfd5d81529');
 
       expect(existsSync(lockPath)).toBe(true);
 
-      (browserService as any).ensureUserDataDir(userDataDir);
+      ensureUserDataDir(userDataDir);
 
       expect(existsSync(lockPath)).toBe(false);
     });
 
     it('当目录中存在所有锁文件时，应该全部清理', async () => {
-      const { browserService } = await import('../../src/machine/browser.service.js');
-
       LOCK_FILES.forEach((filename) => {
         const filePath = join(userDataDir, filename);
         writeFileSync(filePath, `mock-content-${filename}`);
@@ -81,41 +78,46 @@ describe('Chromium 锁文件清理', () => {
         expect(existsSync(join(userDataDir, filename))).toBe(true);
       });
 
-      (browserService as any).ensureUserDataDir(userDataDir);
+      ensureUserDataDir(userDataDir);
 
       LOCK_FILES.forEach((filename) => {
         expect(existsSync(join(userDataDir, filename))).toBe(false);
       });
     });
 
-    it('当目录不存在锁文件时，应该正常工作', async () => {
-      const { browserService } = await import('../../src/machine/browser.service.js');
+    it('应该清理指向不存在目标的跨主机 Singleton symlink', async () => {
+      const lockPath = join(userDataDir, 'SingletonLock');
+      symlinkSync('14dbc714a526-159635', lockPath);
+      expect(existsSync(lockPath)).toBe(false);
 
+      ensureUserDataDir(userDataDir);
+
+      expect(existsSync(lockPath)).toBe(false);
+      expect(() => readFileSync(lockPath)).toThrow();
+    });
+
+    it('当目录不存在锁文件时，应该正常工作', async () => {
       LOCK_FILES.forEach((filename) => {
         expect(existsSync(join(userDataDir, filename))).toBe(false);
       });
 
       expect(() => {
-        (browserService as any).ensureUserDataDir(userDataDir);
+        ensureUserDataDir(userDataDir);
       }).not.toThrow();
     });
 
     it('当目录不存在时，应该创建目录且不抛出错误', async () => {
-      const { browserService } = await import('../../src/machine/browser.service.js');
-
       const newDir = join(tempDir, 'new-user-data');
       expect(existsSync(newDir)).toBe(false);
 
       expect(() => {
-        (browserService as any).ensureUserDataDir(newDir);
+        ensureUserDataDir(newDir);
       }).not.toThrow();
 
       expect(existsSync(newDir)).toBe(true);
     });
 
     it('应该清理子目录中的锁文件', async () => {
-      const { browserService } = await import('../../src/machine/browser.service.js');
-
       const defaultDir = join(userDataDir, 'Default');
       mkdirSync(defaultDir, { recursive: true });
 
@@ -124,14 +126,12 @@ describe('Chromium 锁文件清理', () => {
 
       expect(existsSync(lockPath)).toBe(true);
 
-      (browserService as any).ensureUserDataDir(userDataDir);
+      ensureUserDataDir(userDataDir);
 
       expect(existsSync(lockPath)).toBe(false);
     });
 
     it('应该清理所有子目录中的所有锁文件', async () => {
-      const { browserService } = await import('../../src/machine/browser.service.js');
-
       for (const subDir of LOCK_SUBDIRS) {
         if (!subDir) continue;
         const dirPath = join(userDataDir, subDir);
@@ -150,7 +150,7 @@ describe('Chromium 锁文件清理', () => {
         }
       }
 
-      (browserService as any).ensureUserDataDir(userDataDir);
+      ensureUserDataDir(userDataDir);
 
       for (const subDir of LOCK_SUBDIRS) {
         if (!subDir) continue;
@@ -161,10 +161,8 @@ describe('Chromium 锁文件清理', () => {
     });
 
     it('当子目录不存在时，应该正常工作', async () => {
-      const { browserService } = await import('../../src/machine/browser.service.js');
-
       expect(() => {
-        (browserService as any).ensureUserDataDir(userDataDir);
+        ensureUserDataDir(userDataDir);
       }).not.toThrow();
 
       for (const subDir of LOCK_SUBDIRS) {
@@ -178,8 +176,6 @@ describe('Chromium 锁文件清理', () => {
 
   describe('模拟真实场景：Docker 重启后启动浏览器', () => {
     it('当锁文件存在时，启动浏览器应该成功（锁文件被自动清理）', async () => {
-      const { browserService } = await import('../../src/machine/browser.service.js');
-
       LOCK_FILES.forEach((filename) => {
         const filePath = join(userDataDir, filename);
         writeFileSync(filePath, `mock-content-${filename}`);
@@ -188,7 +184,7 @@ describe('Chromium 锁文件清理', () => {
       const lockPath = join(userDataDir, 'SingletonLock');
       expect(existsSync(lockPath)).toBe(true);
 
-      const result = (browserService as any).ensureUserDataDir(userDataDir);
+      ensureUserDataDir(userDataDir);
 
       expect(existsSync(lockPath)).toBe(false);
     });

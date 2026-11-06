@@ -38,11 +38,13 @@ export function cleanLockFiles(userDataDir: string): void {
     for (const lockFile of CHROMIUM_LOCK_FILES) {
       const lockPath = path.join(dirPath, lockFile);
       try {
-        if (fsSync.existsSync(lockPath)) {
-          fsSync.unlinkSync(lockPath);
-          logger.info(`已清理残留锁文件: ${lockPath}`);
-        }
+        fsSync.lstatSync(lockPath);
+        fsSync.rmSync(lockPath, { force: true, recursive: true });
+        logger.info(`已清理残留锁文件: ${lockPath}`);
       } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          continue;
+        }
         logger.warn(`清理锁文件失败 (${lockPath}):`, error);
       }
     }

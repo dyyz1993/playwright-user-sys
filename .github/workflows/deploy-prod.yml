@@ -111,7 +111,7 @@ jobs:
           # GitHub blob 端点对单连接限速严重（单流 0.1~0.9MB/s），代理节点国际带宽充足
           # （实测 4MB/s）→ 用 8 路并发分段下载绕开单流限速。段文件落在 runner 自属主
           # 持久卷（跨 run 断点续传）；每段按字节数校验，缺失/短小段只补下载
-          ART_DIR=/home/runner/.npm/art-partial
+          ART_DIR=/home/runner/.npm/art-partial/$RUN_ID
           mkdir -p "$ART_DIR"
           URL="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$ART_ID/zip"
           # 代理必须 export 进环境：bash 对命令位置的变量展开结果不识别 VAR=value

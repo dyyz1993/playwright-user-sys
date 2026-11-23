@@ -182,13 +182,15 @@ export async function releaseSession(request: FastifyRequest<IdParamRoute>, repl
       machineId: session.machine_id || undefined,
     });
 
-    if (session.machine_id && !result.alreadyDisconnected) {
+    if (session.machine_id) {
       try {
         await connectionManager.closeBrowser(session.machine_id, sessionId);
       } catch (machineError: unknown) {
         request.log.error({ err: machineError, sessionId }, '关闭浏览器实例失败（会话已释放）');
       }
+    }
 
+    if (!result.alreadyDisconnected) {
       await createWebhookEvent(session.user_id, WebhookEventType.SESSION_DISCONNECTED, {
         session_id: sessionId,
         disconnected_at: new Date(),

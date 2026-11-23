@@ -118,9 +118,9 @@ describe('AdminSessionService', () => {
   });
 
   // ========================================
-  // AS-03: batchReleaseSessions - 已断开会话直接标记 released
+  // AS-03: batchReleaseSessions - 已断开会话仍需清理机器侧共享浏览器
   // ========================================
-  it('已断开的会话应该直接标记为 released', async () => {
+  it('已断开的会话仍应关闭机器浏览器并标记为 released', async () => {
     vi.mocked(SessionModel.findById).mockResolvedValue({
       ...mockSession,
       status: SessionStatus.DISCONNECTED,
@@ -130,7 +130,7 @@ describe('AdminSessionService', () => {
     const result = await batchReleaseSessions(['session-001']);
 
     expect(result.released).toContain('session-001');
-    expect(connectionManager.closeBrowser).not.toHaveBeenCalled();
+    expect(connectionManager.closeBrowser).toHaveBeenCalledWith('machine-001', 'session-001');
   });
 
   // ========================================
@@ -146,6 +146,7 @@ describe('AdminSessionService', () => {
     const result = await batchReleaseSessions(['session-001']);
 
     expect(result.released).toContain('session-001');
+    expect(connectionManager.closeBrowser).toHaveBeenCalledWith('machine-001', 'session-001');
   });
 
   // ========================================

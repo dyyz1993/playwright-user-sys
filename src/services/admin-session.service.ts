@@ -23,6 +23,13 @@ export async function batchReleaseSessions(sessionIds: string[]): Promise<BatchR
       }
 
       if (session.status === SessionStatus.DISCONNECTED || session.status === SessionStatus.ERROR) {
+        if (session.machine_id) {
+          try {
+            await connectionManager.closeBrowser(session.machine_id, sessionId);
+          } catch (_machineError: unknown) {
+            // The database is already terminal, but the machine may still hold the shared browser.
+          }
+        }
         released.push(sessionId);
         continue;
       }

@@ -418,6 +418,8 @@ describe('SessionController', () => {
       creditsUsed: 2,
       alreadyDisconnected: true,
     });
+    vi.mocked(connectionManager.closeBrowser).mockClear();
+    vi.mocked(createWebhookEvent).mockClear();
 
     const { releaseSession } = await import('../../../controllers/session.controller.js');
 
@@ -442,6 +444,8 @@ describe('SessionController', () => {
 
     await releaseSession(request as unknown as Record<string, unknown>, reply as unknown as Record<string, unknown>);
 
+    expect(connectionManager.closeBrowser).toHaveBeenCalledWith('machine-1', 'session-123');
+    expect(createWebhookEvent).not.toHaveBeenCalled();
     expect(sendSuccess).toHaveBeenCalledWith(
       reply,
       {

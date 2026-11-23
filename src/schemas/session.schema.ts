@@ -36,6 +36,7 @@ export const sessionOptionsSchema = z
   .object({
     userAgent: z.string().optional(),
     proxy: z.string().optional(),
+    proxyBypass: z.string().optional(),
     cookies: z.record(z.string()).optional(),
     localStorage: z.record(z.string()).optional(),
     viewport: z
@@ -44,6 +45,11 @@ export const sessionOptionsSchema = z
         height: z.number(),
       })
       .optional(),
+    storageStatePath: z.string().optional(),
+    storageState: storageStateSchema.optional(),
+    sharedUserData: z.boolean().optional(),
+    timezone: z.string().optional(),
+    userDataDir: z.string().optional(),
   })
   .nullable();
 

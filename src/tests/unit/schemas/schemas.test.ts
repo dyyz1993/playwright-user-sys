@@ -16,6 +16,7 @@ import {
   updateMachineStatusRequestSchema,
   batchOperationRequestSchema,
   createSessionRequestSchema,
+  sessionOptionsSchema,
   injectFileRequestSchema,
   uploadUrlRequestSchema,
 } from '../../../schemas/index.js';
@@ -418,6 +419,21 @@ describe('createSessionRequestSchema', () => {
 
   it('should reject non-positive viewport dimensions', () => {
     expect(() => createSessionRequestSchema.parse({ viewport: { width: 0, height: 100 } })).toThrow();
+  });
+});
+
+describe('sessionOptionsSchema', () => {
+  it('should serialize the sharedUserData option stored with sessions', () => {
+    const result = sessionOptionsSchema.parse({
+      viewport: { width: 390, height: 844 },
+      sharedUserData: true,
+      proxyBypass: '<local>',
+    });
+    expect(result).toEqual({
+      viewport: { width: 390, height: 844 },
+      sharedUserData: true,
+      proxyBypass: '<local>',
+    });
   });
 });
 

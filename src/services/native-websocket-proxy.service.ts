@@ -273,15 +273,19 @@ export class NativeWebSocketProxyService {
 
       this.connectionManager.add(sessionId);
 
+      const releaseSlotOnly = () => {
+        if (!this.connectionManager.has(sessionId)) return;
+        this.connectionManager.remove(sessionId);
+        logger.info(`客户端连接已结束，会话交给机器保活期管理`, cid);
+      };
+
       const hbHandle = startHeartbeat(socket, sessionId, () => {
-        this.cleanupConnection(sessionId, connId);
+        releaseSlotOnly();
       });
       this.connectionManager.setHeartbeat(sessionId, hbHandle);
 
       const cleanupHandler = () => {
-        hbHandle.stop();
-        this.connectionManager.removeHeartbeat(sessionId);
-        this.cleanupConnection(sessionId, connId);
+        releaseSlotOnly();
       };
 
       socket.on('close', () => {

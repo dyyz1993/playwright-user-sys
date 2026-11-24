@@ -9,6 +9,7 @@ const mockSessionUpdate = vi.fn();
 const mockIncrementInstanceCount = vi.fn();
 const mockDecrementInstanceCount = vi.fn();
 const mockProxyWs = vi.fn();
+const mockHandleSessionDisconnect = vi.fn();
 
 vi.mock('../../../models/user.model.js', () => ({
   UserModel: { findByApiKey: mockFindByApiKey, findById: vi.fn() },
@@ -30,7 +31,7 @@ vi.mock('../../../services/memory-store.service.js', () => ({
 }));
 vi.mock('../../../services/session.service.js', () => ({
   createBrowserSession: vi.fn(),
-  handleSessionDisconnect: vi.fn(),
+  handleSessionDisconnect: mockHandleSessionDisconnect,
 }));
 vi.mock('http-proxy', () => ({
   default: {
@@ -60,7 +61,9 @@ describe('session reconnect policy', () => {
 describe('CDP proxy reconnect during keepalive', () => {
   let mockServer: EventEmitter;
   let mockSocket: EventEmitter & { write: ReturnType<typeof vi.fn>; destroy: ReturnType<typeof vi.fn> };
-  let NativeWebSocketProxyService: { new (server: unknown): { close(): void } };
+  let NativeWebSocketProxyService: {
+    new (server: unknown): { close(): void; activeConnections: Set<string> };
+  };
 
   beforeEach(async () => {
     mockFindByApiKey.mockResolvedValue({ id: 1, status: 'active' });
@@ -84,21 +87,35 @@ describe('CDP proxy reconnect during keepalive', () => {
       Buffer.alloc(0)
     );
     await new Promise((resolve) => setTimeout(resolve, 50));
-    service.close();
+    return service;
   }
 
   it('lets a disconnected session reconnect while the machine still keeps the browser alive', async () => {
     mockFindById.mockResolvedValue(disconnectedSession());
-    await upgrade();
+    const service = await upgrade();
     expect(mockSocket.write).not.toHaveBeenCalledWith(expect.stringContaining('410'));
     expect(mockProxyWs).toHaveBeenCalled();
+    service.close();
   });
 
   it('still rejects sessions that reached a terminal state', async () => {
     mockFindById.mockResolvedValue(disconnectedSession(SessionStatus.COMPLETED));
-    await upgrade();
+    const service = await upgrade();
     expect(mockSocket.write).toHaveBeenCalledWith(expect.stringContaining('410'));
     expect(mockProxyWs).not.toHaveBeenCalled();
+    service.close();
+  });
+
+  it('keeps the session alive when the proxied client socket closes', async () => {
+    mockFindById.mockResolvedValue(disconnectedSession());
+    const service = await upgrade();
+    expect(service.activeConnections.has('sess-reconnect')).toBe(true);
+
+    mockSocket.emit('close');
+
+    expect(service.activeConnections.has('sess-reconnect')).toBe(false);
+    expect(mockHandleSessionDisconnect).not.toHaveBeenCalled();
+    service.close();
   });
 });
 

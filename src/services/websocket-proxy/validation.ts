@@ -5,9 +5,7 @@ import { SessionStatus } from '@shared/types/index.js';
 // closed/expired/error/completed 为终态，浏览器已不存在。
 export function isSessionReconnectable(status: SessionStatus): boolean {
   return (
-    status === SessionStatus.CREATED ||
-    status === SessionStatus.CONNECTED ||
-    status === SessionStatus.DISCONNECTED
+    status === SessionStatus.CREATED || status === SessionStatus.CONNECTED || status === SessionStatus.DISCONNECTED
   );
 }
 

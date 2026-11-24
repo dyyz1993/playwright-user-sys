@@ -10,7 +10,11 @@ import { createBrowserSession, handleSessionDisconnect } from './session.service
 import { memoryStore } from './memory-store.service.js';
 import { SessionStatus } from '@shared/types/index.js';
 import { startHeartbeat } from './ws-heartbeat.js';
-import { wsConnectQuerySchema, existingSessionQuerySchema, isSessionReconnectable } from './websocket-proxy/validation.js';
+import {
+  wsConnectQuerySchema,
+  existingSessionQuerySchema,
+  isSessionReconnectable,
+} from './websocket-proxy/validation.js';
 import { shortId, getJwtSecret, extractTokenFromHeaderOrCookie } from './websocket-proxy/utils.js';
 import { ConnectionManager } from './websocket-proxy/connection-manager.js';
 import { validateOrigin } from './websocket-proxy/origin-validator.js';

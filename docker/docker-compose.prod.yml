@@ -83,10 +83,14 @@ services:
       - PROXY_PORT=8082
       - MAX_SESSIONS=${MAX_SESSIONS}
       - SESSION_TIMEOUT=${SESSION_TIMEOUT}
+      # 代码默认值只有 10s：不显式配置，客户端一断开会话立刻被回收，表现为"反复掉线"。
+      - SESSION_ACTIVITY_TIMEOUT=${SESSION_ACTIVITY_TIMEOUT:-1800000}
+      - DISCONNECTION_TIMEOUT=${DISCONNECTION_TIMEOUT:-600000}
       - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL}
       - CHROME_BIN=/opt/google/chrome/chromium
       - CHROME_PATH=/opt/google/chrome/chromium
       - NO_PROXY=${NO_PROXY}
+      - no_proxy=${NO_PROXY}
     depends_on:
       - manager
     healthcheck:
@@ -130,10 +134,14 @@ services:
       - PROXY_PORT=8083
       - MAX_SESSIONS=${MAX_SESSIONS}
       - SESSION_TIMEOUT=${SESSION_TIMEOUT}
+      # 代码默认值只有 10s：不显式配置，客户端一断开会话立刻被回收，表现为"反复掉线"。
+      - SESSION_ACTIVITY_TIMEOUT=${SESSION_ACTIVITY_TIMEOUT:-1800000}
+      - DISCONNECTION_TIMEOUT=${DISCONNECTION_TIMEOUT:-600000}
       - HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL}
       - CHROME_BIN=/opt/google/chrome/chromium
       - CHROME_PATH=/opt/google/chrome/chromium
       - NO_PROXY=${NO_PROXY}
+      - no_proxy=${NO_PROXY}
     depends_on:
       - manager
     healthcheck:

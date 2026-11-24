@@ -10,7 +10,7 @@ import { createBrowserSession, handleSessionDisconnect } from './session.service
 import { memoryStore } from './memory-store.service.js';
 import { SessionStatus } from '@shared/types/index.js';
 import { startHeartbeat } from './ws-heartbeat.js';
-import { wsConnectQuerySchema, existingSessionQuerySchema } from './websocket-proxy/validation.js';
+import { wsConnectQuerySchema, existingSessionQuerySchema, isSessionReconnectable } from './websocket-proxy/validation.js';
 import { shortId, getJwtSecret, extractTokenFromHeaderOrCookie } from './websocket-proxy/utils.js';
 import { ConnectionManager } from './websocket-proxy/connection-manager.js';
 import { validateOrigin } from './websocket-proxy/origin-validator.js';
@@ -229,10 +229,13 @@ export class NativeWebSocketProxyService {
         return;
       }
 
-      if (session.status !== SessionStatus.CREATED && session.status !== SessionStatus.CONNECTED) {
+      if (!isSessionReconnectable(session.status)) {
         logger.error(`已有会话代理：会话状态无效 (status: ${session.status})`, cid);
         rejectUpgrade(socket, 410, 'Session is not active');
         return;
+      }
+      if (session.status === SessionStatus.DISCONNECTED) {
+        logger.info(`会话处于保活期内，允许重连 (status: ${session.status})`, cid);
       }
 
       const machineId = session.machine_id;

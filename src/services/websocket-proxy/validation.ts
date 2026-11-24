@@ -1,4 +1,15 @@
 import { z } from 'zod';
+import { SessionStatus } from '@shared/types/index.js';
+
+// disconnected = 客户端已断开但机器仍在 DISCONNECTION_TIMEOUT 保活期内保留浏览器，允许重新接入；
+// closed/expired/error/completed 为终态，浏览器已不存在。
+export function isSessionReconnectable(status: SessionStatus): boolean {
+  return (
+    status === SessionStatus.CREATED ||
+    status === SessionStatus.CONNECTED ||
+    status === SessionStatus.DISCONNECTED
+  );
+}
 
 export const wsConnectQuerySchema = z.object({
   apiKey: z.string().min(1),

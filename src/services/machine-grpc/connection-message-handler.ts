@@ -123,6 +123,11 @@ export class ConnectionMessageHandler {
         case 'connected':
           const now = new Date();
 
+          if (session.status === SessionStatus.DISCONNECTED) {
+            await MachineModel.incrementInstanceCount(machineId);
+            logger.info(`会话在保活期内重连，已恢复机器实例计数 (${machineId}, ${session_id})`);
+          }
+
           if (session.start_time) {
             await SessionModel.update(session_id, {
               status: SessionStatus.CONNECTED,

@@ -6,9 +6,9 @@ import { UserModel } from '../../models/user.model.js';
 import { SessionModel } from '../../models/session/index.js';
 import { logger } from '@shared/utils/logger.js';
 import { memoryStore } from '../memory-store.service.js';
-import { SessionStatus } from '@shared/types/index.js';
 import { shortId, getJwtSecret, extractTokenFromHeaderOrCookie } from './utils.js';
 import { rejectUpgrade } from './error-handler.js';
+import { isSessionReconnectable } from './validation.js';
 
 export async function handleViewerWebSocketProxy(
   request: http.IncomingMessage,
@@ -59,7 +59,7 @@ export async function handleViewerWebSocketProxy(
       return;
     }
 
-    if (session.status !== SessionStatus.CREATED && session.status !== SessionStatus.CONNECTED) {
+    if (!isSessionReconnectable(session.status)) {
       logger.error(`Viewer WebSocket代理：会话状态无效 (status: ${session.status})`, cid);
       rejectUpgrade(socket, 410, 'Session is not active');
       return;

@@ -2,18 +2,21 @@ import type { Page } from 'puppeteer-core';
 
 import { logger } from '@shared/utils/logger.js';
 import { sessionFocusEmitter } from '../utils.js';
+import { focusBridgeName, focusinListenerScript, MOUSE_TRACKING_SCRIPT } from '../page-init-scripts.js';
 
 export async function injectFocusinScript(sessionId: string, page: Page): Promise<void> {
-  const dynamicFunctionName = `_focusHandler_${sessionId.replace(/\W/g, '_')}`;
-
-  await page.evaluateOnNewDocument((fnName) => {
-    document.addEventListener('focusin', function (_event) {
-      if (typeof (window as unknown as Record<string, unknown>)[fnName] === 'function') {
-        (window as unknown as Record<string, () => void>)[fnName]();
-      }
-    });
-  }, dynamicFunctionName);
+  await page.evaluateOnNewDocument(focusinListenerScript(sessionId));
   logger.info(`Persistent focus listener script injected for session ${sessionId}.`);
+
+  await exposeFocusBridge(sessionId, page);
+}
+
+/**
+ * 在页面上暴露焦点桥：页面 focusin → window[bridgeName]() → Node 侧 sessionFocusEmitter。
+ * 监听器脚本见 page-init-scripts.focusinListenerScript，两边的函数名由 focusBridgeName 统一。
+ */
+export async function exposeFocusBridge(sessionId: string, page: Page): Promise<void> {
+  const dynamicFunctionName = focusBridgeName(sessionId);
 
   try {
     await page.exposeFunction(dynamicFunctionName, () => {
@@ -33,46 +36,9 @@ export async function injectFocusinScript(sessionId: string, page: Page): Promis
 
 export async function injectMouseTrackingScript(page: Page): Promise<void> {
   try {
-    await page
-      .evaluateOnNewDocument(() => {
-        const existingCursor = document.getElementById('remote-cursor-pointer');
-        if (existingCursor) {
-          existingCursor.remove();
-        }
-
-        const cursor = document.createElement('div');
-        cursor.id = 'remote-cursor-pointer';
-        cursor.style.position = 'fixed';
-        cursor.style.width = '10px';
-        cursor.style.height = '10px';
-        cursor.style.borderRadius = '50%';
-        cursor.style.border = '2px solid rgba(0,120,255,0.8)';
-        cursor.style.backgroundColor = 'rgba(0,120,255,0.3)';
-        cursor.style.transform = 'translate(-50%, -50%)';
-        cursor.style.zIndex = '9999999';
-        cursor.style.pointerEvents = 'none';
-        cursor.style.display = 'none';
-
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', () => {
-            document.body.appendChild(cursor);
-          });
-        } else {
-          document.body.appendChild(cursor);
-        }
-
-        document.addEventListener('mousemove', function (e: MouseEvent) {
-          const cssX = e.clientX;
-          const cssY = e.clientY;
-
-          cursor.style.left = `${cssX}px`;
-          cursor.style.top = `${cssY}px`;
-          cursor.style.display = 'block';
-        });
-      })
-      .catch((error: unknown) => {
-        logger.error('injectMouseTrackingScript error:', error);
-      });
+    await page.evaluateOnNewDocument(MOUSE_TRACKING_SCRIPT).catch((error: unknown) => {
+      logger.error('injectMouseTrackingScript error:', error);
+    });
   } catch (error: unknown) {
     logger.error(`Failed to inject mouse tracking script for :`, error);
   }

@@ -53,6 +53,7 @@ import fs from 'fs/promises';
 import http from 'http';
 import { URL } from 'url';
 import { browserService } from '../../src/machine/browser.service.js';
+import { sessionFocusEmitter } from '../../src/machine/utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -996,6 +997,84 @@ describe('浏览器指纹隔离测试 (TIER-101 ~ TIER-120)', () => {
         if (browser1) await browser1.disconnect();
         if (browser2) await browser2.disconnect();
         if (browser3) await browser3.disconnect();
+      }
+    });
+  });
+
+  // ========================================
+  // 新 Tab 初始化脚本注册时机（TIER-101 根因回归）
+  // ========================================
+
+  describe('新 Tab 初始化脚本注册时机（首个文档不得丢脚本）', () => {
+    /**
+     * 背景：新 Tab 的页面辅助脚本（deviceMemory=8、webdriver、剪贴板与文件选择拦截、鼠标光标、焦点桥…）
+     * 过去由 targetcreated 处理器经 puppeteer Page 逐条串行注册。客户端 newPage() 一返回就导航时，
+     * 这批注册晚于导航开始，首个文档拿不到它们——TIER-101 的首个 Tab 因此与其它 Tab 指纹不一致，
+     * 首个页面的远端光标与焦点桥也失效。现在整组脚本在"目标附加"时注册完才放行页面。
+     *
+     * 这里走与生产相同的链路：manager 建会话 → 客户端经 ws 代理连接 → newPage() → 立刻导航。
+     */
+    it('REGRESSION-INIT: newPage() 后立刻 goto，首个文档必须带全部页面脚本', { timeout: 60000 }, async () => {
+      let browser: import('puppeteer-core').Browser | undefined;
+      let offFocus: (() => void) | undefined;
+      try {
+        const { browser: b, sessionId } = await createSessionAndConnect();
+        browser = b;
+        console.log('\n[初始化脚本] newPage() 后立刻导航...');
+
+        // 与生产里最常见的用法一致：newPage() 一返回就导航，中间不做任何等待
+        const tab = await browser.newPage();
+        await tab.goto(testPageUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+        await tab.waitForFunction(() => (window as any).fingerprintReady === true, { timeout: 20000, polling: 100 });
+
+        // 直接读"首个文档"的状态：不能再次 goto，重新导航会把脚本补上，掩盖问题
+        const bridgeName = `_focusHandler_${sessionId.replace(/\W/g, '_')}`;
+        const firstDocument = await tab.evaluate((bridge: string) => {
+          // deviceMemory=8 是在实例上定义的自有属性，无论脚本先后都会赢；它缺失说明那条脚本没进这个文档
+          const w = window as any;
+          return {
+            ownDeviceMemory: Object.prototype.hasOwnProperty.call(navigator, 'deviceMemory'),
+            deviceMemory: (navigator as any).deviceMemory,
+            remoteCursor: Boolean(document.getElementById('remote-cursor-pointer')),
+            focusBridge: typeof w[bridge],
+            hash: w.fingerprintHash,
+          };
+        }, bridgeName);
+        console.log('   首个文档:', firstDocument);
+
+        expect(firstDocument.ownDeviceMemory).toBe(true);
+        expect(firstDocument.deviceMemory).toBe(8);
+        expect(firstDocument.remoteCursor).toBe(true);
+        expect(firstDocument.focusBridge).toBe('function');
+
+        // 焦点桥：页面 focusin → binding → Node 侧 rawFocusEvent（远端输入聚焦同步依赖它）
+        const focusArrived = new Promise<void>((resolve) => {
+          const handler = () => resolve();
+          sessionFocusEmitter.once(`rawFocusEvent:${sessionId}`, handler);
+          offFocus = () => sessionFocusEmitter.off(`rawFocusEvent:${sessionId}`, handler);
+        });
+        await tab.evaluate(() => {
+          const input = document.createElement('input');
+          input.id = 'focus-bridge-probe';
+          document.body.appendChild(input);
+          input.focus();
+        });
+        await Promise.race([
+          focusArrived,
+          new Promise((_resolve, reject) => setTimeout(() => reject(new Error('焦点桥事件未到达 Node 侧')), 5000)),
+        ]);
+
+        // 与"正常节奏"打开的 Tab 指纹一致（TIER-101 的原始断言）
+        const tab2 = await browser.newPage();
+        const fp2 = await getFingerprint(tab2);
+        expect(firstDocument.hash).toBe(fp2.hash);
+
+        console.log('✅ REGRESSION-INIT 测试通过');
+        await tab.close();
+        await tab2.close();
+      } finally {
+        if (offFocus) offFocus();
+        if (browser) await browser.disconnect();
       }
     });
   });

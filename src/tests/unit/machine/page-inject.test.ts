@@ -30,7 +30,8 @@ describe('injectFocusinScript', () => {
     await injectFocusinScript('test-session-123', page as unknown as import('puppeteer-core').Page);
 
     expect(page.evaluateOnNewDocument).toHaveBeenCalledOnce();
-    expect(page.evaluateOnNewDocument).toHaveBeenCalledWith(expect.any(Function), '_focusHandler_test_session_123');
+    // 监听器脚本与"目标附加"路径共用同一份字符串来源（page-init-scripts），桥名内嵌在脚本里
+    expect(page.evaluateOnNewDocument).toHaveBeenCalledWith(expect.stringContaining('_focusHandler_test_session_123'));
     expect(page.exposeFunction).toHaveBeenCalledOnce();
     expect(page.exposeFunction).toHaveBeenCalledWith('_focusHandler_test_session_123', expect.any(Function));
   });

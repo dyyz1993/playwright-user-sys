@@ -103,6 +103,17 @@ export class ConnectionMessageHandler {
       const session = await SessionModel.findById(session_id);
       if (!session) {
         logger.warn(`会话不存在 (${session_id})`);
+        // 会话行已不存在（被清理/删除）时无法按会话递减计数；机器此时上报的是终态，
+        // 用机器此刻的真实活跃数校正一次，避免 instance_count 与实际浏览器数脱节后被当成可用容量。
+        if (sessionStatus === 'closed' || sessionStatus === 'error') {
+          const machine = await MachineModel.findById(machineId);
+          const { memoryStore } = await import('../memory-store.service.js');
+          const active = memoryStore.getMachine(machineId)?.active_sessions;
+          if (machine && typeof active === 'number' && machine.instanceCount !== active) {
+            await MachineModel.update(machineId, { instanceCount: active });
+            logger.info(`会话不存在，按机器活跃数校正实例计数 (${machineId}): ${machine.instanceCount} -> ${active}`);
+          }
+        }
         return;
       }
 

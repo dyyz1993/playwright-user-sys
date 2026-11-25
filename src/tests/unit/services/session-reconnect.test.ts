@@ -26,8 +26,10 @@ vi.mock('../../../models/machine.model.js', () => ({
   },
 }));
 vi.mock('../../../utils/webhook.js', () => ({ createWebhookEvent: vi.fn() }));
+const mockGetMachine = vi.fn(() => ({ ip: '127.0.0.1', proxy_port: 8082, active_sessions: 0 }));
+
 vi.mock('../../../services/memory-store.service.js', () => ({
-  memoryStore: { getMachine: vi.fn(() => ({ ip: '127.0.0.1', proxy_port: 8082 })) },
+  memoryStore: { getMachine: (...args: unknown[]) => mockGetMachine(...args) },
 }));
 vi.mock('../../../services/session.service.js', () => ({
   createBrowserSession: vi.fn(),
@@ -144,5 +146,50 @@ describe('machine status handler on reconnect', () => {
   it('does not double-count the first connection of a freshly created session', async () => {
     await handleConnected(SessionStatus.CREATED);
     expect(mockIncrementInstanceCount).not.toHaveBeenCalled();
+  });
+});
+
+describe('machine status handler when the session row is already gone', () => {
+  async function handleMissing(status: string) {
+    const { ConnectionMessageHandler } = await import('../../../services/machine-grpc/connection-message-handler.js');
+    const handler = new ConnectionMessageHandler({} as never);
+    await handler.handle('machine-1', {
+      session_status: { session_id: 'sess-ghost', status, duration: 5 },
+    } as never);
+  }
+
+  it('re-syncs instance_count from the machine on a terminal update for a deleted session', async () => {
+    mockFindById.mockResolvedValue(null);
+    const { MachineModel } = await import('../../../models/machine.model.js');
+    vi.mocked(MachineModel.findById).mockResolvedValue({ instanceCount: 1 } as never);
+    mockGetMachine.mockReturnValue({ active_sessions: 0 } as never);
+
+    await handleMissing('closed');
+
+    expect(mockIncrementInstanceCount).not.toHaveBeenCalled();
+    expect(mockDecrementInstanceCount).not.toHaveBeenCalled();
+    expect(MachineModel.update).toHaveBeenCalledWith('machine-1', { instanceCount: 0 });
+  });
+
+  it('does not touch instance_count for a non-terminal update', async () => {
+    mockFindById.mockResolvedValue(null);
+    const { MachineModel } = await import('../../../models/machine.model.js');
+    vi.mocked(MachineModel.findById).mockResolvedValue({ instanceCount: 1 } as never);
+    mockGetMachine.mockReturnValue({ active_sessions: 0 } as never);
+
+    await handleMissing('connected');
+
+    expect(MachineModel.update).not.toHaveBeenCalled();
+  });
+
+  it('skips the write when instance_count already matches the machine', async () => {
+    mockFindById.mockResolvedValue(null);
+    const { MachineModel } = await import('../../../models/machine.model.js');
+    vi.mocked(MachineModel.findById).mockResolvedValue({ instanceCount: 2 } as never);
+    mockGetMachine.mockReturnValue({ active_sessions: 2 } as never);
+
+    await handleMissing('closed');
+
+    expect(MachineModel.update).not.toHaveBeenCalled();
   });
 });

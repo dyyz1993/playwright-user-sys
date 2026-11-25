@@ -30,13 +30,15 @@ config({ path: envTestPath });
 // 确保设置测试环境
 process.env.NODE_ENV = 'test';
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { buildManager } from '../../src/manager/app.js';
 import { MachineServer } from '../../src/machine/app.js';
 import { UserModel } from '../../src/models/user.model.js';
 import { MachineModel } from '../../src/models/machine.model.js';
 import { SessionModel } from '../../src/models/session/index.js';
 import { CreditHistoryModel } from '../../src/models/credit-history.model.js';
+import { releaseSession } from '../../src/services/session.service.js';
+import { browserService } from '../../src/machine/browser.service.js';
 import { getFreePort } from '../helpers/ports.js';
 import { createTestUser } from '../helpers/factories.js';
 import {
@@ -280,6 +282,26 @@ describe('完整三端架构集成测试', () => {
   /**
    * beforeEach: 每个测试前的准备
    */
+  // 每个用例留下的会话必须在清表之前真正释放：浏览器一旦比用例活得久（保活 10s），
+  // 它随后的 disconnected/closed 上报就会因 "会话不存在" 被 manager 丢弃，
+  // instance_count 再被心跳按机器侧活跃数覆盖，下一个用例的计数断言就会随心跳相位偶发失败。
+  afterEach(async () => {
+    const sessions = await testDb.db('sessions').select('id', 'user_id', 'machine_id');
+    for (const session of sessions) {
+      await releaseSession({
+        sessionId: session.id,
+        userId: session.user_id,
+        machineId: session.machine_id ?? machineServers[0].machineId,
+      }).catch(() => {});
+    }
+    // browserService 是进程级单例（两台测试机器共用），等它把浏览器全部关掉（最多 ~8s），
+    // 确保没有迟到的状态更新落进下一个用例。
+    for (let attempt = 0; attempt < 40; attempt++) {
+      if (browserService.getActiveSessions() === 0) break;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+  }, 15000);
+
   beforeEach(async () => {
     // 清理会话表
     await testDb.db('sessions').del();

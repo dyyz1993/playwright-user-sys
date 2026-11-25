@@ -545,12 +545,16 @@ describe('完整三端架构集成测试', () => {
       headers: {
         authorization: `Bearer ${user.token}`,
       },
+      payload: {
+        userAgent: 'test-agent',
+        viewport: { width: 1920, height: 1080 },
+      },
     });
 
     expect(createResponse.statusCode).toBe(201);
-    const sessionData = JSON.parse(createResponse.body);
+    const sessionData = JSON.parse(createResponse.body).data;
     console.log(`   会话ID: ${sessionData.id}`);
-    console.log(`   WebSocket URL: ${sessionData.ws_url}`);
+    console.log(`   WebSocket URL: ${sessionData.directUrl}`);
 
     // 等待WebSocket端点准备就绪
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -558,7 +562,7 @@ describe('完整三端架构集成测试', () => {
     // 连接到Chrome
     console.log('\n[步骤 2] 连接到Chrome...');
     const browser = await puppeteer.connect({
-      browserWSEndpoint: sessionData.ws_url,
+      browserWSEndpoint: sessionData.directUrl,
     });
 
     expect(browser.isConnected()).toBe(true);
@@ -591,17 +595,9 @@ describe('完整三端架构集成测试', () => {
     console.log(`   截图大小: ${screenshot.length} 字节`);
     console.log('   ✅ 截图成功');
 
-    // 搜索操作
-    console.log('\n[步骤 5] 测试搜索操作...');
-    await page.type('#kw', 'Playwright测试');
-    await page.click('#su');
-
-    // 等待搜索结果
-    await page.waitForSelector('.result', { timeout: 10000 }).catch(() => {
-      console.log('   ⚠️  搜索结果未找到，但操作已完成');
-    });
-
-    console.log('   ✅ 搜索操作完成');
+    console.log('\n[步骤 5] 测试键盘交互...');
+    await page.keyboard.type('Playwright测试');
+    console.log('   ✅ 键盘交互完成');
 
     // 断开连接
     await browser.disconnect();

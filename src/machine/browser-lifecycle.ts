@@ -8,10 +8,9 @@ import type { BrowserLaunchOptions, BrowserInstance } from './types.js';
 import { DEFAULT_SESSION_CONFIG } from './browser-constants.js';
 import { calculateUserDataDir, ensureUserDataDir, generateFingerprint } from './browser-utils.js';
 import {
-  createTargetHandler,
+  attachPageInitHandlers,
   handleTargetChangeHandler,
   createDisconnectHandler,
-  setupBrowserLevelPreInjection,
 } from './browser-target-handlers.js';
 import type { ConnectionState } from './browser-connection.js';
 import { convertPuppeteerOptions as convertPuppeteerOptionsFn } from './session_handlers/puppeteer-config.js';
@@ -191,23 +190,23 @@ export async function launchBrowser(
         state
           .closeBrowser(sessionId)
           .catch((error: unknown) => logger.error(`关闭断开连接的浏览器时出错 (sessionId: ${sessionId}):`, error));
-      // 新 Tab 统一注入：复用会话启动时生成的同一份 fingerprint 对象（同 seed 确定性），
-      // 无指纹会话 targetHandler 内部会跳过指纹注入
-      browser.on(
-        'targetcreated',
-        createTargetHandler(sessionId, fingerprint) as unknown as Parameters<typeof browser.on>[1]
-      );
       browser.on('targetchanged', handleTargetChangeHandler(sessionId) as unknown as Parameters<typeof browser.on>[1]);
       browser.on('disconnected', createDisconnectHandler(sessionId, options.proxy ?? '', disconnectAction));
       logger.info(`已设置浏览器事件监听 (sessionId: ${sessionId})`);
 
-      // ===== #28 框架级前置注入：browser 级 autoattach + 暂停窗口内抢先注册指纹脚本 =====
-      // 失败由 catch 降级到 targetcreated + 当前文档兜底路径（PR #31），不影响启动
+      // ===== 新 Tab 初始化：指纹 + 页面辅助脚本 =====
+      // 复用会话启动时生成的同一份 fingerprint 对象（同 seed 确定性），无指纹会话会跳过指纹注入
+      // 在"目标附加"时注册完才放行页面（#28），早于任何客户端对该 Tab 的导航；
+      // 预注入失败时降级为 targetcreated 路径逐条注册（PR #31），不影响启动
       try {
-        await setupBrowserLevelPreInjection(browser, fingerprint, sessionId);
+        await attachPageInitHandlers(
+          browser as unknown as Parameters<typeof attachPageInitHandlers>[0],
+          sessionId,
+          fingerprint
+        );
       } catch (preinjectError: unknown) {
         logger.warn(
-          `Browser-level pre-injection setup failed (non-fatal, falls back to targetcreated path) (sessionId: ${sessionId}):`,
+          `Failed to attach new-tab init handlers (non-fatal, new tabs only get the launch-level fingerprint) (sessionId: ${sessionId}):`,
           preinjectError
         );
       }
